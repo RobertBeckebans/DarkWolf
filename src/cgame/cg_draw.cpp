@@ -2189,6 +2189,8 @@ static void CG_DrawCrosshair( void ) {
 	vec4_t hcolor = {1, 1, 1, 0};
 	qboolean friendInSights = qfalse;
 
+	return;
+
 	if ( cg.renderingThirdPerson ) {
 		return;
 	}
@@ -2865,7 +2867,7 @@ static void CG_DrawFlashFade( void ) {
 		VectorClear( col );
 		col[3] = cgs.scrFadeAlphaCurrent;
 //		CG_FillRect( -10, -10, 650, 490, col );
-		CG_FillRect( 0, 0, 640, 480, col ); // why do a bunch of these extend outside 640x480?
+		CG_FillRectStrech( 0, 0, 640, 480, col ); // why do a bunch of these extend outside 640x480?
 	}
 }
 

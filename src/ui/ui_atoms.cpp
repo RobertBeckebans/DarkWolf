@@ -410,20 +410,26 @@ UI_AdjustFrom640
 Adjusted for resolution and screen aspect ratio
 ================
 */
-void UI_AdjustFrom640( float *x, float *y, float *w, float *h ) {
-	// expect valid pointers
-#if 0
-	*x = *x * uiInfo.uiDC.scale + uiInfo.uiDC.bias;
-	*y *= uiInfo.uiDC.scale;
-	*w *= uiInfo.uiDC.scale;
-	*h *= uiInfo.uiDC.scale;
-#endif
+void UI_AdjustFrom640(float* x, float* y, float* w, float* h) {
+	float xscale;
+	float yscale;
+	float xbias;
+	float screenWidth;
+	float screenHeight;
 
-	*x *= uiInfo.uiDC.xscale;
-	*y *= uiInfo.uiDC.yscale;
-	*w *= uiInfo.uiDC.xscale;
-	*h *= uiInfo.uiDC.yscale;
+	screenWidth = uiInfo.uiDC.glconfig.vidWidth;
+	screenHeight = uiInfo.uiDC.glconfig.vidHeight;
 
+	xscale = screenWidth / 640.0f;
+	yscale = screenHeight / 480.0f;
+
+	// preserve 4:3 shape and center it inside widescreen
+	xbias = (screenWidth - (640.0f * yscale)) * 0.5f;
+
+	*x = *x * yscale + xbias;
+	*y = *y * yscale;
+	*w = *w * yscale;
+	*h = *h * yscale;
 }
 
 void UI_DrawNamedPic( float x, float y, float width, float height, const char *picname ) {

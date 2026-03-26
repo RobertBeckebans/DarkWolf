@@ -801,8 +801,7 @@ Fixed fov at intermissions, otherwise account for fov variable and zooms.
 */
 #define WAVE_AMPLITUDE  1
 #define WAVE_FREQUENCY  0.4
-
-static int CG_CalcFov( void ) {
+static int CG_CalcFov(void) {
 	static float lastfov = 90;      // for transitions back from zoomed in modes
 	float x;
 	float phase;
@@ -813,110 +812,147 @@ static int CG_CalcFov( void ) {
 	float f;
 	int inwater;
 	qboolean dead;
+	float base_fov_x;
+	float aspect;
 
 	CG_Zoom();
 
-	if ( cg.predictedPlayerState.stats[STAT_HEALTH] <= 0 ) {
+	if (cg.predictedPlayerState.stats[STAT_HEALTH] <= 0) {
 		dead = qtrue;
 		cg.zoomedBinoc = qfalse;
 		cg.zoomTime = 0;
 		cg.zoomval = 0;
-	} else {
+	}
+	else {
 		dead = qfalse;
 	}
 
-	if ( cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
+	if (cg.predictedPlayerState.pm_type == PM_INTERMISSION) {
 		// if in intermission, use a fixed value
-		fov_x = 90;
-	} else {
+		base_fov_x = 90;
+	}
+	else {
 		// user selectable
-		if ( cgs.dmflags & DF_FIXED_FOV ) {
+		if (cgs.dmflags & DF_FIXED_FOV) {
 			// dmflag to prevent wide fov for all clients
-			fov_x = 90;
-		} else {
-			fov_x = cg_fov.value;
-			if ( fov_x < 1 ) {
-				fov_x = 1;
-			} else if ( fov_x > 160 ) {
-				fov_x = 160;
+			base_fov_x = 90;
+		}
+		else {
+			base_fov_x = cg_fov.value;
+			if (base_fov_x < 1) {
+				base_fov_x = 1;
+			}
+			else if (base_fov_x > 160) {
+				base_fov_x = 160;
 			}
 		}
 
 		// account for zooms
-		if ( cg.zoomval ) {
+		if (cg.zoomval) {
 			zoomFov = cg.zoomval;   // (SA) use user scrolled amount
 
-			if ( zoomFov < 1 ) {
+			if (zoomFov < 1) {
 				zoomFov = 1;
-			} else if ( zoomFov > 160 ) {
+			}
+			else if (zoomFov > 160) {
 				zoomFov = 160;
 			}
-		} else {
+		}
+		else {
 			zoomFov = lastfov;
 		}
 
 		// do smooth transitions for the binocs
-		if ( cg.zoomedBinoc ) {        // binoc zooming in
-			f = ( cg.time - cg.zoomTime ) / (float)ZOOM_TIME;
-			if ( f > 1.0 ) {
-				fov_x = zoomFov;
-			} else {
-				fov_x = fov_x + f * ( zoomFov - fov_x );
+		if (cg.zoomedBinoc) {        // binoc zooming in
+			f = (cg.time - cg.zoomTime) / (float)ZOOM_TIME;
+			if (f > 1.0) {
+				base_fov_x = zoomFov;
 			}
-			lastfov = fov_x;
-		} else if ( cg.zoomval ) {    // zoomed by sniper/snooper
-			fov_x = cg.zoomval;
-			lastfov = fov_x;
-		} else {                    // binoc zooming out
-			f = ( cg.time - cg.zoomTime ) / (float)ZOOM_TIME;
-			if ( f > 1.0 ) {
-				fov_x = fov_x;
-			} else {
-				fov_x = zoomFov + f * ( fov_x - zoomFov );
+			else {
+				base_fov_x = base_fov_x + f * (zoomFov - base_fov_x);
+			}
+			lastfov = base_fov_x;
+		}
+		else if (cg.zoomval) {    // zoomed by sniper/snooper
+			base_fov_x = cg.zoomval;
+			lastfov = base_fov_x;
+		}
+		else {                    // binoc zooming out
+			f = (cg.time - cg.zoomTime) / (float)ZOOM_TIME;
+			if (f <= 1.0) {
+				base_fov_x = zoomFov + f * (base_fov_x - zoomFov);
 			}
 		}
 	}
 
 	// DHM - Nerve :: zoom in for Limbo or Spectator
-	if ( cgs.gametype == GT_WOLF ) {
-		if ( cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.weapon == WP_SNIPERRIFLE ) {
-			fov_x = cg_zoomDefaultSniper.value;
+	if (cgs.gametype == GT_WOLF) {
+		if (cg.snap->ps.pm_flags & PMF_FOLLOW && cg.snap->ps.weapon == WP_SNIPERRIFLE) {
+			base_fov_x = cg_zoomDefaultSniper.value;
 		}
 	}
 	// dhm - end
 
-	if ( !dead && ( cg.weaponSelect == WP_SNOOPERSCOPE ) ) {
+	if (!dead && (cg.weaponSelect == WP_SNOOPERSCOPE)) {
 		cg.refdef.rdflags |= RDF_SNOOPERVIEW;
-	} else {
+	}
+	else {
 		cg.refdef.rdflags &= ~RDF_SNOOPERVIEW;
 	}
 
-	if ( cg.snap->ps.persistant[PERS_HWEAPON_USE] ) {
-		fov_x = 55;
+	if (cg.snap->ps.persistant[PERS_HWEAPON_USE]) {
+		base_fov_x = 55;
 	}
 
-	x = cg.refdef.width / tan( fov_x / 360 * M_PI );
-	fov_y = atan2( cg.refdef.height, x );
-	fov_y = fov_y * 360 / M_PI;
+	// widescreen support:
+	// treat the configured/base fov_x as a 4:3 horizontal FOV,
+	// derive the vertical FOV from that, then rebuild the actual
+	// horizontal FOV for the real aspect ratio.
+	if (cg.refdef.width <= 0) {
+		cg.refdef.width = 640;
+	}
+	if (cg.refdef.height <= 0) {
+		cg.refdef.height = 480;
+	}
+
+	aspect = (float)cg.refdef.width / (float)cg.refdef.height;
+
+	// First get vertical FOV from a 4:3 baseline.
+	x = 640.0f / tan(base_fov_x / 360.0f * M_PI);
+	fov_y = atan2(480.0f, x) * 360.0f / M_PI;
+
+	// Then rebuild horizontal FOV for the real aspect ratio.
+	if (aspect > (4.0f / 3.0f)) {
+		x = (float)cg.refdef.height / tan(fov_y / 360.0f * M_PI);
+		fov_x = atan2((float)cg.refdef.width, x) * 360.0f / M_PI;
+	}
+	else {
+		// keep original behavior for 4:3 and narrower
+		fov_x = base_fov_x;
+		x = (float)cg.refdef.width / tan(fov_x / 360.0f * M_PI);
+		fov_y = atan2((float)cg.refdef.height, x) * 360.0f / M_PI;
+	}
 
 	// warp if underwater
-	contents = CG_PointContents( cg.refdef.vieworg, -1 );
-	if ( contents & ( CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) {
-		phase = cg.time / 1000.0 * WAVE_FREQUENCY * M_PI * 2;
-		v = WAVE_AMPLITUDE * sin( phase );
+	contents = CG_PointContents(cg.refdef.vieworg, -1);
+	if (contents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA)) {
+		phase = cg.time / 1000.0f * WAVE_FREQUENCY * M_PI * 2.0f;
+		v = WAVE_AMPLITUDE * sin(phase);
 		fov_x += v;
 		fov_y -= v;
 		inwater = qtrue;
 		cg.refdef.rdflags |= RDF_UNDERWATER;
-	} else {
+	}
+	else {
 		cg.refdef.rdflags &= ~RDF_UNDERWATER;
 		inwater = qfalse;
 	}
 
-	contents = CG_PointContents( cg.refdef.vieworg, -1 );
-	if ( contents & ( CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) {
+	contents = CG_PointContents(cg.refdef.vieworg, -1);
+	if (contents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA)) {
 		cg.refdef.rdflags |= RDF_UNDERWATER;
-	} else {
+	}
+	else {
 		cg.refdef.rdflags &= ~RDF_UNDERWATER;
 	}
 
@@ -924,23 +960,23 @@ static int CG_CalcFov( void ) {
 	cg.refdef.fov_x = fov_x;
 	cg.refdef.fov_y = fov_y;
 
-	if ( !cg.zoomedBinoc ) {
+	if (!cg.zoomedBinoc) {
 		// NERVE - SMF - fix for zoomed in/out movement bug
-		if ( cg.zoomval ) {
-			if ( cg.snap->ps.weapon == WP_SNOOPERSCOPE ) {
-				cg.zoomSensitivity = 0.3f * ( cg.zoomval / 90.f );  // NERVE - SMF - changed to get less sensitive as you zoom in;
+		if (cg.zoomval) {
+			if (cg.snap->ps.weapon == WP_SNOOPERSCOPE) {
+				cg.zoomSensitivity = 0.3f * (cg.zoomval / 90.0f);  // NERVE - SMF - changed to get less sensitive as you zoom in
 			}
-//				cg.zoomSensitivity = 0.2;
 			else {
-				cg.zoomSensitivity = 0.6 * ( cg.zoomval / 90.f );   // NERVE - SMF - changed to get less sensitive as you zoom in
+				cg.zoomSensitivity = 0.6f * (cg.zoomval / 90.0f);  // NERVE - SMF - changed to get less sensitive as you zoom in
 			}
-//				cg.zoomSensitivity = 0.1;
-		} else {
+		}
+		else {
 			cg.zoomSensitivity = 1;
 		}
 		// -NERVE - SMF
-	} else {
-		cg.zoomSensitivity = cg.refdef.fov_y / 75.0;
+	}
+	else {
+		cg.zoomSensitivity = cg.refdef.fov_y / 75.0f;
 	}
 
 	return inwater;

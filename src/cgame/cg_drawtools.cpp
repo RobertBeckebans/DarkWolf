@@ -37,22 +37,44 @@ Adjusted for resolution and screen aspect ratio
 ================
 */
 void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
+	float xscale;
+	float yscale;
+	float xbias;
+	float screenWidth;
+	float screenHeight;
+
+	screenWidth = cg.refdef.width;
+	screenHeight = cg.refdef.height;
+
+	xscale = screenWidth / 640.0f;
+	yscale = screenHeight / 480.0f;
+
+	// preserve 4:3 shape and center it inside widescreen
+	xbias = (screenWidth - (640.0f * yscale)) * 0.5f;
+
+	*x = *x * yscale + xbias;
+	*y = *y * yscale;
+	*w = *w * yscale;
+	*h = *h * yscale;
+}
+
+void CG_AdjustFrom640Strech(float* x, float* y, float* w, float* h) {
 #if 0
 	// adjust for wide screens
-	if ( cgs.glconfig.vidWidth * 480 > cgs.glconfig.vidHeight * 640 ) {
-		*x += 0.5 * ( cgs.glconfig.vidWidth - ( cgs.glconfig.vidHeight * 640 / 480 ) );
+	if (cgs.glconfig.vidWidth * 480 > cgs.glconfig.vidHeight * 640) {
+		*x += 0.5 * (cgs.glconfig.vidWidth - (cgs.glconfig.vidHeight * 640 / 480));
 	}
 #endif
 
 	// NERVE - SMF - hack to make images display properly in small view / limbo mode
-	if ( cg.limboMenu && cg.refdef.width ) {
-		float xscale = ( ( cg.refdef.width / cgs.screenXScale ) / 640.f );
-		float yscale = ( ( cg.refdef.height / cgs.screenYScale ) / 480.f );
+	if (cg.limboMenu && cg.refdef.width) {
+		float xscale = ((cg.refdef.width / cgs.screenXScale) / 640.f);
+		float yscale = ((cg.refdef.height / cgs.screenYScale) / 480.f);
 
-		( *x ) = ( *x ) * xscale + ( cg.refdef.x / cgs.screenXScale );
-		( *y ) = ( *y ) * yscale + ( cg.refdef.y / cgs.screenYScale );
-		( *w ) *= xscale;
-		( *h ) *= yscale;
+		(*x) = (*x) * xscale + (cg.refdef.x / cgs.screenXScale);
+		(*y) = (*y) * yscale + (cg.refdef.y / cgs.screenYScale);
+		(*w) *= xscale;
+		(*h) *= yscale;
 	}
 	// -NERVE - SMF
 
@@ -77,6 +99,15 @@ void CG_FillRect( float x, float y, float width, float height, const float *colo
 	sys->R_DrawStretchPic( x, y, width, height, 0, 0, 0, 1, cgs.media.whiteShader );
 
 	sys->R_SetColor( NULL );
+}
+
+void CG_FillRectStrech(float x, float y, float width, float height, const float* color) {
+	sys->R_SetColor(color);
+
+	CG_AdjustFrom640Strech(&x, &y, &width, &height);
+	sys->R_DrawStretchPic(x, y, width, height, 0, 0, 0, 1, cgs.media.whiteShader);
+
+	sys->R_SetColor(NULL);
 }
 
 /*
