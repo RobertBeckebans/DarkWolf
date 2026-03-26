@@ -1227,7 +1227,7 @@ void SV_RestartGameProgs( void ) {
 	}
     SV_ShutdownGameProgs();
 
-	SV_InitGameVM( qtrue );
+    SV_InitGameProgs();
 }
 
 
