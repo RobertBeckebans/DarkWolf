@@ -151,6 +151,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>openal/include/</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -158,7 +159,7 @@
       <ResourceOutputFileName>win32\winquake.res</ResourceOutputFileName>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>dxgi.lib;d3d12.lib;d3dcompiler.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>openal/libs/win64/OpenAL32.lib;dxgi.lib;d3d12.lib;d3dcompiler.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>../WolfSP.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -245,13 +246,14 @@
       <ProgramDataBaseFileName>.\Release/</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalIncludeDirectories>openal/include/</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>dxgi.lib;d3d12.lib;d3dcompiler.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>openal/libs/win64/OpenAL32.lib;dxgi.lib;d3d12.lib;d3dcompiler.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\Release/WolfSP.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -281,11 +283,7 @@
     <ClCompile Include="client\cl_parse.cpp" />
     <ClCompile Include="client\cl_scrn.cpp" />
     <ClCompile Include="client\cl_ui.cpp" />
-    <ClCompile Include="client\snd_adpcm.cpp" />
-    <ClCompile Include="client\snd_dma.cpp" />
-    <ClCompile Include="client\snd_mem.cpp" />
-    <ClCompile Include="client\snd_mix.cpp" />
-    <ClCompile Include="client\snd_wavelet.cpp" />
+    <ClCompile Include="client\snd_main.cpp" />
     <ClCompile Include="game\q_math.cpp" />
     <ClCompile Include="game\q_shared.cpp" />
     <ClCompile Include="qcommon\cmd.cpp" />
@@ -316,7 +314,6 @@
     <ClCompile Include="win32\win_main.cpp" />
     <ClCompile Include="win32\win_net.cpp" />
     <ClCompile Include="win32\win_shared.cpp" />
-    <ClCompile Include="win32\win_snd.cpp" />
     <ClCompile Include="win32\win_syscon.cpp" />
     <ClCompile Include="win32\win_wndproc.cpp" />
     <ClCompile Include="zlib\adler32.c" />
@@ -338,8 +335,6 @@
   <ItemGroup>
     <ClInclude Include="A3D\a3dWrapperdp.h" />
     <ClInclude Include="A3D\ia3dapi.h" />
-    <ClInclude Include="A3D\snd_A3D.h" />
-    <ClInclude Include="A3D\snd_a3dg.h" />
     <ClInclude Include="botai\botai.h" />
     <ClInclude Include="cgame\cg_public.h" />
     <ClInclude Include="cgame\tr_types.h" />

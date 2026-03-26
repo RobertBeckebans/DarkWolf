@@ -89,21 +89,6 @@
     <ClCompile Include="game\q_shared.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="client\snd_adpcm.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="client\snd_dma.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="client\snd_mem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="client\snd_mix.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="client\snd_wavelet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="server\sv_bot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -144,9 +129,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="win32\win_shared.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="win32\win_snd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="win32\win_syscon.cpp">
@@ -202,6 +184,9 @@
     </ClCompile>
     <ClCompile Include="zlib\zutil.c">
       <Filter>zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="client\snd_main.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -260,12 +245,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="server\server.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="A3D\snd_A3D.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="A3D\snd_a3dg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="client\snd_local.h">

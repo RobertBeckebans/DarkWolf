@@ -1374,7 +1374,7 @@ void Com_Init( char *commandLine ) {
 			PlayIntroMovies();
 		#endif
 			//Cvar_Set( com_introPlayed->name, "1" );		//----(SA)	force this to get played every time (but leave cvar for override)
-			Cbuf_AddText( "cinematic wolfintro.RoQ 3\n" );
+			// Cbuf_AddText( "cinematic wolfintro.RoQ 3\n" ); // jmarshall - disable intro video. 
 			//Cvar_Set( "nextmap", "cinematic wolfintro.RoQ" );
 		}
 	}

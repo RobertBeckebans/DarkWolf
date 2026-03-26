@@ -399,7 +399,7 @@ LONG WINAPI MainWndProc(
 
 		VID_AppActivate( fActive != WA_INACTIVE, fMinimized );
 #ifndef DOOMSOUND   ///// (SA) DOOMSOUND
-		SNDDMA_Activate();
+		//SNDDMA_Activate();
 #endif  ///// (SA) DOOMSOUND
 	}
 	break;

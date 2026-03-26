@@ -118,17 +118,6 @@ typedef struct
 
 #define WAV_FORMAT_PCM      1
 
-
-typedef struct {
-	int format;
-	int rate;
-	int width;
-	int channels;
-	int samples;
-	int dataofs;                // chunk starts this many bytes from file start
-} wavinfo_t;
-
-
 /*
 ====================================================================
 
@@ -171,6 +160,15 @@ extern dma_t dma;
 #ifdef TALKANIM
 extern unsigned char s_entityTalkAmplitude[MAX_CLIENTS];
 #endif
+
+typedef struct
+{
+	int         rate;
+	int         width;
+	int         channels;
+	int         samples;
+	byte* data;
+} wavinfo_t;
 
 //----(SA)	some flags for queued music tracks
 #define QUEUED_PLAY_ONCE    -1
