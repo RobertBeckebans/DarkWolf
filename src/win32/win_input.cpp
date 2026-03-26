@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code ("RTCW SP Source Code").
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,12 +26,15 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-// win_input.c -- win32 mouse and joystick code
-// 02/21/97 JCB Added extended DirectInput code to support external controllers.
+// win_input.cpp -- win32 mouse and XInput controller code
 
 #include "../client/client.h"
 #include "win_local.h"
 
+#include <mmsystem.h>
+#include <xinput.h>
+
+#pragma comment(lib, "winmm.lib")
 
 typedef struct {
 	int oldButtonState;
@@ -47,8 +50,8 @@ static int window_center_x, window_center_y;
 //
 // MIDI definitions
 //
-static void IN_StartupMIDI( void );
-static void IN_ShutdownMIDI( void );
+static void IN_StartupMIDI(void);
+static void IN_ShutdownMIDI(void);
 
 #define MAX_MIDIIN_DEVICES  8
 
@@ -62,44 +65,53 @@ typedef struct {
 static MidiInfo_t s_midiInfo;
 
 //
-// Joystick definitions
+// XInput definitions
 //
-#define JOY_MAX_AXES        6               // X, Y, Z, R, U, V
+typedef DWORD(WINAPI* PFN_XInputGetState)(DWORD dwUserIndex, XINPUT_STATE* pState);
+typedef DWORD(WINAPI* PFN_XInputSetState)(DWORD dwUserIndex, XINPUT_VIBRATION* pVibration);
+
+static PFN_XInputGetState pXInputGetState = NULL;
+static PFN_XInputSetState pXInputSetState = NULL;
+static HMODULE s_xinputDll = NULL;
 
 typedef struct {
 	qboolean avail;
-	int id;                 // joystick number
-	JOYCAPS jc;
+	int id; // 0..3
 
-	int oldbuttonstate;
+	DWORD oldPacketNumber;
+	WORD oldButtons;
+	BYTE oldLeftTriggerPressed;
+	BYTE oldRightTriggerPressed;
 	int oldpovstate;
 
-	JOYINFOEX ji;
+	XINPUT_STATE state;
 } joystickInfo_t;
 
 static joystickInfo_t joy;
 
+cvar_t* k_language;
 
-cvar_t  *k_language;
+cvar_t* in_midi;
+cvar_t* in_midiport;
+cvar_t* in_midichannel;
+cvar_t* in_mididevice;
 
-cvar_t  *in_midi;
-cvar_t  *in_midiport;
-cvar_t  *in_midichannel;
-cvar_t  *in_mididevice;
-
-cvar_t  *in_mouse;
-cvar_t  *in_joystick;
-cvar_t  *in_joyBallScale;
-cvar_t  *in_debugJoystick;
-cvar_t  *joy_threshold;
+cvar_t* in_mouse;
+cvar_t* in_joystick;
+cvar_t* in_joyBallScale;
+cvar_t* in_debugJoystick;
+cvar_t* joy_threshold;
 
 qboolean in_appactive;
 
 // forward-referenced functions
-void IN_StartupJoystick( void );
-void IN_JoyMove( void );
+void IN_StartupJoystick(void);
+void IN_JoyMove(void);
 
-static void MidiInfo_f( void );
+static void MidiInfo_f(void);
+
+static qboolean IN_InitXInput(void);
+static void IN_ShutdownXInput(void);
 
 /*
 ============================================================
@@ -114,7 +126,7 @@ WIN32 MOUSE CONTROL
 IN_InitWin32Mouse
 ================
 */
-void IN_InitWin32Mouse( void ) {
+void IN_InitWin32Mouse(void) {
 }
 
 /*
@@ -122,7 +134,7 @@ void IN_InitWin32Mouse( void ) {
 IN_ShutdownWin32Mouse
 ================
 */
-void IN_ShutdownWin32Mouse( void ) {
+void IN_ShutdownWin32Mouse(void) {
 }
 
 /*
@@ -130,34 +142,34 @@ void IN_ShutdownWin32Mouse( void ) {
 IN_ActivateWin32Mouse
 ================
 */
-void IN_ActivateWin32Mouse( void ) {
+void IN_ActivateWin32Mouse(void) {
 	int width, height;
 	RECT window_rect;
 
-	width = GetSystemMetrics( SM_CXSCREEN );
-	height = GetSystemMetrics( SM_CYSCREEN );
+	width = GetSystemMetrics(SM_CXSCREEN);
+	height = GetSystemMetrics(SM_CYSCREEN);
 
-	GetWindowRect( g_wv.hWnd, &window_rect );
-	if ( window_rect.left < 0 ) {
+	GetWindowRect(g_wv.hWnd, &window_rect);
+	if (window_rect.left < 0) {
 		window_rect.left = 0;
 	}
-	if ( window_rect.top < 0 ) {
+	if (window_rect.top < 0) {
 		window_rect.top = 0;
 	}
-	if ( window_rect.right >= width ) {
+	if (window_rect.right >= width) {
 		window_rect.right = width - 1;
 	}
-	if ( window_rect.bottom >= height - 1 ) {
+	if (window_rect.bottom >= height - 1) {
 		window_rect.bottom = height - 1;
 	}
-	window_center_x = ( window_rect.right + window_rect.left ) / 2;
-	window_center_y = ( window_rect.top + window_rect.bottom ) / 2;
+	window_center_x = (window_rect.right + window_rect.left) / 2;
+	window_center_y = (window_rect.bottom + window_rect.top) / 2;
 
-	SetCursorPos( window_center_x, window_center_y );
+	SetCursorPos(window_center_x, window_center_y);
 
-	SetCapture( g_wv.hWnd );
-	ClipCursor( &window_rect );
-	while ( ShowCursor( FALSE ) >= 0 )
+	SetCapture(g_wv.hWnd);
+	ClipCursor(&window_rect);
+	while (ShowCursor(FALSE) >= 0)
 		;
 }
 
@@ -166,10 +178,10 @@ void IN_ActivateWin32Mouse( void ) {
 IN_DeactivateWin32Mouse
 ================
 */
-void IN_DeactivateWin32Mouse( void ) {
-	ClipCursor( NULL );
+void IN_DeactivateWin32Mouse(void) {
+	ClipCursor(NULL);
 	ReleaseCapture();
-	while ( ShowCursor( TRUE ) < 0 )
+	while (ShowCursor(TRUE) < 0)
 		;
 }
 
@@ -178,85 +190,16 @@ void IN_DeactivateWin32Mouse( void ) {
 IN_Win32Mouse
 ================
 */
-void IN_Win32Mouse( int *mx, int *my ) {
+void IN_Win32Mouse(int* mx, int* my) {
 	POINT current_pos;
 
-	// find mouse movement
-	GetCursorPos( &current_pos );
+	GetCursorPos(&current_pos);
 
-	// force the mouse to the center, so there's room to move
-	SetCursorPos( window_center_x, window_center_y );
+	SetCursorPos(window_center_x, window_center_y);
 
 	*mx = current_pos.x - window_center_x;
 	*my = current_pos.y - window_center_y;
 }
-
-
-/*
-============================================================
-
-DIRECT INPUT MOUSE CONTROL
-
-============================================================
-*/
-
-
-#ifndef DOOMSOUND   ///// (SA) DOOMSOUND
-#undef DEFINE_GUID
-
-#define DEFINE_GUID( name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8 ) \
-	EXTERN_C const GUID name \
-	= { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-
-DEFINE_GUID( GUID_SysMouse,   0x6F1D2B60,0xD5A0,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00 );
-DEFINE_GUID( GUID_XAxis,   0xA36D02E0,0xC9F3,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00 );
-DEFINE_GUID( GUID_YAxis,   0xA36D02E1,0xC9F3,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00 );
-DEFINE_GUID( GUID_ZAxis,   0xA36D02E2,0xC9F3,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00 );
-
-
-#define DINPUT_BUFFERSIZE           16
-#define iDirectInputCreate( a,b,c,d ) pDirectInputCreate( a,b,c,d )
-
-HRESULT ( WINAPI * pDirectInputCreate )( HINSTANCE hinst, DWORD dwVersion,
-										 LPDIRECTINPUT * lplpDirectInput, LPUNKNOWN punkOuter );
-
-#endif ///// (SA) DOOMSOUND
-
-static HINSTANCE hInstDI;
-
-typedef struct MYDATA {
-	LONG lX;                    // X axis goes here
-	LONG lY;                    // Y axis goes here
-	LONG lZ;                    // Z axis goes here
-	BYTE bButtonA;              // One button goes here
-	BYTE bButtonB;              // Another button goes here
-	BYTE bButtonC;              // Another button goes here
-	BYTE bButtonD;              // Another button goes here
-} MYDATA;
-
-static DIOBJECTDATAFORMAT rgodf[] = {
-	{ &GUID_XAxis,    FIELD_OFFSET( MYDATA, lX ),       DIDFT_AXIS | DIDFT_ANYINSTANCE,   0,},
-	{ &GUID_YAxis,    FIELD_OFFSET( MYDATA, lY ),       DIDFT_AXIS | DIDFT_ANYINSTANCE,   0,},
-	{ &GUID_ZAxis,    FIELD_OFFSET( MYDATA, lZ ),       0x80000000 | DIDFT_AXIS | DIDFT_ANYINSTANCE,   0,},
-	{ 0,              FIELD_OFFSET( MYDATA, bButtonA ), DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0,},
-	{ 0,              FIELD_OFFSET( MYDATA, bButtonB ), DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0,},
-	{ 0,              FIELD_OFFSET( MYDATA, bButtonC ), 0x80000000 | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0,},
-	{ 0,              FIELD_OFFSET( MYDATA, bButtonD ), 0x80000000 | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0,},
-};
-
-#define NUM_OBJECTS ( sizeof( rgodf ) / sizeof( rgodf[0] ) )
-
-static DIDATAFORMAT df = {
-	sizeof( DIDATAFORMAT ),       // this structure
-	sizeof( DIOBJECTDATAFORMAT ), // size of object data format
-	DIDF_RELAXIS,               // absolute axis coordinates
-	sizeof( MYDATA ),             // device data size
-	NUM_OBJECTS,                // number of objects
-	rgodf,                      // and here they are
-};
-
-static LPDIRECTINPUT g_pdi;
-static LPDIRECTINPUTDEVICE g_pMouse;
 
 /*
 ============================================================
@@ -269,64 +212,55 @@ static LPDIRECTINPUTDEVICE g_pMouse;
 /*
 ===========
 IN_ActivateMouse
-
-Called when the window gains focus or changes in some way
 ===========
 */
-void IN_ActivateMouse( void ) {
-	if ( !s_wmv.mouseInitialized ) {
+void IN_ActivateMouse(void) {
+	if (!s_wmv.mouseInitialized) {
 		return;
 	}
-	if ( !in_mouse->integer ) {
+	if (!in_mouse->integer) {
 		s_wmv.mouseActive = qfalse;
 		return;
 	}
-	if ( s_wmv.mouseActive ) {
+	if (s_wmv.mouseActive) {
 		return;
 	}
 
 	s_wmv.mouseActive = qtrue;
-
 	IN_ActivateWin32Mouse();
 }
-
 
 /*
 ===========
 IN_DeactivateMouse
-
-Called when the window loses focus
 ===========
 */
-void IN_DeactivateMouse( void ) {
-	if ( !s_wmv.mouseInitialized ) {
+void IN_DeactivateMouse(void) {
+	if (!s_wmv.mouseInitialized) {
 		return;
 	}
-	if ( !s_wmv.mouseActive ) {
+	if (!s_wmv.mouseActive) {
 		return;
 	}
-	s_wmv.mouseActive = qfalse;
 
+	s_wmv.mouseActive = qfalse;
 	IN_DeactivateWin32Mouse();
 }
-
-
 
 /*
 ===========
 IN_StartupMouse
 ===========
 */
-void IN_StartupMouse( void ) {
+void IN_StartupMouse(void) {
 	s_wmv.mouseInitialized = qfalse;
 
-	if ( in_mouse->integer == 0 ) {
-		Com_Printf( "Mouse control not active.\n" );
+	if (in_mouse->integer == 0) {
+		Com_Printf("Mouse control not active.\n");
 		return;
 	}
 
 	s_wmv.mouseInitialized = qtrue;
-
 	IN_InitWin32Mouse();
 }
 
@@ -335,48 +269,42 @@ void IN_StartupMouse( void ) {
 IN_MouseEvent
 ===========
 */
-void IN_MouseEvent( int mstate ) {
+void IN_MouseEvent(int mstate) {
 	int i;
 
-	if ( !s_wmv.mouseInitialized ) {
+	if (!s_wmv.mouseInitialized) {
 		return;
 	}
 
-// perform button actions
-	for  ( i = 0 ; i < 3 ; i++ )
-	{
-		if ( ( mstate & ( 1 << i ) ) &&
-			 !( s_wmv.oldButtonState & ( 1 << i ) ) ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qtrue, 0, NULL );
+	for (i = 0; i < 3; i++) {
+		if ((mstate & (1 << i)) && !(s_wmv.oldButtonState & (1 << i))) {
+			Sys_QueEvent(g_wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qtrue, 0, NULL);
 		}
 
-		if ( !( mstate & ( 1 << i ) ) &&
-			 ( s_wmv.oldButtonState & ( 1 << i ) ) ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qfalse, 0, NULL );
+		if (!(mstate & (1 << i)) && (s_wmv.oldButtonState & (1 << i))) {
+			Sys_QueEvent(g_wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qfalse, 0, NULL);
 		}
 	}
 
 	s_wmv.oldButtonState = mstate;
 }
 
-
 /*
 ===========
 IN_MouseMove
 ===========
 */
-void IN_MouseMove( void ) {
+void IN_MouseMove(void) {
 	int mx, my;
 
-	IN_Win32Mouse( &mx, &my );
+	IN_Win32Mouse(&mx, &my);
 
-	if ( !mx && !my ) {
+	if (!mx && !my) {
 		return;
 	}
 
-	Sys_QueEvent( 0, SE_MOUSE, mx, my, 0, NULL );
+	Sys_QueEvent(0, SE_MOUSE, mx, my, 0, NULL);
 }
-
 
 /*
 =========================================================================
@@ -389,12 +317,10 @@ void IN_MouseMove( void ) {
 IN_Startup
 ===========
 */
-void IN_Startup( void ) {
-//	Com_Printf ("\n------- Input Initialization -------\n");
+void IN_Startup(void) {
 	IN_StartupMouse();
 	IN_StartupJoystick();
 	IN_StartupMIDI();
-//	Com_Printf ("------------------------------------\n");
 
 	in_mouse->modified = qfalse;
 	in_joystick->modified = qfalse;
@@ -405,189 +331,187 @@ void IN_Startup( void ) {
 IN_Shutdown
 ===========
 */
-void IN_Shutdown( void ) {
+void IN_Shutdown(void) {
 	IN_DeactivateMouse();
 	IN_ShutdownMIDI();
-	Cmd_RemoveCommand( "midiinfo" );
+	IN_ShutdownXInput();
+	Cmd_RemoveCommand("midiinfo");
 }
-
 
 /*
 ===========
 IN_Init
 ===========
 */
-void IN_Init( void ) {
-	// MIDI input controler variables
-	in_midi                 = Cvar_Get( "in_midi",                   "0",     CVAR_ARCHIVE );
-	in_midiport             = Cvar_Get( "in_midiport",               "1",     CVAR_ARCHIVE );
-	in_midichannel          = Cvar_Get( "in_midichannel",            "1",     CVAR_ARCHIVE );
-	in_mididevice           = Cvar_Get( "in_mididevice",         "0",     CVAR_ARCHIVE );
+void IN_Init(void) {
+	in_midi = Cvar_Get("in_midi", "0", CVAR_ARCHIVE);
+	in_midiport = Cvar_Get("in_midiport", "1", CVAR_ARCHIVE);
+	in_midichannel = Cvar_Get("in_midichannel", "1", CVAR_ARCHIVE);
+	in_mididevice = Cvar_Get("in_mididevice", "0", CVAR_ARCHIVE);
 
-	Cmd_AddCommand( "midiinfo", MidiInfo_f );
+	Cmd_AddCommand("midiinfo", MidiInfo_f);
 
-	// mouse variables
-	in_mouse                = Cvar_Get( "in_mouse",                  "1",     CVAR_ARCHIVE | CVAR_LATCH );
+	in_mouse = Cvar_Get("in_mouse", "1", CVAR_ARCHIVE | CVAR_LATCH);
 
-	// joystick variables
-	in_joystick             = Cvar_Get( "in_joystick",               "0",     CVAR_ARCHIVE | CVAR_LATCH );
-	in_joyBallScale         = Cvar_Get( "in_joyBallScale",           "0.02",      CVAR_ARCHIVE );
-	in_debugJoystick        = Cvar_Get( "in_debugjoystick",          "0",     CVAR_TEMP );
+	in_joystick = Cvar_Get("in_joystick", "0", CVAR_ARCHIVE | CVAR_LATCH);
+	in_joyBallScale = Cvar_Get("in_joyBallScale", "0.12", CVAR_ARCHIVE);
+	in_debugJoystick = Cvar_Get("in_debugjoystick", "0", CVAR_TEMP);
+	joy_threshold = Cvar_Get("joy_threshold", "0.15", CVAR_ARCHIVE);
 
-	joy_threshold           = Cvar_Get( "joy_threshold",         "0.15",      CVAR_ARCHIVE );
-
-	k_language              = Cvar_Get( "k_language",               "american", CVAR_ARCHIVE | CVAR_NORESTART );
-
+	k_language = Cvar_Get("k_language", "american", CVAR_ARCHIVE | CVAR_NORESTART);
 
 	IN_Startup();
 }
 
-
 /*
 ===========
 IN_Activate
-
-Called when the main window gains or loses focus.
-The window may have been destroyed and recreated
-between a deactivate and an activate.
 ===========
 */
-void IN_Activate( qboolean active ) {
+void IN_Activate(qboolean active) {
 	in_appactive = active;
 
-	if ( !active ) {
+	if (!active) {
 		IN_DeactivateMouse();
 	}
 }
 
-
 /*
 ==================
 IN_Frame
-
-Called every frame, even if not generating commands
 ==================
 */
-void IN_Frame( void ) {
-	// post joystick events
+void IN_Frame(void) {
 	IN_JoyMove();
 
-	if ( !s_wmv.mouseInitialized ) {
+	if (!s_wmv.mouseInitialized) {
 		return;
 	}
 
-	if ( cls.keyCatchers & KEYCATCH_CONSOLE ) {
-		// temporarily deactivate if not in the game and
-		// running on the desktop
-		// voodoo always counts as full screen
-		if ( Cvar_VariableValue( "r_fullscreen" ) == 0
-			 && strcmp( Cvar_VariableString( "r_glDriver" ), _3DFX_DRIVER_NAME ) ) {
+	if (cls.keyCatchers & KEYCATCH_CONSOLE) {
+		if (Cvar_VariableValue("r_fullscreen") == 0
+			&& strcmp(Cvar_VariableString("r_glDriver"), _3DFX_DRIVER_NAME)) {
 			IN_DeactivateMouse();
 			return;
 		}
 	}
 
-	if ( !in_appactive ) {
+	if (!in_appactive) {
 		IN_DeactivateMouse();
 		return;
 	}
 
 	IN_ActivateMouse();
 
-	// post events to the system que
+	// post events to the system queue
 	IN_MouseMove();
-
 }
-
 
 /*
 ===================
 IN_ClearStates
 ===================
 */
-void IN_ClearStates( void ) {
+void IN_ClearStates(void) {
 	s_wmv.oldButtonState = 0;
-}
 
+	joy.oldButtons = 0;
+	joy.oldLeftTriggerPressed = 0;
+	joy.oldRightTriggerPressed = 0;
+	joy.oldpovstate = 0;
+}
 
 /*
 =========================================================================
 
-JOYSTICK
+XINPUT CONTROLLER
 
 =========================================================================
 */
+
+static qboolean IN_InitXInput(void) {
+	if (s_xinputDll) {
+		return qtrue;
+	}
+
+	s_xinputDll = LoadLibraryA("xinput1_4.dll");
+	if (!s_xinputDll) {
+		s_xinputDll = LoadLibraryA("xinput9_1_0.dll");
+	}
+	if (!s_xinputDll) {
+		s_xinputDll = LoadLibraryA("xinput1_3.dll");
+	}
+	if (!s_xinputDll) {
+		return qfalse;
+	}
+
+	pXInputGetState = (PFN_XInputGetState)GetProcAddress(s_xinputDll, "XInputGetState");
+	pXInputSetState = (PFN_XInputSetState)GetProcAddress(s_xinputDll, "XInputSetState");
+
+	if (!pXInputGetState) {
+		FreeLibrary(s_xinputDll);
+		s_xinputDll = NULL;
+		pXInputGetState = NULL;
+		pXInputSetState = NULL;
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
+static void IN_ShutdownXInput(void) {
+	pXInputGetState = NULL;
+	pXInputSetState = NULL;
+
+	if (s_xinputDll) {
+		FreeLibrary(s_xinputDll);
+		s_xinputDll = NULL;
+	}
+}
 
 /*
 ===============
 IN_StartupJoystick
 ===============
 */
-void IN_StartupJoystick( void ) {
-	int numdevs;
-	MMRESULT mmr;
+void IN_StartupJoystick(void) {
+	DWORD result;
+	int i;
 
-	// assume no joystick
 	joy.avail = qfalse;
+	joy.id = -1;
+	joy.oldPacketNumber = 0;
+	joy.oldButtons = 0;
+	joy.oldLeftTriggerPressed = 0;
+	joy.oldRightTriggerPressed = 0;
+	joy.oldpovstate = 0;
+	memset(&joy.state, 0, sizeof(joy.state));
 
-	if ( !in_joystick->integer ) {
-//		Com_DPrintf ("Joystick is not active.\n");
+	if (!IN_InitXInput()) {
+		Com_Printf("XInput not available\n");
 		return;
 	}
 
-	// verify joystick driver is present
-	if ( ( numdevs = joyGetNumDevs() ) == 0 ) {
-		Com_Printf( "joystick not found -- driver not present\n" );
-		return;
-	}
+	for (i = 0; i < XUSER_MAX_COUNT; i++) {
+		XINPUT_STATE state;
+		memset(&state, 0, sizeof(state));
 
-	// cycle through the joystick ids for the first valid one
-	mmr = 0;
-	for ( joy.id = 0 ; joy.id < numdevs ; joy.id++ )
-	{
-		memset( &joy.ji, 0, sizeof( joy.ji ) );
-		joy.ji.dwSize = sizeof( joy.ji );
-		joy.ji.dwFlags = JOY_RETURNCENTERED;
+		result = pXInputGetState(i, &state);
+		if (result == ERROR_SUCCESS) {
+			joy.avail = qtrue;
+			joy.id = i;
+			joy.state = state;
+			joy.oldPacketNumber = state.dwPacketNumber;
+			joy.oldButtons = state.Gamepad.wButtons;
+			joy.oldLeftTriggerPressed = (state.Gamepad.bLeftTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD) ? 1 : 0;
+			joy.oldRightTriggerPressed = (state.Gamepad.bRightTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD) ? 1 : 0;
 
-		if ( ( mmr = joyGetPosEx( joy.id, &joy.ji ) ) == JOYERR_NOERROR ) {
-			break;
+			Com_Printf("XInput controller found on port %d\n", i);
+			return;
 		}
 	}
 
-	// abort startup if we didn't find a valid joystick
-	if ( mmr != JOYERR_NOERROR ) {
-		Com_Printf( "joystick not found -- no valid joysticks (%x)\n", mmr );
-		return;
-	}
-
-	// get the capabilities of the selected joystick
-	// abort startup if command fails
-	memset( &joy.jc, 0, sizeof( joy.jc ) );
-	if ( ( mmr = joyGetDevCaps( joy.id, &joy.jc, sizeof( joy.jc ) ) ) != JOYERR_NOERROR ) {
-		Com_Printf( "joystick not found -- invalid joystick capabilities (%x)\n", mmr );
-		return;
-	}
-
-	Com_DPrintf( "Joystick found.\n" );
-	Com_DPrintf( "Pname: %s\n", joy.jc.szPname );
-	Com_DPrintf( "OemVxD: %s\n", joy.jc.szOEMVxD );
-	Com_DPrintf( "RegKey: %s\n", joy.jc.szRegKey );
-
-	Com_DPrintf( "Numbuttons: %i / %i\n", joy.jc.wNumButtons, joy.jc.wMaxButtons );
-	Com_DPrintf( "Axis: %i / %i\n", joy.jc.wNumAxes, joy.jc.wMaxAxes );
-	Com_DPrintf( "Caps: 0x%x\n", joy.jc.wCaps );
-	if ( joy.jc.wCaps & JOYCAPS_HASPOV ) {
-		Com_DPrintf( "HASPOV\n" );
-	} else {
-		Com_DPrintf( "no POV\n" );
-	}
-
-	// old button and POV states default to no buttons pressed
-	joy.oldbuttonstate = 0;
-	joy.oldpovstate = 0;
-
-	// mark the joystick as available
-	joy.avail = qtrue;
+	Com_Printf("No XInput controller found\n");
 }
 
 /*
@@ -595,38 +519,79 @@ void IN_StartupJoystick( void ) {
 JoyToF
 ===========
 */
-float JoyToF( int value ) {
+static float JoyToF(SHORT value) {
 	float fValue;
 
-	// move centerpoint to zero
-	value -= 32768;
-
-	// convert range from -32768..32767 to -1..1
-	fValue = (float)value / 32768.0;
-
-	if ( fValue < -1 ) {
-		fValue = -1;
+	if (value >= 0) {
+		fValue = (float)value / 32767.0f;
 	}
-	if ( fValue > 1 ) {
-		fValue = 1;
+	else {
+		fValue = (float)value / 32768.0f;
+	}
+
+	if (fValue < -1.0f) {
+		fValue = -1.0f;
+	}
+	if (fValue > 1.0f) {
+		fValue = 1.0f;
 	}
 	return fValue;
 }
 
-int JoyToI( int value ) {
-	// move centerpoint to zero
-	value -= 32768;
+static float JoyToFDeadZone(SHORT value, SHORT deadZone) {
+	float fValue;
 
-	return value;
+	if (value > deadZone) {
+		fValue = (float)(value - deadZone) / (float)(32767 - deadZone);
+	}
+	else if (value < -deadZone) {
+		fValue = (float)(value + deadZone) / (float)(32768 - deadZone);
+	}
+	else {
+		fValue = 0.0f;
+	}
+
+	if (fValue < -1.0f) {
+		fValue = -1.0f;
+	}
+	if (fValue > 1.0f) {
+		fValue = 1.0f;
+	}
+	return fValue;
 }
 
+static void IN_EmitKeyTransition(int key, qboolean down) {
+	Sys_QueEvent(g_wv.sysMsgTime, SE_KEY, key, down, 0, NULL);
+}
+
+typedef struct {
+	WORD mask;
+	int key;
+} xinputButtonMap_t;
+
+static const xinputButtonMap_t xinputButtonMap[] = {
+	{ XINPUT_GAMEPAD_A,              K_JOY1  },
+	{ XINPUT_GAMEPAD_B,              K_JOY2  },
+	{ XINPUT_GAMEPAD_X,              K_JOY3  },
+	{ XINPUT_GAMEPAD_Y,              K_JOY4  },
+	{ XINPUT_GAMEPAD_LEFT_SHOULDER,  K_JOY5  },
+	{ XINPUT_GAMEPAD_RIGHT_SHOULDER, K_JOY6  },
+	{ XINPUT_GAMEPAD_BACK,           K_JOY7  },
+	{ XINPUT_GAMEPAD_START,          K_JOY8  },
+	{ XINPUT_GAMEPAD_LEFT_THUMB,     K_JOY9  },
+	{ XINPUT_GAMEPAD_RIGHT_THUMB,    K_JOY10 }
+};
+
+// 0..3   = left stick digital directions
+// 12..15 = dpad digital directions
 int joyDirectionKeys[16] = {
-	K_LEFTARROW, K_RIGHTARROW,
-	K_UPARROW, K_DOWNARROW,
-	K_JOY16, K_JOY17,
-	K_JOY18, K_JOY19,
-	K_JOY20, K_JOY21,
-	K_JOY22, K_JOY23,
+	K_JOY13, K_JOY14,
+	K_JOY15, K_JOY16,
+
+	K_JOY17, K_JOY18,
+	K_JOY19, K_JOY20,
+	K_JOY21, K_JOY22,
+	K_JOY23, K_JOY24,
 
 	K_JOY24, K_JOY25,
 	K_JOY26, K_JOY27
@@ -637,105 +602,143 @@ int joyDirectionKeys[16] = {
 IN_JoyMove
 ===========
 */
-void IN_JoyMove( void ) {
-	float fAxisValue;
+void IN_JoyMove(void) {
+	DWORD result;
+	XINPUT_STATE state;
+	WORD buttons;
 	int i;
-	DWORD buttonstate, povstate;
-	int x, y;
+	int povstate;
+	float lx, ly, rx, ry;
+	int mouseX, mouseY;
+	qboolean newDown, oldDown;
+	qboolean ltPressed, rtPressed;
 
-	// verify joystick is available and that the user wants to use it
-	if ( !joy.avail ) {
+	if (!joy.avail) {
 		return;
 	}
 
-	// collect the joystick data, if possible
-	memset( &joy.ji, 0, sizeof( joy.ji ) );
-	joy.ji.dwSize = sizeof( joy.ji );
-	joy.ji.dwFlags = JOY_RETURNALL;
-
-	if ( joyGetPosEx( joy.id, &joy.ji ) != JOYERR_NOERROR ) {
-		// read error occurred
-		// turning off the joystick seems too harsh for 1 read error,\
-		//      // but what should be done?
-		// Com_Printf ("IN_ReadJoystick: no response\n");
-		// joy.avail = false;
+	if (!pXInputGetState) {
 		return;
 	}
 
-	if ( in_debugJoystick->integer ) {
-		Com_Printf( "%8x %5i %5.2f %5.2f %5.2f %5.2f %6i %6i\n",
-					joy.ji.dwButtons,
-					joy.ji.dwPOV,
-					JoyToF( joy.ji.dwXpos ), JoyToF( joy.ji.dwYpos ),
-					JoyToF( joy.ji.dwZpos ), JoyToF( joy.ji.dwRpos ),
-					JoyToI( joy.ji.dwUpos ), JoyToI( joy.ji.dwVpos ) );
+	memset(&state, 0, sizeof(state));
+	result = pXInputGetState(joy.id, &state);
+	if (result != ERROR_SUCCESS) {
+		joy.avail = qfalse;
+		Com_Printf("XInput controller disconnected\n");
+		return;
 	}
 
-	// loop through the joystick buttons
-	// key a joystick event or auxillary event for higher number buttons for each state change
-	buttonstate = joy.ji.dwButtons;
-	for ( i = 0 ; i < joy.jc.wNumButtons ; i++ ) {
-		if ( ( buttonstate & ( 1 << i ) ) && !( joy.oldbuttonstate & ( 1 << i ) ) ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_JOY1 + i, qtrue, 0, NULL );
-		}
-		if ( !( buttonstate & ( 1 << i ) ) && ( joy.oldbuttonstate & ( 1 << i ) ) ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_JOY1 + i, qfalse, 0, NULL );
+	buttons = state.Gamepad.wButtons;
+
+	if (in_debugJoystick->integer) {
+		Com_Printf(
+			"XInput %d: buttons=%04x LT=%3u RT=%3u LX=%6d LY=%6d RX=%6d RY=%6d\n",
+			joy.id,
+			(int)buttons,
+			(int)state.Gamepad.bLeftTrigger,
+			(int)state.Gamepad.bRightTrigger,
+			(int)state.Gamepad.sThumbLX,
+			(int)state.Gamepad.sThumbLY,
+			(int)state.Gamepad.sThumbRX,
+			(int)state.Gamepad.sThumbRY
+		);
+	}
+
+	// Normal digital buttons
+	for (i = 0; i < (int)(sizeof(xinputButtonMap) / sizeof(xinputButtonMap[0])); i++) {
+		newDown = (buttons & xinputButtonMap[i].mask) ? qtrue : qfalse;
+		oldDown = (joy.oldButtons & xinputButtonMap[i].mask) ? qtrue : qfalse;
+
+		if (newDown != oldDown) {
+			IN_EmitKeyTransition(xinputButtonMap[i].key, newDown);
 		}
 	}
-	joy.oldbuttonstate = buttonstate;
+
+	// Triggers as digital buttons
+	ltPressed = (state.Gamepad.bLeftTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD) ? qtrue : qfalse;
+	rtPressed = (state.Gamepad.bRightTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD) ? qtrue : qfalse;
+
+	if (ltPressed != (joy.oldLeftTriggerPressed ? qtrue : qfalse)) {
+		IN_EmitKeyTransition(K_JOY11, ltPressed);
+	}
+	if (rtPressed != (joy.oldRightTriggerPressed ? qtrue : qfalse)) {
+		IN_EmitKeyTransition(K_JOY12, rtPressed);
+	}
+
+	joy.oldLeftTriggerPressed = ltPressed ? 1 : 0;
+	joy.oldRightTriggerPressed = rtPressed ? 1 : 0;
+	joy.oldButtons = buttons;
 
 	povstate = 0;
 
-	// convert main joystick motion into 6 direction button bits
-	for ( i = 0; i < joy.jc.wNumAxes && i < 4 ; i++ ) {
-		// get the floating point zero-centered, potentially-inverted data for the current axis
-		fAxisValue = JoyToF( ( &joy.ji.dwXpos )[i] );
+	//
+	// LEFT STICK = movement
+	//   X = strafe left/right
+	//   Y = forward/back
+	//
+	lx = JoyToFDeadZone(state.Gamepad.sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+	ly = JoyToFDeadZone(state.Gamepad.sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
 
-		if ( fAxisValue < -joy_threshold->value ) {
-			povstate |= ( 1 << ( i * 2 ) );
-		} else if ( fAxisValue > joy_threshold->value ) {
-			povstate |= ( 1 << ( i * 2 + 1 ) );
-		}
+	if (lx < -joy_threshold->value) {
+		povstate |= (1 << 0); // JOY13
+	}
+	else if (lx > joy_threshold->value) {
+		povstate |= (1 << 1); // JOY14
 	}
 
-	// convert POV information from a direction into 4 button bits
-	if ( joy.jc.wCaps & JOYCAPS_HASPOV ) {
-		if ( joy.ji.dwPOV != JOY_POVCENTERED ) {
-			if ( joy.ji.dwPOV == JOY_POVFORWARD ) {
-				povstate |= 1 << 12;
-			}
-			if ( joy.ji.dwPOV == JOY_POVBACKWARD ) {
-				povstate |= 1 << 13;
-			}
-			if ( joy.ji.dwPOV == JOY_POVRIGHT ) {
-				povstate |= 1 << 14;
-			}
-			if ( joy.ji.dwPOV == JOY_POVLEFT ) {
-				povstate |= 1 << 15;
-			}
-		}
+	if (ly > joy_threshold->value) {
+		povstate |= (1 << 2); // JOY15
+	}
+	else if (ly < -joy_threshold->value) {
+		povstate |= (1 << 3); // JOY16
 	}
 
-	// determine which bits have changed and key an auxillary event for each change
-	for ( i = 0 ; i < 16 ; i++ ) {
-		if ( ( povstate & ( 1 << i ) ) && !( joy.oldpovstate & ( 1 << i ) ) ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, joyDirectionKeys[i], qtrue, 0, NULL );
+	//
+	// DPAD = separate digital buttons
+	//
+	if (buttons & XINPUT_GAMEPAD_DPAD_LEFT) {
+		povstate |= (1 << 12); // JOY24
+	}
+	if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT) {
+		povstate |= (1 << 13); // JOY25
+	}
+	if (buttons & XINPUT_GAMEPAD_DPAD_UP) {
+		povstate |= (1 << 14); // JOY26
+	}
+	if (buttons & XINPUT_GAMEPAD_DPAD_DOWN) {
+		povstate |= (1 << 15); // JOY27
+	}
+
+	for (i = 0; i < 16; i++) {
+		if ((povstate & (1 << i)) && !(joy.oldpovstate & (1 << i))) {
+			Sys_QueEvent(g_wv.sysMsgTime, SE_KEY, joyDirectionKeys[i], qtrue, 0, NULL);
 		}
 
-		if ( !( povstate & ( 1 << i ) ) && ( joy.oldpovstate & ( 1 << i ) ) ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, joyDirectionKeys[i], qfalse, 0, NULL );
+		if (!(povstate & (1 << i)) && (joy.oldpovstate & (1 << i))) {
+			Sys_QueEvent(g_wv.sysMsgTime, SE_KEY, joyDirectionKeys[i], qfalse, 0, NULL);
 		}
 	}
 	joy.oldpovstate = povstate;
 
-	// if there is a trackball like interface, simulate mouse moves
-	if ( joy.jc.wNumAxes >= 6 ) {
-		x = JoyToI( joy.ji.dwUpos ) * in_joyBallScale->value;
-		y = JoyToI( joy.ji.dwVpos ) * in_joyBallScale->value;
-		if ( x || y ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, x, y, 0, NULL );
-		}
+	//
+	// RIGHT STICK = look
+	//   X = yaw
+	//   Y = pitch
+	//
+	rx = JoyToFDeadZone(state.Gamepad.sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+	ry = JoyToFDeadZone(state.Gamepad.sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+
+	// faster than before
+	mouseX = (int)(rx * 900.0f * in_joyBallScale->value * 0.5f);
+	mouseY = (int)(-ry * 700.0f * in_joyBallScale->value * 0.5f);
+
+	if (mouseX || mouseY) {
+		Sys_QueEvent(g_wv.sysMsgTime, SE_MOUSE, mouseX, mouseY, 0, NULL);
 	}
+
+	joy.state = state;
+	joy.oldPacketNumber = state.dwPacketNumber;
 }
 
 /*
@@ -746,40 +749,40 @@ MIDI
 =========================================================================
 */
 
-static void MIDI_NoteOff( int note ) {
+static void MIDI_NoteOff(int note) {
 	int qkey;
 
 	qkey = note - 60 + K_AUX1;
 
-	if ( qkey > 255 || qkey < K_AUX1 ) {
+	if (qkey > 255 || qkey < K_AUX1) {
 		return;
 	}
 
-	Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, qkey, qfalse, 0, NULL );
+	Sys_QueEvent(g_wv.sysMsgTime, SE_KEY, qkey, qfalse, 0, NULL);
 }
 
-static void MIDI_NoteOn( int note, int velocity ) {
+static void MIDI_NoteOn(int note, int velocity) {
 	int qkey;
 
-	if ( velocity == 0 ) {
-		MIDI_NoteOff( note );
+	if (velocity == 0) {
+		MIDI_NoteOff(note);
+		return;
 	}
 
 	qkey = note - 60 + K_AUX1;
 
-	if ( qkey > 255 || qkey < K_AUX1 ) {
+	if (qkey > 255 || qkey < K_AUX1) {
 		return;
 	}
 
-	Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, qkey, qtrue, 0, NULL );
+	Sys_QueEvent(g_wv.sysMsgTime, SE_KEY, qkey, qtrue, 0, NULL);
 }
 
-static void CALLBACK MidiInProc( HMIDIIN hMidiIn, UINT uMsg, DWORD dwInstance,
-								 DWORD dwParam1, DWORD dwParam2 ) {
+static void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT uMsg, DWORD dwInstance,
+	DWORD dwParam1, DWORD dwParam2) {
 	int message;
 
-	switch ( uMsg )
-	{
+	switch (uMsg) {
 	case MIM_OPEN:
 		break;
 	case MIM_CLOSE:
@@ -787,14 +790,14 @@ static void CALLBACK MidiInProc( HMIDIIN hMidiIn, UINT uMsg, DWORD dwInstance,
 	case MIM_DATA:
 		message = dwParam1 & 0xff;
 
-		// note on
-		if ( ( message & 0xf0 ) == 0x90 ) {
-			if ( ( ( message & 0x0f ) + 1 ) == in_midichannel->integer ) {
-				MIDI_NoteOn( ( dwParam1 & 0xff00 ) >> 8, ( dwParam1 & 0xff0000 ) >> 16 );
+		if ((message & 0xf0) == 0x90) {
+			if (((message & 0x0f) + 1) == in_midichannel->integer) {
+				MIDI_NoteOn((dwParam1 & 0xff00) >> 8, (dwParam1 & 0xff0000) >> 16);
 			}
-		} else if ( ( message & 0xf0 ) == 0x80 )   {
-			if ( ( ( message & 0x0f ) + 1 ) == in_midichannel->integer ) {
-				MIDI_NoteOff( ( dwParam1 & 0xff00 ) >> 8 );
+		}
+		else if ((message & 0xf0) == 0x80) {
+			if (((message & 0x0f) + 1) == in_midichannel->integer) {
+				MIDI_NoteOff((dwParam1 & 0xff00) >> 8);
 			}
 		}
 		break;
@@ -805,70 +808,70 @@ static void CALLBACK MidiInProc( HMIDIIN hMidiIn, UINT uMsg, DWORD dwInstance,
 	case MIM_LONGERROR:
 		break;
 	}
-
-//	Sys_QueEvent( sys_msg_time, SE_KEY, wMsg, qtrue, 0, NULL );
 }
 
-static void MidiInfo_f( void ) {
+static void MidiInfo_f(void) {
 	int i;
+	const char* enableStrings[] = { "disabled", "enabled" };
 
-	const char *enableStrings[] = { "disabled", "enabled" };
+	Com_Printf("\nMIDI control:       %s\n", enableStrings[in_midi->integer != 0]);
+	Com_Printf("port:               %d\n", in_midiport->integer);
+	Com_Printf("channel:            %d\n", in_midichannel->integer);
+	Com_Printf("current device:     %d\n", in_mididevice->integer);
+	Com_Printf("number of devices:  %d\n", s_midiInfo.numDevices);
 
-	Com_Printf( "\nMIDI control:       %s\n", enableStrings[in_midi->integer != 0] );
-	Com_Printf( "port:               %d\n", in_midiport->integer );
-	Com_Printf( "channel:            %d\n", in_midichannel->integer );
-	Com_Printf( "current device:     %d\n", in_mididevice->integer );
-	Com_Printf( "number of devices:  %d\n", s_midiInfo.numDevices );
-	for ( i = 0; i < s_midiInfo.numDevices; i++ )
-	{
-		if ( i == Cvar_VariableValue( "in_mididevice" ) ) {
-			Com_Printf( "***" );
-		} else {
-			Com_Printf( "..." );
+	for (i = 0; i < s_midiInfo.numDevices; i++) {
+		if (i == Cvar_VariableValue("in_mididevice")) {
+			Com_Printf("***");
 		}
-		Com_Printf(    "device %2d:       %s\n", i, s_midiInfo.caps[i].szPname );
-		Com_Printf( "...manufacturer ID: 0x%hx\n", s_midiInfo.caps[i].wMid );
-		Com_Printf( "...product ID:      0x%hx\n", s_midiInfo.caps[i].wPid );
-
-		Com_Printf( "\n" );
+		else {
+			Com_Printf("...");
+		}
+		Com_Printf("device %2d:       %s\n", i, s_midiInfo.caps[i].szPname);
+		Com_Printf("...manufacturer ID: 0x%hx\n", s_midiInfo.caps[i].wMid);
+		Com_Printf("...product ID:      0x%hx\n", s_midiInfo.caps[i].wPid);
+		Com_Printf("\n");
 	}
 }
 
-static void IN_StartupMIDI( void ) {
+static void IN_StartupMIDI(void) {
 	int i;
 
-	if ( !Cvar_VariableValue( "in_midi" ) ) {
+	if (!Cvar_VariableValue("in_midi")) {
 		return;
 	}
 
-	//
-	// enumerate MIDI IN devices
-	//
 	s_midiInfo.numDevices = midiInGetNumDevs();
-
-	for ( i = 0; i < s_midiInfo.numDevices; i++ )
-	{
-		midiInGetDevCaps( i, &s_midiInfo.caps[i], sizeof( s_midiInfo.caps[i] ) );
+	if (s_midiInfo.numDevices > MAX_MIDIIN_DEVICES) {
+		s_midiInfo.numDevices = MAX_MIDIIN_DEVICES;
 	}
 
-	//
-	// open the MIDI IN port
-	//
-	if ( midiInOpen( &s_midiInfo.hMidiIn,
-					 in_mididevice->integer,
-					 ( unsigned long ) MidiInProc,
-					 ( unsigned long ) NULL,
-					 CALLBACK_FUNCTION ) != MMSYSERR_NOERROR ) {
-		Com_Printf( "WARNING: could not open MIDI device %d: '%s'\n", in_mididevice->integer, s_midiInfo.caps[( int ) in_mididevice->value] );
+	for (i = 0; i < s_midiInfo.numDevices; i++) {
+		midiInGetDevCaps(i, &s_midiInfo.caps[i], sizeof(s_midiInfo.caps[i]));
+	}
+
+	if (in_mididevice->integer < 0 || in_mididevice->integer >= s_midiInfo.numDevices) {
+		Com_Printf("WARNING: invalid MIDI device index %d\n", in_mididevice->integer);
 		return;
 	}
 
-	midiInStart( s_midiInfo.hMidiIn );
+	if (midiInOpen(&s_midiInfo.hMidiIn,
+		in_mididevice->integer,
+		(DWORD_PTR)MidiInProc,
+		(DWORD_PTR)NULL,
+		CALLBACK_FUNCTION) != MMSYSERR_NOERROR) {
+		Com_Printf("WARNING: could not open MIDI device %d\n", in_mididevice->integer);
+		return;
+	}
+
+	midiInStart(s_midiInfo.hMidiIn);
 }
 
-static void IN_ShutdownMIDI( void ) {
-	if ( s_midiInfo.hMidiIn ) {
-		midiInClose( s_midiInfo.hMidiIn );
+static void IN_ShutdownMIDI(void) {
+	if (s_midiInfo.hMidiIn) {
+		midiInStop(s_midiInfo.hMidiIn);
+		midiInClose(s_midiInfo.hMidiIn);
+		s_midiInfo.hMidiIn = NULL;
 	}
-	memset( &s_midiInfo, 0, sizeof( s_midiInfo ) );
+	memset(&s_midiInfo, 0, sizeof(s_midiInfo));
 }

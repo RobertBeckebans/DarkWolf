@@ -1840,10 +1840,7 @@ void CL_KeyEvent( int key, qboolean down, unsigned time ) {
 		// send the bound action
 		kb = keys[key].binding;
 		if ( !kb ) {
-			if ( key >= 200 ) {
-				Com_Printf( "%s is unbound, use controls menu to set.\n"
-							, Key_KeynumToString( key, qfalse ) );
-			}
+			Com_Printf("%s(%d) is unbound, use controls menu to set.\n", Key_KeynumToString(key, qfalse), key);
 		} else if ( kb[0] == '+' ) {
 			// button commands add keynum and time as parms so that multiple
 			// sources can be discriminated and subframe corrected

@@ -1483,6 +1483,11 @@ void S_StartBackgroundTrack(const char* intro, const char* loop, int fadeupTime)
         return;
     }
 
+    if (loop == NULL || loop[0] == 0) {
+        loop = intro;
+        intro = NULL;
+    }
+
     S_StopBackgroundTrack();
 
     memset(&g_bgTrack, 0, sizeof(g_bgTrack));
