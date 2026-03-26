@@ -42,6 +42,7 @@ If you have questions concerning this license or the applicable additional terms
 static dllhandle_t vmHandle = NULL;
 idGameVM* gvm = NULL;
 botlib_export_t *botlib_export;
+qboolean sv_isRestarting = qfalse;
 
 void SV_GameError( const char *string ) {
 	Com_Error( ERR_DROP, "%s", string );
@@ -1182,7 +1183,7 @@ void SV_ShutdownGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
-    gvm->ShutdownGame(qfalse);
+    gvm->ShutdownGame(sv_isRestarting);
     Sys_UnloadDll((void *)vmHandle);
     vmHandle = NULL;
 	gvm = NULL;
@@ -1225,9 +1226,11 @@ void SV_RestartGameProgs( void ) {
 	if ( !gvm ) {
 		return;
 	}
+    sv_isRestarting = qtrue;
     SV_ShutdownGameProgs();
 
     SV_InitGameProgs();
+    sv_isRestarting = qfalse;
 }
 
 
@@ -1257,7 +1260,7 @@ void SV_InitGameProgs( void ) {
 		Com_Error( ERR_FATAL, "VM_Create on game failed" );
 	}
 
-	SV_InitGameVM( qfalse );
+	SV_InitGameVM(sv_isRestarting);
 }
 
 

@@ -1249,7 +1249,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
-			dxrMesh = &backEnd.currentEntity->dxrMesh;
+			dxrMesh = drawSurf->dxrMesh;
 
 			glLoadMatrixf( backEnd.or.modelMatrix );
 			glLoadModelMatrixf(entityMatrix.modelMatrix);
@@ -1277,7 +1277,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		// add the triangles for this surface
 		rb_surfaceTable[ drawSurf->surface->surfaceType]( drawSurf->surface );
 
-		trDXRMesh_t* dxrMesh = &backEnd.currentEntity->dxrMesh;
+		dxrMesh = drawSurf->dxrMesh;
 		if (dxrMesh)
 		{
 			RB_UpdateDXRMesh(dxrMesh, backEnd.currentEntity->e.frame, drawSurf->dxrSurfaceId, oldNumVerts, tess.numVertexes, oldNumIndex, tess.numIndexes);

@@ -6501,6 +6501,7 @@ void _UI_Init( qboolean inGameLoad ) {
 	uiInfo.uiDC.setColor = &UI_SetColor;
 	uiInfo.uiDC.drawHandlePic = &UI_DrawHandlePic;
 	uiInfo.uiDC.drawText = &Text_Paint;
+	uiInfo.uiDC.drawTextWithCursor = &Text_PaintWithCursor;
 	uiInfo.uiDC.textWidth = &Text_Width;
 	uiInfo.uiDC.textHeight = &Text_Height;
 	uiInfo.uiDC.fillRect = &UI_FillRect;

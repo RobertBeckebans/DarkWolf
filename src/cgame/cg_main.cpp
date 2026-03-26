@@ -2144,6 +2144,7 @@ void CG_LoadHudMenu() {
 		qhandle_t hShader) {
 			sys->R_DrawStretchPic(x, y, w, h, s1, t1, s2, t2, hShader);
 		};
+	cgDC.drawTextWithCursor = &CG_Text_PaintWithCursor;
 	cgDC.drawText = &CG_Text_Paint;
 	cgDC.textWidth = &CG_Text_Width;
 	cgDC.textHeight = &CG_Text_Height;

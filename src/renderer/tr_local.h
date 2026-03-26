@@ -757,6 +757,7 @@ typedef struct {
 	vec3_t bounds[2];           // for culling
 	msurface_t  *firstSurface;
 	int numSurfaces;
+	trDXRMesh_t dxrMesh;
 } bmodel_t;
 
 typedef struct {

@@ -281,7 +281,7 @@ static int R_DlightSurface( msurface_t *surf, int dlightBits ) {
 R_AddWorldSurface
 ======================
 */
-static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
+static void R_AddWorldSurface( msurface_t *surf, int dlightBits, int modelSurfaceId, trDXRMesh_t *dxrMesh) {
 	if ( surf->viewCount == tr.viewCount ) {
 		return;     // already in this view
 	}
@@ -301,7 +301,16 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 	}
 
 // GR - not tessellated
-	R_AddDrawSurf( (surfaceBase_t *)surf->data, surf->shader, surf->fogIndex, dlightBits, ATI_TESS_NONE );
+// jmarshall - raytraced models
+	if (modelSurfaceId != -1)
+	{
+		R_AddDrawSurf((surfaceBase_t*)surf->data, surf->shader, surf->fogIndex, dlightBits, ATI_TESS_NONE, modelSurfaceId, dxrMesh);
+	}
+	else
+	{
+		R_AddDrawSurf((surfaceBase_t*)surf->data, surf->shader, surf->fogIndex, dlightBits, ATI_TESS_NONE);
+	}
+// jmarshall end
 }
 
 /*
@@ -387,7 +396,7 @@ void R_AddBrushModelSurfaces( trRefEntity_t *ent ) {
 
 	for ( i = 0 ; i < bmodel->numSurfaces ; i++ ) {
 		( bmodel->firstSurface + i )->fogIndex = fognum;
-		R_AddWorldSurface( bmodel->firstSurface + i, tr.currentEntity->needDlights );
+		R_AddWorldSurface( bmodel->firstSurface + i, tr.currentEntity->needDlights, i, &bmodel->dxrMesh );
 	}
 //----(SA) end
 }
@@ -543,7 +552,7 @@ static void R_RecursiveWorldNode( mnode_t *node, int planeBits, int dlightBits )
 			// the surface may have already been added if it
 			// spans multiple leafs
 			surf = *mark;
-			R_AddWorldSurface( surf, dlightBits );
+			R_AddWorldSurface( surf, dlightBits, -1, NULL );
 			mark++;
 		}
 	}
