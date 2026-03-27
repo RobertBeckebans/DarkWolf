@@ -315,6 +315,8 @@ typedef struct {
 	qboolean isLightmap;
 	qboolean vertexLightmap;
 	qboolean isVideoMap;
+
+	int light;
 } textureBundle_t;
 
 #define NUM_TEXTURE_BUNDLES 2
@@ -601,6 +603,7 @@ typedef enum {
 typedef struct drawSurf_s {
 	unsigned sort;                       // bit combination for fast compares
 	trDXRMesh_t* dxrMesh;
+	GeometryFlag_t geoFlag;
 	int dxrSurfaceId;
 	class surfaceBase_t *surface;       // any of surface*_t
 } drawSurf_t;
@@ -1260,7 +1263,7 @@ void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
 					  int *fogNum, int *dlightMap, int *atiTess );
 
 // GR - add tessellation flag
-void R_AddDrawSurf( surfaceBase_t *surface, shader_t *shader, int fogIndex, int dlightMap, int atiTess, int dxrSurfaceId = -1, trDXRMesh_t* dxrMesh = NULL);
+void R_AddDrawSurf( surfaceBase_t *surface, shader_t *shader, int fogIndex, int dlightMap, int atiTess, int dxrSurfaceId = -1, trDXRMesh_t* dxrMesh = NULL, GeometryFlag_t flag = GEOMETRY_FLAG_NONE);
 
 
 #define CULL_IN     0       // completely unclipped

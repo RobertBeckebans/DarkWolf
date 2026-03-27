@@ -1127,9 +1127,24 @@ static const char* g_glRaytracingLightingHlsl = R"(
 struct Light
 {
     float3 position;
-    float radius;
+    float  radius;
+
     float3 color;
-    float intensity;
+    float  intensity;
+
+    float3 normal;
+    uint   type;
+
+    float3 axisU;
+    float  halfWidth;
+
+    float3 axisV;
+    float  halfHeight;
+
+    uint   samples;
+    uint   twoSided;
+    float  persistant;
+    float  pad1;
 };
 
 struct ShadowPayload
@@ -1159,17 +1174,22 @@ Texture2D<float4>       gPositionTex : register(t4);
 RaytracingAccelerationStructure gSceneBVH : register(t5);
 RWTexture2D<float4>     gOutputTex   : register(u0);
 
+static const uint GL_RAYTRACING_LIGHT_TYPE_POINT = 0;
+static const uint GL_RAYTRACING_LIGHT_TYPE_RECT  = 1;
+
+static const uint GEOMETRY_FLAG_SKELETAL = 1;
+static const uint GEOMETRY_FLAG_UNLIT = 2;
+
 float3 LoadScenePosition(uint2 pixel)
 {
     float4 p = gPositionTex.Load(int3(pixel, 0));
     return p.xyz;
 }
 
-float3 LoadSceneNormal(uint2 pixel)
+float4 LoadSceneNormal(uint2 pixel)
 {
     float4 nSample = gNormalTex.Load(int3(pixel, 0));
-    float3 N = nSample.xyz;
-    return normalize(N);
+    return nSample;
 }
 
 [shader("miss")]
@@ -1309,6 +1329,69 @@ float TraceSoftShadow(float3 worldPos, float3 N, Light Lgt, float3 toLight, floa
 
     return shadowAccum / (float)SHADOW_SAMPLES;
 }
+float RectLightShadow(float3 worldPos, float3 N, Light Lgt, uint2 pixel)
+{
+    uint sampleCount = max(Lgt.samples, 1u);
+    sampleCount = min(sampleCount, 16u);
+
+    float visibility = 0.0;
+
+    float rand = Hash12((float2)pixel + worldPos.xy + float2(worldPos.z, dot(N.xy, N.xy)));
+
+    // receiver bias only
+    float NoL_center = saturate(dot(N, normalize(Lgt.position - worldPos)));
+    float normalBias = lerp(gShadowBias * 4.0, gShadowBias * 0.75, NoL_center);
+    float3 baseOrigin = worldPos + N * normalBias;
+
+    [loop]
+    for (uint s = 0; s < sampleCount; ++s)
+    {
+        float2 xi = Hammersley2D(s, sampleCount, rand);
+        float2 uv = xi * 2.0 - 1.0;
+
+        // sample directly on the rect surface
+        float3 sampleLightPos =
+            Lgt.position +
+            Lgt.axisU * (uv.x * Lgt.halfWidth) +
+            Lgt.axisV * (uv.y * Lgt.halfHeight);
+
+        float3 toLight = sampleLightPos - baseOrigin;
+        float distToLight = length(toLight);
+
+        if (distToLight <= 1e-4)
+        {
+            visibility += 1.0;
+            continue;
+        }
+
+        float3 L = toLight / distToLight;
+
+        // receiver must face the light
+        float NdotL = dot(N, L);
+        if (NdotL <= 0.0)
+        {
+            continue;
+        }
+
+        // emitter must face the receiver
+        float emitTerm = (Lgt.twoSided != 0)
+            ? abs(dot(Lgt.normal, -L))
+            : dot(Lgt.normal, -L);
+
+        if (emitTerm <= 0.0)
+        {
+            continue;
+        }
+
+        // small ray-direction push helps self-hit rejection
+        float3 shadowOrigin = baseOrigin + L * (gShadowBias * 0.5);
+        float shadowTMax = max(distToLight - gShadowBias, 0.001);
+
+        visibility += TraceShadow(shadowOrigin, L, shadowTMax);
+    }
+
+    return visibility / (float)sampleCount;
+}
 
 float ComputeAmbientOcclusion(float3 worldPos, float3 N, uint2 pixel)
 {
@@ -1371,7 +1454,6 @@ float ComputeSkyVisibility(float3 worldPos, float3 N, uint2 pixel)
 
         skyDir = normalize(skyDir);
 
-        // only count rays that actually go upward/outside
         if (skyDir.z <= 0.05)
             continue;
 
@@ -1412,19 +1494,14 @@ float ComputeCavity(uint2 pixel, float3 worldPos, float3 N)
         float3 d = samplePos - worldPos;
         float distSq = dot(d, d);
 
-        // reject unrelated geometry / depth breaks
         if (distSq > (24.0 * 24.0))
             continue;
 
-        // reject hard normal seams / unrelated surfaces
         float nd = dot(N, sampleN);
         if (nd < 0.65)
             continue;
 
-        // only small/medium curvature signal
         float curvature = 1.0 - saturate(nd);
-
-        // favor closer taps
         float w = 1.0 / (1.0 + distSq * 0.02);
 
         accum += curvature * w;
@@ -1432,11 +1509,8 @@ float ComputeCavity(uint2 pixel, float3 worldPos, float3 N)
     }
 
     float cavity = (weightSum > 0.0) ? (accum / weightSum) : 0.0;
-
-    // compress hard so it doesn't turn into line art
     cavity = saturate(cavity * 2.0);
 
-    // final multiplier: subtle only
     return 1.0 - cavity * 0.18;
 }
 
@@ -1457,10 +1531,13 @@ void RayGen()
         return;
     }
 
-   float3 baseAlbedo = albedoSample.rgb;
+    float3 baseAlbedo = albedoSample.rgb;
     float3 worldPos   = LoadScenePosition(pixel);
-    float3 N          = LoadSceneNormal(pixel);
+    float4 normalSample  = LoadSceneNormal(pixel);
+    float3 N = normalize(normalSample.xyz);
     float3 V          = normalize(gCameraPos.xyz - worldPos);
+
+    float geoFlag = normalSample.w;
 
     float cavity = ComputeCavity(pixel, worldPos, N);
     float microShadow = lerp(0.75, 1.0, cavity);
@@ -1478,38 +1555,109 @@ void RayGen()
     float skyStrength = 2.0;
 
     float3 lightingAccum = 0.05;
-
     lightingAccum += skyColor * (skyStrength * skyVis);
+
+    if(geoFlag == GEOMETRY_FLAG_SKELETAL)
+    {
+        lightingAccum += 0.2;
+    }
 
     [loop]
     for (uint i = 0; i < gLightCount; ++i)
     {
         Light Lgt = gLights[i];
 
-        float3 toLight = Lgt.position - worldPos;
-        float  distSq  = dot(toLight, toLight);
-        float  dist    = sqrt(max(distSq, 1e-6));
-        float3 L       = toLight / dist;
-
-        float radius = max(Lgt.radius * 1.6, 1e-4);
-
-        float atten = saturate((radius - dist) / radius);
-        atten = atten * atten;
-        float wrap = 0.35;
-        float NdotL = saturate((dot(N, L) + wrap) / (1.0 + wrap));
-
-        float shadow = 1.0;
-        if (NdotL > 0.0001 && atten > 0.0 && dist > 0.01)
+        if (Lgt.type == GL_RAYTRACING_LIGHT_TYPE_POINT)
         {
-            shadow = TraceSoftShadow(worldPos, N, Lgt, toLight, dist);
+            float3 toLight = Lgt.position - worldPos;
+            float  distSq  = dot(toLight, toLight);
+            float  dist    = sqrt(max(distSq, 1e-6));
+            float3 L       = toLight / dist;
+
+            float radius = max(Lgt.radius * 1.6, 1e-4);
+
+            float atten = saturate((radius - dist) / radius);
+            atten = atten * atten;
+
+            float wrap = 0.35;
+            float NdotL = saturate((dot(N, L) + wrap) / (1.0 + wrap));
+
+            float shadow = 1.0;
+            if (NdotL > 0.0001 && atten > 0.0 && dist > 0.01)
+            {
+                shadow = TraceSoftShadow(worldPos, N, Lgt, toLight, dist);
+            }
+
+            float3 diffuse = Lgt.color * (Lgt.intensity * atten * NdotL * shadow);
+            lightingAccum += clamp(diffuse, 0.0, 1.0);
         }
+        else if (Lgt.type == GL_RAYTRACING_LIGHT_TYPE_RECT)
+        {
+            float3 toCenter = Lgt.position - worldPos;
+            float  centerDistSq = dot(toCenter, toCenter);
+            float  centerDist = sqrt(max(centerDistSq, 1e-6));
+            float3 centerDir = toCenter / centerDist;
 
-        float3 diffuse = Lgt.color * (Lgt.intensity * atten * NdotL * shadow);
-        lightingAccum += clamp(diffuse, 0.0, 1.0);
+            float attenRadius = max(Lgt.radius, 1e-4);
+            float atten = saturate((attenRadius - centerDist) / attenRadius);
+            atten = atten * atten * atten * atten;
+
+            float shadow = 1.0;
+            if (atten > 0.0 && centerDist > 0.01)
+            {
+                shadow = RectLightShadow(worldPos, N, Lgt, pixel);
+            }
+
+            uint sampleCount = max(Lgt.samples, 1u);
+            sampleCount = min(sampleCount, 16u);
+
+            float3 rectAccum = 0.0;
+            float rand = Hash12((float2)pixel * 0.73 + worldPos.xy + float2(worldPos.z, centerDist));
+
+            [loop]
+            for (uint s = 0; s < sampleCount; ++s)
+            {
+                float2 xi = Hammersley2D(s, sampleCount, rand);
+                float2 uv = xi * 2.0 - 1.0;
+
+                float3 sampleLightPos =
+                    Lgt.position +
+                    Lgt.axisU * (uv.x * Lgt.halfWidth) +
+                    Lgt.axisV * (uv.y * Lgt.halfHeight);
+
+                float3 sampleVec = sampleLightPos - worldPos;
+                float  sampleDistSq = dot(sampleVec, sampleVec);
+                float  sampleDist = sqrt(max(sampleDistSq, 1e-6));
+                float3 L = sampleVec / sampleDist;
+
+                float NdotL = saturate(dot(N, L));
+
+                float faceTerm = (Lgt.twoSided != 0)
+                    ? abs(dot(-L, Lgt.normal))
+                    : saturate(dot(-L, Lgt.normal));
+
+                rectAccum += Lgt.color * (Lgt.intensity * NdotL * faceTerm);
+            }
+
+            rectAccum /= (float)sampleCount;
+            lightingAccum += clamp(rectAccum * atten * shadow, 0.0, 4.0);
+        }
     }
-    lightingAccum = lightingAccum  * ao * 1.5;
 
-    gOutputTex[pixel] = float4(albedo * lightingAccum, albedoSample.a);
+    lightingAccum = lightingAccum * ao * 1.5;
+
+    if(geoFlag == GEOMETRY_FLAG_SKELETAL) {
+        lightingAccum = lightingAccum * 1.2;
+    }
+
+    if(geoFlag == GEOMETRY_FLAG_UNLIT) 
+    {
+        gOutputTex[pixel] = float4(baseAlbedo, albedoSample.a);
+    }
+    else
+    {
+        gOutputTex[pixel] = float4(albedo * lightingAccum, albedoSample.a);
+    }
 }
 )";
 
@@ -1981,10 +2129,34 @@ extern "C" bool glRaytracingLightingIsInitialized(void)
     return g_glRaytracingLighting.initialized;
 }
 
-extern "C" void glRaytracingLightingClearLights(void)
+extern "C" void glRaytracingLightingClearLights(bool clearPersistant)
 {
-    g_glRaytracingLighting.cpuLights.clear();
-    g_glRaytracingLighting.constants.lightCount = 0;
+    if (clearPersistant)
+    {
+        g_glRaytracingLighting.cpuLights.clear();
+    }
+    else
+    {
+        size_t writeIndex = 0;
+
+        for (size_t i = 0; i < g_glRaytracingLighting.cpuLights.size(); ++i)
+        {
+            if (g_glRaytracingLighting.cpuLights[i].persistant)
+            {
+                if (writeIndex != i)
+                {
+                    g_glRaytracingLighting.cpuLights[writeIndex] = g_glRaytracingLighting.cpuLights[i];
+                }
+                ++writeIndex;
+            }
+        }
+
+        g_glRaytracingLighting.cpuLights.resize(writeIndex);
+    }
+
+    g_glRaytracingLighting.constants.lightCount =
+        (uint32_t)g_glRaytracingLighting.cpuLights.size();
+
     glRaytracingLightingUpdateConstants();
 }
 
@@ -2208,6 +2380,86 @@ extern "C" glRaytracingLight_t glRaytracingLightingMakePointLight(
     l.color.y = g;
     l.color.z = b;
     l.intensity = intensity;
+
+    l.normal.x = 0.0f;
+    l.normal.y = 0.0f;
+    l.normal.z = 1.0f;
+    l.type = GL_RAYTRACING_LIGHT_TYPE_POINT;
+
+    l.axisU.x = 1.0f;
+    l.axisU.y = 0.0f;
+    l.axisU.z = 0.0f;
+    l.halfWidth = 0.0f;
+
+    l.axisV.x = 0.0f;
+    l.axisV.y = 1.0f;
+    l.axisV.z = 0.0f;
+    l.halfHeight = 0.0f;
+
+    l.samples = 1;
+    l.twoSided = 0;
+    l.persistant = 0.0f;
+    l.pad1 = 0.0f;
+    return l;
+}
+
+extern "C" glRaytracingLight_t glRaytracingLightingMakeRectLight(
+    float px, float py, float pz,
+    float nx, float ny, float nz,
+    float ux, float uy, float uz,
+    float vx, float vy, float vz,
+    float halfWidth, float halfHeight,
+    float r, float g, float b,
+    float intensity,
+    uint32_t samples,
+    uint32_t twoSided)
+{
+    glRaytracingLight_t l = {};
+
+    glRaytracingNormalize3(nx, ny, nz);
+    glRaytracingNormalize3(ux, uy, uz);
+    glRaytracingNormalize3(vx, vy, vz);
+
+    if ((nx == 0.0f && ny == 0.0f && nz == 0.0f) &&
+        !((ux == 0.0f && uy == 0.0f && uz == 0.0f) ||
+            (vx == 0.0f && vy == 0.0f && vz == 0.0f)))
+    {
+        glRaytracingCross3(ux, uy, uz, vx, vy, vz, nx, ny, nz);
+        glRaytracingNormalize3(nx, ny, nz);
+    }
+
+    l.position.x = px;
+    l.position.y = py;
+    l.position.z = pz;
+
+    // Reuse radius as influence/falloff range for the rect light.
+    l.radius = (halfWidth > halfHeight ? halfWidth : halfHeight) * 6.0f;
+
+    l.color.x = r;
+    l.color.y = g;
+    l.color.z = b;
+    l.intensity = intensity;
+
+    l.normal.x = nx;
+    l.normal.y = ny;
+    l.normal.z = nz;
+    l.type = GL_RAYTRACING_LIGHT_TYPE_RECT;
+
+    l.axisU.x = ux;
+    l.axisU.y = uy;
+    l.axisU.z = uz;
+    l.halfWidth = halfWidth;
+
+    l.axisV.x = vx;
+    l.axisV.y = vy;
+    l.axisV.z = vz;
+    l.halfHeight = halfHeight;
+
+    l.samples = samples ? samples : 4u;
+    l.twoSided = twoSided ? 1u : 0u;
+    l.persistant = 0.0f;
+    l.pad1 = 0.0f;
+
     return l;
 }
 

@@ -341,10 +341,11 @@ void RE_AddLightToScene( const vec3_t org, float intensity, float r, float g, fl
 		}
 	}
 
-	glRaytracingLight_t light;
+	glRaytracingLight_t light = {};
 	light.color.x = r;
 	light.color.y = g;
 	light.color.z = b;
+	light.type = GL_RAYTRACING_LIGHT_TYPE_POINT;
 	light.radius = intensity;
 	light.intensity = 1;
 	light.position.x = org[0];

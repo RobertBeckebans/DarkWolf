@@ -13,6 +13,12 @@ Lights pointed at a target will be spotlights.
 */
 void SP_light(gentity_t* self) {
 	self->s.eType = ET_LIGHT;
+
+	if (VectorLength(self->dl_color) == 0)
+	{
+		VectorSet(self->dl_color, 1, 1, 1, 1);
+	}
+
 	VectorCopy(self->dl_color, self->s.light.lightColor);
 
 	sys->LinkEntity(self);

@@ -150,7 +150,7 @@ struct DrawConstants
 
     float texEnvMode0;
     float texEnvMode1;
-    float _pad0;
+    float geometryFlag;
     float _pad1;
 
     float fogEnabled;
@@ -222,6 +222,8 @@ struct BatchKey
 
     Mat4 mvp;
     Mat4 modelMatrix;
+
+    float geometryFlag;
 };
 
 static bool ViewportEquals(const D3D12_VIEWPORT& a, const D3D12_VIEWPORT& b)
@@ -262,6 +264,7 @@ static bool BatchKeyEquals(const BatchKey& a, const BatchKey& b)
         a.depthTest == b.depthTest &&
         a.depthWrite == b.depthWrite &&
         a.depthFunc == b.depthFunc &&
+        a.geometryFlag == b.geometryFlag &&
         memcmp(a.mvp.m, b.mvp.m, sizeof(a.mvp.m)) == 0 &&
         memcmp(a.modelMatrix.m, b.modelMatrix.m, sizeof(a.modelMatrix.m)) == 0;
 }
@@ -278,6 +281,8 @@ struct GLState
     UINT height = 480;
 
     Mat4 modelMatrix = Mat4::Identity();
+
+    float currentGeometryFlag = 0.0f;
 
     bool fog = false;
     GLenum fogMode = GL_EXP;
@@ -533,7 +538,7 @@ cbuffer DrawCB : register(b0)
     float gTex1IsLightmap;
     float gTexEnvMode0;
     float gTexEnvMode1;
-    float gPad0;
+    float geometryFlag;
     float gPad1;
 
     float gFogEnabled;
@@ -572,6 +577,7 @@ struct VSOut
     float fogCoord : TEXCOORD2;
     float3 objPos : TEXCOORD3;
     float3 normal : TEXCOORD4;
+    nointerpolation float4 attr : TEXCOORD5;
 };
 
 struct PSOut
@@ -599,6 +605,7 @@ VSOut VSMain(VSIn i)
     o.col = i.col;
     o.objPos = worldPos.xyz;
     o.normal = worldNormal;
+    o.attr = float4(geometryFlag,0, 0, 0);
 
     return o;
 }
@@ -764,7 +771,7 @@ PSOut PSMain(VSOut i)
 {
     PSOut o;
     o.color = BuildTexturedColor(i);
-    o.normal = float4(i.normal, 1.0);
+    o.normal = float4(i.normal, i.attr.x);
     o.position = float4(i.objPos, 1.0);
     return o;
 }
@@ -774,7 +781,7 @@ PSOut PSMainAlphaTest(VSOut i)
     PSOut o;
     o.color = BuildTexturedColor(i);
     clip(o.color.a - gAlphaRef);
-    o.normal = float4(i.normal, 1.0);
+    o.normal = float4(i.normal, i.attr.x);
     o.position = float4(i.objPos, 1.0);
     return o;
 }
@@ -783,7 +790,7 @@ PSOut PSMainUntextured(VSOut i)
 {
     PSOut o;
     o.color = ApplyFog(i.col, i.fogCoord);
-    o.normal = float4(i.normal, 1.0);
+    o.normal = float4(i.normal, i.attr.x);
     o.position = float4(i.objPos, 1.0);
     return o;
 }
@@ -925,6 +932,7 @@ static BatchKey BuildCurrentBatchKey(GLenum originalMode, const TextureResource*
     key.depthFunc = g_gl.depthFunc;
     key.mvp = CurrentMVP();
     key.modelMatrix = CurrentModelMatrix();
+    key.geometryFlag = g_gl.currentGeometryFlag;
     return key;
 }
 
@@ -2879,6 +2887,7 @@ static void QD3D12_FlushQueuedBatches()
         memset(dc, 0, sizeof(*dc));
 
         dc->mvp = batch.key.mvp;
+        dc->geometryFlag = batch.key.geometryFlag;
         dc->modelMatrix = batch.key.modelMatrix;
         dc->alphaRef = batch.key.alphaRef;
         dc->useTex0 = batch.key.useTex0;
@@ -4383,4 +4392,9 @@ ID3D12Resource* QD3D12_GetCurrentBackBuffer()
         return nullptr;
 
     return g_gl.backBuffers[index].Get();
+}
+
+extern "C" void APIENTRY glGeometryFlagf(GLfloat flag)
+{
+    g_gl.currentGeometryFlag = flag;
 }

@@ -1076,6 +1076,22 @@ void RB_UpdateDXRMesh(trDXRMesh_t* mesh, int currentFrame, int surfaceId, int st
 
 /*
 ==================
+RB_UpdateDrawSurfFlags
+==================
+*/
+void RB_UpdateDrawSurfFlags(drawSurf_t* surf, shader_t *shader)
+{
+	// The base flag is the geometry flag. 
+	glGeometryFlagf(surf->geoFlag);
+
+	// Now check to see if we will override it.
+	if (shader->stages[0]->bundle[0].light > 0) {
+		glGeometryFlagf(GEOMETRY_FLAG_UNLIT);
+	}
+}
+
+/*
+==================
 RB_RenderDrawSurfList
 ==================
 */
@@ -1190,10 +1206,12 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 // GR - pass tessellation flag to the shader command
 //		make sure to use oldAtiTess!!!
 				tess.ATI_tess = ( oldAtiTess == ATI_TESS_TRUFORM );
-
+				
 				RB_EndSurface();
 			}
 			RB_BeginSurface( shader, fogNum );
+			RB_UpdateDrawSurfFlags(drawSurf, shader);
+
 			oldShader = shader;
 			oldFogNum = fogNum;
 			oldDlighted = dlighted;
@@ -1206,7 +1224,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			backEnd.raytraceRendered = true;
 			glFinish();
 			glLightScene();
-			glRaytracingLightingClearLights();
+			glRaytracingLightingClearLights(false);
 		}
 // jmarshall end
 		//
@@ -1299,6 +1317,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		tess.ATI_tess = ( oldAtiTess == ATI_TESS_TRUFORM );
 
 		RB_EndSurface();
+		glGeometryFlagf(GEOMETRY_FLAG_NONE);
 		glLoadModelMatrixf(NULL);
 	}
 
@@ -1477,7 +1496,7 @@ const void* RB_Raytrace(const void* data) {
 		backEnd.raytraceRendered = true;
 		glFinish();
 		glLightScene();
-		glRaytracingLightingClearLights();
+		glRaytracingLightingClearLights(false);
 	}
 
 	return (const void*)(cmd + 1);

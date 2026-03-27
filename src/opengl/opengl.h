@@ -835,7 +835,12 @@ extern "C" {
     WINGDIAPI void APIENTRY glFinish(void);
     WINGDIAPI void APIENTRY glClipPlane(GLenum plane, const GLdouble* equation);
     WINGDIAPI void APIENTRY glPolygonOffset(GLfloat factor, GLfloat units);
-
+    enum GeometryFlag_t {
+        GEOMETRY_FLAG_NONE = 0,
+        GEOMETRY_FLAG_SKELETAL,
+        GEOMETRY_FLAG_UNLIT
+    };
+    WINGDIAPI void APIENTRY glGeometryFlagf(GLfloat flag);
     WINGDIAPI void APIENTRY glMatrixMode(GLenum mode);
     WINGDIAPI void APIENTRY glLoadIdentity(void);
     WINGDIAPI void APIENTRY glPushMatrix(void);
@@ -961,6 +966,20 @@ extern "C" {
 
         glRaytracingVec3_t color;
         float              intensity;
+
+        glRaytracingVec3_t   normal;        // rect normal (ignored for point)
+        uint32_t             type;          // POINT or RECT
+
+        glRaytracingVec3_t   axisU;         // rect local X axis, normalized
+        float                halfWidth;     // half extent along axisU
+
+        glRaytracingVec3_t   axisV;         // rect local Y axis, normalized
+        float                halfHeight;    // half extent along axisV
+
+        uint32_t             samples;       // rect sample count
+        uint32_t             twoSided;      // 0/1
+        float                persistant;
+        float                pad1;
     } glRaytracingLight_t;
 
     typedef struct glRaytracingLightingPassDesc_s
@@ -1017,7 +1036,7 @@ extern "C" {
     void                          glRaytracingLightingShutdown(void);
     bool                          glRaytracingLightingIsInitialized(void);
 
-    void                          glRaytracingLightingClearLights(void);
+    void                          glRaytracingLightingClearLights(bool clearPersistant);
     bool                          glRaytracingLightingAddLight(const glRaytracingLight_t* light);
 
     void                          glRaytracingLightingSetAmbient(float r, float g, float b, float intensity);
@@ -1039,6 +1058,17 @@ extern "C" {
         float r, float g, float b,
         float intensity);
 
+    glRaytracingLight_t glRaytracingLightingMakeRectLight(
+        float px, float py, float pz,
+        float nx, float ny, float nz,
+        float ux, float uy, float uz,
+        float vx, float vy, float vz,
+        float halfWidth, float halfHeight,
+        float r, float g, float b,
+        float intensity,
+        uint32_t samples,
+        uint32_t twoSided);
+
     uint32_t                      glRaytracingLightingGetLightCount(void);
 
     void glLightScene(void);
@@ -1051,3 +1081,39 @@ extern "C" {
 #ifdef __cplusplus
 };
 #endif
+
+static float glRaytracingSqrtf(float x)
+{
+    return (x > 0.0f) ? sqrtf(x) : 0.0f;
+}
+
+static void glRaytracingNormalize3(float& x, float& y, float& z)
+{
+    const float lenSq = x * x + y * y + z * z;
+    if (lenSq > 1e-20f)
+    {
+        const float invLen = 1.0f / glRaytracingSqrtf(lenSq);
+        x *= invLen;
+        y *= invLen;
+        z *= invLen;
+    }
+    else
+    {
+        x = 0.0f;
+        y = 0.0f;
+        z = 1.0f;
+    }
+}
+
+static void glRaytracingCross3(
+    float ax, float ay, float az,
+    float bx, float by, float bz,
+    float& outX, float& outY, float& outZ)
+{
+    outX = ay * bz - az * by;
+    outY = az * bx - ax * bz;
+    outZ = ax * by - ay * bx;
+}
+
+static const int GL_RAYTRACING_LIGHT_TYPE_POINT = 0;
+static const int GL_RAYTRACING_LIGHT_TYPE_RECT = 1;

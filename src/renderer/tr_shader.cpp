@@ -591,6 +591,15 @@ static qboolean ParseStage( shaderStage_t *stage, char **text ) {
 				continue;
 			}
 		}
+		if (!Q_stricmp(token, "light")) {
+			token = COM_ParseExt(text, qfalse);
+			if (!token[0]) {
+				ri.Printf(PRINT_WARNING, "WARNING: missing parameter for 'light' keyword in shader '%s'\n", shader.name);
+				return qfalse;
+			}
+			stage->bundle[0].light = atoi(token);
+			continue;
+		}
 		//
 		// map <name>
 		//

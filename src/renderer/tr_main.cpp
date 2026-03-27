@@ -1583,7 +1583,7 @@ recurse:
 R_AddDrawSurf
 =================
 */
-void R_AddDrawSurf(surfaceBase_t *surface, shader_t *shader, int fogIndex, int dlightMap, int atiTess, int dxrSurfaceId, trDXRMesh_t *dxrMesh) {
+void R_AddDrawSurf(surfaceBase_t *surface, shader_t *shader, int fogIndex, int dlightMap, int atiTess, int dxrSurfaceId, trDXRMesh_t *dxrMesh, GeometryFlag_t flag) {
 	int index;
 
 	// instead of checking for overflow, we just mask the index
@@ -1597,6 +1597,7 @@ void R_AddDrawSurf(surfaceBase_t *surface, shader_t *shader, int fogIndex, int d
 									  | tr.shiftedEntityNum | ( fogIndex << QSORT_FOGNUM_SHIFT ) | (int)dlightMap;
 	tr.refdef.drawSurfs[index].surface = surface;
 	tr.refdef.drawSurfs[index].dxrMesh = dxrMesh;
+	tr.refdef.drawSurfs[index].geoFlag = flag;
 	tr.refdef.drawSurfs[index].dxrSurfaceId = dxrSurfaceId;
 	tr.refdef.numDrawSurfs++;
 }

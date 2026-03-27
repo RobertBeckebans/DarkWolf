@@ -343,6 +343,95 @@ void *R_GetSurfMemory( int size ) {
 	return (void *)retval;
 }
 
+static qboolean R_ShouldFaceEmitRectLight(const msurface_t* surf)
+{
+	if (!surf || !surf->shader)
+		return qfalse;
+
+	if (surf->shader->stages[0]->bundle[0].light > 0)
+		return qtrue;
+
+	return qfalse;
+}
+
+static void TryAddRectLightFromFace(const dsurface_t* ds, msurface_t* surf, srfSurfaceFace_t* cv)
+{
+	if (!ds || !surf || !cv)
+		return;
+
+	if (!R_ShouldFaceEmitRectLight(surf))
+		return;
+
+	// Start simple: only support quads
+	if (cv->numPoints != 4)
+		return;
+
+	// Pull out the 4 corners
+	vec3_t p0, p1, p2, p3;
+	VectorSet(p0, cv->points[0][0], cv->points[0][1], cv->points[0][2]);
+	VectorSet(p1, cv->points[1][0], cv->points[1][1], cv->points[1][2]);
+	VectorSet(p2, cv->points[2][0], cv->points[2][1], cv->points[2][2]);
+	VectorSet(p3, cv->points[3][0], cv->points[3][1], cv->points[3][2]);
+
+	// Center = average of 4 corners
+	vec3_t center;
+	center[0] = (p0[0] + p1[0] + p2[0] + p3[0]) * 0.25f;
+	center[1] = (p0[1] + p1[1] + p2[1] + p3[1]) * 0.25f;
+	center[2] = (p0[2] + p1[2] + p2[2] + p3[2]) * 0.25f;
+
+	// Build two axes from edges
+	vec3_t axisU, axisV;
+	VectorSubtract(p1, p0, axisU);
+	VectorSubtract(p3, p0, axisV);
+
+	float lenU = VectorLength(axisU);
+	float lenV = VectorLength(axisV);
+
+	if (lenU <= 0.01f || lenV <= 0.01f)
+		return;
+
+	VectorScale(axisU, 1.0f / lenU, axisU);
+	VectorScale(axisV, 1.0f / lenV, axisV);
+
+	float halfWidth = lenU * 0.5f;
+	float halfHeight = lenV * 0.5f;
+
+	// Use the face plane normal you already computed
+	vec3_t normal;
+	VectorCopy(cv->plane.normal, normal);
+	VectorNormalize(normal);
+
+	// Push the light slightly off the face so it doesn't self-shadow immediately
+	center[0] += normal[0] * 1.0f;
+	center[1] += normal[1] * 1.0f;
+	center[2] += normal[2] * 1.0f;
+
+	// Very basic color/intensity guess
+	// Later you can drive this from shader parms or emissive stages.
+	float r = 1.0f;
+	float g = 0.9f;
+	float b = 0.7f;
+	float intensity = surf->shader->stages[0]->bundle[0].light;
+
+	glRaytracingLight_t light = glRaytracingLightingMakeRectLight(
+		center[0], center[1], center[2],
+		normal[0], normal[1], normal[2],
+		axisU[0], axisU[1], axisU[2],
+		axisV[0], axisV[1], axisV[2],
+		halfWidth, halfHeight,
+		r, g, b,
+		intensity,
+		4,      // samples
+		0       // twoSided
+	);
+
+	// Optional: override influence radius used for falloff
+	light.radius = max(lenU, lenV) * 6.0f;
+	light.persistant = true;
+
+	glRaytracingLightingAddLight(&light);
+}
+
 /*
 ===============
 ParseFace
@@ -412,6 +501,8 @@ static void ParseFace( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, int 
 	cv->plane.dist = DotProduct( cv->points[0], cv->plane.normal );
 	SetPlaneSignbits( &cv->plane );
 	cv->plane.type = PlaneTypeForNormal( cv->plane.normal );
+
+	TryAddRectLightFromFace(ds, surf, cv);
 
 	surf->data = (surfaceType_t *)cv;
 }
@@ -2491,6 +2582,8 @@ void RE_LoadWorldMap( const char *name ) {
 	for ( i = 0 ; i < sizeof( dheader_t ) / 4 ; i++ ) {
 		( (int *)header )[i] = LittleLong( ( (int *)header )[i] );
 	}
+
+	glRaytracingLightingClearLights(true);
 
 	// load into heap
 	ri.Cmd_ExecuteText( EXEC_NOW, "updatescreen\n" );
