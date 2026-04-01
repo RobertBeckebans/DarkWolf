@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
@@ -28,39 +29,50 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "tr_local.h"
 
-backEndData_t   *backEndData[SMP_FRAMES];
+backEndData_t* backEndData[SMP_FRAMES];
 backEndState_t backEnd;
 
-
-static float s_flipMatrix[16] = {
-	// convert from our coordinate system (looking down X)
-	// to OpenGL's coordinate system (looking down -Z)
-	0, 0, -1, 0,
-	-1, 0, 0, 0,
-	0, 1, 0, 0,
-	0, 0, 0, 1
+static float   s_flipMatrix[16] = {
+	  // convert from our coordinate system (looking down X)
+	  // to OpenGL's coordinate system (looking down -Z)
+	  0,
+	  0,
+	  -1,
+	  0,
+	  -1,
+	  0,
+	  0,
+	  0,
+	  0,
+	  1,
+	  0,
+	  0,
+	  0,
+	  0,
+	  0,
+	  1
 };
-
 
 /*
 ** GL_Bind
 */
-void GL_Bind( image_t *image ) {
+void GL_Bind( image_t* image )
+{
 	int texnum;
 
-	if ( !image ) {
+	if( !image ) {
 		ri.Printf( PRINT_WARNING, "GL_Bind: NULL image\n" );
 		texnum = tr.defaultImage->texnum;
 	} else {
 		texnum = image->texnum;
 	}
 
-	if ( r_nobind->integer && tr.dlightImage ) {        // performance evaluation option
+	if( r_nobind->integer && tr.dlightImage ) { // performance evaluation option
 		texnum = tr.dlightImage->texnum;
 	}
 
-	if ( glState.currenttextures[glState.currenttmu] != texnum ) {
-		image->frameUsed = tr.frameCount;
+	if( glState.currenttextures[glState.currenttmu] != texnum ) {
+		image->frameUsed							= tr.frameCount;
 		glState.currenttextures[glState.currenttmu] = texnum;
 		glBindTexture( GL_TEXTURE_2D, texnum );
 	}
@@ -69,17 +81,18 @@ void GL_Bind( image_t *image ) {
 /*
 ** GL_SelectTexture
 */
-void GL_SelectTexture( int unit ) {
-	if ( glState.currenttmu == unit ) {
+void GL_SelectTexture( int unit )
+{
+	if( glState.currenttmu == unit ) {
 		return;
 	}
 
-	if ( unit == 0 ) {
+	if( unit == 0 ) {
 		glActiveTextureARB( GL_TEXTURE0_ARB );
 		GLimp_LogComment( "glActiveTextureARB( GL_TEXTURE0_ARB )\n" );
 		glClientActiveTextureARB( GL_TEXTURE0_ARB );
 		GLimp_LogComment( "glClientActiveTextureARB( GL_TEXTURE0_ARB )\n" );
-	} else if ( unit == 1 )   {
+	} else if( unit == 1 ) {
 		glActiveTextureARB( GL_TEXTURE1_ARB );
 		GLimp_LogComment( "glActiveTextureARB( GL_TEXTURE1_ARB )\n" );
 		glClientActiveTextureARB( GL_TEXTURE1_ARB );
@@ -91,64 +104,60 @@ void GL_SelectTexture( int unit ) {
 	glState.currenttmu = unit;
 }
 
-
 /*
 ** GL_BindMultitexture
 */
-void GL_BindMultitexture( image_t *image0, GLuint env0, image_t *image1, GLuint env1 ) {
+void GL_BindMultitexture( image_t* image0, GLuint env0, image_t* image1, GLuint env1 )
+{
 	int texnum0, texnum1;
 
 	texnum0 = image0->texnum;
 	texnum1 = image1->texnum;
 
-	if ( r_nobind->integer && tr.dlightImage ) {        // performance evaluation option
+	if( r_nobind->integer && tr.dlightImage ) { // performance evaluation option
 		texnum0 = texnum1 = tr.dlightImage->texnum;
 	}
 
-	if ( glState.currenttextures[1] != texnum1 ) {
+	if( glState.currenttextures[1] != texnum1 ) {
 		GL_SelectTexture( 1 );
-		image1->frameUsed = tr.frameCount;
+		image1->frameUsed		   = tr.frameCount;
 		glState.currenttextures[1] = texnum1;
 		glBindTexture( GL_TEXTURE_2D, texnum1 );
 	}
-	if ( glState.currenttextures[0] != texnum0 ) {
+	if( glState.currenttextures[0] != texnum0 ) {
 		GL_SelectTexture( 0 );
-		image0->frameUsed = tr.frameCount;
+		image0->frameUsed		   = tr.frameCount;
 		glState.currenttextures[0] = texnum0;
 		glBindTexture( GL_TEXTURE_2D, texnum0 );
 	}
 }
 
-
 /*
 ** GL_Cull
 */
-void GL_Cull( int cullType ) {
-	if ( glState.faceCulling == cullType ) {
+void GL_Cull( int cullType )
+{
+	if( glState.faceCulling == cullType ) {
 		return;
 	}
 
 	glState.faceCulling = cullType;
 
-	if ( cullType == CT_TWO_SIDED ) {
+	if( cullType == CT_TWO_SIDED ) {
 		glDisable( GL_CULL_FACE );
-	} else
-	{
+	} else {
 		glEnable( GL_CULL_FACE );
 
-		if ( cullType == CT_BACK_SIDED ) {
-			if ( backEnd.viewParms.isMirror ) {
+		if( cullType == CT_BACK_SIDED ) {
+			if( backEnd.viewParms.isMirror ) {
 				glCullFace( GL_FRONT );
-			} else
-			{
+			} else {
 				glCullFace( GL_BACK );
 			}
-		} else
-		{
-			if ( backEnd.viewParms.isMirror ) {
+		} else {
+			if( backEnd.viewParms.isMirror ) {
 				glCullFace( GL_BACK );
-			} else
-			{
+			} else {
 				glCullFace( GL_FRONT );
 			}
 		}
@@ -158,31 +167,30 @@ void GL_Cull( int cullType ) {
 /*
 ** GL_TexEnv
 */
-void GL_TexEnv( int env ) {
-	if ( env == glState.texEnv[glState.currenttmu] ) {
+void GL_TexEnv( int env )
+{
+	if( env == glState.texEnv[glState.currenttmu] ) {
 		return;
 	}
 
 	glState.texEnv[glState.currenttmu] = env;
 
-
-	switch ( env )
-	{
-	case GL_MODULATE:
-		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-		break;
-	case GL_REPLACE:
-		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-		break;
-	case GL_DECAL:
-		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
-		break;
-	case GL_ADD:
-		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
-		break;
-	default:
-		ri.Error( ERR_DROP, "GL_TexEnv: invalid env '%d' passed\n", env );
-		break;
+	switch( env ) {
+		case GL_MODULATE:
+			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+			break;
+		case GL_REPLACE:
+			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+			break;
+		case GL_DECAL:
+			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
+			break;
+		case GL_ADD:
+			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
+			break;
+		default:
+			ri.Error( ERR_DROP, "GL_TexEnv: invalid env '%d' passed\n", env );
+			break;
 	}
 }
 
@@ -192,21 +200,21 @@ void GL_TexEnv( int env ) {
 ** This routine is responsible for setting the most commonly changed state
 ** in Q3.
 */
-void GL_State( unsigned long stateBits ) {
+void GL_State( unsigned long stateBits )
+{
 	unsigned long diff = stateBits ^ glState.glStateBits;
 
-	if ( !diff ) {
+	if( !diff ) {
 		return;
 	}
 
 	//
 	// check depthFunc bits
 	//
-	if ( diff & GLS_DEPTHFUNC_EQUAL ) {
-		if ( stateBits & GLS_DEPTHFUNC_EQUAL ) {
+	if( diff & GLS_DEPTHFUNC_EQUAL ) {
+		if( stateBits & GLS_DEPTHFUNC_EQUAL ) {
 			glDepthFunc( GL_EQUAL );
-		} else
-		{
+		} else {
 			glDepthFunc( GL_LEQUAL );
 		}
 	}
@@ -214,81 +222,78 @@ void GL_State( unsigned long stateBits ) {
 	//
 	// check blend bits
 	//
-	if ( diff & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) ) {
+	if( diff & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) ) {
 		GLenum srcFactor, dstFactor;
 
-		if ( stateBits & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) ) {
-			switch ( stateBits & GLS_SRCBLEND_BITS )
-			{
-			case GLS_SRCBLEND_ZERO:
-				srcFactor = GL_ZERO;
-				break;
-			case GLS_SRCBLEND_ONE:
-				srcFactor = GL_ONE;
-				break;
-			case GLS_SRCBLEND_DST_COLOR:
-				srcFactor = GL_DST_COLOR;
-				break;
-			case GLS_SRCBLEND_ONE_MINUS_DST_COLOR:
-				srcFactor = GL_ONE_MINUS_DST_COLOR;
-				break;
-			case GLS_SRCBLEND_SRC_ALPHA:
-				srcFactor = GL_SRC_ALPHA;
-				break;
-			case GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA:
-				srcFactor = GL_ONE_MINUS_SRC_ALPHA;
-				break;
-			case GLS_SRCBLEND_DST_ALPHA:
-				srcFactor = GL_DST_ALPHA;
-				break;
-			case GLS_SRCBLEND_ONE_MINUS_DST_ALPHA:
-				srcFactor = GL_ONE_MINUS_DST_ALPHA;
-				break;
-			case GLS_SRCBLEND_ALPHA_SATURATE:
-				srcFactor = GL_SRC_ALPHA_SATURATE;
-				break;
-			default:
-				srcFactor = GL_ONE;     // to get warning to shut up
-				ri.Error( ERR_DROP, "GL_State: invalid src blend state bits\n" );
-				break;
+		if( stateBits & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) ) {
+			switch( stateBits & GLS_SRCBLEND_BITS ) {
+				case GLS_SRCBLEND_ZERO:
+					srcFactor = GL_ZERO;
+					break;
+				case GLS_SRCBLEND_ONE:
+					srcFactor = GL_ONE;
+					break;
+				case GLS_SRCBLEND_DST_COLOR:
+					srcFactor = GL_DST_COLOR;
+					break;
+				case GLS_SRCBLEND_ONE_MINUS_DST_COLOR:
+					srcFactor = GL_ONE_MINUS_DST_COLOR;
+					break;
+				case GLS_SRCBLEND_SRC_ALPHA:
+					srcFactor = GL_SRC_ALPHA;
+					break;
+				case GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA:
+					srcFactor = GL_ONE_MINUS_SRC_ALPHA;
+					break;
+				case GLS_SRCBLEND_DST_ALPHA:
+					srcFactor = GL_DST_ALPHA;
+					break;
+				case GLS_SRCBLEND_ONE_MINUS_DST_ALPHA:
+					srcFactor = GL_ONE_MINUS_DST_ALPHA;
+					break;
+				case GLS_SRCBLEND_ALPHA_SATURATE:
+					srcFactor = GL_SRC_ALPHA_SATURATE;
+					break;
+				default:
+					srcFactor = GL_ONE; // to get warning to shut up
+					ri.Error( ERR_DROP, "GL_State: invalid src blend state bits\n" );
+					break;
 			}
 
-			switch ( stateBits & GLS_DSTBLEND_BITS )
-			{
-			case GLS_DSTBLEND_ZERO:
-				dstFactor = GL_ZERO;
-				break;
-			case GLS_DSTBLEND_ONE:
-				dstFactor = GL_ONE;
-				break;
-			case GLS_DSTBLEND_SRC_COLOR:
-				dstFactor = GL_SRC_COLOR;
-				break;
-			case GLS_DSTBLEND_ONE_MINUS_SRC_COLOR:
-				dstFactor = GL_ONE_MINUS_SRC_COLOR;
-				break;
-			case GLS_DSTBLEND_SRC_ALPHA:
-				dstFactor = GL_SRC_ALPHA;
-				break;
-			case GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA:
-				dstFactor = GL_ONE_MINUS_SRC_ALPHA;
-				break;
-			case GLS_DSTBLEND_DST_ALPHA:
-				dstFactor = GL_DST_ALPHA;
-				break;
-			case GLS_DSTBLEND_ONE_MINUS_DST_ALPHA:
-				dstFactor = GL_ONE_MINUS_DST_ALPHA;
-				break;
-			default:
-				dstFactor = GL_ONE;     // to get warning to shut up
-				ri.Error( ERR_DROP, "GL_State: invalid dst blend state bits\n" );
-				break;
+			switch( stateBits & GLS_DSTBLEND_BITS ) {
+				case GLS_DSTBLEND_ZERO:
+					dstFactor = GL_ZERO;
+					break;
+				case GLS_DSTBLEND_ONE:
+					dstFactor = GL_ONE;
+					break;
+				case GLS_DSTBLEND_SRC_COLOR:
+					dstFactor = GL_SRC_COLOR;
+					break;
+				case GLS_DSTBLEND_ONE_MINUS_SRC_COLOR:
+					dstFactor = GL_ONE_MINUS_SRC_COLOR;
+					break;
+				case GLS_DSTBLEND_SRC_ALPHA:
+					dstFactor = GL_SRC_ALPHA;
+					break;
+				case GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA:
+					dstFactor = GL_ONE_MINUS_SRC_ALPHA;
+					break;
+				case GLS_DSTBLEND_DST_ALPHA:
+					dstFactor = GL_DST_ALPHA;
+					break;
+				case GLS_DSTBLEND_ONE_MINUS_DST_ALPHA:
+					dstFactor = GL_ONE_MINUS_DST_ALPHA;
+					break;
+				default:
+					dstFactor = GL_ONE; // to get warning to shut up
+					ri.Error( ERR_DROP, "GL_State: invalid dst blend state bits\n" );
+					break;
 			}
 
 			glEnable( GL_BLEND );
 			glBlendFunc( srcFactor, dstFactor );
-		} else
-		{
+		} else {
 			glDisable( GL_BLEND );
 		}
 	}
@@ -296,11 +301,10 @@ void GL_State( unsigned long stateBits ) {
 	//
 	// check depthmask
 	//
-	if ( diff & GLS_DEPTHMASK_TRUE ) {
-		if ( stateBits & GLS_DEPTHMASK_TRUE ) {
+	if( diff & GLS_DEPTHMASK_TRUE ) {
+		if( stateBits & GLS_DEPTHMASK_TRUE ) {
 			glDepthMask( GL_TRUE );
-		} else
-		{
+		} else {
 			glDepthMask( GL_FALSE );
 		}
 	}
@@ -308,11 +312,10 @@ void GL_State( unsigned long stateBits ) {
 	//
 	// fill/line mode
 	//
-	if ( diff & GLS_POLYMODE_LINE ) {
-		if ( stateBits & GLS_POLYMODE_LINE ) {
+	if( diff & GLS_POLYMODE_LINE ) {
+		if( stateBits & GLS_POLYMODE_LINE ) {
 			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-		} else
-		{
+		} else {
 			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		}
 	}
@@ -320,11 +323,10 @@ void GL_State( unsigned long stateBits ) {
 	//
 	// depthtest
 	//
-	if ( diff & GLS_DEPTHTEST_DISABLE ) {
-		if ( stateBits & GLS_DEPTHTEST_DISABLE ) {
+	if( diff & GLS_DEPTHTEST_DISABLE ) {
+		if( stateBits & GLS_DEPTHTEST_DISABLE ) {
 			glDisable( GL_DEPTH_TEST );
-		} else
-		{
+		} else {
 			glEnable( GL_DEPTH_TEST );
 		}
 	}
@@ -332,34 +334,31 @@ void GL_State( unsigned long stateBits ) {
 	//
 	// alpha test
 	//
-	if ( diff & GLS_ATEST_BITS ) {
-		switch ( stateBits & GLS_ATEST_BITS )
-		{
-		case 0:
-			glDisable( GL_ALPHA_TEST );
-			break;
-		case GLS_ATEST_GT_0:
-			glEnable( GL_ALPHA_TEST );
-			glAlphaFunc( GL_GREATER, 0.0f );
-			break;
-		case GLS_ATEST_LT_80:
-			glEnable( GL_ALPHA_TEST );
-			glAlphaFunc( GL_LESS, 0.5f );
-			break;
-		case GLS_ATEST_GE_80:
-			glEnable( GL_ALPHA_TEST );
-			glAlphaFunc( GL_GEQUAL, 0.5f );
-			break;
-		default:
-			assert( 0 );
-			break;
+	if( diff & GLS_ATEST_BITS ) {
+		switch( stateBits & GLS_ATEST_BITS ) {
+			case 0:
+				glDisable( GL_ALPHA_TEST );
+				break;
+			case GLS_ATEST_GT_0:
+				glEnable( GL_ALPHA_TEST );
+				glAlphaFunc( GL_GREATER, 0.0f );
+				break;
+			case GLS_ATEST_LT_80:
+				glEnable( GL_ALPHA_TEST );
+				glAlphaFunc( GL_LESS, 0.5f );
+				break;
+			case GLS_ATEST_GE_80:
+				glEnable( GL_ALPHA_TEST );
+				glAlphaFunc( GL_GEQUAL, 0.5f );
+				break;
+			default:
+				assert( 0 );
+				break;
 		}
 	}
 
 	glState.glStateBits = stateBits;
 }
-
-
 
 /*
 ================
@@ -368,10 +367,11 @@ RB_Hyperspace
 A player has predicted a teleport, but hasn't arrived yet
 ================
 */
-static void RB_Hyperspace( void ) {
+static void RB_Hyperspace()
+{
 	float c;
 
-	if ( !backEnd.isHyperspace ) {
+	if( !backEnd.isHyperspace ) {
 		// do initialization shit
 	}
 
@@ -382,23 +382,17 @@ static void RB_Hyperspace( void ) {
 	backEnd.isHyperspace = qtrue;
 }
 
-
-static void SetViewportAndScissor( void ) {
+static void SetViewportAndScissor()
+{
 	glMatrixMode( GL_PROJECTION );
 	glLoadMatrixf( backEnd.viewParms.projectionMatrix );
 	glMatrixMode( GL_MODELVIEW );
 
 	// set the window clipping
-	glViewport(    backEnd.viewParms.viewportX,
-					backEnd.viewParms.viewportY,
-					backEnd.viewParms.viewportWidth,
-					backEnd.viewParms.viewportHeight );
+	glViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY, backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
 
-// TODO: insert handling for widescreen?  (when looking through camera)
-	glScissor(     backEnd.viewParms.viewportX,
-					backEnd.viewParms.viewportY,
-					backEnd.viewParms.viewportWidth,
-					backEnd.viewParms.viewportHeight );
+	// TODO: insert handling for widescreen?  (when looking through camera)
+	glScissor( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY, backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
 }
 
 /*
@@ -409,15 +403,16 @@ Any mirrored or portaled views have already been drawn, so prepare
 to actually render the visible surfaces for this view
 =================
 */
-void RB_BeginDrawingView( void ) {
+void RB_BeginDrawingView()
+{
 	int clearBits = 0;
 
 	// sync with gl if needed
-	if ( r_finish->integer == 1 && !glState.finishCalled ) {
+	if( r_finish->integer == 1 && !glState.finishCalled ) {
 		glFinish();
 		glState.finishCalled = qtrue;
 	}
-	if ( r_finish->integer == 0 ) {
+	if( r_finish->integer == 0 ) {
 		glState.finishCalled = qtrue;
 	}
 
@@ -433,115 +428,111 @@ void RB_BeginDrawingView( void ) {
 	// ensures that depth writes are enabled for the depth clear
 	GL_State( GLS_DEFAULT );
 
-
-////////// (SA) modified to ensure one glclear() per frame at most
+	////////// (SA) modified to ensure one glclear() per frame at most
 
 	// clear relevant buffers
 	clearBits = 0;
 
-	if ( r_measureOverdraw->integer || r_shadows->integer == 2 ) {
+	if( r_measureOverdraw->integer || r_shadows->integer == 2 ) {
 		clearBits |= GL_STENCIL_BUFFER_BIT;
 	}
 
-	if ( r_uiFullScreen->integer ) {
-		clearBits = GL_DEPTH_BUFFER_BIT;    // (SA) always just clear depth for menus
+	if( r_uiFullScreen->integer ) {
+		clearBits = GL_DEPTH_BUFFER_BIT; // (SA) always just clear depth for menus
 
-	} else if ( skyboxportal ) {
-		if ( backEnd.refdef.rdflags & RDF_SKYBOXPORTAL ) {   // portal scene, clear whatever is necessary
+	} else if( skyboxportal ) {
+		if( backEnd.refdef.rdflags & RDF_SKYBOXPORTAL ) { // portal scene, clear whatever is necessary
 			clearBits |= GL_DEPTH_BUFFER_BIT;
 
-			if ( r_fastsky->integer || backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) {  // fastsky: clear color
+			if( r_fastsky->integer || backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) { // fastsky: clear color
 
 				// try clearing first with the portal sky fog color, then the world fog color, then finally a default
 				clearBits |= GL_COLOR_BUFFER_BIT;
-				if ( glfogsettings[FOG_PORTALVIEW].registered ) {
+				if( glfogsettings[FOG_PORTALVIEW].registered ) {
 					glClearColor( glfogsettings[FOG_PORTALVIEW].color[0], glfogsettings[FOG_PORTALVIEW].color[1], glfogsettings[FOG_PORTALVIEW].color[2], glfogsettings[FOG_PORTALVIEW].color[3] );
-				} else if ( glfogNum > FOG_NONE && glfogsettings[FOG_CURRENT].registered )      {
+				} else if( glfogNum > FOG_NONE && glfogsettings[FOG_CURRENT].registered ) {
 					glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
 				} else {
-//					glClearColor ( 1.0, 0.0, 0.0, 1.0 );	// red clear for testing portal sky clear
+					//					glClearColor ( 1.0, 0.0, 0.0, 1.0 );	// red clear for testing portal sky clear
 					glClearColor( 0.5, 0.5, 0.5, 1.0 );
 				}
-			} else {                                                    // rendered sky (either clear color or draw quake sky)
-				if ( glfogsettings[FOG_PORTALVIEW].registered ) {
+			} else { // rendered sky (either clear color or draw quake sky)
+				if( glfogsettings[FOG_PORTALVIEW].registered ) {
 					glClearColor( glfogsettings[FOG_PORTALVIEW].color[0], glfogsettings[FOG_PORTALVIEW].color[1], glfogsettings[FOG_PORTALVIEW].color[2], glfogsettings[FOG_PORTALVIEW].color[3] );
 
-					if ( glfogsettings[FOG_PORTALVIEW].clearscreen ) {    // portal fog requests a screen clear (distance fog rather than quake sky)
+					if( glfogsettings[FOG_PORTALVIEW].clearscreen ) { // portal fog requests a screen clear (distance fog rather than quake sky)
 						clearBits |= GL_COLOR_BUFFER_BIT;
 					}
 				}
-
 			}
-		} else {                                        // world scene with portal sky, don't clear any buffers, just set the fog color if there is one
+		} else { // world scene with portal sky, don't clear any buffers, just set the fog color if there is one
 
-			clearBits |= GL_DEPTH_BUFFER_BIT;   // this will go when I get the portal sky rendering way out in the zbuffer (or not writing to zbuffer at all)
+			clearBits |= GL_DEPTH_BUFFER_BIT; // this will go when I get the portal sky rendering way out in the zbuffer (or not writing to zbuffer at all)
 
-			if ( glfogNum > FOG_NONE && glfogsettings[FOG_CURRENT].registered ) {
-				if ( backEnd.refdef.rdflags & RDF_UNDERWATER ) {
-					if ( glfogsettings[FOG_CURRENT].mode == GL_LINEAR ) {
+			if( glfogNum > FOG_NONE && glfogsettings[FOG_CURRENT].registered ) {
+				if( backEnd.refdef.rdflags & RDF_UNDERWATER ) {
+					if( glfogsettings[FOG_CURRENT].mode == GL_LINEAR ) {
 						clearBits |= GL_COLOR_BUFFER_BIT;
 					}
 
-				} else if ( !( r_portalsky->integer ) ) {    // portal skies have been manually turned off, clear bg color
+				} else if( !( r_portalsky->integer ) ) { // portal skies have been manually turned off, clear bg color
 					clearBits |= GL_COLOR_BUFFER_BIT;
 				}
 
 				glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
 			}
 		}
-	} else {                                              // world scene with no portal sky
+	} else { // world scene with no portal sky
 		clearBits |= GL_DEPTH_BUFFER_BIT;
 
 		// NERVE - SMF - we don't want to clear the buffer when no world model is specified
-		if ( backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) {
+		if( backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) {
 			clearBits &= ~GL_COLOR_BUFFER_BIT;
 		}
 		// -NERVE - SMF
 		// (SA) well, this is silly then
-		else if ( r_fastsky->integer ) {   //  || backEnd.refdef.rdflags & RDF_NOWORLDMODEL
+		else if( r_fastsky->integer ) { //  || backEnd.refdef.rdflags & RDF_NOWORLDMODEL
 
 			clearBits |= GL_COLOR_BUFFER_BIT;
 
-			if ( glfogsettings[FOG_CURRENT].registered ) { // try to clear fastsky with current fog color
+			if( glfogsettings[FOG_CURRENT].registered ) { // try to clear fastsky with current fog color
 				glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
 			} else {
-//				glClearColor ( 0.0, 0.0, 1.0, 1.0 );	// blue clear for testing world sky clear
+				//				glClearColor ( 0.0, 0.0, 1.0, 1.0 );	// blue clear for testing world sky clear
 				glClearColor( 0.5, 0.5, 0.5, 1.0 );
 			}
-		} else {        // world scene, no portal sky, not fastsky, clear color if fog says to, otherwise, just set the clearcolor
-			if ( glfogsettings[FOG_CURRENT].registered ) { // try to clear fastsky with current fog color
+		} else {										  // world scene, no portal sky, not fastsky, clear color if fog says to, otherwise, just set the clearcolor
+			if( glfogsettings[FOG_CURRENT].registered ) { // try to clear fastsky with current fog color
 				glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
 
-				if ( glfogsettings[FOG_CURRENT].clearscreen ) {   // world fog requests a screen clear (distance fog rather than quake sky)
+				if( glfogsettings[FOG_CURRENT].clearscreen ) { // world fog requests a screen clear (distance fog rather than quake sky)
 					clearBits |= GL_COLOR_BUFFER_BIT;
 				}
 			}
 		}
 	}
 
-
-	if ( clearBits ) {
+	if( clearBits ) {
 		glClear( clearBits );
 	}
 
-//----(SA)	done
+	//----(SA)	done
 
-	if ( ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) ) {
+	if( ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) ) {
 		RB_Hyperspace();
 		return;
-	} else
-	{
+	} else {
 		backEnd.isHyperspace = qfalse;
 	}
 
-	glState.faceCulling = -1;       // force face culling to set next time
+	glState.faceCulling = -1; // force face culling to set next time
 
 	// we will only draw a sun if there was sky rendered in this view
 	backEnd.skyRenderedThisView = qfalse;
 
 	// clip to the plane of the portal
-	if ( backEnd.viewParms.isPortal ) {
-		float plane[4];
+	if( backEnd.viewParms.isPortal ) {
+		float  plane[4];
 		double plane2[4];
 
 		plane[0] = backEnd.viewParms.portalPlane.normal[0];
@@ -570,62 +561,64 @@ RB_ZombieFX
 ============
 */
 
-extern void GlobalVectorToLocal( const vec3_t in, vec3_t out );
+extern void	 GlobalVectorToLocal( const vec3_t in, vec3_t out );
 extern vec_t VectorLengthSquared( const vec3_t v );
 
-#define ZOMBIEFX_MAX_VERTS              2048
-#define ZOMBIEFX_FADEOUT_TIME_SEC       ( 0.001 * ZOMBIEFX_FADEOUT_TIME )
-#define ZOMBIEFX_MAX_HITS               128
-#define ZOMBIEFX_MAX_NEWHITS            4
-#define ZOMBIEFX_HIT_OKRANGE_SQR        9   // all verts within this range will be hit
-#define ZOMBIEFX_HIT_MAXRANGE_SQR       36  // each bullet that strikes the bounding box, will effect verts inside this range (allowing for projections onto the mesh)
-#define ZOMBIEFX_PERHIT_TAKEALPHA       150
-#define ZOMBIEFX_MAX_HITS_PER_VERT      2
+#define ZOMBIEFX_MAX_VERTS		   2048
+#define ZOMBIEFX_FADEOUT_TIME_SEC  ( 0.001 * ZOMBIEFX_FADEOUT_TIME )
+#define ZOMBIEFX_MAX_HITS		   128
+#define ZOMBIEFX_MAX_NEWHITS	   4
+#define ZOMBIEFX_HIT_OKRANGE_SQR   9  // all verts within this range will be hit
+#define ZOMBIEFX_HIT_MAXRANGE_SQR  36 // each bullet that strikes the bounding box, will effect verts inside this range (allowing for projections onto the mesh)
+#define ZOMBIEFX_PERHIT_TAKEALPHA  150
+#define ZOMBIEFX_MAX_HITS_PER_VERT 2
 
-static char *zombieFxFleshHitSurfaceNames[2] = {"u_body","l_legs"};
+static char* zombieFxFleshHitSurfaceNames[2] = { "u_body", "l_legs" };
 
 // this stores each of the flesh hits for each of the zombies in the game
 typedef struct {
-	qboolean isHit;
+	qboolean	   isHit;
 	unsigned short numHits;
 	unsigned short vertHits[ZOMBIEFX_MAX_HITS]; // bit flags to represent those verts that have been hit
-	int numNewHits;
-	vec3_t newHitPos[ZOMBIEFX_MAX_NEWHITS];
-	vec3_t newHitDir[ZOMBIEFX_MAX_NEWHITS];
+	int			   numNewHits;
+	vec3_t		   newHitPos[ZOMBIEFX_MAX_NEWHITS];
+	vec3_t		   newHitDir[ZOMBIEFX_MAX_NEWHITS];
 } trZombieFleshHitverts_t;
 //
 trZombieFleshHitverts_t zombieFleshHitVerts[MAX_SP_CLIENTS][2]; // one for upper, one for lower
 
-void RB_ZombieFXInit( void ) {
+void					RB_ZombieFXInit()
+{
 	memset( zombieFleshHitVerts, 0, sizeof( zombieFleshHitVerts ) );
 }
 
-void RB_ZombieFXAddNewHit( int entityNum, const vec3_t hitPos, const vec3_t hitDir ) {
+void RB_ZombieFXAddNewHit( int entityNum, const vec3_t hitPos, const vec3_t hitDir )
+{
 	int part = 0;
 
-// disabled for E3, are we still going to use this?
+	// disabled for E3, are we still going to use this?
 	return;
 
-	if ( entityNum == -1 ) {
+	if( entityNum == -1 ) {
 		// hack, reset data
 		RB_ZombieFXInit();
 		return;
 	}
 
-	if ( entityNum & ( 1 << 30 ) ) {
+	if( entityNum & ( 1 << 30 ) ) {
 		part = 1;
 		entityNum &= ~( 1 << 30 );
 	}
 
-	if ( entityNum >= MAX_SP_CLIENTS ) {
+	if( entityNum >= MAX_SP_CLIENTS ) {
 		Com_Printf( "RB_ZombieFXAddNewHit: entityNum (%i) outside allowable range (%i)\n", entityNum, MAX_SP_CLIENTS );
 		return;
 	}
-	if ( zombieFleshHitVerts[entityNum][part].numHits + zombieFleshHitVerts[entityNum][part].numNewHits >= ZOMBIEFX_MAX_HITS ) {
+	if( zombieFleshHitVerts[entityNum][part].numHits + zombieFleshHitVerts[entityNum][part].numNewHits >= ZOMBIEFX_MAX_HITS ) {
 		// already full of hits
 		return;
 	}
-	if ( zombieFleshHitVerts[entityNum][part].numNewHits >= ZOMBIEFX_MAX_NEWHITS ) {
+	if( zombieFleshHitVerts[entityNum][part].numNewHits >= ZOMBIEFX_MAX_NEWHITS ) {
 		// just ignore this hit
 		return;
 	}
@@ -635,26 +628,27 @@ void RB_ZombieFXAddNewHit( int entityNum, const vec3_t hitPos, const vec3_t hitD
 	zombieFleshHitVerts[entityNum][part].numNewHits++;
 }
 
-void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t *fleshHitVerts, int oldNumVerts, int numSurfVerts ) {
-	float *xyzTrav, *normTrav;
-	vec3_t hitPos, hitDir, v, testDir;
-	float bestHitDist, thisDist;
-	qboolean foundHit;
-	int i, j, bestHit;
-	unsigned short *hitTrav;
-	byte hitCounts[ZOMBIEFX_MAX_VERTS];     // so we can quickly tell if a particular vert has been hit enough times already
+void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t* fleshHitVerts, int oldNumVerts, int numSurfVerts )
+{
+	float *			xyzTrav, *normTrav;
+	vec3_t			hitPos, hitDir, v, testDir;
+	float			bestHitDist, thisDist;
+	qboolean		foundHit;
+	int				i, j, bestHit;
+	unsigned short* hitTrav;
+	byte			hitCounts[ZOMBIEFX_MAX_VERTS]; // so we can quickly tell if a particular vert has been hit enough times already
 
-// disabled for E3, are we still going to use this?
+	// disabled for E3, are we still going to use this?
 	return;
 
 	// first build the hitCount list
 	memset( hitCounts, 0, sizeof( hitCounts ) );
-	for ( i = 0, hitTrav = fleshHitVerts->vertHits; i < fleshHitVerts->numHits; i++, hitTrav++ ) {
+	for( i = 0, hitTrav = fleshHitVerts->vertHits; i < fleshHitVerts->numHits; i++, hitTrav++ ) {
 		hitCounts[*hitTrav]++;
 	}
 
 	// for each new hit
-	for ( i = 0; i < fleshHitVerts->numNewHits; i++ ) {
+	for( i = 0; i < fleshHitVerts->numNewHits; i++ ) {
 		// calc the local hitPos
 		VectorCopy( fleshHitVerts->newHitPos[i], v );
 		VectorSubtract( v, backEnd.currentEntity->e.origin, v );
@@ -667,23 +661,20 @@ void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t *fleshHitVerts, int oldN
 		foundHit = qfalse;
 
 		// for each vertex
-		for (   j = 0, bestHitDist = -1, xyzTrav = tess.xyz[oldNumVerts], normTrav = tess.normal[oldNumVerts];
-				j < numSurfVerts;
-				j++, xyzTrav += 4, normTrav += 4 ) {
-
+		for( j = 0, bestHitDist = -1, xyzTrav = tess.xyz[oldNumVerts], normTrav = tess.normal[oldNumVerts]; j < numSurfVerts; j++, xyzTrav += 4, normTrav += 4 ) {
 			// if this vert has been hit enough times already
-			if ( hitCounts[j] > ZOMBIEFX_MAX_HITS_PER_VERT ) {
+			if( hitCounts[j] > ZOMBIEFX_MAX_HITS_PER_VERT ) {
 				continue;
 			}
 			// if this normal faces the wrong way, reject it
-			if ( DotProduct( normTrav, hitDir ) > 0 ) {
+			if( DotProduct( normTrav, hitDir ) > 0 ) {
 				continue;
 			}
 			// get the diff vector
 			VectorSubtract( xyzTrav, hitPos, testDir );
 			// check for distance within range
 			thisDist = VectorLengthSquared( testDir );
-			if ( thisDist < ZOMBIEFX_HIT_OKRANGE_SQR ) {
+			if( thisDist < ZOMBIEFX_HIT_OKRANGE_SQR ) {
 				goto hitCheckDone;
 			}
 			thisDist = sqrt( thisDist );
@@ -691,44 +682,44 @@ void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t *fleshHitVerts, int oldN
 			VectorMA( hitPos, thisDist, hitDir, v );
 			VectorSubtract( xyzTrav, v, testDir );
 			thisDist = VectorLengthSquared( testDir );
-			if ( thisDist < ZOMBIEFX_HIT_OKRANGE_SQR ) {
+			if( thisDist < ZOMBIEFX_HIT_OKRANGE_SQR ) {
 				goto hitCheckDone;
 			}
 			// if we are still struggling to find a hit, then pick the closest outside the OK range
-			if ( !foundHit ) {
-				if ( thisDist < ZOMBIEFX_HIT_MAXRANGE_SQR && ( bestHitDist < 0 || thisDist < bestHitDist ) ) {
+			if( !foundHit ) {
+				if( thisDist < ZOMBIEFX_HIT_MAXRANGE_SQR && ( bestHitDist < 0 || thisDist < bestHitDist ) ) {
 					bestHitDist = thisDist;
-					bestHit = j;
+					bestHit		= j;
 				}
 			}
 
 			// if it gets to here, then it failed
 			continue;
 
-hitCheckDone:
+		hitCheckDone:
 
 			// this vertex was hit
 			foundHit = qtrue;
 			// set the appropriate bit-flag
-			fleshHitVerts->isHit = qtrue;
-			fleshHitVerts->vertHits[fleshHitVerts->numHits++] = (unsigned short)j;
-			//if (fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS)
+			fleshHitVerts->isHit							  = qtrue;
+			fleshHitVerts->vertHits[fleshHitVerts->numHits++] = ( unsigned short )j;
+			// if (fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS)
 			//	break;	// only find one close match per shot
-			if ( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
+			if( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
 				break;
 			}
 		}
 
-		if ( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
+		if( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
 			break;
 		}
 
 		// if we didn't find a hit vertex, grab the closest acceptible match
-		if ( !foundHit && bestHitDist >= 0 ) {
+		if( !foundHit && bestHitDist >= 0 ) {
 			// set the appropriate bit-flag
-			fleshHitVerts->isHit = qtrue;
-			fleshHitVerts->vertHits[fleshHitVerts->numHits++] = (unsigned short)bestHit;
-			if ( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
+			fleshHitVerts->isHit							  = qtrue;
+			fleshHitVerts->vertHits[fleshHitVerts->numHits++] = ( unsigned short )bestHit;
+			if( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
 				break;
 			}
 		}
@@ -738,20 +729,21 @@ hitCheckDone:
 	fleshHitVerts->numNewHits = 0;
 }
 
-void RB_ZombieFXShowFleshHits( trZombieFleshHitverts_t *fleshHitVerts, int oldNumVerts, int numSurfVerts ) {
-	byte *vertColors;
-	unsigned short *vertHits;
-	int i;
+void RB_ZombieFXShowFleshHits( trZombieFleshHitverts_t* fleshHitVerts, int oldNumVerts, int numSurfVerts )
+{
+	byte*			vertColors;
+	unsigned short* vertHits;
+	int				i;
 
-// disabled for E3, are we still going to use this?
+	// disabled for E3, are we still going to use this?
 	return;
 
 	vertColors = tess.vertexColors[oldNumVerts];
-	vertHits = fleshHitVerts->vertHits;
+	vertHits   = fleshHitVerts->vertHits;
 
 	// for each hit entry, adjust that verts alpha component
-	for ( i = 0; i < fleshHitVerts->numHits; i++, vertHits++ ) {
-		if ( vertColors[( *vertHits ) * 4 + 3] < ZOMBIEFX_PERHIT_TAKEALPHA ) {
+	for( i = 0; i < fleshHitVerts->numHits; i++, vertHits++ ) {
+		if( vertColors[( *vertHits ) * 4 + 3] < ZOMBIEFX_PERHIT_TAKEALPHA ) {
 			vertColors[( *vertHits ) * 4 + 3] = 0;
 		} else {
 			vertColors[( *vertHits ) * 4 + 3] -= ZOMBIEFX_PERHIT_TAKEALPHA;
@@ -759,28 +751,29 @@ void RB_ZombieFXShowFleshHits( trZombieFleshHitverts_t *fleshHitVerts, int oldNu
 	}
 }
 
-void RB_ZombieFXDecompose( int oldNumVerts, int numSurfVerts, float deltaTimeScale ) {
-	byte *vertColors;
-	float   *xyz, *norm;
-	int i;
-	float alpha;
+void RB_ZombieFXDecompose( int oldNumVerts, int numSurfVerts, float deltaTimeScale )
+{
+	byte*  vertColors;
+	float *xyz, *norm;
+	int	   i;
+	float  alpha;
 
-// disabled for E3, are we still going to use this?
+	// disabled for E3, are we still going to use this?
 	return;
 
 	vertColors = tess.vertexColors[oldNumVerts];
-	xyz = tess.xyz[oldNumVerts];
-	norm = tess.normal[oldNumVerts];
+	xyz		   = tess.xyz[oldNumVerts];
+	norm	   = tess.normal[oldNumVerts];
 
-	for ( i = 0; i < numSurfVerts; i++, vertColors += 4, xyz += 4, norm += 4 ) {
-		alpha = 255.0 * ( (float)( 1 + i % 3 ) / 3.0 ) * deltaTimeScale * 2;
-		if ( alpha > 255.0 ) {
+	for( i = 0; i < numSurfVerts; i++, vertColors += 4, xyz += 4, norm += 4 ) {
+		alpha = 255.0 * ( ( float )( 1 + i % 3 ) / 3.0 ) * deltaTimeScale * 2;
+		if( alpha > 255.0 ) {
 			alpha = 255.0;
 		}
-		if ( (float)vertColors[3] - alpha < 0 ) {
+		if( ( float )vertColors[3] - alpha < 0 ) {
 			vertColors[3] = 0;
 		} else {
-			vertColors[3] -= (byte)alpha;
+			vertColors[3] -= ( byte )alpha;
 		}
 
 		// skin shrinks with age
@@ -788,62 +781,64 @@ void RB_ZombieFXDecompose( int oldNumVerts, int numSurfVerts, float deltaTimeSca
 	}
 }
 
-void RB_ZombieFXFullAlpha( int oldNumVerts, int numSurfVerts ) {
-	byte *vertColors;
-	int i;
+void RB_ZombieFXFullAlpha( int oldNumVerts, int numSurfVerts )
+{
+	byte* vertColors;
+	int	  i;
 
 	vertColors = tess.vertexColors[oldNumVerts];
 
-	for ( i = 0; i < numSurfVerts; i++, vertColors += 4 ) {
+	for( i = 0; i < numSurfVerts; i++, vertColors += 4 ) {
 		vertColors[3] = 255;
 	}
 }
 
-void RB_ZombieFX( int part, drawSurf_t *drawSurf, int oldNumVerts, int oldNumIndex ) {
-	int numSurfVerts;
-	float deltaTime;
-	char    *surfName;
-	trZombieFleshHitverts_t *fleshHitVerts;
+void RB_ZombieFX( int part, drawSurf_t* drawSurf, int oldNumVerts, int oldNumIndex )
+{
+	int						 numSurfVerts;
+	float					 deltaTime;
+	char*					 surfName;
+	trZombieFleshHitverts_t* fleshHitVerts;
 
 	// Central point for Zombie post-tess processing. Various effects can be added from this point
 
-// disabled for E3, are we still going to use this?
+	// disabled for E3, are we still going to use this?
 	return;
 
-	if ( drawSurf->surface->surfaceType == SF_MD3 ) {
-		surfName = ( (md3Surface_t *)drawSurf->surface )->name;
-	} else if ( drawSurf->surface->surfaceType == SF_MDC ) {
-		surfName = ( (mdcSurface_t *)drawSurf->surface )->name;
+	if( drawSurf->surface->surfaceType == SF_MD3 ) {
+		surfName = ( ( md3Surface_t* )drawSurf->surface )->name;
+	} else if( drawSurf->surface->surfaceType == SF_MDC ) {
+		surfName = ( ( mdcSurface_t* )drawSurf->surface )->name;
 	} else {
 		Com_Printf( "RB_ZombieFX: unknown surface type\n" );
 		return;
 	}
 
 	// ignore all surfaces starting with u_sk (skeleton)
-	if ( !Q_strncmp( surfName, "u_sk", 4 ) ) {
+	if( !Q_strncmp( surfName, "u_sk", 4 ) ) {
 		return;
 	}
 	// legs
-	if ( !Q_strncmp( surfName, "l_sk", 4 ) ) {
+	if( !Q_strncmp( surfName, "l_sk", 4 ) ) {
 		return;
 	}
 	// head
-	if ( !Q_strncmp( surfName, "h_sk", 4 ) ) {
+	if( !Q_strncmp( surfName, "h_sk", 4 ) ) {
 		return;
 	}
 
 	numSurfVerts = tess.numVertexes - oldNumVerts;
 
-	if ( numSurfVerts > ZOMBIEFX_MAX_VERTS ) {
+	if( numSurfVerts > ZOMBIEFX_MAX_VERTS ) {
 		Com_Printf( "RB_ZombieFX: exceeded ZOMBIEFX_MAX_VERTS\n" );
 		return;
 	}
 
 	deltaTime = backEnd.currentEntity->e.shaderTime;
-	if ( ZOMBIEFX_FADEOUT_TIME_SEC < deltaTime ) {
+	if( ZOMBIEFX_FADEOUT_TIME_SEC < deltaTime ) {
 		// nothing to do, it's done fading out
 		tess.numVertexes = oldNumVerts;
-		tess.numIndexes = oldNumIndex;
+		tess.numIndexes	 = oldNumIndex;
 		return;
 	}
 
@@ -853,34 +848,40 @@ void RB_ZombieFX( int part, drawSurf_t *drawSurf, int oldNumVerts, int oldNumInd
 	RB_ZombieFXFullAlpha( oldNumVerts, numSurfVerts );
 
 	// if this is the chest surface, do flesh hits
-	if ( !Q_stricmp( surfName, zombieFxFleshHitSurfaceNames[part] ) ) {
-
+	if( !Q_stricmp( surfName, zombieFxFleshHitSurfaceNames[part] ) ) {
 		// check for any new bullet impacts that need to be scanned for triangle collisions
-		if ( fleshHitVerts->numNewHits ) {
+		if( fleshHitVerts->numNewHits ) {
 			RB_ZombieFXProcessNewHits( fleshHitVerts, oldNumVerts, numSurfVerts );
 		}
 
 		// hide vertices marked as being torn off
-		if ( fleshHitVerts->isHit ) {
+		if( fleshHitVerts->isHit ) {
 			RB_ZombieFXShowFleshHits( fleshHitVerts, oldNumVerts, numSurfVerts );
 		}
 	}
 
 	// decompose?
-	if ( deltaTime ) {
+	if( deltaTime ) {
 		RB_ZombieFXDecompose( oldNumVerts, numSurfVerts, deltaTime / ZOMBIEFX_FADEOUT_TIME_SEC );
 	}
-
 }
 
-static void RB_CopyModelMatrixToDXRTransform(const float* modelMatrix, float outTransform[12])
+static void RB_CopyModelMatrixToDXRTransform( const float* modelMatrix, float outTransform[12] )
 {
-	if (!modelMatrix)
-	{
+	if( !modelMatrix ) {
 		// identity 3x4 row-major
-		outTransform[0] = 1.0f; outTransform[1] = 0.0f; outTransform[2] = 0.0f; outTransform[3] = 0.0f;
-		outTransform[4] = 0.0f; outTransform[5] = 1.0f; outTransform[6] = 0.0f; outTransform[7] = 0.0f;
-		outTransform[8] = 0.0f; outTransform[9] = 0.0f; outTransform[10] = 1.0f; outTransform[11] = 0.0f;
+		outTransform[0]	 = 1.0f;
+		outTransform[1]	 = 0.0f;
+		outTransform[2]	 = 0.0f;
+		outTransform[3]	 = 0.0f;
+		outTransform[4]	 = 0.0f;
+		outTransform[5]	 = 1.0f;
+		outTransform[6]	 = 0.0f;
+		outTransform[7]	 = 0.0f;
+		outTransform[8]	 = 0.0f;
+		outTransform[9]	 = 0.0f;
+		outTransform[10] = 1.0f;
+		outTransform[11] = 0.0f;
 		return;
 	}
 
@@ -895,55 +896,48 @@ static void RB_CopyModelMatrixToDXRTransform(const float* modelMatrix, float out
 	outTransform[6] = modelMatrix[9];
 	outTransform[7] = modelMatrix[13];
 
-	outTransform[8] = modelMatrix[2];
-	outTransform[9] = modelMatrix[6];
+	outTransform[8]	 = modelMatrix[2];
+	outTransform[9]	 = modelMatrix[6];
 	outTransform[10] = modelMatrix[10];
 	outTransform[11] = modelMatrix[14];
 }
 
-void RB_UpdateDXRInstance(trDXRMesh_t* mesh, int surfaceId, uint32_t instanceID, const float* modelMatrix)
+void RB_UpdateDXRInstance( trDXRMesh_t* mesh, int surfaceId, uint32_t instanceID, const float* modelMatrix )
 {
-	if (!mesh)
-	{
+	if( !mesh ) {
 		return;
 	}
 
-	if (surfaceId < 0 || surfaceId >= MAX_DXR_SURFACES)
-	{
+	if( surfaceId < 0 || surfaceId >= MAX_DXR_SURFACES ) {
 		return;
 	}
 
 	trDXRSurface_t* surf = &mesh->dxrSurfaces[surfaceId];
 
-	if (!surf->dxrMeshHandle)
-	{
+	if( !surf->dxrMeshHandle ) {
 		return;
 	}
 
 	glRaytracingInstanceDesc_t desc = {};
-	desc.meshHandle = (uint32_t)surf->dxrMeshHandle;
-	desc.instanceID = instanceID;
-	desc.mask = 0xFF;
+	desc.meshHandle					= ( uint32_t )surf->dxrMeshHandle;
+	desc.instanceID					= instanceID;
+	desc.mask						= 0xFF;
 
-	RB_CopyModelMatrixToDXRTransform(modelMatrix, desc.transform);
+	RB_CopyModelMatrixToDXRTransform( modelMatrix, desc.transform );
 
-	if (!surf->dxrInstanceHandle)
-	{
-		surf->dxrInstanceHandle = glRaytracingCreateInstance(&desc);
-	}
-	else
-	{
-		if (!glRaytracingUpdateInstance(surf->dxrInstanceHandle, &desc))
-		{
-			glRaytracingDeleteInstance(surf->dxrInstanceHandle);
-			surf->dxrInstanceHandle = glRaytracingCreateInstance(&desc);
+	if( !surf->dxrInstanceHandle ) {
+		surf->dxrInstanceHandle = glRaytracingCreateInstance( &desc );
+	} else {
+		if( !glRaytracingUpdateInstance( surf->dxrInstanceHandle, &desc ) ) {
+			glRaytracingDeleteInstance( surf->dxrInstanceHandle );
+			surf->dxrInstanceHandle = glRaytracingCreateInstance( &desc );
 		}
 	}
 }
 
-#define MAC_EVENT_PUMP_MSEC     5
+#define MAC_EVENT_PUMP_MSEC 5
 
-void RB_BuildViewMatrixFromRefdef(const trRefdef_t* rd, Mat4 * outView)
+void RB_BuildViewMatrixFromRefdef( const trRefdef_t* rd, Mat4* outView )
 {
 	// Quake 3 stores camera axes in world space.
 	// For a view matrix, use the inverse camera transform.
@@ -973,14 +967,14 @@ void RB_BuildViewMatrixFromRefdef(const trRefdef_t* rd, Mat4 * outView)
 	outView->m[6] = -f[1];
 	outView->m[7] = 0.0f;
 
-	outView->m[8] = r[2];
-	outView->m[9] = u[2];
+	outView->m[8]  = r[2];
+	outView->m[9]  = u[2];
 	outView->m[10] = -f[2];
 	outView->m[11] = 0.0f;
 
-	outView->m[12] = -(org[0] * r[0] + org[1] * r[1] + org[2] * r[2]);
-	outView->m[13] = -(org[0] * u[0] + org[1] * u[1] + org[2] * u[2]);
-	outView->m[14] = (org[0] * f[0] + org[1] * f[1] + org[2] * f[2]);
+	outView->m[12] = -( org[0] * r[0] + org[1] * r[1] + org[2] * r[2] );
+	outView->m[13] = -( org[0] * u[0] + org[1] * u[1] + org[2] * u[2] );
+	outView->m[14] = ( org[0] * f[0] + org[1] * f[1] + org[2] * f[2] );
 	outView->m[15] = 1.0f;
 }
 
@@ -990,84 +984,70 @@ RB_UpdateDXRMesh
 ==================
 */
 
-void RB_UpdateDXRMesh(trDXRMesh_t* mesh, int currentFrame, int surfaceId, int startVertex, int endVertex, int startIndex, int endIndex)
+void RB_UpdateDXRMesh( trDXRMesh_t* mesh, int currentFrame, int surfaceId, int startVertex, int endVertex, int startIndex, int endIndex )
 {
-	if (!mesh)
-	{
+	if( !mesh ) {
 		return;
 	}
 
-	if (mesh->cachedFrame == currentFrame)
-	{
+	if( mesh->cachedFrame == currentFrame ) {
 		return;
 	}
 
-	if (surfaceId < 0 || surfaceId >= MAX_DXR_SURFACES)
-	{
+	if( surfaceId < 0 || surfaceId >= MAX_DXR_SURFACES ) {
 		return;
 	}
 
-	if (startVertex < 0)
-	{
+	if( startVertex < 0 ) {
 		startVertex = 0;
 	}
-	if (endVertex > tess.numVertexes)
-	{
+	if( endVertex > tess.numVertexes ) {
 		endVertex = tess.numVertexes;
 	}
 
-	if (startIndex < 0)
-	{
+	if( startIndex < 0 ) {
 		startIndex = 0;
 	}
-	if (endIndex > tess.numIndexes)
-	{
+	if( endIndex > tess.numIndexes ) {
 		endIndex = tess.numIndexes;
 	}
 
-	if (endVertex <= startVertex || endIndex <= startIndex)
-	{
+	if( endVertex <= startVertex || endIndex <= startIndex ) {
 		return;
 	}
 
-	const int vertexCount = endVertex - startVertex;
-	const int indexCount = endIndex - startIndex;
+	const int						  vertexCount = endVertex - startVertex;
+	const int						  indexCount  = endIndex - startIndex;
 
-	trDXRSurface_t* surf = &mesh->dxrSurfaces[surfaceId];
+	trDXRSurface_t*					  surf = &mesh->dxrSurfaces[surfaceId];
 
-	std::vector<glRaytracingVertex_t> vertices(vertexCount);
-	std::vector<uint32_t> indices(indexCount);
+	std::vector<glRaytracingVertex_t> vertices( vertexCount );
+	std::vector<uint32_t>			  indices( indexCount );
 
-	for (int i = 0; i < vertexCount; ++i)
-	{
-		const int srcVert = startVertex + i;
+	for( int i = 0; i < vertexCount; ++i ) {
+		const int srcVert  = startVertex + i;
 		vertices[i].xyz[0] = tess.xyz[srcVert][0];
 		vertices[i].xyz[1] = tess.xyz[srcVert][1];
 		vertices[i].xyz[2] = tess.xyz[srcVert][2];
 	}
 
-	for (int i = 0; i < indexCount; ++i)
-	{
+	for( int i = 0; i < indexCount; ++i ) {
 		const int localIndex = tess.indexes[startIndex + i] - startVertex;
-		indices[i] = (localIndex >= 0 && localIndex < vertexCount) ? (uint32_t)localIndex : 0;
+		indices[i]			 = ( localIndex >= 0 && localIndex < vertexCount ) ? ( uint32_t )localIndex : 0;
 	}
 
 	glRaytracingMeshDesc_t desc = {};
-	desc.vertices = vertices.data();
-	desc.vertexCount = (uint32_t)vertexCount;
-	desc.indices = indices.data();
-	desc.indexCount = (uint32_t)indexCount;
+	desc.vertices				= vertices.data();
+	desc.vertexCount			= ( uint32_t )vertexCount;
+	desc.indices				= indices.data();
+	desc.indexCount				= ( uint32_t )indexCount;
 
-	if (!surf->dxrMeshHandle)
-	{
-		surf->dxrMeshHandle = glRaytracingCreateMesh(&desc);
-	}
-	else
-	{
-		if (!glRaytracingUpdateMesh(surf->dxrMeshHandle, &desc))
-		{
-			glRaytracingDeleteMesh(surf->dxrMeshHandle);
-			surf->dxrMeshHandle = glRaytracingCreateMesh(&desc);
+	if( !surf->dxrMeshHandle ) {
+		surf->dxrMeshHandle = glRaytracingCreateMesh( &desc );
+	} else {
+		if( !glRaytracingUpdateMesh( surf->dxrMeshHandle, &desc ) ) {
+			glRaytracingDeleteMesh( surf->dxrMeshHandle );
+			surf->dxrMeshHandle = glRaytracingCreateMesh( &desc );
 		}
 	}
 
@@ -1079,14 +1059,14 @@ void RB_UpdateDXRMesh(trDXRMesh_t* mesh, int currentFrame, int surfaceId, int st
 RB_UpdateDrawSurfFlags
 ==================
 */
-void RB_UpdateDrawSurfFlags(drawSurf_t* surf, shader_t *shader)
+void RB_UpdateDrawSurfFlags( drawSurf_t* surf, shader_t* shader )
 {
-	// The base flag is the geometry flag. 
-	glGeometryFlagf(surf->geoFlag);
+	// The base flag is the geometry flag.
+	glGeometryFlagf( surf->geoFlag );
 
 	// Now check to see if we will override it.
-	if (shader->stages[0]->bundle[0].light > 0) {
-		glGeometryFlagf(GEOMETRY_FLAG_UNLIT);
+	if( shader->stages[0]->bundle[0].light > 0 ) {
+		glGeometryFlagf( GEOMETRY_FLAG_UNLIT );
 	}
 }
 
@@ -1095,23 +1075,24 @@ void RB_UpdateDrawSurfFlags(drawSurf_t* surf, shader_t *shader)
 RB_RenderDrawSurfList
 ==================
 */
-void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
-	shader_t        *shader, *oldShader;
-	int fogNum, oldFogNum;
-	int entityNum, oldEntityNum;
-	int dlighted, oldDlighted;
-	qboolean depthRange, oldDepthRange;
-	int i;
-	drawSurf_t      *drawSurf;
-	int oldSort;
-	float originalTime;
-	int oldNumVerts, oldNumIndex;
-//GR - tessellation flag
-	int atiTess = 0, oldAtiTess;
+void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
+{
+	shader_t *	shader, *oldShader;
+	int			fogNum, oldFogNum;
+	int			entityNum, oldEntityNum;
+	int			dlighted, oldDlighted;
+	qboolean	depthRange, oldDepthRange;
+	int			i;
+	drawSurf_t* drawSurf;
+	int			oldSort;
+	float		originalTime;
+	int			oldNumVerts, oldNumIndex;
+	// GR - tessellation flag
+	int			atiTess = 0, oldAtiTess;
 #ifdef __MACOS__
 	int macEventTime;
 
-	Sys_PumpEvents();       // crutch up the mac's limited buffer queue size
+	Sys_PumpEvents(); // crutch up the mac's limited buffer queue size
 
 	// we don't want to pump the event loop too often and waste time, so
 	// we are going to check every shader change
@@ -1120,20 +1101,17 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 	Mat4 view, proj, viewProj, invViewProj;
 
-	RB_BuildViewMatrixFromRefdef(&backEnd.refdef, &view);
-	memcpy(proj.m, backEnd.viewParms.projectionMatrix, sizeof(float) * 16);
-	Mat4 invViewMatrix;	
-	Mat4::Invert(&view, &invViewMatrix);
-	viewProj = Mat4::Multiply(proj, view);
-	Mat4::Invert(&viewProj, &invViewProj);
+	RB_BuildViewMatrixFromRefdef( &backEnd.refdef, &view );
+	memcpy( proj.m, backEnd.viewParms.projectionMatrix, sizeof( float ) * 16 );
+	Mat4 invViewMatrix;
+	Mat4::Invert( &view, &invViewMatrix );
+	viewProj = Mat4::Multiply( proj, view );
+	Mat4::Invert( &viewProj, &invViewProj );
 
-	glRaytracingLightingSetInvViewMatrix(invViewMatrix.m);
-	glRaytracingLightingSetInvViewProjMatrix(invViewProj.m);
+	glRaytracingLightingSetInvViewMatrix( invViewMatrix.m );
+	glRaytracingLightingSetInvViewProjMatrix( invViewProj.m );
 
-	glRaytracingLightingSetCameraPosition(
-		backEnd.refdef.vieworg[0],
-		backEnd.refdef.vieworg[1],
-		backEnd.refdef.vieworg[2]);
+	glRaytracingLightingSetCameraPosition( backEnd.refdef.vieworg[0], backEnd.refdef.vieworg[1], backEnd.refdef.vieworg[2] );
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
@@ -1142,141 +1120,140 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	RB_BeginDrawingView();
 
 	// draw everything
-	oldEntityNum = -1;
+	oldEntityNum		  = -1;
 	backEnd.currentEntity = &tr.worldEntity;
-	oldShader = NULL;
-	oldFogNum = -1;
-	oldDepthRange = qfalse;
-	oldDlighted = qfalse;
-	oldSort = -1;
-	depthRange = qfalse;
-// GR - tessellation also forces to draw everything
+	oldShader			  = NULL;
+	oldFogNum			  = -1;
+	oldDepthRange		  = qfalse;
+	oldDlighted			  = qfalse;
+	oldSort				  = -1;
+	depthRange			  = qfalse;
+	// GR - tessellation also forces to draw everything
 	oldAtiTess = -1;
 
 	backEnd.pc.c_surfaces += numDrawSurfs;
 
 	orientationr_t entityMatrix;
-	trDXRMesh_t* dxrMesh = NULL;
-	for ( i = 0, drawSurf = drawSurfs ; i < numDrawSurfs ; i++, drawSurf++ ) {
-		if ( drawSurf->sort == oldSort ) {
+	trDXRMesh_t*   dxrMesh = NULL;
+	for( i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++ ) {
+		if( drawSurf->sort == oldSort ) {
 			// fast path, same as previous sort
 			oldNumVerts = tess.numVertexes;
 			oldNumIndex = tess.numIndexes;
 
-			rb_surfaceTable[ drawSurf->surface->surfaceType ]( drawSurf->surface );
-		
-			if (dxrMesh)
-			{
-				RB_UpdateDXRMesh(dxrMesh, backEnd.currentEntity->e.frame, drawSurf->dxrSurfaceId, oldNumVerts, tess.numVertexes, oldNumIndex, tess.numIndexes);
-				RB_UpdateDXRInstance(dxrMesh, drawSurf->dxrSurfaceId, 0, entityMatrix.modelMatrix);
+			rb_surfaceTable[drawSurf->surface->surfaceType]( drawSurf->surface );
+
+			if( dxrMesh ) {
+				RB_UpdateDXRMesh( dxrMesh, backEnd.currentEntity->e.frame, drawSurf->dxrSurfaceId, oldNumVerts, tess.numVertexes, oldNumIndex, tess.numIndexes );
+				RB_UpdateDXRInstance( dxrMesh, drawSurf->dxrSurfaceId, 0, entityMatrix.modelMatrix );
 			}
-/*
-			// RF, convert the newly created vertexes into dust particles, and overwrite
-			if (backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX) {
-				RB_ZombieFX( 0, drawSurf, oldNumVerts, oldNumIndex );
-			}
-			else if (backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX2) {
-				RB_ZombieFX( 1, drawSurf, oldNumVerts, oldNumIndex );
-			}
-*/
+			/*
+						// RF, convert the newly created vertexes into dust particles, and overwrite
+						if (backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX) {
+							RB_ZombieFX( 0, drawSurf, oldNumVerts, oldNumIndex );
+						}
+						else if (backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX2) {
+							RB_ZombieFX( 1, drawSurf, oldNumVerts, oldNumIndex );
+						}
+			*/
 			continue;
 		}
 		oldSort = drawSurf->sort;
-// GR - also extract tesselation flag
+		// GR - also extract tesselation flag
 		R_DecomposeSort( drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted, &atiTess );
 
 		//
 		// change the tess parameters if needed
 		// a "entityMergable" shader is a shader that can have surfaces from seperate
 		// entities merged into a single batch, like smoke and blood puff sprites
-		if ( shader != oldShader || fogNum != oldFogNum || dlighted != oldDlighted
-// GR - force draw on tessellation flag change
-			 || ( atiTess != oldAtiTess )
-			 || ( entityNum != oldEntityNum && !shader->entityMergable ) ) {
-			if ( oldShader != NULL ) {
-#ifdef __MACOS__    // crutch up the mac's limited buffer queue size
+		if( shader != oldShader || fogNum != oldFogNum ||
+			dlighted != oldDlighted
+			// GR - force draw on tessellation flag change
+			|| ( atiTess != oldAtiTess ) || ( entityNum != oldEntityNum && !shader->entityMergable ) ) {
+			if( oldShader != NULL ) {
+#ifdef __MACOS__ // crutch up the mac's limited buffer queue size
 				int t;
 
 				t = ri.Milliseconds();
-				if ( t > macEventTime ) {
+				if( t > macEventTime ) {
 					macEventTime = t + MAC_EVENT_PUMP_MSEC;
 					Sys_PumpEvents();
 				}
 #endif
-// GR - pass tessellation flag to the shader command
-//		make sure to use oldAtiTess!!!
+				// GR - pass tessellation flag to the shader command
+				//		make sure to use oldAtiTess!!!
 				tess.ATI_tess = ( oldAtiTess == ATI_TESS_TRUFORM );
-				
+
 				RB_EndSurface();
 			}
 			RB_BeginSurface( shader, fogNum );
-			RB_UpdateDrawSurfFlags(drawSurf, shader);
+			RB_UpdateDrawSurfFlags( drawSurf, shader );
 
-			oldShader = shader;
-			oldFogNum = fogNum;
+			oldShader	= shader;
+			oldFogNum	= fogNum;
 			oldDlighted = dlighted;
-// GR - update old tessellation flag
+			// GR - update old tessellation flag
 			oldAtiTess = atiTess;
 		}
 
-// jmarshall - in non skyportal passes we want to render raytracing, but just before the first bleding passes. 
-		if (shader->sort > SS_OPAQUE && !backEnd.raytraceRendered && !(backEnd.refdef.rdflags & RDF_SKYBOXPORTAL)) {
+		// jmarshall - in non skyportal passes we want to render raytracing, but just before the first bleding passes.
+		if( shader->sort > SS_OPAQUE && !backEnd.raytraceRendered && !( backEnd.refdef.rdflags & RDF_SKYBOXPORTAL ) ) {
 			backEnd.raytraceRendered = true;
 			glFinish();
 			glLightScene();
-			glRaytracingLightingClearLights(false);
+			glRaytracingLightingClearLights( false );
 		}
-// jmarshall end
+		// jmarshall end
 		//
 		// change the modelview matrix if needed
 		//
-		if ( entityNum != oldEntityNum ) {
+		if( entityNum != oldEntityNum ) {
 			depthRange = qfalse;
 
-			if ( entityNum != ENTITYNUM_WORLD ) {
-				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
+			if( entityNum != ENTITYNUM_WORLD ) {
+				backEnd.currentEntity	 = &backEnd.refdef.entities[entityNum];
 				backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
 
 				// we have to reset the shaderTime as well otherwise image animations start
 				// from the wrong frame
-//				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+				//				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 
 				// set up the transformation matrix
 				R_RotateForEntity( backEnd.currentEntity, &backEnd.viewParms, &backEnd.or );
 
 				// set up the dynamic lighting if needed
-				if ( backEnd.currentEntity->needDlights ) {
+				if( backEnd.currentEntity->needDlights ) {
 					R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 				}
 
-				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
+				if( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
 				}
 
-				R_RotateForEntity(backEnd.currentEntity, NULL, &entityMatrix);
+				R_RotateForEntity( backEnd.currentEntity, NULL, &entityMatrix );
 			} else {
-				backEnd.currentEntity = &tr.worldEntity;
+				backEnd.currentEntity	 = &tr.worldEntity;
 				backEnd.refdef.floatTime = originalTime;
-				backEnd.or = backEnd.viewParms.world;
+				backEnd.or				 = backEnd.viewParms.world;
 
 				// we have to reset the shaderTime as well otherwise image animations on
 				// the world (like water) continue with the wrong frame
-//				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-				R_RotateForEntity(NULL, NULL, &entityMatrix);
+				//				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+				R_RotateForEntity( NULL, NULL, &entityMatrix );
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
 			dxrMesh = drawSurf->dxrMesh;
 
 			glLoadMatrixf( backEnd.or.modelMatrix );
-			glLoadModelMatrixf(entityMatrix.modelMatrix);
+			glLoadModelMatrixf( entityMatrix.modelMatrix );
 
 			//
 			// change depthrange if needed
 			//
-			if ( oldDepthRange != depthRange ) {
-				if ( depthRange ) {
+			if( oldDepthRange != depthRange ) {
+				if( depthRange ) {
 					glDepthRange( 0, 0.3 );
 				} else {
 					glDepthRange( 0, 1 );
@@ -1293,48 +1270,46 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		oldNumIndex = tess.numIndexes;
 
 		// add the triangles for this surface
-		rb_surfaceTable[ drawSurf->surface->surfaceType]( drawSurf->surface );
+		rb_surfaceTable[drawSurf->surface->surfaceType]( drawSurf->surface );
 
 		dxrMesh = drawSurf->dxrMesh;
-		if (dxrMesh)
-		{
-			RB_UpdateDXRMesh(dxrMesh, backEnd.currentEntity->e.frame, drawSurf->dxrSurfaceId, oldNumVerts, tess.numVertexes, oldNumIndex, tess.numIndexes);
-			RB_UpdateDXRInstance(dxrMesh, drawSurf->dxrSurfaceId, 0, entityMatrix.modelMatrix);
+		if( dxrMesh ) {
+			RB_UpdateDXRMesh( dxrMesh, backEnd.currentEntity->e.frame, drawSurf->dxrSurfaceId, oldNumVerts, tess.numVertexes, oldNumIndex, tess.numIndexes );
+			RB_UpdateDXRInstance( dxrMesh, drawSurf->dxrSurfaceId, 0, entityMatrix.modelMatrix );
 		}
 
 		// RF, convert the newly created vertexes into dust particles, and overwrite
-		if ( backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX ) {
+		if( backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX ) {
 			RB_ZombieFX( 0, drawSurf, oldNumVerts, oldNumIndex );
-		} else if ( backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX2 )     {
+		} else if( backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX2 ) {
 			RB_ZombieFX( 1, drawSurf, oldNumVerts, oldNumIndex );
 		}
 	}
 
 	// draw the contents of the last shader batch
-	if ( oldShader != NULL ) {
-// GR - pass tessellation flag to the shader command
-//		make sure to use oldAtiTess!!!
+	if( oldShader != NULL ) {
+		// GR - pass tessellation flag to the shader command
+		//		make sure to use oldAtiTess!!!
 		tess.ATI_tess = ( oldAtiTess == ATI_TESS_TRUFORM );
 
 		RB_EndSurface();
-		glGeometryFlagf(GEOMETRY_FLAG_NONE);
-		glLoadModelMatrixf(NULL);
+		glGeometryFlagf( GEOMETRY_FLAG_NONE );
+		glLoadModelMatrixf( NULL );
 	}
 
 	// go back to the world modelview matrix
-	backEnd.currentEntity = &tr.worldEntity;
+	backEnd.currentEntity	 = &tr.worldEntity;
 	backEnd.refdef.floatTime = originalTime;
-	backEnd.or = backEnd.viewParms.world;
+	backEnd.or				 = backEnd.viewParms.world;
 	R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 
 	glLoadMatrixf( backEnd.viewParms.world.modelMatrix );
-	if ( depthRange ) {
+	if( depthRange ) {
 		glDepthRange( 0, 1 );
 	}
 
 	// (SA) draw sun
 	RB_DrawSun();
-
 
 	// darken down any stencil shadows
 	RB_ShadowFinish();
@@ -1343,10 +1318,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	RB_RenderFlares();
 
 #ifdef __MACOS__
-	Sys_PumpEvents();       // crutch up the mac's limited buffer queue size
+	Sys_PumpEvents(); // crutch up the mac's limited buffer queue size
 #endif
 }
-
 
 /*
 ============================================================================
@@ -1362,7 +1336,8 @@ RB_SetGL2D
 
 ================
 */
-void    RB_SetGL2D( void ) {
+void RB_SetGL2D()
+{
 	backEnd.projection2D = qtrue;
 
 	// set 2D virtual screen size
@@ -1374,9 +1349,7 @@ void    RB_SetGL2D( void ) {
 	glMatrixMode( GL_MODELVIEW );
 	glLoadIdentity();
 
-	GL_State( GLS_DEPTHTEST_DISABLE |
-			  GLS_SRCBLEND_SRC_ALPHA |
-			  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
 
 	glDisable( GL_FOG ); //----(SA)	added
 
@@ -1384,10 +1357,9 @@ void    RB_SetGL2D( void ) {
 	glDisable( GL_CLIP_PLANE0 );
 
 	// set time for 2D shaders
-	backEnd.refdef.time = ri.Milliseconds();
+	backEnd.refdef.time		 = ri.Milliseconds();
 	backEnd.refdef.floatTime = backEnd.refdef.time * 0.001f;
 }
-
 
 /*
 =============
@@ -1398,33 +1370,34 @@ Stretches a raw 32 bit power of 2 bitmap image over the given screen rectangle.
 Used for cinematics.
 =============
 */
-void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty ) {
+void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte* data, int client, qboolean dirty )
+{
 	int i, j;
 	int start, end;
 
-	if ( !tr.registered ) {
+	if( !tr.registered ) {
 		return;
 	}
 	R_SyncRenderThread();
 
 	start = end = 0;
-	if ( r_speeds->integer ) {
+	if( r_speeds->integer ) {
 		start = ri.Milliseconds();
 	}
 
 	// make sure rows and cols are powers of 2
-	for ( i = 0 ; ( 1 << i ) < cols ; i++ ) {
+	for( i = 0; ( 1 << i ) < cols; i++ ) {
 	}
-	for ( j = 0 ; ( 1 << j ) < rows ; j++ ) {
+	for( j = 0; ( 1 << j ) < rows; j++ ) {
 	}
-	if ( ( 1 << i ) != cols || ( 1 << j ) != rows ) {
+	if( ( 1 << i ) != cols || ( 1 << j ) != rows ) {
 		ri.Error( ERR_DROP, "Draw_StretchRaw: size not a power of 2: %i by %i", cols, rows );
 	}
 
 	GL_Bind( tr.scratchImage[client] );
 
 	// if the scratchImage isn't in the format we want, specify it as a new texture
-	if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
+	if( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
 		tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
 		tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
 		glTexImage2D( GL_TEXTURE_2D, 0, 3, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
@@ -1433,14 +1406,14 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
 	} else {
-		if ( dirty ) {
+		if( dirty ) {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 			// it and don't try and do a texture compression
 			glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		}
 	}
 
-	if ( r_speeds->integer ) {
+	if( r_speeds->integer ) {
 		end = ri.Milliseconds();
 		ri.Printf( PRINT_ALL, "glTexSubImage2D %i, %i: %i msec\n", cols, rows, end - start );
 	}
@@ -1450,9 +1423,9 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 	glColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
 
 	glBegin( GL_QUADS );
-	glTexCoord2f( 0.5f / cols,  0.5f / rows );
+	glTexCoord2f( 0.5f / cols, 0.5f / rows );
 	glVertex2f( x, y );
-	glTexCoord2f( ( cols - 0.5f ) / cols,  0.5f / rows );
+	glTexCoord2f( ( cols - 0.5f ) / cols, 0.5f / rows );
 	glVertex2f( x + w, y );
 	glTexCoord2f( ( cols - 0.5f ) / cols, ( rows - 0.5f ) / rows );
 	glVertex2f( x + w, y + h );
@@ -1461,13 +1434,12 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 	glEnd();
 }
 
-
-void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty ) {
-
+void RE_UploadCinematic( int w, int h, int cols, int rows, const byte* data, int client, qboolean dirty )
+{
 	GL_Bind( tr.scratchImage[client] );
 
 	// if the scratchImage isn't in the format we want, specify it as a new texture
-	if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
+	if( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
 		tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
 		tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
 		glTexImage2D( GL_TEXTURE_2D, 0, 3, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
@@ -1476,7 +1448,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
 	} else {
-		if ( dirty ) {
+		if( dirty ) {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 			// it and don't try and do a texture compression
 			glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
@@ -1488,18 +1460,19 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 RB_Raytrace
 =============
 */
-const void* RB_Raytrace(const void* data) {
+const void* RB_Raytrace( const void* data )
+{
 	const raytraceRenderCommand_t* cmd;
-	cmd = (const raytraceRenderCommand_t*)data;
+	cmd = ( const raytraceRenderCommand_t* )data;
 
-	if (!backEnd.raytraceRendered) {
+	if( !backEnd.raytraceRendered ) {
 		backEnd.raytraceRendered = true;
 		glFinish();
 		glLightScene();
-		glRaytracingLightingClearLights(false);
+		glRaytracingLightingClearLights( false );
 	}
 
-	return (const void*)(cmd + 1);
+	return ( const void* )( cmd + 1 );
 }
 
 /*
@@ -1508,17 +1481,18 @@ RB_SetColor
 
 =============
 */
-const void  *RB_SetColor( const void *data ) {
-	const setColorCommand_t *cmd;
+const void* RB_SetColor( const void* data )
+{
+	const setColorCommand_t* cmd;
 
-	cmd = (const setColorCommand_t *)data;
+	cmd = ( const setColorCommand_t* )data;
 
 	backEnd.color2D[0] = cmd->color[0] * 255;
 	backEnd.color2D[1] = cmd->color[1] * 255;
 	backEnd.color2D[2] = cmd->color[2] * 255;
 	backEnd.color2D[3] = cmd->color[3] * 255;
 
-	return (const void *)( cmd + 1 );
+	return ( const void* )( cmd + 1 );
 }
 
 /*
@@ -1526,20 +1500,21 @@ const void  *RB_SetColor( const void *data ) {
 RB_StretchPic
 =============
 */
-const void *RB_StretchPic( const void *data ) {
-	const stretchPicCommand_t   *cmd;
-	shader_t *shader;
-	int numVerts, numIndexes;
+const void* RB_StretchPic( const void* data )
+{
+	const stretchPicCommand_t* cmd;
+	shader_t*				   shader;
+	int						   numVerts, numIndexes;
 
-	cmd = (const stretchPicCommand_t *)data;
+	cmd = ( const stretchPicCommand_t* )data;
 
-	if ( !backEnd.projection2D ) {
+	if( !backEnd.projection2D ) {
 		RB_SetGL2D();
 	}
 
 	shader = cmd->shader;
-	if ( shader != tess.shader ) {
-		if ( tess.numIndexes ) {
+	if( shader != tess.shader ) {
+		if( tess.numIndexes ) {
 			RB_EndSurface();
 		}
 		backEnd.currentEntity = &backEnd.entity2D;
@@ -1547,75 +1522,72 @@ const void *RB_StretchPic( const void *data ) {
 	}
 
 	RB_CHECKOVERFLOW( 4, 6 );
-	numVerts = tess.numVertexes;
+	numVerts   = tess.numVertexes;
 	numIndexes = tess.numIndexes;
 
 	tess.numVertexes += 4;
 	tess.numIndexes += 6;
 
-	tess.indexes[ numIndexes ] = numVerts + 3;
-	tess.indexes[ numIndexes + 1 ] = numVerts + 0;
-	tess.indexes[ numIndexes + 2 ] = numVerts + 2;
-	tess.indexes[ numIndexes + 3 ] = numVerts + 2;
-	tess.indexes[ numIndexes + 4 ] = numVerts + 0;
-	tess.indexes[ numIndexes + 5 ] = numVerts + 1;
+	tess.indexes[numIndexes]	 = numVerts + 3;
+	tess.indexes[numIndexes + 1] = numVerts + 0;
+	tess.indexes[numIndexes + 2] = numVerts + 2;
+	tess.indexes[numIndexes + 3] = numVerts + 2;
+	tess.indexes[numIndexes + 4] = numVerts + 0;
+	tess.indexes[numIndexes + 5] = numVerts + 1;
 
-	*(int *)tess.vertexColors[ numVerts ] =
-		*(int *)tess.vertexColors[ numVerts + 1 ] =
-			*(int *)tess.vertexColors[ numVerts + 2 ] =
-				*(int *)tess.vertexColors[ numVerts + 3 ] = *(int *)backEnd.color2D;
+	*( int* )tess.vertexColors[numVerts] = *( int* )tess.vertexColors[numVerts + 1] = *( int* )tess.vertexColors[numVerts + 2] = *( int* )tess.vertexColors[numVerts + 3] = *( int* )backEnd.color2D;
 
-	tess.xyz[ numVerts ][0] = cmd->x;
-	tess.xyz[ numVerts ][1] = cmd->y;
-	tess.xyz[ numVerts ][2] = 0;
+	tess.xyz[numVerts][0] = cmd->x;
+	tess.xyz[numVerts][1] = cmd->y;
+	tess.xyz[numVerts][2] = 0;
 
-	tess.texCoords[ numVerts ][0][0] = cmd->s1;
-	tess.texCoords[ numVerts ][0][1] = cmd->t1;
+	tess.texCoords[numVerts][0][0] = cmd->s1;
+	tess.texCoords[numVerts][0][1] = cmd->t1;
 
-	tess.xyz[ numVerts + 1 ][0] = cmd->x + cmd->w;
-	tess.xyz[ numVerts + 1 ][1] = cmd->y;
-	tess.xyz[ numVerts + 1 ][2] = 0;
+	tess.xyz[numVerts + 1][0] = cmd->x + cmd->w;
+	tess.xyz[numVerts + 1][1] = cmd->y;
+	tess.xyz[numVerts + 1][2] = 0;
 
-	tess.texCoords[ numVerts + 1 ][0][0] = cmd->s2;
-	tess.texCoords[ numVerts + 1 ][0][1] = cmd->t1;
+	tess.texCoords[numVerts + 1][0][0] = cmd->s2;
+	tess.texCoords[numVerts + 1][0][1] = cmd->t1;
 
-	tess.xyz[ numVerts + 2 ][0] = cmd->x + cmd->w;
-	tess.xyz[ numVerts + 2 ][1] = cmd->y + cmd->h;
-	tess.xyz[ numVerts + 2 ][2] = 0;
+	tess.xyz[numVerts + 2][0] = cmd->x + cmd->w;
+	tess.xyz[numVerts + 2][1] = cmd->y + cmd->h;
+	tess.xyz[numVerts + 2][2] = 0;
 
-	tess.texCoords[ numVerts + 2 ][0][0] = cmd->s2;
-	tess.texCoords[ numVerts + 2 ][0][1] = cmd->t2;
+	tess.texCoords[numVerts + 2][0][0] = cmd->s2;
+	tess.texCoords[numVerts + 2][0][1] = cmd->t2;
 
-	tess.xyz[ numVerts + 3 ][0] = cmd->x;
-	tess.xyz[ numVerts + 3 ][1] = cmd->y + cmd->h;
-	tess.xyz[ numVerts + 3 ][2] = 0;
+	tess.xyz[numVerts + 3][0] = cmd->x;
+	tess.xyz[numVerts + 3][1] = cmd->y + cmd->h;
+	tess.xyz[numVerts + 3][2] = 0;
 
-	tess.texCoords[ numVerts + 3 ][0][0] = cmd->s1;
-	tess.texCoords[ numVerts + 3 ][0][1] = cmd->t2;
+	tess.texCoords[numVerts + 3][0][0] = cmd->s1;
+	tess.texCoords[numVerts + 3][0][1] = cmd->t2;
 
-	return (const void *)( cmd + 1 );
+	return ( const void* )( cmd + 1 );
 }
-
 
 /*
 ==============
 RB_StretchPicGradient
 ==============
 */
-const void *RB_StretchPicGradient( const void *data ) {
-	const stretchPicCommand_t   *cmd;
-	shader_t *shader;
-	int numVerts, numIndexes;
+const void* RB_StretchPicGradient( const void* data )
+{
+	const stretchPicCommand_t* cmd;
+	shader_t*				   shader;
+	int						   numVerts, numIndexes;
 
-	cmd = (const stretchPicCommand_t *)data;
+	cmd = ( const stretchPicCommand_t* )data;
 
-	if ( !backEnd.projection2D ) {
+	if( !backEnd.projection2D ) {
 		RB_SetGL2D();
 	}
 
 	shader = cmd->shader;
-	if ( shader != tess.shader ) {
-		if ( tess.numIndexes ) {
+	if( shader != tess.shader ) {
+		if( tess.numIndexes ) {
 			RB_EndSurface();
 		}
 		backEnd.currentEntity = &backEnd.entity2D;
@@ -1623,61 +1595,58 @@ const void *RB_StretchPicGradient( const void *data ) {
 	}
 
 	RB_CHECKOVERFLOW( 4, 6 );
-	numVerts = tess.numVertexes;
+	numVerts   = tess.numVertexes;
 	numIndexes = tess.numIndexes;
 
 	tess.numVertexes += 4;
 	tess.numIndexes += 6;
 
-	tess.indexes[ numIndexes ] = numVerts + 3;
-	tess.indexes[ numIndexes + 1 ] = numVerts + 0;
-	tess.indexes[ numIndexes + 2 ] = numVerts + 2;
-	tess.indexes[ numIndexes + 3 ] = numVerts + 2;
-	tess.indexes[ numIndexes + 4 ] = numVerts + 0;
-	tess.indexes[ numIndexes + 5 ] = numVerts + 1;
+	tess.indexes[numIndexes]	 = numVerts + 3;
+	tess.indexes[numIndexes + 1] = numVerts + 0;
+	tess.indexes[numIndexes + 2] = numVerts + 2;
+	tess.indexes[numIndexes + 3] = numVerts + 2;
+	tess.indexes[numIndexes + 4] = numVerts + 0;
+	tess.indexes[numIndexes + 5] = numVerts + 1;
 
-//	*(int *)tess.vertexColors[ numVerts ] =
-//		*(int *)tess.vertexColors[ numVerts + 1 ] =
-//		*(int *)tess.vertexColors[ numVerts + 2 ] =
-//		*(int *)tess.vertexColors[ numVerts + 3 ] = *(int *)backEnd.color2D;
+	//	*(int *)tess.vertexColors[ numVerts ] =
+	//		*(int *)tess.vertexColors[ numVerts + 1 ] =
+	//		*(int *)tess.vertexColors[ numVerts + 2 ] =
+	//		*(int *)tess.vertexColors[ numVerts + 3 ] = *(int *)backEnd.color2D;
 
-	*(int *)tess.vertexColors[ numVerts ] =
-		*(int *)tess.vertexColors[ numVerts + 1 ] = *(int *)backEnd.color2D;
+	*( int* )tess.vertexColors[numVerts] = *( int* )tess.vertexColors[numVerts + 1] = *( int* )backEnd.color2D;
 
-	*(int *)tess.vertexColors[ numVerts + 2 ] =
-		*(int *)tess.vertexColors[ numVerts + 3 ] = *(int *)cmd->gradientColor;
+	*( int* )tess.vertexColors[numVerts + 2] = *( int* )tess.vertexColors[numVerts + 3] = *( int* )cmd->gradientColor;
 
-	tess.xyz[ numVerts ][0] = cmd->x;
-	tess.xyz[ numVerts ][1] = cmd->y;
-	tess.xyz[ numVerts ][2] = 0;
+	tess.xyz[numVerts][0] = cmd->x;
+	tess.xyz[numVerts][1] = cmd->y;
+	tess.xyz[numVerts][2] = 0;
 
-	tess.texCoords[ numVerts ][0][0] = cmd->s1;
-	tess.texCoords[ numVerts ][0][1] = cmd->t1;
+	tess.texCoords[numVerts][0][0] = cmd->s1;
+	tess.texCoords[numVerts][0][1] = cmd->t1;
 
-	tess.xyz[ numVerts + 1 ][0] = cmd->x + cmd->w;
-	tess.xyz[ numVerts + 1 ][1] = cmd->y;
-	tess.xyz[ numVerts + 1 ][2] = 0;
+	tess.xyz[numVerts + 1][0] = cmd->x + cmd->w;
+	tess.xyz[numVerts + 1][1] = cmd->y;
+	tess.xyz[numVerts + 1][2] = 0;
 
-	tess.texCoords[ numVerts + 1 ][0][0] = cmd->s2;
-	tess.texCoords[ numVerts + 1 ][0][1] = cmd->t1;
+	tess.texCoords[numVerts + 1][0][0] = cmd->s2;
+	tess.texCoords[numVerts + 1][0][1] = cmd->t1;
 
-	tess.xyz[ numVerts + 2 ][0] = cmd->x + cmd->w;
-	tess.xyz[ numVerts + 2 ][1] = cmd->y + cmd->h;
-	tess.xyz[ numVerts + 2 ][2] = 0;
+	tess.xyz[numVerts + 2][0] = cmd->x + cmd->w;
+	tess.xyz[numVerts + 2][1] = cmd->y + cmd->h;
+	tess.xyz[numVerts + 2][2] = 0;
 
-	tess.texCoords[ numVerts + 2 ][0][0] = cmd->s2;
-	tess.texCoords[ numVerts + 2 ][0][1] = cmd->t2;
+	tess.texCoords[numVerts + 2][0][0] = cmd->s2;
+	tess.texCoords[numVerts + 2][0][1] = cmd->t2;
 
-	tess.xyz[ numVerts + 3 ][0] = cmd->x;
-	tess.xyz[ numVerts + 3 ][1] = cmd->y + cmd->h;
-	tess.xyz[ numVerts + 3 ][2] = 0;
+	tess.xyz[numVerts + 3][0] = cmd->x;
+	tess.xyz[numVerts + 3][1] = cmd->y + cmd->h;
+	tess.xyz[numVerts + 3][2] = 0;
 
-	tess.texCoords[ numVerts + 3 ][0][0] = cmd->s1;
-	tess.texCoords[ numVerts + 3 ][0][1] = cmd->t2;
+	tess.texCoords[numVerts + 3][0][0] = cmd->s1;
+	tess.texCoords[numVerts + 3][0][1] = cmd->t2;
 
-	return (const void *)( cmd + 1 );
+	return ( const void* )( cmd + 1 );
 }
-
 
 /*
 =============
@@ -1685,24 +1654,24 @@ RB_DrawSurfs
 
 =============
 */
-const void  *RB_DrawSurfs( const void *data ) {
-	const drawSurfsCommand_t    *cmd;
+const void* RB_DrawSurfs( const void* data )
+{
+	const drawSurfsCommand_t* cmd;
 
 	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
+	if( tess.numIndexes ) {
 		RB_EndSurface();
 	}
 
-	cmd = (const drawSurfsCommand_t *)data;
+	cmd = ( const drawSurfsCommand_t* )data;
 
-	backEnd.refdef = cmd->refdef;
+	backEnd.refdef	  = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
 	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
-	return (const void *)( cmd + 1 );
+	return ( const void* )( cmd + 1 );
 }
-
 
 /*
 =============
@@ -1710,20 +1679,21 @@ RB_DrawBuffer
 
 =============
 */
-const void  *RB_DrawBuffer( const void *data ) {
-	const drawBufferCommand_t   *cmd;
+const void* RB_DrawBuffer( const void* data )
+{
+	const drawBufferCommand_t* cmd;
 
-	cmd = (const drawBufferCommand_t *)data;
+	cmd = ( const drawBufferCommand_t* )data;
 
 	glDrawBuffer( cmd->buffer );
 
 	// clear screen for debugging
-	if ( r_clear->integer ) {
+	if( r_clear->integer ) {
 		glClearColor( 1, 0, 0.5, 1 );
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	}
 
-	return (const void *)( cmd + 1 );
+	return ( const void* )( cmd + 1 );
 }
 
 /*
@@ -1736,13 +1706,14 @@ was there.  This is used to test for texture thrashing.
 Also called by RE_EndRegistration
 ===============
 */
-void RB_ShowImages( void ) {
-	int i;
-	image_t *image;
-	float x, y, w, h;
-	int start, end;
+void RB_ShowImages()
+{
+	int		 i;
+	image_t* image;
+	float	 x, y, w, h;
+	int		 start, end;
 
-	if ( !backEnd.projection2D ) {
+	if( !backEnd.projection2D ) {
 		RB_SetGL2D();
 	}
 
@@ -1750,7 +1721,7 @@ void RB_ShowImages( void ) {
 
 	start = ri.Milliseconds();
 
-	for ( i = 0 ; i < tr.numImages ; i++ ) {
+	for( i = 0; i < tr.numImages; i++ ) {
 		image = tr.images[i];
 
 		w = glConfig.vidWidth / 40;
@@ -1760,7 +1731,7 @@ void RB_ShowImages( void ) {
 		y = i / 30 * h;
 
 		// show in proportional size in mode 2
-		if ( r_showImages->integer == 2 ) {
+		if( r_showImages->integer == 2 ) {
 			w *= image->uploadWidth / 512.0f;
 			h *= image->uploadHeight / 512.0f;
 		}
@@ -1780,9 +1751,7 @@ void RB_ShowImages( void ) {
 
 	end = ri.Milliseconds();
 	ri.Printf( PRINT_ALL, "%i msec to draw all images\n", end - start );
-
 }
-
 
 /*
 =============
@@ -1790,32 +1759,33 @@ RB_SwapBuffers
 
 =============
 */
-const void  *RB_SwapBuffers( const void *data ) {
-	const swapBuffersCommand_t  *cmd;
+const void* RB_SwapBuffers( const void* data )
+{
+	const swapBuffersCommand_t* cmd;
 
 	// finish any 2D drawing if needed
-	if ( tess.numIndexes ) {
+	if( tess.numIndexes ) {
 		RB_EndSurface();
 	}
 
 	// texture swapping test
-	if ( r_showImages->integer ) {
+	if( r_showImages->integer ) {
 		RB_ShowImages();
 	}
 
-	cmd = (const swapBuffersCommand_t *)data;
+	cmd = ( const swapBuffersCommand_t* )data;
 
 	// we measure overdraw by reading back the stencil buffer and
 	// counting up the number of increments that have happened
-	if ( r_measureOverdraw->integer ) {
-		int i;
-		long sum = 0;
-		unsigned char *stencilReadback;
+	if( r_measureOverdraw->integer ) {
+		int			   i;
+		long		   sum = 0;
+		unsigned char* stencilReadback;
 
-		stencilReadback = (unsigned char *)ri.Hunk_AllocateTempMemory( glConfig.vidWidth * glConfig.vidHeight );
+		stencilReadback = ( unsigned char* )ri.Hunk_AllocateTempMemory( glConfig.vidWidth * glConfig.vidHeight );
 		glReadPixels( 0, 0, glConfig.vidWidth, glConfig.vidHeight, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, stencilReadback );
 
-		for ( i = 0; i < glConfig.vidWidth * glConfig.vidHeight; i++ ) {
+		for( i = 0; i < glConfig.vidWidth * glConfig.vidHeight; i++ ) {
 			sum += stencilReadback[i];
 		}
 
@@ -1829,7 +1799,7 @@ const void  *RB_SwapBuffers( const void *data ) {
 
 	backEnd.projection2D = qfalse;
 
-	return (const void *)( cmd + 1 );
+	return ( const void* )( cmd + 1 );
 }
 
 /*
@@ -1840,12 +1810,13 @@ This function will be called syncronously if running without
 smp extensions, or asyncronously by another thread.
 ====================
 */
-void RB_ExecuteRenderCommands( const void *data ) {
+void RB_ExecuteRenderCommands( const void* data )
+{
 	int t1, t2;
 
 	t1 = ri.Milliseconds();
 
-	if ( !r_smp->integer || data == backEndData[0]->commands.cmds ) {
+	if( !r_smp->integer || data == backEndData[0]->commands.cmds ) {
 		backEnd.smpFrame = 0;
 	} else {
 		backEnd.smpFrame = 1;
@@ -1853,56 +1824,55 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 	backEnd.raytraceRendered = qfalse;
 
-	while ( 1 ) {
-		switch ( *(const int *)data ) {
-		case RC_RAYTRACE:
-			data = RB_Raytrace(data);
-			break;
-		case RC_SET_COLOR:
-			data = RB_SetColor( data );
-			break;
-		case RC_STRETCH_PIC:
-			data = RB_StretchPic( data );
-			break;
-		case RC_STRETCH_PIC_GRADIENT:
-			data = RB_StretchPicGradient( data );
-			break;
-		case RC_DRAW_SURFS:
-			data = RB_DrawSurfs( data );
-			break;
-		case RC_DRAW_BUFFER:
-			data = RB_DrawBuffer( data );
-			break;
-		case RC_SWAP_BUFFERS:
-			data = RB_SwapBuffers( data );
-			break;
+	while( 1 ) {
+		switch( *( const int* )data ) {
+			case RC_RAYTRACE:
+				data = RB_Raytrace( data );
+				break;
+			case RC_SET_COLOR:
+				data = RB_SetColor( data );
+				break;
+			case RC_STRETCH_PIC:
+				data = RB_StretchPic( data );
+				break;
+			case RC_STRETCH_PIC_GRADIENT:
+				data = RB_StretchPicGradient( data );
+				break;
+			case RC_DRAW_SURFS:
+				data = RB_DrawSurfs( data );
+				break;
+			case RC_DRAW_BUFFER:
+				data = RB_DrawBuffer( data );
+				break;
+			case RC_SWAP_BUFFERS:
+				data = RB_SwapBuffers( data );
+				break;
 
-		case RC_END_OF_LIST:
-		default:
-			// stop rendering on this thread
-			t2 = ri.Milliseconds();
-			backEnd.pc.msec = t2 - t1;
-			return;
+			case RC_END_OF_LIST:
+			default:
+				// stop rendering on this thread
+				t2				= ri.Milliseconds();
+				backEnd.pc.msec = t2 - t1;
+				return;
 		}
 	}
-
 }
-
 
 /*
 ================
 RB_RenderThread
 ================
 */
-void RB_RenderThread( void ) {
-	const void  *data;
+void RB_RenderThread()
+{
+	const void* data;
 
 	// wait for either a rendering command or a quit command
-	while ( 1 ) {
+	while( 1 ) {
 		// sleep until we have work to do
 		data = GLimp_RendererSleep();
 
-		if ( !data ) {
+		if( !data ) {
 			return; // all done, renderer is shutting down
 		}
 
@@ -1913,4 +1883,3 @@ void RB_RenderThread( void ) {
 		renderThreadActive = qfalse;
 	}
 }
-

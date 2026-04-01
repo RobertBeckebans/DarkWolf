@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
@@ -31,26 +32,26 @@ If you have questions concerning this license or the applicable additional terms
 #include "client.h"
 #include "../game/botlib.h"
 
-static dllhandle_t vmHandle = NULL;
-idClientGameVM* cgvm = NULL;
+static dllhandle_t		vmHandle = NULL;
+idClientGameVM*			cgvm	 = NULL;
 
-extern botlib_export_t *botlib_export;
+extern botlib_export_t* botlib_export;
 
-extern qboolean loadCamera( int camNum, const char *name );
-extern void startCamera( int camNum, int time );
-extern qboolean getCameraInfo(int camNum, int time, float* origin, float* angles, float* fov);
+extern qboolean			loadCamera( int camNum, const char* name );
+extern void				startCamera( int camNum, int time );
+extern qboolean			getCameraInfo( int camNum, int time, float* origin, float* angles, float* fov );
 
 // RF, this is only used when running a local server
-extern void SV_SendMoveSpeedsToGame( int entnum, char *text );
-extern qboolean SV_GetModelInfo( int clientNum, char *modelName, animModelInfo_t **modelInfo );
-
+extern void				SV_SendMoveSpeedsToGame( int entnum, char* text );
+extern qboolean			SV_GetModelInfo( int clientNum, char* modelName, animModelInfo_t** modelInfo );
 
 /*
 ====================
 CL_GetGameState
 ====================
 */
-void CL_GetGameState( gameState_t *gs ) {
+void					CL_GetGameState( gameState_t* gs )
+{
 	*gs = cl.gameState;
 }
 
@@ -59,58 +60,59 @@ void CL_GetGameState( gameState_t *gs ) {
 CL_GetGlconfig
 ====================
 */
-void CL_GetGlconfig( glconfig_t *glconfig ) {
+void CL_GetGlconfig( glconfig_t* glconfig )
+{
 	*glconfig = cls.glconfig;
 }
-
 
 /*
 ====================
 CL_GetUserCmd
 ====================
 */
-qboolean CL_GetUserCmd( int cmdNumber, usercmd_t *ucmd ) {
+qboolean CL_GetUserCmd( int cmdNumber, usercmd_t* ucmd )
+{
 	// cmds[cmdNumber] is the last properly generated command
 
 	// can't return anything that we haven't created yet
-	if ( cmdNumber > cl.cmdNumber ) {
+	if( cmdNumber > cl.cmdNumber ) {
 		Com_Error( ERR_DROP, "CL_GetUserCmd: %i >= %i", cmdNumber, cl.cmdNumber );
 	}
 
 	// the usercmd has been overwritten in the wrapping
 	// buffer because it is too far out of date
-	if ( cmdNumber <= cl.cmdNumber - CMD_BACKUP ) {
+	if( cmdNumber <= cl.cmdNumber - CMD_BACKUP ) {
 		return qfalse;
 	}
 
-	*ucmd = cl.cmds[ cmdNumber & CMD_MASK ];
+	*ucmd = cl.cmds[cmdNumber & CMD_MASK];
 
 	return qtrue;
 }
 
-int CL_GetCurrentCmdNumber( void ) {
+int CL_GetCurrentCmdNumber()
+{
 	return cl.cmdNumber;
 }
-
 
 /*
 ====================
 CL_GetParseEntityState
 ====================
 */
-qboolean    CL_GetParseEntityState( int parseEntityNumber, entityState_t *state ) {
+qboolean CL_GetParseEntityState( int parseEntityNumber, entityState_t* state )
+{
 	// can't return anything that hasn't been parsed yet
-	if ( parseEntityNumber >= cl.parseEntitiesNum ) {
-		Com_Error( ERR_DROP, "CL_GetParseEntityState: %i >= %i",
-				   parseEntityNumber, cl.parseEntitiesNum );
+	if( parseEntityNumber >= cl.parseEntitiesNum ) {
+		Com_Error( ERR_DROP, "CL_GetParseEntityState: %i >= %i", parseEntityNumber, cl.parseEntitiesNum );
 	}
 
 	// can't return anything that has been overwritten in the circular buffer
-	if ( parseEntityNumber <= cl.parseEntitiesNum - MAX_PARSE_ENTITIES ) {
+	if( parseEntityNumber <= cl.parseEntitiesNum - MAX_PARSE_ENTITIES ) {
 		return qfalse;
 	}
 
-	*state = cl.parseEntities[ parseEntityNumber & ( MAX_PARSE_ENTITIES - 1 ) ];
+	*state = cl.parseEntities[parseEntityNumber & ( MAX_PARSE_ENTITIES - 1 )];
 	return qtrue;
 }
 
@@ -119,9 +121,10 @@ qboolean    CL_GetParseEntityState( int parseEntityNumber, entityState_t *state 
 CL_GetCurrentSnapshotNumber
 ====================
 */
-void    CL_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime ) {
+void CL_GetCurrentSnapshotNumber( int* snapshotNumber, int* serverTime )
+{
 	*snapshotNumber = cl.snap.messageNum;
-	*serverTime = cl.snap.serverTime;
+	*serverTime		= cl.snap.serverTime;
 }
 
 /*
@@ -129,47 +132,47 @@ void    CL_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime ) {
 CL_GetSnapshot
 ====================
 */
-qboolean    CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
-	clSnapshot_t    *clSnap;
-	int i, count;
+qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t* snapshot )
+{
+	clSnapshot_t* clSnap;
+	int			  i, count;
 
-	if ( snapshotNumber > cl.snap.messageNum ) {
+	if( snapshotNumber > cl.snap.messageNum ) {
 		Com_Error( ERR_DROP, "CL_GetSnapshot: snapshotNumber > cl.snapshot.messageNum" );
 	}
 
 	// if the frame has fallen out of the circular buffer, we can't return it
-	if ( cl.snap.messageNum - snapshotNumber >= PACKET_BACKUP ) {
+	if( cl.snap.messageNum - snapshotNumber >= PACKET_BACKUP ) {
 		return qfalse;
 	}
 
 	// if the frame is not valid, we can't return it
 	clSnap = &cl.snapshots[snapshotNumber & PACKET_MASK];
-	if ( !clSnap->valid ) {
+	if( !clSnap->valid ) {
 		return qfalse;
 	}
 
 	// if the entities in the frame have fallen out of their
 	// circular buffer, we can't return it
-	if ( cl.parseEntitiesNum - clSnap->parseEntitiesNum >= MAX_PARSE_ENTITIES ) {
+	if( cl.parseEntitiesNum - clSnap->parseEntitiesNum >= MAX_PARSE_ENTITIES ) {
 		return qfalse;
 	}
 
 	// write the snapshot
-	snapshot->snapFlags = clSnap->snapFlags;
+	snapshot->snapFlags				= clSnap->snapFlags;
 	snapshot->serverCommandSequence = clSnap->serverCommandNum;
-	snapshot->ping = clSnap->ping;
-	snapshot->serverTime = clSnap->serverTime;
+	snapshot->ping					= clSnap->ping;
+	snapshot->serverTime			= clSnap->serverTime;
 	memcpy( snapshot->areamask, clSnap->areamask, sizeof( snapshot->areamask ) );
 	snapshot->ps = clSnap->ps;
-	count = clSnap->numEntities;
-	if ( count > MAX_ENTITIES_IN_SNAPSHOT ) {
+	count		 = clSnap->numEntities;
+	if( count > MAX_ENTITIES_IN_SNAPSHOT ) {
 		Com_DPrintf( "CL_GetSnapshot: truncated %i entities to %i\n", count, MAX_ENTITIES_IN_SNAPSHOT );
 		count = MAX_ENTITIES_IN_SNAPSHOT;
 	}
 	snapshot->numEntities = count;
-	for ( i = 0 ; i < count ; i++ ) {
-		snapshot->entities[i] =
-			cl.parseEntities[ ( clSnap->parseEntitiesNum + i ) & ( MAX_PARSE_ENTITIES - 1 ) ];
+	for( i = 0; i < count; i++ ) {
+		snapshot->entities[i] = cl.parseEntities[( clSnap->parseEntitiesNum + i ) & ( MAX_PARSE_ENTITIES - 1 )];
 	}
 
 	// FIXME: configstring changes and server commands!!!
@@ -182,11 +185,12 @@ qboolean    CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 CL_SetUserCmdValue
 ==============
 */
-void CL_SetUserCmdValue( int userCmdValue, int holdableValue, float sensitivityScale, int cld ) {
-	cl.cgameUserCmdValue        = userCmdValue;
-	cl.cgameUserHoldableValue   = holdableValue;
-	cl.cgameSensitivity         = sensitivityScale;
-	cl.cgameCld                 = cld;
+void CL_SetUserCmdValue( int userCmdValue, int holdableValue, float sensitivityScale, int cld )
+{
+	cl.cgameUserCmdValue	  = userCmdValue;
+	cl.cgameUserHoldableValue = holdableValue;
+	cl.cgameSensitivity		  = sensitivityScale;
+	cl.cgameCld				  = cld;
 }
 
 /*
@@ -194,7 +198,8 @@ void CL_SetUserCmdValue( int userCmdValue, int holdableValue, float sensitivityS
 CL_AddCgameCommand
 ==============
 */
-void CL_AddCgameCommand( const char *cmdName ) {
+void CL_AddCgameCommand( const char* cmdName )
+{
 	Cmd_AddCommand( cmdName, NULL );
 }
 
@@ -203,34 +208,35 @@ void CL_AddCgameCommand( const char *cmdName ) {
 CL_CgameError
 ==============
 */
-void CL_CgameError( const char *string ) {
+void CL_CgameError( const char* string )
+{
 	Com_Error( ERR_DROP, "%s", string );
 }
-
 
 /*
 =====================
 CL_ConfigstringModified
 =====================
 */
-void CL_ConfigstringModified( void ) {
-	char        *old, *s;
-	int i, index;
-	char        *dup;
+void CL_ConfigstringModified()
+{
+	char *		old, *s;
+	int			i, index;
+	char*		dup;
 	gameState_t oldGs;
-	int len;
+	int			len;
 
 	index = atoi( Cmd_Argv( 1 ) );
-	if ( index < 0 || index >= MAX_CONFIGSTRINGS ) {
+	if( index < 0 || index >= MAX_CONFIGSTRINGS ) {
 		Com_Error( ERR_DROP, "configstring > MAX_CONFIGSTRINGS" );
 	}
-//	s = Cmd_Argv(2);
+	//	s = Cmd_Argv(2);
 	// get everything after "cs <num>"
 	s = Cmd_ArgsFrom( 2 );
 
-	old = cl.gameState.stringData + cl.gameState.stringOffsets[ index ];
-	if ( !strcmp( old, s ) ) {
-		return;     // unchanged
+	old = cl.gameState.stringData + cl.gameState.stringOffsets[index];
+	if( !strcmp( old, s ) ) {
+		return; // unchanged
 	}
 
 	// build the new gameState_t
@@ -241,35 +247,33 @@ void CL_ConfigstringModified( void ) {
 	// leave the first 0 for uninitialized strings
 	cl.gameState.dataCount = 1;
 
-	for ( i = 0 ; i < MAX_CONFIGSTRINGS ; i++ ) {
-		if ( i == index ) {
+	for( i = 0; i < MAX_CONFIGSTRINGS; i++ ) {
+		if( i == index ) {
 			dup = s;
 		} else {
-			dup = oldGs.stringData + oldGs.stringOffsets[ i ];
+			dup = oldGs.stringData + oldGs.stringOffsets[i];
 		}
-		if ( !dup[0] ) {
-			continue;       // leave with the default empty string
+		if( !dup[0] ) {
+			continue; // leave with the default empty string
 		}
 
 		len = strlen( dup );
 
-		if ( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {
+		if( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {
 			Com_Error( ERR_DROP, "MAX_GAMESTATE_CHARS exceeded" );
 		}
 
 		// append it to the gameState string buffer
-		cl.gameState.stringOffsets[ i ] = cl.gameState.dataCount;
+		cl.gameState.stringOffsets[i] = cl.gameState.dataCount;
 		memcpy( cl.gameState.stringData + cl.gameState.dataCount, dup, len + 1 );
 		cl.gameState.dataCount += len + 1;
 	}
 
-	if ( index == CS_SYSTEMINFO ) {
+	if( index == CS_SYSTEMINFO ) {
 		// parse serverId and other cvars
 		CL_SystemInfoChanged();
 	}
-
 }
-
 
 /*
 ===================
@@ -278,28 +282,29 @@ CL_GetServerCommand
 Set up argc/argv for the given command
 ===================
 */
-qboolean CL_GetServerCommand( int serverCommandNumber ) {
-	char    *s;
-	char    *cmd;
+qboolean CL_GetServerCommand( int serverCommandNumber )
+{
+	char*		s;
+	char*		cmd;
 	static char bigConfigString[BIG_INFO_STRING];
 
 	// if we have irretrievably lost a reliable command, drop the connection
-	if ( serverCommandNumber <= clc.serverCommandSequence - MAX_RELIABLE_COMMANDS ) {
+	if( serverCommandNumber <= clc.serverCommandSequence - MAX_RELIABLE_COMMANDS ) {
 		// when a demo record was started after the client got a whole bunch of
 		// reliable commands then the client never got those first reliable commands
-		if ( clc.demoplaying ) {
+		if( clc.demoplaying ) {
 			return qfalse;
 		}
 		Com_Error( ERR_DROP, "CL_GetServerCommand: a reliable command was cycled out" );
 		return qfalse;
 	}
 
-	if ( serverCommandNumber > clc.serverCommandSequence ) {
+	if( serverCommandNumber > clc.serverCommandSequence ) {
 		Com_Error( ERR_DROP, "CL_GetServerCommand: requested a command not received" );
 		return qfalse;
 	}
 
-	s = clc.serverCommands[ serverCommandNumber & ( MAX_RELIABLE_COMMANDS - 1 ) ];
+	s							  = clc.serverCommands[serverCommandNumber & ( MAX_RELIABLE_COMMANDS - 1 )];
 	clc.lastExecutedServerCommand = serverCommandNumber;
 
 	Com_DPrintf( "serverCommand: %i : %s\n", serverCommandNumber, s );
@@ -308,27 +313,27 @@ rescan:
 	Cmd_TokenizeString( s );
 	cmd = Cmd_Argv( 0 );
 
-	if ( !strcmp( cmd, "disconnect" ) ) {
-		Com_Error( ERR_SERVERDISCONNECT,"Server disconnected\n" );
+	if( !strcmp( cmd, "disconnect" ) ) {
+		Com_Error( ERR_SERVERDISCONNECT, "Server disconnected\n" );
 	}
 
-	if ( !strcmp( cmd, "bcs0" ) ) {
+	if( !strcmp( cmd, "bcs0" ) ) {
 		Com_sprintf( bigConfigString, BIG_INFO_STRING, "cs %s \"%s", Cmd_Argv( 1 ), Cmd_Argv( 2 ) );
 		return qfalse;
 	}
 
-	if ( !strcmp( cmd, "bcs1" ) ) {
+	if( !strcmp( cmd, "bcs1" ) ) {
 		s = Cmd_Argv( 2 );
-		if ( strlen( bigConfigString ) + strlen( s ) >= BIG_INFO_STRING ) {
+		if( strlen( bigConfigString ) + strlen( s ) >= BIG_INFO_STRING ) {
 			Com_Error( ERR_DROP, "bcs exceeded BIG_INFO_STRING" );
 		}
 		strcat( bigConfigString, s );
 		return qfalse;
 	}
 
-	if ( !strcmp( cmd, "bcs2" ) ) {
+	if( !strcmp( cmd, "bcs2" ) ) {
 		s = Cmd_Argv( 2 );
-		if ( strlen( bigConfigString ) + strlen( s ) + 1 >= BIG_INFO_STRING ) {
+		if( strlen( bigConfigString ) + strlen( s ) + 1 >= BIG_INFO_STRING ) {
 			Com_Error( ERR_DROP, "bcs exceeded BIG_INFO_STRING" );
 		}
 		strcat( bigConfigString, s );
@@ -337,14 +342,14 @@ rescan:
 		goto rescan;
 	}
 
-	if ( !strcmp( cmd, "cs" ) ) {
+	if( !strcmp( cmd, "cs" ) ) {
 		CL_ConfigstringModified();
 		// reparse the string, because CL_ConfigstringModified may have done another Cmd_TokenizeString()
 		Cmd_TokenizeString( s );
 		return qtrue;
 	}
 
-	if ( !strcmp( cmd, "map_restart" ) ) {
+	if( !strcmp( cmd, "map_restart" ) ) {
 		// clear notify lines and outgoing commands before passing
 		// the restart to the cgame
 		Con_ClearNotify();
@@ -352,26 +357,25 @@ rescan:
 		return qtrue;
 	}
 
-	if ( !strcmp( cmd, "popup" ) ) { // direct server to client popup request, bypassing cgame
-//		trap_UI_Popup(Cmd_Argv(1));
-//		if ( cls.state == CA_ACTIVE && !clc.demoplaying ) {
-//			VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_CLIPBOARD);
-//			Menus_OpenByName(Cmd_Argv(1));
-//		}
+	if( !strcmp( cmd, "popup" ) ) { // direct server to client popup request, bypassing cgame
+		//		trap_UI_Popup(Cmd_Argv(1));
+		//		if ( cls.state == CA_ACTIVE && !clc.demoplaying ) {
+		//			VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_CLIPBOARD);
+		//			Menus_OpenByName(Cmd_Argv(1));
+		//		}
 		return qfalse;
 	}
-
 
 	// the clientLevelShot command is used during development
 	// to generate 128*128 screenshots from the intermission
 	// point of levels for the menu system to use
 	// we pass it along to the cgame to make apropriate adjustments,
 	// but we also clear the console and notify lines here
-	if ( !strcmp( cmd, "clientLevelShot" ) ) {
+	if( !strcmp( cmd, "clientLevelShot" ) ) {
 		// don't do it if we aren't running the server locally,
 		// otherwise malicious remote servers could overwrite
 		// the existing thumbnails
-		if ( !com_sv_running->integer ) {
+		if( !com_sv_running->integer ) {
 			return qfalse;
 		}
 		// close the console
@@ -387,7 +391,6 @@ rescan:
 	return qtrue;
 }
 
-
 /*
 ====================
 CL_CM_LoadMap
@@ -395,7 +398,8 @@ CL_CM_LoadMap
 Just adds default parameters that cgame doesn't need to know about
 ====================
 */
-void CL_CM_LoadMap( const char *mapname ) {
+void CL_CM_LoadMap( const char* mapname )
+{
 	int checksum;
 
 	CM_LoadMap( mapname, qtrue, &checksum );
@@ -407,654 +411,605 @@ CL_ShutdonwCGame
 
 ====================
 */
-void CL_ShutdownCGame( void ) {
+void CL_ShutdownCGame()
+{
 	cls.keyCatchers &= ~KEYCATCH_CGAME;
 	cls.cgameStarted = qfalse;
 
-	if ( !cgvm ) {
+	if( !cgvm ) {
 		return;
 	}
 
 	cgvm->Shutdown();
-	Sys_UnloadDll((void *)vmHandle);
+	Sys_UnloadDll( ( void* )vmHandle );
 	vmHandle = NULL;
-	cgvm = NULL;
+	cgvm	 = NULL;
 }
 class idCGSystemCallsLocal : public idCGSystemCalls
 {
 public:
 	virtual ~idCGSystemCallsLocal() override = default;
 
-	virtual void Print(const char* fmt) override
+	virtual void Print( const char* fmt ) override
 	{
-		::Com_Printf("%s", fmt);
+		::Com_Printf( "%s", fmt );
 	}
 
-	virtual void Error(const char* fmt) override
+	virtual void Error( const char* fmt ) override
 	{
-		::Com_Error(ERR_DROP, "%s", fmt);
+		::Com_Error( ERR_DROP, "%s", fmt );
 	}
 
-	virtual int Milliseconds(void) override
+	virtual int Milliseconds() override
 	{
 		return ::Sys_Milliseconds();
 	}
 
-	virtual void RenderRaytracing(void) override
+	virtual void RenderRaytracing() override
 	{
 		re.RenderRaytracing();
 	}
 
-	virtual void Cvar_Register(vmCvar_t* vmCvar, const char* varName, const char* defaultValue, int flags) override
+	virtual void Cvar_Register( vmCvar_t* vmCvar, const char* varName, const char* defaultValue, int flags ) override
 	{
-		::Cvar_Register(vmCvar, varName, defaultValue, flags);
+		::Cvar_Register( vmCvar, varName, defaultValue, flags );
 	}
 
-	virtual void Cvar_Update(vmCvar_t* vmCvar) override
+	virtual void Cvar_Update( vmCvar_t* vmCvar ) override
 	{
-		::Cvar_Update(vmCvar);
+		::Cvar_Update( vmCvar );
 	}
 
-	virtual void Cvar_Set(const char* var_name, const char* value) override
+	virtual void Cvar_Set( const char* var_name, const char* value ) override
 	{
-		::Cvar_Set(var_name, value);
+		::Cvar_Set( var_name, value );
 	}
 
-	virtual void Cvar_VariableStringBuffer(const char* var_name, char* buffer, int bufsize) override
+	virtual void Cvar_VariableStringBuffer( const char* var_name, char* buffer, int bufsize ) override
 	{
-		::Cvar_VariableStringBuffer(var_name, buffer, bufsize);
+		::Cvar_VariableStringBuffer( var_name, buffer, bufsize );
 	}
 
-	virtual int Argc(void) override
+	virtual int Argc() override
 	{
 		return ::Cmd_Argc();
 	}
 
-	virtual void Argv(int n, char* buffer, int bufferLength) override
+	virtual void Argv( int n, char* buffer, int bufferLength ) override
 	{
-		::Cmd_ArgvBuffer(n, buffer, bufferLength);
+		::Cmd_ArgvBuffer( n, buffer, bufferLength );
 	}
 
-	virtual void Args(char* buffer, int bufferLength) override
+	virtual void Args( char* buffer, int bufferLength ) override
 	{
-		::Cmd_ArgsBuffer(buffer, bufferLength);
+		::Cmd_ArgsBuffer( buffer, bufferLength );
 	}
 
-	virtual int FS_FOpenFile(const char* qpath, fileHandle_t* f, fsMode_t mode) override
+	virtual int FS_FOpenFile( const char* qpath, fileHandle_t* f, fsMode_t mode ) override
 	{
-		return ::FS_FOpenFileByMode(qpath, f, mode);
+		return ::FS_FOpenFileByMode( qpath, f, mode );
 	}
 
-	virtual void FS_Read(void* buffer, int len, fileHandle_t f) override
+	virtual void FS_Read( void* buffer, int len, fileHandle_t f ) override
 	{
-		::FS_Read(buffer, len, f);
+		::FS_Read( buffer, len, f );
 	}
 
-	virtual void FS_Write(const void* buffer, int len, fileHandle_t f) override
+	virtual void FS_Write( const void* buffer, int len, fileHandle_t f ) override
 	{
-		::FS_Write(buffer, len, f);
+		::FS_Write( buffer, len, f );
 	}
 
-	virtual void FS_FCloseFile(fileHandle_t f) override
+	virtual void FS_FCloseFile( fileHandle_t f ) override
 	{
-		::FS_FCloseFile(f);
+		::FS_FCloseFile( f );
 	}
 
-	virtual void SendConsoleCommand(const char* text) override
+	virtual void SendConsoleCommand( const char* text ) override
 	{
-		::Cbuf_AddText(text);
+		::Cbuf_AddText( text );
 	}
 
-	virtual void AddCommand(const char* cmdName) override
+	virtual void AddCommand( const char* cmdName ) override
 	{
-		::CL_AddCgameCommand(cmdName);
+		::CL_AddCgameCommand( cmdName );
 	}
 
-	virtual void SendClientCommand(const char* s) override
+	virtual void SendClientCommand( const char* s ) override
 	{
-		::CL_AddReliableCommand(s);
+		::CL_AddReliableCommand( s );
 	}
 
-	virtual void UpdateScreen(void) override
+	virtual void UpdateScreen() override
 	{
 		::SCR_UpdateScreen();
 	}
 
-	virtual void CM_LoadMap(const char* mapname) override
+	virtual void CM_LoadMap( const char* mapname ) override
 	{
-		::CL_CM_LoadMap(mapname);
+		::CL_CM_LoadMap( mapname );
 	}
 
-	virtual int CM_NumInlineModels(void) override
+	virtual int CM_NumInlineModels() override
 	{
 		return ::CM_NumInlineModels();
 	}
 
-	virtual clipHandle_t CM_InlineModel(int index) override
+	virtual clipHandle_t CM_InlineModel( int index ) override
 	{
-		return ::CM_InlineModel(index);
+		return ::CM_InlineModel( index );
 	}
 
-	virtual clipHandle_t CM_TempBoxModel(const vec3_t mins, const vec3_t maxs) override
+	virtual clipHandle_t CM_TempBoxModel( const vec3_t mins, const vec3_t maxs ) override
 	{
-		return ::CM_TempBoxModel(mins, maxs, qfalse);
+		return ::CM_TempBoxModel( mins, maxs, qfalse );
 	}
 
-	virtual clipHandle_t CM_TempCapsuleModel(const vec3_t mins, const vec3_t maxs) override
+	virtual clipHandle_t CM_TempCapsuleModel( const vec3_t mins, const vec3_t maxs ) override
 	{
-		return ::CM_TempBoxModel(mins, maxs, qtrue);
+		return ::CM_TempBoxModel( mins, maxs, qtrue );
 	}
 
-	virtual int CM_PointContents(const vec3_t p, clipHandle_t model) override
+	virtual int CM_PointContents( const vec3_t p, clipHandle_t model ) override
 	{
-		return ::CM_PointContents(p, model);
+		return ::CM_PointContents( p, model );
 	}
 
-	virtual int CM_TransformedPointContents(const vec3_t p, clipHandle_t model, const vec3_t origin, const vec3_t angles) override
+	virtual int CM_TransformedPointContents( const vec3_t p, clipHandle_t model, const vec3_t origin, const vec3_t angles ) override
 	{
-		return ::CM_TransformedPointContents(p, model, origin, angles);
+		return ::CM_TransformedPointContents( p, model, origin, angles );
 	}
 
-	virtual void CM_BoxTrace(
-		trace_t* results,
-		const vec3_t start,
-		const vec3_t end,
-		const vec3_t mins,
-		const vec3_t maxs,
-		clipHandle_t model,
-		int brushmask) override
+	virtual void CM_BoxTrace( trace_t* results, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, clipHandle_t model, int brushmask ) override
 	{
-		::CM_BoxTrace(results, start, end, mins, maxs, model, brushmask, qfalse);
+		::CM_BoxTrace( results, start, end, mins, maxs, model, brushmask, qfalse );
 	}
 
 	virtual void CM_TransformedBoxTrace(
-		trace_t* results,
-		const vec3_t start,
-		const vec3_t end,
-		const vec3_t mins,
-		const vec3_t maxs,
-		clipHandle_t model,
-		int brushmask,
-		const vec3_t origin,
-		const vec3_t angles) override
+		trace_t* results, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, clipHandle_t model, int brushmask, const vec3_t origin, const vec3_t angles ) override
 	{
-		::CM_TransformedBoxTrace(results, start, end, mins, maxs, model, brushmask, origin, angles, qfalse);
+		::CM_TransformedBoxTrace( results, start, end, mins, maxs, model, brushmask, origin, angles, qfalse );
 	}
 
-	virtual void CM_CapsuleTrace(
-		trace_t* results,
-		const vec3_t start,
-		const vec3_t end,
-		const vec3_t mins,
-		const vec3_t maxs,
-		clipHandle_t model,
-		int brushmask) override
+	virtual void CM_CapsuleTrace( trace_t* results, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, clipHandle_t model, int brushmask ) override
 	{
-		::CM_BoxTrace(results, start, end, mins, maxs, model, brushmask, qtrue);
+		::CM_BoxTrace( results, start, end, mins, maxs, model, brushmask, qtrue );
 	}
 
 	virtual void CM_TransformedCapsuleTrace(
-		trace_t* results,
-		const vec3_t start,
-		const vec3_t end,
-		const vec3_t mins,
-		const vec3_t maxs,
-		clipHandle_t model,
-		int brushmask,
-		const vec3_t origin,
-		const vec3_t angles) override
+		trace_t* results, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, clipHandle_t model, int brushmask, const vec3_t origin, const vec3_t angles ) override
 	{
-		::CM_TransformedBoxTrace(results, start, end, mins, maxs, model, brushmask, origin, angles, qtrue);
+		::CM_TransformedBoxTrace( results, start, end, mins, maxs, model, brushmask, origin, angles, qtrue );
 	}
 
-	virtual int CM_MarkFragments(
-		int numPoints,
-		const vec3_t* points,
-		const vec3_t projection,
-		int maxPoints,
-		vec3_t pointBuffer,
-		int maxFragments,
-		markFragment_t* fragmentBuffer) override
+	virtual int CM_MarkFragments( int numPoints, const vec3_t* points, const vec3_t projection, int maxPoints, vec3_t pointBuffer, int maxFragments, markFragment_t* fragmentBuffer ) override
 	{
-		return re.MarkFragments(numPoints, points, projection, maxPoints, pointBuffer, maxFragments, fragmentBuffer);
+		return re.MarkFragments( numPoints, points, projection, maxPoints, pointBuffer, maxFragments, fragmentBuffer );
 	}
 
-	virtual void S_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfx) override
+	virtual void S_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfx ) override
 	{
-		::S_StartSound(origin, entityNum, entchannel, sfx);
+		::S_StartSound( origin, entityNum, entchannel, sfx );
 	}
 
-	virtual void S_StartSoundEx(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfx, int flags) override
+	virtual void S_StartSoundEx( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfx, int flags ) override
 	{
-		::S_StartSoundEx(origin, entityNum, entchannel, sfx, flags);
+		::S_StartSoundEx( origin, entityNum, entchannel, sfx, flags );
 	}
 
-	virtual void S_StartLocalSound(sfxHandle_t sfx, int channelNum) override
+	virtual void S_StartLocalSound( sfxHandle_t sfx, int channelNum ) override
 	{
-		::S_StartLocalSound(sfx, channelNum);
+		::S_StartLocalSound( sfx, channelNum );
 	}
 
-	virtual void S_ClearLoopingSounds(qboolean killall) override
+	virtual void S_ClearLoopingSounds( qboolean killall ) override
 	{
 		::S_ClearLoopingSounds();
 
-		if (killall == 1)
-		{
-			::S_ClearSounds(qtrue, qfalse);
-		}
-		else if (killall == 2)
-		{
-			::S_ClearSounds(qtrue, qtrue);
+		if( killall == 1 ) {
+			::S_ClearSounds( qtrue, qfalse );
+		} else if( killall == 2 ) {
+			::S_ClearSounds( qtrue, qtrue );
 		}
 	}
 
-	virtual void S_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx, int volume) override
+	virtual void S_AddLoopingSound( int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx, int volume ) override
 	{
-		::S_AddLoopingSound(entityNum, origin, velocity, sfx, volume, 0);
+		::S_AddLoopingSound( entityNum, origin, velocity, sfx, volume, 0 );
 	}
 
-	virtual void S_AddRangedLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx, int range) override
+	virtual void S_AddRangedLoopingSound( int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx, int range ) override
 	{
-		::S_AddLoopingSound(entityNum, origin, velocity, sfx, range, 0);
+		::S_AddLoopingSound( entityNum, origin, velocity, sfx, range, 0 );
 	}
 
-	virtual void S_AddRealLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx) override
+	virtual void S_AddRealLoopingSound( int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx ) override
 	{
-		::S_AddLoopingSound(entityNum, origin, velocity, sfx, 0, 0);
+		::S_AddLoopingSound( entityNum, origin, velocity, sfx, 0, 0 );
 	}
 
-	virtual void S_StopLoopingSound(int entityNum) override
+	virtual void S_StopLoopingSound( int entityNum ) override
 	{
-		(void)entityNum;
+		()entityNum;
 	}
 
-	virtual void S_StopStreamingSound(int entityNum) override
+	virtual void S_StopStreamingSound( int entityNum ) override
 	{
-		::S_StopEntStreamingSound(entityNum);
+		::S_StopEntStreamingSound( entityNum );
 	}
 
-	virtual void S_UpdateEntityPosition(int entityNum, const vec3_t origin) override
+	virtual void S_UpdateEntityPosition( int entityNum, const vec3_t origin ) override
 	{
-		::S_UpdateEntityPosition(entityNum, origin);
+		::S_UpdateEntityPosition( entityNum, origin );
 	}
 
-	virtual int S_GetVoiceAmplitude(int entityNum) override
+	virtual int S_GetVoiceAmplitude( int entityNum ) override
 	{
-		return ::S_GetVoiceAmplitude(entityNum);
+		return ::S_GetVoiceAmplitude( entityNum );
 	}
 
-	virtual void S_Respatialize(int entityNum, const vec3_t origin, vec3_t axis[3], int inwater) override
+	virtual void S_Respatialize( int entityNum, const vec3_t origin, vec3_t axis[3], int inwater ) override
 	{
-		::S_Respatialize(entityNum, origin, axis, inwater);
+		::S_Respatialize( entityNum, origin, axis, inwater );
 	}
 
-	virtual sfxHandle_t S_RegisterSound(const char* sample) override
+	virtual sfxHandle_t S_RegisterSound( const char* sample ) override
 	{
-		return ::S_RegisterSound(sample, qfalse);
+		return ::S_RegisterSound( sample, qfalse );
 	}
 
-	virtual void S_StartBackgroundTrack(const char* intro, const char* loop, int fadeupTime) override
+	virtual void S_StartBackgroundTrack( const char* intro, const char* loop, int fadeupTime ) override
 	{
-		::S_StartBackgroundTrack(intro, loop, fadeupTime);
+		::S_StartBackgroundTrack( intro, loop, fadeupTime );
 	}
 
-	virtual void S_FadeBackgroundTrack(float targetvol, int time, int num) override
+	virtual void S_FadeBackgroundTrack( float targetvol, int time, int num ) override
 	{
-		::S_FadeStreamingSound(targetvol, time, num);
+		::S_FadeStreamingSound( targetvol, time, num );
 	}
 
-	virtual void S_FadeAllSound(float targetvol, int time) override
+	virtual void S_FadeAllSound( float targetvol, int time ) override
 	{
-		::S_FadeAllSounds(targetvol, time);
+		::S_FadeAllSounds( targetvol, time );
 	}
 
-	virtual void S_StartStreamingSound(const char* intro, const char* loop, int entnum, int channel, int attenuation) override
+	virtual void S_StartStreamingSound( const char* intro, const char* loop, int entnum, int channel, int attenuation ) override
 	{
-		::S_StartStreamingSound(intro, loop, entnum, channel, attenuation);
+		::S_StartStreamingSound( intro, loop, entnum, channel, attenuation );
 	}
 
-	virtual void S_StopBackgroundTrack(void) override
+	virtual void S_StopBackgroundTrack() override
 	{
 		::S_StopBackgroundTrack();
 	}
 
-	virtual void R_LoadWorldMap(const char* mapname) override
+	virtual void R_LoadWorldMap( const char* mapname ) override
 	{
-		re.LoadWorld(mapname);
+		re.LoadWorld( mapname );
 	}
 
-	virtual qhandle_t R_RegisterModel(const char* name) override
+	virtual qhandle_t R_RegisterModel( const char* name ) override
 	{
-		return re.RegisterModel(name);
+		return re.RegisterModel( name );
 	}
 
-	virtual qboolean R_GetSkinModel(qhandle_t skinid, const char* type, char* name) override
+	virtual qboolean R_GetSkinModel( qhandle_t skinid, const char* type, char* name ) override
 	{
-		return re.GetSkinModel(skinid, type, name);
+		return re.GetSkinModel( skinid, type, name );
 	}
 
-	virtual qhandle_t R_GetShaderFromModel(qhandle_t modelid, int surfnum, int withlightmap) override
+	virtual qhandle_t R_GetShaderFromModel( qhandle_t modelid, int surfnum, int withlightmap ) override
 	{
-		return re.GetShaderFromModel(modelid, surfnum, withlightmap);
+		return re.GetShaderFromModel( modelid, surfnum, withlightmap );
 	}
 
-	virtual qhandle_t R_RegisterSkin(const char* name) override
+	virtual qhandle_t R_RegisterSkin( const char* name ) override
 	{
-		return re.RegisterSkin(name);
+		return re.RegisterSkin( name );
 	}
 
-	virtual qhandle_t R_RegisterShader(const char* name) override
+	virtual qhandle_t R_RegisterShader( const char* name ) override
 	{
-		return re.RegisterShader(name);
+		return re.RegisterShader( name );
 	}
 
-	virtual qhandle_t R_RegisterShaderNoMip(const char* name) override
+	virtual qhandle_t R_RegisterShaderNoMip( const char* name ) override
 	{
-		return re.RegisterShaderNoMip(name);
+		return re.RegisterShaderNoMip( name );
 	}
 
-	virtual void R_RegisterFont(const char* fontName, int pointSize, fontInfo_t* font) override
+	virtual void R_RegisterFont( const char* fontName, int pointSize, fontInfo_t* font ) override
 	{
-		re.RegisterFont(fontName, pointSize, font);
+		re.RegisterFont( fontName, pointSize, font );
 	}
 
-	virtual void R_ClearScene(void) override
+	virtual void R_ClearScene() override
 	{
 		re.ClearScene();
 	}
 
-	virtual void R_AddRefEntityToScene(const refEntity_t* ent) override
+	virtual void R_AddRefEntityToScene( const refEntity_t* ent ) override
 	{
-		re.AddRefEntityToScene(ent);
+		re.AddRefEntityToScene( ent );
 	}
 
-	virtual void R_AddPolyToScene(qhandle_t hShader, int numVerts, const polyVert_t* verts) override
+	virtual void R_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts ) override
 	{
-		re.AddPolyToScene(hShader, numVerts, verts);
+		re.AddPolyToScene( hShader, numVerts, verts );
 	}
 
-	virtual void R_AddPolysToScene(qhandle_t hShader, int numVerts, const polyVert_t* verts, int numPolys) override
+	virtual void R_AddPolysToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts, int numPolys ) override
 	{
-		re.AddPolysToScene(hShader, numVerts, verts, numPolys);
+		re.AddPolysToScene( hShader, numVerts, verts, numPolys );
 	}
 
-	virtual void RB_ZombieFXAddNewHit(int entityNum, const vec3_t hitPos, const vec3_t hitDir) override
+	virtual void RB_ZombieFXAddNewHit( int entityNum, const vec3_t hitPos, const vec3_t hitDir ) override
 	{
-		re.ZombieFXAddNewHit(entityNum, hitPos, hitDir);
+		re.ZombieFXAddNewHit( entityNum, hitPos, hitDir );
 	}
 
-	virtual void R_AddLightToScene(const vec3_t org, float intensity, float r, float g, float b, int overdraw) override
+	virtual void R_AddLightToScene( const vec3_t org, float intensity, float r, float g, float b, int overdraw ) override
 	{
-		re.AddLightToScene(org, intensity, r, g, b, overdraw);
+		re.AddLightToScene( org, intensity, r, g, b, overdraw );
 	}
 
-	virtual void R_AddCoronaToScene(const vec3_t org, float r, float g, float b, float scale, int id, int flags) override
+	virtual void R_AddCoronaToScene( const vec3_t org, float r, float g, float b, float scale, int id, int flags ) override
 	{
-		re.AddCoronaToScene(org, r, g, b, scale, id, flags);
+		re.AddCoronaToScene( org, r, g, b, scale, id, flags );
 	}
 
-	virtual void R_SetFog(int fogvar, int var1, int var2, float r, float g, float b, float density) override
+	virtual void R_SetFog( int fogvar, int var1, int var2, float r, float g, float b, float density ) override
 	{
-		re.SetFog(fogvar, var1, var2, r, g, b, density);
+		re.SetFog( fogvar, var1, var2, r, g, b, density );
 	}
 
-	virtual void R_RenderScene(const refdef_t* fd) override
+	virtual void R_RenderScene( const refdef_t* fd ) override
 	{
-		re.RenderScene(fd);
+		re.RenderScene( fd );
 	}
 
-	virtual void R_SetColor(const float* rgba) override
+	virtual void R_SetColor( const float* rgba ) override
 	{
-		re.SetColor(rgba);
+		re.SetColor( rgba );
 	}
 
-	virtual void R_DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader) override
+	virtual void R_DrawStretchPic( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader ) override
 	{
-		re.DrawStretchPic(x, y, w, h, s1, t1, s2, t2, hShader);
+		re.DrawStretchPic( x, y, w, h, s1, t1, s2, t2, hShader );
 	}
 
-	virtual void R_DrawStretchPicGradient(float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader, const float* gradientColor, int gradientType) override
+	virtual void R_DrawStretchPicGradient( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader, const float* gradientColor, int gradientType ) override
 	{
-		re.DrawStretchPicGradient(x, y, w, h, s1, t1, s2, t2, hShader, gradientColor, gradientType);
+		re.DrawStretchPicGradient( x, y, w, h, s1, t1, s2, t2, hShader, gradientColor, gradientType );
 	}
 
-	virtual void R_ModelBounds(clipHandle_t model, vec3_t mins, vec3_t maxs) override
+	virtual void R_ModelBounds( clipHandle_t model, vec3_t mins, vec3_t maxs ) override
 	{
-		re.ModelBounds(model, mins, maxs);
+		re.ModelBounds( model, mins, maxs );
 	}
 
-	virtual int R_LerpTag(orientation_t* tag, const refEntity_t* refent, const char* tagName, int startIndex) override
+	virtual int R_LerpTag( orientation_t* tag, const refEntity_t* refent, const char* tagName, int startIndex ) override
 	{
-		return re.LerpTag(tag, refent, tagName, startIndex);
+		return re.LerpTag( tag, refent, tagName, startIndex );
 	}
 
-	virtual void R_RemapShader(const char* oldShader, const char* newShader, const char* timeOffset) override
+	virtual void R_RemapShader( const char* oldShader, const char* newShader, const char* timeOffset ) override
 	{
-		re.RemapShader(oldShader, newShader, timeOffset);
+		re.RemapShader( oldShader, newShader, timeOffset );
 	}
 
-	virtual void GetGlconfig(glconfig_t* glconfig) override
+	virtual void GetGlconfig( glconfig_t* glconfig ) override
 	{
-		::CL_GetGlconfig(glconfig);
+		::CL_GetGlconfig( glconfig );
 	}
 
-	virtual void GetGameState(gameState_t* gamestate) override
+	virtual void GetGameState( gameState_t* gamestate ) override
 	{
-		::CL_GetGameState(gamestate);
+		::CL_GetGameState( gamestate );
 	}
 
-	virtual void GetCurrentSnapshotNumber(int* snapshotNumber, int* serverTime) override
+	virtual void GetCurrentSnapshotNumber( int* snapshotNumber, int* serverTime ) override
 	{
-		::CL_GetCurrentSnapshotNumber(snapshotNumber, serverTime);
+		::CL_GetCurrentSnapshotNumber( snapshotNumber, serverTime );
 	}
 
-	virtual qboolean GetSnapshot(int snapshotNumber, snapshot_t* snapshot) override
+	virtual qboolean GetSnapshot( int snapshotNumber, snapshot_t* snapshot ) override
 	{
-		return ::CL_GetSnapshot(snapshotNumber, snapshot);
+		return ::CL_GetSnapshot( snapshotNumber, snapshot );
 	}
 
-	virtual qboolean GetServerCommand(int serverCommandNumber) override
+	virtual qboolean GetServerCommand( int serverCommandNumber ) override
 	{
-		return ::CL_GetServerCommand(serverCommandNumber);
+		return ::CL_GetServerCommand( serverCommandNumber );
 	}
 
-	virtual int GetCurrentCmdNumber(void) override
+	virtual int GetCurrentCmdNumber() override
 	{
 		return ::CL_GetCurrentCmdNumber();
 	}
 
-	virtual qboolean GetUserCmd(int cmdNumber, usercmd_t* ucmd) override
+	virtual qboolean GetUserCmd( int cmdNumber, usercmd_t* ucmd ) override
 	{
-		return ::CL_GetUserCmd(cmdNumber, ucmd);
+		return ::CL_GetUserCmd( cmdNumber, ucmd );
 	}
 
-	virtual void SetUserCmdValue(int stateValue, int holdableValue, float sensitivityScale, int cld) override
+	virtual void SetUserCmdValue( int stateValue, int holdableValue, float sensitivityScale, int cld ) override
 	{
-		::CL_SetUserCmdValue(stateValue, holdableValue, sensitivityScale, cld);
+		::CL_SetUserCmdValue( stateValue, holdableValue, sensitivityScale, cld );
 	}
 
-	virtual void TestPrintInt(char* string, int i) override
+	virtual void TestPrintInt( char* string, int i ) override
 	{
-		::Com_Printf("%s%i\n", string, i);
+		::Com_Printf( "%s%i\n", string, i );
 	}
 
-	virtual void TestPrintFloat(char* string, float f) override
+	virtual void TestPrintFloat( char* string, float f ) override
 	{
-		::Com_Printf("%s%f\n", string, f);
+		::Com_Printf( "%s%f\n", string, f );
 	}
 
-	virtual int MemoryRemaining(void) override
+	virtual int MemoryRemaining() override
 	{
 		return ::Hunk_MemoryRemaining();
 	}
 
-	virtual qboolean LoadCamera(int camNum, const char* name) override
+	virtual qboolean LoadCamera( int camNum, const char* name ) override
 	{
-		return ::loadCamera(camNum, name);
+		return ::loadCamera( camNum, name );
 	}
 
-	virtual void StartCamera(int camNum, int time) override
+	virtual void StartCamera( int camNum, int time ) override
 	{
-		if (camNum == 0)
-		{
+		if( camNum == 0 ) {
 			cl.cameraMode = qtrue;
 		}
-		::startCamera(camNum, time);
+		::startCamera( camNum, time );
 	}
 
-	virtual void StopCamera(int camNum) override
+	virtual void StopCamera( int camNum ) override
 	{
-		if (camNum == 0)
-		{
+		if( camNum == 0 ) {
 			cl.cameraMode = qfalse;
 		}
 	}
 
-	virtual qboolean GetCameraInfo(int camNum, int time, vec3_t* origin, vec3_t* angles, float* fov) override
+	virtual qboolean GetCameraInfo( int camNum, int time, vec3_t* origin, vec3_t* angles, float* fov ) override
 	{
-		return ::getCameraInfo(camNum, time, (float *)origin, (float*)angles, fov);
+		return ::getCameraInfo( camNum, time, ( float* )origin, ( float* )angles, fov );
 	}
 
-	virtual qboolean Key_IsDown(int keynum) override
+	virtual qboolean Key_IsDown( int keynum ) override
 	{
-		return ::Key_IsDown(keynum);
+		return ::Key_IsDown( keynum );
 	}
 
-	virtual int Key_GetCatcher(void) override
+	virtual int Key_GetCatcher() override
 	{
 		return ::Key_GetCatcher();
 	}
 
-	virtual void Key_SetCatcher(int catcher) override
+	virtual void Key_SetCatcher( int catcher ) override
 	{
-		::Key_SetCatcher(catcher);
+		::Key_SetCatcher( catcher );
 	}
 
-	virtual int Key_GetKey(const char* binding) override
+	virtual int Key_GetKey( const char* binding ) override
 	{
-		return ::Key_GetKey(binding);
+		return ::Key_GetKey( binding );
 	}
 
-	virtual int PC_AddGlobalDefine(char* define) override
+	virtual int PC_AddGlobalDefine( char* define ) override
 	{
-		return ::botlib_export->PC_AddGlobalDefine(define);
+		return ::botlib_export->PC_AddGlobalDefine( define );
 	}
 
-	virtual int PC_LoadSource(const char* filename) override
+	virtual int PC_LoadSource( const char* filename ) override
 	{
-		return ::botlib_export->PC_LoadSourceHandle(filename);
+		return ::botlib_export->PC_LoadSourceHandle( filename );
 	}
 
-	virtual int PC_FreeSource(int handle) override
+	virtual int PC_FreeSource( int handle ) override
 	{
-		return ::botlib_export->PC_FreeSourceHandle(handle);
+		return ::botlib_export->PC_FreeSourceHandle( handle );
 	}
 
-	virtual int PC_ReadToken(int handle, pc_token_t* pc_token) override
+	virtual int PC_ReadToken( int handle, pc_token_t* pc_token ) override
 	{
-		return ::botlib_export->PC_ReadTokenHandle(handle, pc_token);
+		return ::botlib_export->PC_ReadTokenHandle( handle, pc_token );
 	}
 
-	virtual int PC_SourceFileAndLine(int handle, char* filename, int* line) override
+	virtual int PC_SourceFileAndLine( int handle, char* filename, int* line ) override
 	{
-		return ::botlib_export->PC_SourceFileAndLine(handle, filename, line);
+		return ::botlib_export->PC_SourceFileAndLine( handle, filename, line );
 	}
 
-	virtual int RealTime(qtime_t* qtime) override
+	virtual int RealTime( qtime_t* qtime ) override
 	{
-		return ::Com_RealTime(qtime);
+		return ::Com_RealTime( qtime );
 	}
 
-	virtual void SendMoveSpeedsToGame(int entnum, char* movespeeds) override
+	virtual void SendMoveSpeedsToGame( int entnum, char* movespeeds ) override
 	{
-		::SV_SendMoveSpeedsToGame(entnum, movespeeds);
+		::SV_SendMoveSpeedsToGame( entnum, movespeeds );
 	}
 
-	virtual int CIN_PlayCinematic(const char* arg0, int xpos, int ypos, int width, int height, int bits) override
+	virtual int CIN_PlayCinematic( const char* arg0, int xpos, int ypos, int width, int height, int bits ) override
 	{
-		return ::CIN_PlayCinematic(arg0, xpos, ypos, width, height, bits);
+		return ::CIN_PlayCinematic( arg0, xpos, ypos, width, height, bits );
 	}
 
-	virtual e_status CIN_StopCinematic(int handle) override
+	virtual e_status CIN_StopCinematic( int handle ) override
 	{
-		return ::CIN_StopCinematic(handle);
+		return ::CIN_StopCinematic( handle );
 	}
 
-	virtual e_status CIN_RunCinematic(int handle) override
+	virtual e_status CIN_RunCinematic( int handle ) override
 	{
-		return ::CIN_RunCinematic(handle);
+		return ::CIN_RunCinematic( handle );
 	}
 
-	virtual void CIN_DrawCinematic(int handle) override
+	virtual void CIN_DrawCinematic( int handle ) override
 	{
-		::CIN_DrawCinematic(handle);
+		::CIN_DrawCinematic( handle );
 	}
 
-	virtual void CIN_SetExtents(int handle, int x, int y, int w, int h) override
+	virtual void CIN_SetExtents( int handle, int x, int y, int w, int h ) override
 	{
-		::CIN_SetExtents(handle, x, y, w, h);
+		::CIN_SetExtents( handle, x, y, w, h );
 	}
 
-	virtual qboolean GetEntityToken(char* buffer, int bufferSize) override
+	virtual qboolean GetEntityToken( char* buffer, int bufferSize ) override
 	{
-		return re.GetEntityToken(buffer, bufferSize);
+		return re.GetEntityToken( buffer, bufferSize );
 	}
 
-	virtual void UI_LimboChat(const char* arg0) override
+	virtual void UI_LimboChat( const char* arg0 ) override
 	{
-		if (arg0)
-		{
-			::CL_AddToLimboChat(arg0);
+		if( arg0 ) {
+			::CL_AddToLimboChat( arg0 );
 		}
 	}
 
-	virtual void UI_ClosePopup(const char* arg0) override
+	virtual void UI_ClosePopup( const char* arg0 ) override
 	{
-		(void)arg0;
-		uivm->KeyEvent( K_ESCAPE, qtrue);
+		()arg0;
+		uivm->KeyEvent( K_ESCAPE, qtrue );
 	}
 
-	virtual qboolean GetModelInfo(int clientNum, char* modelName, animModelInfo_t** modelInfo) override
+	virtual qboolean GetModelInfo( int clientNum, char* modelName, animModelInfo_t** modelInfo ) override
 	{
-		return ::SV_GetModelInfo(clientNum, modelName, modelInfo);
+		return ::SV_GetModelInfo( clientNum, modelName, modelInfo );
 	}
 
-	virtual void UI_Popup(const char* arg0)
+	virtual void UI_Popup( const char* arg0 )
 	{
-		if (arg0 && !Q_stricmp(arg0, "briefing")) {  //----(SA) added
-			uivm->SetActiveMenu(UIMENU_BRIEFING);
+		if( arg0 && !Q_stricmp( arg0, "briefing" ) ) { //----(SA) added
+			uivm->SetActiveMenu( UIMENU_BRIEFING );
 			return;
 		}
 
-		if (cls.state == CA_ACTIVE && !clc.demoplaying) {
+		if( cls.state == CA_ACTIVE && !clc.demoplaying ) {
 			// NERVE - SMF
-			if (arg0 && !Q_stricmp(arg0, "UIMENU_WM_PICKTEAM")) {
-				uivm->SetActiveMenu(UIMENU_WM_PICKTEAM);
-			}
-			else if (arg0 && !Q_stricmp(arg0, "UIMENU_WM_PICKPLAYER")) {
-				uivm->SetActiveMenu(UIMENU_WM_PICKPLAYER);
-			}
-			else if (arg0 && !Q_stricmp(arg0, "UIMENU_WM_QUICKMESSAGE")) {
-				uivm->SetActiveMenu(UIMENU_WM_QUICKMESSAGE);
-			}
-			else if (arg0 && !Q_stricmp(arg0, "UIMENU_WM_LIMBO")) {
-				uivm->SetActiveMenu(UIMENU_WM_LIMBO);
+			if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_PICKTEAM" ) ) {
+				uivm->SetActiveMenu( UIMENU_WM_PICKTEAM );
+			} else if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_PICKPLAYER" ) ) {
+				uivm->SetActiveMenu( UIMENU_WM_PICKPLAYER );
+			} else if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_QUICKMESSAGE" ) ) {
+				uivm->SetActiveMenu( UIMENU_WM_QUICKMESSAGE );
+			} else if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_LIMBO" ) ) {
+				uivm->SetActiveMenu( UIMENU_WM_LIMBO );
 			}
 			// -NERVE - SMF
-			else if (arg0 && !Q_stricmp(arg0, "hbook1")) {   //----(SA)
-				uivm->SetActiveMenu(UIMENU_BOOK1);
-			}
-			else if (arg0 && !Q_stricmp(arg0, "hbook2")) { //----(SA)
-				uivm->SetActiveMenu(UIMENU_BOOK2);
-			}
-			else if (arg0 && !Q_stricmp(arg0, "hbook3")) { //----(SA)
-				uivm->SetActiveMenu(UIMENU_BOOK3);
-			}
-			else if (arg0 && !Q_stricmp(arg0, "pregame")) { //----(SA) added
-				uivm->SetActiveMenu(UIMENU_PREGAME);
-			}
-			else {
-				uivm->SetActiveMenu(UIMENU_CLIPBOARD);
+			else if( arg0 && !Q_stricmp( arg0, "hbook1" ) ) { //----(SA)
+				uivm->SetActiveMenu( UIMENU_BOOK1 );
+			} else if( arg0 && !Q_stricmp( arg0, "hbook2" ) ) { //----(SA)
+				uivm->SetActiveMenu( UIMENU_BOOK2 );
+			} else if( arg0 && !Q_stricmp( arg0, "hbook3" ) ) { //----(SA)
+				uivm->SetActiveMenu( UIMENU_BOOK3 );
+			} else if( arg0 && !Q_stricmp( arg0, "pregame" ) ) { //----(SA) added
+				uivm->SetActiveMenu( UIMENU_PREGAME );
+			} else {
+				uivm->SetActiveMenu( UIMENU_CLIPBOARD );
 			}
 		}
 	}
@@ -1073,48 +1028,49 @@ CL_UpdateLevelHunkUsage
   things should only account for a small variation (hopefully)
 ====================
 */
-void CL_UpdateLevelHunkUsage( void ) {
-	int handle;
-	char *memlistfile = "hunkusage.dat";
+void CL_UpdateLevelHunkUsage()
+{
+	int	  handle;
+	char* memlistfile = "hunkusage.dat";
 	char *buf, *outbuf;
 	char *buftrav, *outbuftrav;
-	char *token;
-	char outstr[256];
-	int len, memusage;
+	char* token;
+	char  outstr[256];
+	int	  len, memusage;
 
 	memusage = Cvar_VariableIntegerValue( "com_hunkused" ) + Cvar_VariableIntegerValue( "hunk_soundadjust" );
 
 	len = FS_FOpenFileByMode( memlistfile, &handle, FS_READ );
-	if ( len >= 0 ) { // the file exists, so read it in, strip out the current entry for this map, and save it out, so we can append the new value
+	if( len >= 0 ) { // the file exists, so read it in, strip out the current entry for this map, and save it out, so we can append the new value
 
-		buf = (char *)Z_Malloc( len + 1 );
+		buf = ( char* )Z_Malloc( len + 1 );
 		memset( buf, 0, len + 1 );
-		outbuf = (char *)Z_Malloc( len + 1 );
+		outbuf = ( char* )Z_Malloc( len + 1 );
 		memset( outbuf, 0, len + 1 );
 
-		FS_Read( (void *)buf, len, handle );
+		FS_Read( ( void* )buf, len, handle );
 		FS_FCloseFile( handle );
 
 		// now parse the file, filtering out the current map
-		buftrav = buf;
-		outbuftrav = outbuf;
+		buftrav		  = buf;
+		outbuftrav	  = outbuf;
 		outbuftrav[0] = '\0';
-		while ( ( token = COM_Parse( &buftrav ) ) && token[0] ) {
-			if ( !Q_strcasecmp( token, cl.mapname ) ) {
+		while( ( token = COM_Parse( &buftrav ) ) && token[0] ) {
+			if( !Q_strcasecmp( token, cl.mapname ) ) {
 				// found a match
-				token = COM_Parse( &buftrav );  // read the size
-				if ( token && token[0] ) {
-					if ( atoi( token ) == memusage ) {  // if it is the same, abort this process
+				token = COM_Parse( &buftrav ); // read the size
+				if( token && token[0] ) {
+					if( atoi( token ) == memusage ) { // if it is the same, abort this process
 						Z_Free( buf );
 						Z_Free( outbuf );
 						return;
 					}
 				}
-			} else {    // send it to the outbuf
+			} else { // send it to the outbuf
 				Q_strcat( outbuftrav, len + 1, token );
 				Q_strcat( outbuftrav, len + 1, " " );
-				token = COM_Parse( &buftrav );  // read the size
-				if ( token && token[0] ) {
+				token = COM_Parse( &buftrav ); // read the size
+				if( token && token[0] ) {
 					Q_strcat( outbuftrav, len + 1, token );
 					Q_strcat( outbuftrav, len + 1, "\n" );
 				} else {
@@ -1123,20 +1079,20 @@ void CL_UpdateLevelHunkUsage( void ) {
 			}
 		}
 
-#ifdef __MACOS__    //DAJ MacOS file typing
+#ifdef __MACOS__ // DAJ MacOS file typing
 		{
 			extern _MSL_IMP_EXP_C long _fcreator, _ftype;
-			_ftype = 'WlfB';
+			_ftype	  = 'WlfB';
 			_fcreator = 'WlfS';
 		}
 #endif
 		handle = FS_FOpenFileWrite( memlistfile );
-		if ( handle < 0 ) {
+		if( handle < 0 ) {
 			Com_Error( ERR_DROP, "cannot create %s\n", memlistfile );
 		}
 		// input file is parsed, now output to the new file
 		len = strlen( outbuf );
-		if ( FS_Write( (void *)outbuf, len, handle ) != len ) {
+		if( FS_Write( ( void* )outbuf, len, handle ) != len ) {
 			Com_Error( ERR_DROP, "cannot write to %s\n", memlistfile );
 		}
 		FS_FCloseFile( handle );
@@ -1146,7 +1102,7 @@ void CL_UpdateLevelHunkUsage( void ) {
 	}
 	// now append the current map to the current file
 	FS_FOpenFileByMode( memlistfile, &handle, FS_APPEND );
-	if ( handle < 0 ) {
+	if( handle < 0 ) {
 		Com_Error( ERR_DROP, "cannot write to hunkusage.dat, check disk full\n" );
 	}
 	Com_sprintf( outstr, sizeof( outstr ), "%s %i\n", cl.mapname, memusage );
@@ -1155,7 +1111,7 @@ void CL_UpdateLevelHunkUsage( void ) {
 
 	// now just open it and close it, so it gets copied to the pak dir
 	len = FS_FOpenFileByMode( memlistfile, &handle, FS_READ );
-	if ( len >= 0 ) {
+	if( len >= 0 ) {
 		FS_FCloseFile( handle );
 	}
 }
@@ -1167,10 +1123,11 @@ CL_InitCGame
 Should only by called by CL_StartHunkUsers
 ====================
 */
-void CL_InitCGame( void ) {
-	const char          *info;
-	const char          *mapname;
-	int t1, t2;
+void CL_InitCGame()
+{
+	const char*					info;
+	const char*					mapname;
+	int							t1, t2;
 	static idCGSystemCallsLocal cgImports;
 
 	t1 = Sys_Milliseconds();
@@ -1179,13 +1136,13 @@ void CL_InitCGame( void ) {
 	Con_Close();
 
 	// find the current mapname
-	info = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SERVERINFO ];
+	info	= cl.gameState.stringData + cl.gameState.stringOffsets[CS_SERVERINFO];
 	mapname = Info_ValueForKey( info, "mapname" );
 	Com_sprintf( cl.mapname, sizeof( cl.mapname ), "maps/%s.bsp", mapname );
 
 	// load the dll or bytecode
-	vmHandle = (dllhandle_t)Sys_LoadDll("cgame", CGAME_IMPORT_API_VERSION, &cgImports, (void**)&cgvm);
-	if ( !cgvm || !vmHandle) {
+	vmHandle = ( dllhandle_t )Sys_LoadDll( "cgame", CGAME_IMPORT_API_VERSION, &cgImports, ( void** )&cgvm );
+	if( !cgvm || !vmHandle ) {
 		Com_Error( ERR_DROP, "VM_Create on cgame failed" );
 	}
 	cls.state = CA_LOADING;
@@ -1193,8 +1150,8 @@ void CL_InitCGame( void ) {
 	// init for this gamestate
 	// use the lastExecutedServerCommand instead of the serverCommandSequence
 	// otherwise server commands sent just before a gamestate are dropped
-	cgvm->Init(clc.serverMessageSequence, clc.lastExecutedServerCommand );
-//	VM_Call( cgvm, CG_INIT, clc.serverMessageSequence, clc.serverCommandSequence );
+	cgvm->Init( clc.serverMessageSequence, clc.lastExecutedServerCommand );
+	//	VM_Call( cgvm, CG_INIT, clc.serverMessageSequence, clc.serverCommandSequence );
 
 	// we will send a usercmd this frame, which
 	// will cause the server to send us the first snapshot
@@ -1209,7 +1166,7 @@ void CL_InitCGame( void ) {
 	re.EndRegistration();
 
 	// make sure everything is paged in
-	if ( !Sys_LowPhysicalMemory() ) {
+	if( !Sys_LowPhysicalMemory() ) {
 		Com_TouchMemory();
 	}
 
@@ -1220,7 +1177,6 @@ void CL_InitCGame( void ) {
 	CL_UpdateLevelHunkUsage();
 }
 
-
 /*
 ====================
 CL_GameCommand
@@ -1228,25 +1184,24 @@ CL_GameCommand
 See if the current console command is claimed by the cgame
 ====================
 */
-qboolean CL_GameCommand( void ) {
-	if ( !cgvm ) {
+qboolean CL_GameCommand()
+{
+	if( !cgvm ) {
 		return qfalse;
 	}
 
 	return cgvm->ConsoleCommand();
 }
 
-
-
 /*
 =====================
 CL_CGameRendering
 =====================
 */
-void CL_CGameRendering( stereoFrame_t stereo ) {
+void CL_CGameRendering( stereoFrame_t stereo )
+{
 	cgvm->DrawActiveFrame( cl.serverTime, stereo, clc.demoplaying );
 }
-
 
 /*
 =================
@@ -1268,9 +1223,10 @@ or bursted delayed packets.
 =================
 */
 
-#define RESET_TIME  500
+#define RESET_TIME 500
 
-void CL_AdjustTimeDelta( void ) {
+void CL_AdjustTimeDelta()
+{
 	int resetTime;
 	int newDelta;
 	int deltaDelta;
@@ -1278,30 +1234,30 @@ void CL_AdjustTimeDelta( void ) {
 	cl.newSnapshots = qfalse;
 
 	// the delta never drifts when replaying a demo
-	if ( clc.demoplaying ) {
+	if( clc.demoplaying ) {
 		return;
 	}
 
 	// if the current time is WAY off, just correct to the current value
-	if ( com_sv_running->integer ) {
+	if( com_sv_running->integer ) {
 		resetTime = 100;
 	} else {
 		resetTime = RESET_TIME;
 	}
 
-	newDelta = cl.snap.serverTime - cls.realtime;
+	newDelta   = cl.snap.serverTime - cls.realtime;
 	deltaDelta = abs( newDelta - cl.serverTimeDelta );
 
-	if ( deltaDelta > RESET_TIME ) {
+	if( deltaDelta > RESET_TIME ) {
 		cl.serverTimeDelta = newDelta;
-		cl.oldServerTime = cl.snap.serverTime;  // FIXME: is this a problem for cgame?
-		cl.serverTime = cl.snap.serverTime;
-		if ( cl_showTimeDelta->integer ) {
+		cl.oldServerTime   = cl.snap.serverTime; // FIXME: is this a problem for cgame?
+		cl.serverTime	   = cl.snap.serverTime;
+		if( cl_showTimeDelta->integer ) {
 			Com_Printf( "<RESET> " );
 		}
-	} else if ( deltaDelta > 100 ) {
+	} else if( deltaDelta > 100 ) {
 		// fast adjust, cut the difference in half
-		if ( cl_showTimeDelta->integer ) {
+		if( cl_showTimeDelta->integer ) {
 			Com_Printf( "<FAST> " );
 		}
 		cl.serverTimeDelta = ( cl.serverTimeDelta + newDelta ) >> 1;
@@ -1311,8 +1267,8 @@ void CL_AdjustTimeDelta( void ) {
 		// if any of the frames between this and the previous snapshot
 		// had to be extrapolated, nudge our sense of time back a little
 		// the granularity of +1 / -2 is too high for timescale modified frametimes
-		if ( com_timescale->value == 0 || com_timescale->value == 1 ) {
-			if ( cl.extrapolatedSnapshot ) {
+		if( com_timescale->value == 0 || com_timescale->value == 1 ) {
+			if( cl.extrapolatedSnapshot ) {
 				cl.extrapolatedSnapshot = qfalse;
 				cl.serverTimeDelta -= 2;
 			} else {
@@ -1322,27 +1278,27 @@ void CL_AdjustTimeDelta( void ) {
 		}
 	}
 
-	if ( cl_showTimeDelta->integer ) {
+	if( cl_showTimeDelta->integer ) {
 		Com_Printf( "%i ", cl.serverTimeDelta );
 	}
 }
-
 
 /*
 ==================
 CL_FirstSnapshot
 ==================
 */
-void CL_FirstSnapshot( void ) {
+void CL_FirstSnapshot()
+{
 	// ignore snapshots that don't have entities
-	if ( cl.snap.snapFlags & SNAPFLAG_NOT_ACTIVE ) {
+	if( cl.snap.snapFlags & SNAPFLAG_NOT_ACTIVE ) {
 		return;
 	}
 	cls.state = CA_ACTIVE;
 
 	// set the timedelta so we are exactly on this first frame
 	cl.serverTimeDelta = cl.snap.serverTime - cls.realtime;
-	cl.oldServerTime = cl.snap.serverTime;
+	cl.oldServerTime   = cl.snap.serverTime;
 
 	clc.timeDemoBaseTime = cl.snap.serverTime;
 
@@ -1350,7 +1306,7 @@ void CL_FirstSnapshot( void ) {
 	// execute the contents of activeAction now
 	// this is to allow scripting a timedemo to start right
 	// after loading
-	if ( cl_activeAction->string[0] ) {
+	if( cl_activeAction->string[0] ) {
 		Cbuf_AddText( cl_activeAction->string );
 		Cvar_Set( "activeAction", "" );
 	}
@@ -1363,44 +1319,45 @@ void CL_FirstSnapshot( void ) {
 CL_SetCGameTime
 ==================
 */
-void CL_SetCGameTime( void ) {
+void CL_SetCGameTime()
+{
 	// getting a valid frame message ends the connection process
-	if ( cls.state != CA_ACTIVE ) {
-		if ( cls.state != CA_PRIMED ) {
+	if( cls.state != CA_ACTIVE ) {
+		if( cls.state != CA_PRIMED ) {
 			return;
 		}
-		if ( clc.demoplaying ) {
+		if( clc.demoplaying ) {
 			// we shouldn't get the first snapshot on the same frame
 			// as the gamestate, because it causes a bad time skip
-			if ( !clc.firstDemoFrameSkipped ) {
+			if( !clc.firstDemoFrameSkipped ) {
 				clc.firstDemoFrameSkipped = qtrue;
 				return;
 			}
 			CL_ReadDemoMessage();
 		}
-		if ( cl.newSnapshots ) {
+		if( cl.newSnapshots ) {
 			cl.newSnapshots = qfalse;
 			CL_FirstSnapshot();
 		}
-		if ( cls.state != CA_ACTIVE ) {
+		if( cls.state != CA_ACTIVE ) {
 			return;
 		}
 	}
 
 	// if we have gotten to this point, cl.snap is guaranteed to be valid
-	if ( !cl.snap.valid ) {
+	if( !cl.snap.valid ) {
 		Com_Error( ERR_DROP, "CL_SetCGameTime: !cl.snap.valid" );
 	}
 
 	// allow pause in single player
-	if ( sv_paused->integer && cl_paused->integer && com_sv_running->integer ) {
+	if( sv_paused->integer && cl_paused->integer && com_sv_running->integer ) {
 		// paused
 		return;
 	}
 
-	if ( cl.snap.serverTime < cl.oldFrameServerTime ) {
+	if( cl.snap.serverTime < cl.oldFrameServerTime ) {
 		// Ridah, if this is a localhost, then we are probably loading a savegame
-		if ( !Q_stricmp( cls.servername, "localhost" ) ) {
+		if( !Q_stricmp( cls.servername, "localhost" ) ) {
 			// do nothing?
 			CL_FirstSnapshot();
 		} else {
@@ -1409,10 +1366,9 @@ void CL_SetCGameTime( void ) {
 	}
 	cl.oldFrameServerTime = cl.snap.serverTime;
 
-
 	// get our current view of time
 
-	if ( clc.demoplaying && cl_freezeDemo->integer ) {
+	if( clc.demoplaying && cl_freezeDemo->integer ) {
 		// cl_freezeDemo is used to lock a demo in place for single frame advances
 
 	} else {
@@ -1422,9 +1378,9 @@ void CL_SetCGameTime( void ) {
 		int tn;
 
 		tn = cl_timeNudge->integer;
-		if ( tn < -30 ) {
+		if( tn < -30 ) {
 			tn = -30;
-		} else if ( tn > 30 ) {
+		} else if( tn > 30 ) {
 			tn = 30;
 		}
 
@@ -1432,14 +1388,14 @@ void CL_SetCGameTime( void ) {
 
 		// guarantee that time will never flow backwards, even if
 		// serverTimeDelta made an adjustment or cl_timeNudge was changed
-		if ( cl.serverTime < cl.oldServerTime ) {
+		if( cl.serverTime < cl.oldServerTime ) {
 			cl.serverTime = cl.oldServerTime;
 		}
 		cl.oldServerTime = cl.serverTime;
 
 		// note if we are almost past the latest frame (without timeNudge),
 		// so we will try and adjust back a bit when the next snapshot arrives
-		if ( cls.realtime + cl.serverTimeDelta >= cl.snap.serverTime - 5 ) {
+		if( cls.realtime + cl.serverTimeDelta >= cl.snap.serverTime - 5 ) {
 			cl.extrapolatedSnapshot = qtrue;
 		}
 	}
@@ -1447,11 +1403,11 @@ void CL_SetCGameTime( void ) {
 	// if we have gotten new snapshots, drift serverTimeDelta
 	// don't do this every frame, or a period of packet loss would
 	// make a huge adjustment
-	if ( cl.newSnapshots ) {
+	if( cl.newSnapshots ) {
 		CL_AdjustTimeDelta();
 	}
 
-	if ( !clc.demoplaying ) {
+	if( !clc.demoplaying ) {
 		return;
 	}
 
@@ -1463,23 +1419,22 @@ void CL_SetCGameTime( void ) {
 	// no matter what speed machine it is run on,
 	// while a normal demo may have different time samples
 	// each time it is played back
-	if ( cl_timedemo->integer ) {
-		if ( !clc.timeDemoStart ) {
+	if( cl_timedemo->integer ) {
+		if( !clc.timeDemoStart ) {
 			clc.timeDemoStart = Sys_Milliseconds();
 		}
 		clc.timeDemoFrames++;
 		cl.serverTime = clc.timeDemoBaseTime + clc.timeDemoFrames * 50;
 	}
 
-	while ( cl.serverTime >= cl.snap.serverTime ) {
+	while( cl.serverTime >= cl.snap.serverTime ) {
 		// feed another messag, which should change
 		// the contents of cl.snap
 		CL_ReadDemoMessage();
-		if ( cls.state != CA_ACTIVE ) {
-			return;     // end of demo
+		if( cls.state != CA_ACTIVE ) {
+			return; // end of demo
 		}
 	}
-
 }
 
 /*
@@ -1487,8 +1442,9 @@ void CL_SetCGameTime( void ) {
 CL_GetTag
 ====================
 */
-qboolean CL_GetTag( int clientNum, char *tagname, orientation_t *or ) {
-	if ( !cgvm ) {
+qboolean CL_GetTag( int clientNum, char* tagname, orientation_t* or )
+{
+	if( !cgvm ) {
 		return qfalse;
 	}
 

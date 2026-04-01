@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
@@ -36,14 +37,15 @@ If you have questions concerning this license or the applicable additional terms
 #include "ui_local.h"
 
 uiStatic_t uis;
-qboolean m_entersound;              // after a frame, so caching won't disrupt the sound
+qboolean   m_entersound; // after a frame, so caching won't disrupt the sound
 
 // these are here so the functions in q_shared.c can link
 #if !defined( UI_HARD_LINKED ) || defined( __MACOS__ )
 
-void QDECL Com_Error( int level, const char *error, ... ) {
+void QDECL Com_Error( int level, const char* error, ... )
+{
 	va_list argptr;
-	char text[1024];
+	char	text[1024];
 
 	va_start( argptr, error );
 	vsprintf( text, error, argptr );
@@ -52,9 +54,10 @@ void QDECL Com_Error( int level, const char *error, ... ) {
 	sys->Error( va( "%s", text ) );
 }
 
-void QDECL Com_Printf( const char *msg, ... ) {
+void QDECL Com_Printf( const char* msg, ... )
+{
 	va_list argptr;
-	char text[1024];
+	char	text[1024];
 
 	va_start( argptr, msg );
 	vsprintf( text, msg, argptr );
@@ -70,11 +73,12 @@ void QDECL Com_Printf( const char *msg, ... ) {
 UI_ClampCvar
 =================
 */
-float UI_ClampCvar( float min, float max, float value ) {
-	if ( value < min ) {
+float UI_ClampCvar( float min, float max, float value )
+{
+	if( value < min ) {
 		return min;
 	}
-	if ( value > max ) {
+	if( value > max ) {
 		return max;
 	}
 	return value;
@@ -85,7 +89,8 @@ float UI_ClampCvar( float min, float max, float value ) {
 UI_StartDemoLoop
 =================
 */
-void UI_StartDemoLoop( void ) {
+void UI_StartDemoLoop()
+{
 	sys->Cmd_ExecuteText( EXEC_APPEND, "d1\n" );
 }
 
@@ -104,7 +109,8 @@ static void NeedCDKeyAction( qboolean result ) {
 }
 */
 
-char *UI_Argv( int arg ) {
+char* UI_Argv( int arg )
+{
 	static char buffer[MAX_STRING_CHARS];
 
 	sys->Argv( arg, buffer, sizeof( buffer ) );
@@ -112,8 +118,8 @@ char *UI_Argv( int arg ) {
 	return buffer;
 }
 
-
-char *UI_Cvar_VariableString( const char *var_name ) {
+char* UI_Cvar_VariableString( const char* var_name )
+{
 	static char buffer[MAX_STRING_CHARS];
 
 	sys->Cvar_VariableStringBuffer( var_name, buffer, sizeof( buffer ) );
@@ -121,68 +127,69 @@ char *UI_Cvar_VariableString( const char *var_name ) {
 	return buffer;
 }
 
-
 #ifdef MISSIONPACK
-void UI_SetBestScores( postGameInfo_t *newInfo, qboolean postGame ) {
-	sys->Cvar_Set( "ui_scoreAccuracy",     va( "%i%%", newInfo->accuracy ) );
+void UI_SetBestScores( postGameInfo_t* newInfo, qboolean postGame )
+{
+	sys->Cvar_Set( "ui_scoreAccuracy", va( "%i%%", newInfo->accuracy ) );
 	sys->Cvar_Set( "ui_scoreImpressives", va( "%i", newInfo->impressives ) );
-	sys->Cvar_Set( "ui_scoreExcellents",  va( "%i", newInfo->excellents ) );
-	sys->Cvar_Set( "ui_scoreDefends",             va( "%i", newInfo->defends ) );
-	sys->Cvar_Set( "ui_scoreAssists",             va( "%i", newInfo->assists ) );
-	sys->Cvar_Set( "ui_scoreGauntlets",       va( "%i", newInfo->gauntlets ) );
-	sys->Cvar_Set( "ui_scoreScore",               va( "%i", newInfo->score ) );
-	sys->Cvar_Set( "ui_scorePerfect",         va( "%i", newInfo->perfects ) );
-	sys->Cvar_Set( "ui_scoreTeam",                    va( "%i to %i", newInfo->redScore, newInfo->blueScore ) );
-	sys->Cvar_Set( "ui_scoreBase",                    va( "%i", newInfo->baseScore ) );
-	sys->Cvar_Set( "ui_scoreTimeBonus",       va( "%i", newInfo->timeBonus ) );
-	sys->Cvar_Set( "ui_scoreSkillBonus",      va( "%i", newInfo->skillBonus ) );
-	sys->Cvar_Set( "ui_scoreShutoutBonus",    va( "%i", newInfo->shutoutBonus ) );
-	sys->Cvar_Set( "ui_scoreTime",                    va( "%02i:%02i", newInfo->time / 60, newInfo->time % 60 ) );
-	sys->Cvar_Set( "ui_scoreCaptures",        va( "%i", newInfo->captures ) );
-	if ( postGame ) {
-		sys->Cvar_Set( "ui_scoreAccuracy2",     va( "%i%%", newInfo->accuracy ) );
-		sys->Cvar_Set( "ui_scoreImpressives2",    va( "%i", newInfo->impressives ) );
-		sys->Cvar_Set( "ui_scoreExcellents2",     va( "%i", newInfo->excellents ) );
-		sys->Cvar_Set( "ui_scoreDefends2",            va( "%i", newInfo->defends ) );
-		sys->Cvar_Set( "ui_scoreAssists2",            va( "%i", newInfo->assists ) );
-		sys->Cvar_Set( "ui_scoreGauntlets2",      va( "%i", newInfo->gauntlets ) );
-		sys->Cvar_Set( "ui_scoreScore2",              va( "%i", newInfo->score ) );
-		sys->Cvar_Set( "ui_scorePerfect2",            va( "%i", newInfo->perfects ) );
-		sys->Cvar_Set( "ui_scoreTeam2",                   va( "%i to %i", newInfo->redScore, newInfo->blueScore ) );
-		sys->Cvar_Set( "ui_scoreBase2",                   va( "%i", newInfo->baseScore ) );
-		sys->Cvar_Set( "ui_scoreTimeBonus2",      va( "%i", newInfo->timeBonus ) );
-		sys->Cvar_Set( "ui_scoreSkillBonus2",     va( "%i", newInfo->skillBonus ) );
-		sys->Cvar_Set( "ui_scoreShutoutBonus2",   va( "%i", newInfo->shutoutBonus ) );
-		sys->Cvar_Set( "ui_scoreTime2",                   va( "%02i:%02i", newInfo->time / 60, newInfo->time % 60 ) );
-		sys->Cvar_Set( "ui_scoreCaptures2",       va( "%i", newInfo->captures ) );
+	sys->Cvar_Set( "ui_scoreExcellents", va( "%i", newInfo->excellents ) );
+	sys->Cvar_Set( "ui_scoreDefends", va( "%i", newInfo->defends ) );
+	sys->Cvar_Set( "ui_scoreAssists", va( "%i", newInfo->assists ) );
+	sys->Cvar_Set( "ui_scoreGauntlets", va( "%i", newInfo->gauntlets ) );
+	sys->Cvar_Set( "ui_scoreScore", va( "%i", newInfo->score ) );
+	sys->Cvar_Set( "ui_scorePerfect", va( "%i", newInfo->perfects ) );
+	sys->Cvar_Set( "ui_scoreTeam", va( "%i to %i", newInfo->redScore, newInfo->blueScore ) );
+	sys->Cvar_Set( "ui_scoreBase", va( "%i", newInfo->baseScore ) );
+	sys->Cvar_Set( "ui_scoreTimeBonus", va( "%i", newInfo->timeBonus ) );
+	sys->Cvar_Set( "ui_scoreSkillBonus", va( "%i", newInfo->skillBonus ) );
+	sys->Cvar_Set( "ui_scoreShutoutBonus", va( "%i", newInfo->shutoutBonus ) );
+	sys->Cvar_Set( "ui_scoreTime", va( "%02i:%02i", newInfo->time / 60, newInfo->time % 60 ) );
+	sys->Cvar_Set( "ui_scoreCaptures", va( "%i", newInfo->captures ) );
+	if( postGame ) {
+		sys->Cvar_Set( "ui_scoreAccuracy2", va( "%i%%", newInfo->accuracy ) );
+		sys->Cvar_Set( "ui_scoreImpressives2", va( "%i", newInfo->impressives ) );
+		sys->Cvar_Set( "ui_scoreExcellents2", va( "%i", newInfo->excellents ) );
+		sys->Cvar_Set( "ui_scoreDefends2", va( "%i", newInfo->defends ) );
+		sys->Cvar_Set( "ui_scoreAssists2", va( "%i", newInfo->assists ) );
+		sys->Cvar_Set( "ui_scoreGauntlets2", va( "%i", newInfo->gauntlets ) );
+		sys->Cvar_Set( "ui_scoreScore2", va( "%i", newInfo->score ) );
+		sys->Cvar_Set( "ui_scorePerfect2", va( "%i", newInfo->perfects ) );
+		sys->Cvar_Set( "ui_scoreTeam2", va( "%i to %i", newInfo->redScore, newInfo->blueScore ) );
+		sys->Cvar_Set( "ui_scoreBase2", va( "%i", newInfo->baseScore ) );
+		sys->Cvar_Set( "ui_scoreTimeBonus2", va( "%i", newInfo->timeBonus ) );
+		sys->Cvar_Set( "ui_scoreSkillBonus2", va( "%i", newInfo->skillBonus ) );
+		sys->Cvar_Set( "ui_scoreShutoutBonus2", va( "%i", newInfo->shutoutBonus ) );
+		sys->Cvar_Set( "ui_scoreTime2", va( "%02i:%02i", newInfo->time / 60, newInfo->time % 60 ) );
+		sys->Cvar_Set( "ui_scoreCaptures2", va( "%i", newInfo->captures ) );
 	}
 }
-#endif  // #ifdef MISSIONPACK
+#endif // #ifdef MISSIONPACK
 
-void UI_LoadBestScores( const char *map, int game ) {
+void UI_LoadBestScores( const char* map, int game )
+{
 #ifdef MISSIONPACK
-	char fileName[MAX_QPATH];
-	fileHandle_t f;
+	char		   fileName[MAX_QPATH];
+	fileHandle_t   f;
 	postGameInfo_t newInfo;
 	memset( &newInfo, 0, sizeof( postGameInfo_t ) );
 	Com_sprintf( fileName, MAX_QPATH, "games/%s_%i.game", map, game );
-	if ( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
+	if( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
 		int size = 0;
 		sys->FS_Read( &size, sizeof( int ), f );
-		if ( size == sizeof( postGameInfo_t ) ) {
+		if( size == sizeof( postGameInfo_t ) ) {
 			sys->FS_Read( &newInfo, sizeof( postGameInfo_t ), f );
 		}
 		sys->FS_FCloseFile( f );
 	}
 	UI_SetBestScores( &newInfo, qfalse );
 
-	Com_sprintf( fileName, MAX_QPATH, "demos/%s_%d.dm_%d", map, game, (int)sys->Cvar_VariableValue( "protocol" ) );
+	Com_sprintf( fileName, MAX_QPATH, "demos/%s_%d.dm_%d", map, game, ( int )sys->Cvar_VariableValue( "protocol" ) );
 	uiInfo.demoAvailable = qfalse;
-	if ( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
+	if( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
 		uiInfo.demoAvailable = qtrue;
 		sys->FS_FCloseFile( f );
 	}
-#endif  // #ifdef MISSIONPACK
+#endif // #ifdef MISSIONPACK
 }
 
 /*
@@ -190,12 +197,13 @@ void UI_LoadBestScores( const char *map, int game ) {
 UI_ClearScores
 ===============
 */
-void UI_ClearScores() {
+void UI_ClearScores()
+{
 #ifdef MISSIONPACK
-	char gameList[4096];
-	char *gameFile;
-	int i, len, count, size;
-	fileHandle_t f;
+	char		   gameList[4096];
+	char*		   gameFile;
+	int			   i, len, count, size;
+	fileHandle_t   f;
 	postGameInfo_t newInfo;
 
 	count = sys->FS_GetFileList( "games", "game", gameList, sizeof( gameList ) );
@@ -203,11 +211,11 @@ void UI_ClearScores() {
 	size = sizeof( postGameInfo_t );
 	memset( &newInfo, 0, size );
 
-	if ( count > 0 ) {
+	if( count > 0 ) {
 		gameFile = gameList;
-		for ( i = 0; i < count; i++ ) {
+		for( i = 0; i < count; i++ ) {
 			len = strlen( gameFile );
-			if ( sys->FS_FOpenFile( va( "games/%s",gameFile ), &f, FS_WRITE ) >= 0 ) {
+			if( sys->FS_FOpenFile( va( "games/%s", gameFile ), &f, FS_WRITE ) >= 0 ) {
 				sys->FS_Write( &size, sizeof( int ), f );
 				sys->FS_Write( &newInfo, size, f );
 				sys->FS_FCloseFile( f );
@@ -217,13 +225,11 @@ void UI_ClearScores() {
 	}
 
 	UI_SetBestScores( &newInfo, qfalse );
-#endif  // #ifdef MISSIONPACK
-
+#endif // #ifdef MISSIONPACK
 }
 
-
-
-static void UI_Cache_f() {
+static void UI_Cache_f()
+{
 	Display_CacheAll();
 }
 
@@ -232,16 +238,17 @@ static void UI_Cache_f() {
 UI_CalcPostGameStats
 =======================
 */
-static void UI_CalcPostGameStats() {
+static void UI_CalcPostGameStats()
+{
 #ifdef MISSIONPACK
-	char map[MAX_QPATH];
-	char fileName[MAX_QPATH];
-	char info[MAX_INFO_STRING];
-	fileHandle_t f;
-	int size, game, time, adjustedTime;
+	char		   map[MAX_QPATH];
+	char		   fileName[MAX_QPATH];
+	char		   info[MAX_INFO_STRING];
+	fileHandle_t   f;
+	int			   size, game, time, adjustedTime;
 	postGameInfo_t oldInfo;
 	postGameInfo_t newInfo;
-	qboolean newHigh = qfalse;
+	qboolean	   newHigh = qfalse;
 
 	sys->GetConfigString( CS_SERVERINFO, info, sizeof( info ) );
 	Q_strncpyz( map, Info_ValueForKey( info, "mapname" ), sizeof( map ) );
@@ -251,45 +258,45 @@ static void UI_CalcPostGameStats() {
 	Com_sprintf( fileName, MAX_QPATH, "games/%s_%i.game", map, game );
 	// see if we have one already
 	memset( &oldInfo, 0, sizeof( postGameInfo_t ) );
-	if ( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
+	if( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
 		// if so load it
 		size = 0;
 		sys->FS_Read( &size, sizeof( int ), f );
-		if ( size == sizeof( postGameInfo_t ) ) {
+		if( size == sizeof( postGameInfo_t ) ) {
 			sys->FS_Read( &oldInfo, sizeof( postGameInfo_t ), f );
 		}
 		sys->FS_FCloseFile( f );
 	}
 
-	newInfo.accuracy = atoi( UI_Argv( 3 ) );
+	newInfo.accuracy	= atoi( UI_Argv( 3 ) );
 	newInfo.impressives = atoi( UI_Argv( 4 ) );
-	newInfo.excellents = atoi( UI_Argv( 5 ) );
-	newInfo.defends = atoi( UI_Argv( 6 ) );
-	newInfo.assists = atoi( UI_Argv( 7 ) );
-	newInfo.gauntlets = atoi( UI_Argv( 8 ) );
-	newInfo.baseScore = atoi( UI_Argv( 9 ) );
-	newInfo.perfects = atoi( UI_Argv( 10 ) );
-	newInfo.redScore = atoi( UI_Argv( 11 ) );
-	newInfo.blueScore = atoi( UI_Argv( 12 ) );
-	time = atoi( UI_Argv( 13 ) );
-	newInfo.captures = atoi( UI_Argv( 14 ) );
+	newInfo.excellents	= atoi( UI_Argv( 5 ) );
+	newInfo.defends		= atoi( UI_Argv( 6 ) );
+	newInfo.assists		= atoi( UI_Argv( 7 ) );
+	newInfo.gauntlets	= atoi( UI_Argv( 8 ) );
+	newInfo.baseScore	= atoi( UI_Argv( 9 ) );
+	newInfo.perfects	= atoi( UI_Argv( 10 ) );
+	newInfo.redScore	= atoi( UI_Argv( 11 ) );
+	newInfo.blueScore	= atoi( UI_Argv( 12 ) );
+	time				= atoi( UI_Argv( 13 ) );
+	newInfo.captures	= atoi( UI_Argv( 14 ) );
 
 	newInfo.time = ( time - sys->Cvar_VariableValue( "ui_matchStartTime" ) ) / 1000;
 	adjustedTime = uiInfo.mapList[ui_currentMap.integer].timeToBeat[game];
-	if ( newInfo.time < adjustedTime ) {
+	if( newInfo.time < adjustedTime ) {
 		newInfo.timeBonus = ( adjustedTime - newInfo.time ) * 10;
 	} else {
 		newInfo.timeBonus = 0;
 	}
 
-	if ( newInfo.redScore > newInfo.blueScore && newInfo.blueScore <= 0 ) {
+	if( newInfo.redScore > newInfo.blueScore && newInfo.blueScore <= 0 ) {
 		newInfo.shutoutBonus = 100;
 	} else {
 		newInfo.shutoutBonus = 0;
 	}
 
 	newInfo.skillBonus = sys->Cvar_VariableValue( "g_spSkill" );
-	if ( newInfo.skillBonus <= 0 ) {
+	if( newInfo.skillBonus <= 0 ) {
 		newInfo.skillBonus = 1;
 	}
 	newInfo.score = newInfo.baseScore + newInfo.shutoutBonus + newInfo.timeBonus;
@@ -298,10 +305,10 @@ static void UI_CalcPostGameStats() {
 	// see if the score is higher for this one
 	newHigh = ( newInfo.redScore > newInfo.blueScore && newInfo.score > oldInfo.score );
 
-	if  ( newHigh ) {
+	if( newHigh ) {
 		// if so write out the new one
 		uiInfo.newHighScoreTime = uiInfo.uiDC.realTime + 20000;
-		if ( sys->FS_FOpenFile( fileName, &f, FS_WRITE ) >= 0 ) {
+		if( sys->FS_FOpenFile( fileName, &f, FS_WRITE ) >= 0 ) {
 			size = sizeof( postGameInfo_t );
 			sys->FS_Write( &size, sizeof( int ), f );
 			sys->FS_Write( &newInfo, sizeof( postGameInfo_t ), f );
@@ -309,7 +316,7 @@ static void UI_CalcPostGameStats() {
 		}
 	}
 
-	if ( newInfo.time < oldInfo.time ) {
+	if( newInfo.time < oldInfo.time ) {
 		uiInfo.newBestTime = uiInfo.uiDC.realTime + 20000;
 	}
 
@@ -325,43 +332,42 @@ static void UI_CalcPostGameStats() {
 	UI_SetBestScores( &newInfo, qtrue );
 	UI_ShowPostGame( newHigh );
 
-#endif  // #ifdef MISSIONPACK
-
+#endif // #ifdef MISSIONPACK
 }
-
 
 /*
 =================
 UI_ConsoleCommand
 =================
 */
-qboolean UI_ConsoleCommand( int realTime ) {
-	char    *cmd;
+qboolean UI_ConsoleCommand( int realTime )
+{
+	char* cmd;
 
 	uiInfo.uiDC.frameTime = realTime - uiInfo.uiDC.realTime;
-	uiInfo.uiDC.realTime = realTime;
+	uiInfo.uiDC.realTime  = realTime;
 
 	cmd = UI_Argv( 0 );
 
 	// ensure minimum menu data is available
-	//Menu_Cache();
+	// Menu_Cache();
 
-	if ( Q_stricmp( cmd, "ui_test" ) == 0 ) {
+	if( Q_stricmp( cmd, "ui_test" ) == 0 ) {
 		UI_ShowPostGame( qtrue );
 	}
 
-	if ( Q_stricmp( cmd, "ui_report" ) == 0 ) {
+	if( Q_stricmp( cmd, "ui_report" ) == 0 ) {
 		UI_Report();
 		return qtrue;
 	}
 
-	if ( Q_stricmp( cmd, "ui_load" ) == 0 ) {
+	if( Q_stricmp( cmd, "ui_load" ) == 0 ) {
 		UI_Load();
 		return qtrue;
 	}
 
-	if ( Q_stricmp( cmd, "remapShader" ) == 0 ) {
-		if ( sys->Argc() == 4 ) {
+	if( Q_stricmp( cmd, "remapShader" ) == 0 ) {
+		if( sys->Argc() == 4 ) {
 			char shader1[MAX_QPATH];
 			char shader2[MAX_QPATH];
 			Q_strncpyz( shader1, UI_Argv( 1 ), sizeof( shader1 ) );
@@ -371,24 +377,23 @@ qboolean UI_ConsoleCommand( int realTime ) {
 		}
 	}
 
-	if ( Q_stricmp( cmd, "postgame" ) == 0 ) {
+	if( Q_stricmp( cmd, "postgame" ) == 0 ) {
 		UI_CalcPostGameStats();
 		return qtrue;
 	}
 
-	if ( Q_stricmp( cmd, "ui_cache" ) == 0 ) {
+	if( Q_stricmp( cmd, "ui_cache" ) == 0 ) {
 		UI_Cache_f();
 		return qtrue;
 	}
 
-	if ( Q_stricmp( cmd, "ui_teamOrders" ) == 0 ) {
-		//UI_TeamOrdersMenu_f();
+	if( Q_stricmp( cmd, "ui_teamOrders" ) == 0 ) {
+		// UI_TeamOrdersMenu_f();
 		return qtrue;
 	}
 
-
-	if ( Q_stricmp( cmd, "ui_cdkey" ) == 0 ) {
-		//UI_CDKeyMenu_f();
+	if( Q_stricmp( cmd, "ui_cdkey" ) == 0 ) {
+		// UI_CDKeyMenu_f();
 		return qtrue;
 	}
 
@@ -400,7 +405,8 @@ qboolean UI_ConsoleCommand( int realTime ) {
 UI_Shutdown
 =================
 */
-void UI_Shutdown( void ) {
+void UI_Shutdown()
+{
 }
 
 /*
@@ -410,21 +416,22 @@ UI_AdjustFrom640
 Adjusted for resolution and screen aspect ratio
 ================
 */
-void UI_AdjustFrom640(float* x, float* y, float* w, float* h) {
+void UI_AdjustFrom640( float* x, float* y, float* w, float* h )
+{
 	float xscale;
 	float yscale;
 	float xbias;
 	float screenWidth;
 	float screenHeight;
 
-	screenWidth = uiInfo.uiDC.glconfig.vidWidth;
+	screenWidth	 = uiInfo.uiDC.glconfig.vidWidth;
 	screenHeight = uiInfo.uiDC.glconfig.vidHeight;
 
 	xscale = screenWidth / 640.0f;
 	yscale = screenHeight / 480.0f;
 
 	// preserve 4:3 shape and center it inside widescreen
-	xbias = (screenWidth - (640.0f * yscale)) * 0.5f;
+	xbias = ( screenWidth - ( 640.0f * yscale ) ) * 0.5f;
 
 	*x = *x * yscale + xbias;
 	*y = *y * yscale;
@@ -432,7 +439,8 @@ void UI_AdjustFrom640(float* x, float* y, float* w, float* h) {
 	*h = *h * yscale;
 }
 
-void UI_DrawNamedPic( float x, float y, float width, float height, const char *picname ) {
+void UI_DrawNamedPic( float x, float y, float width, float height, const char* picname )
+{
 	qhandle_t hShader;
 
 	hShader = sys->R_RegisterShaderNoMip( picname );
@@ -440,13 +448,14 @@ void UI_DrawNamedPic( float x, float y, float width, float height, const char *p
 	sys->R_DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
 
-void UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader ) {
+void UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader )
+{
 	float s0;
 	float s1;
 	float t0;
 	float t1;
 
-	if ( w < 0 ) {   // flip about vertical
+	if( w < 0 ) { // flip about vertical
 		w  = -w;
 		s0 = 1;
 		s1 = 0;
@@ -455,7 +464,7 @@ void UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader ) {
 		s1 = 1;
 	}
 
-	if ( h < 0 ) {   // flip about horizontal
+	if( h < 0 ) { // flip about horizontal
 		h  = -h;
 		t0 = 1;
 		t1 = 0;
@@ -475,7 +484,8 @@ UI_FillRect
 Coordinates are 640*480 virtual values
 =================
 */
-void UI_FillRect( float x, float y, float width, float height, const float *color ) {
+void UI_FillRect( float x, float y, float width, float height, const float* color )
+{
 	sys->R_SetColor( color );
 
 	UI_AdjustFrom640( &x, &y, &width, &height );
@@ -484,13 +494,15 @@ void UI_FillRect( float x, float y, float width, float height, const float *colo
 	sys->R_SetColor( NULL );
 }
 
-void UI_DrawSides( float x, float y, float w, float h ) {
+void UI_DrawSides( float x, float y, float w, float h )
+{
 	UI_AdjustFrom640( &x, &y, &w, &h );
 	sys->R_DrawStretchPic( x, y, 1, h, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 	sys->R_DrawStretchPic( x + w - 1, y, 1, h, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 }
 
-void UI_DrawTopBottom( float x, float y, float w, float h ) {
+void UI_DrawTopBottom( float x, float y, float w, float h )
+{
 	UI_AdjustFrom640( &x, &y, &w, &h );
 	sys->R_DrawStretchPic( x, y, w, 1, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 	sys->R_DrawStretchPic( x, y + h - 1, w, 1, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
@@ -502,7 +514,8 @@ UI_DrawRect
 Coordinates are 640*480 virtual values
 =================
 */
-void UI_DrawRect( float x, float y, float width, float height, const float *color ) {
+void UI_DrawRect( float x, float y, float width, float height, const float* color )
+{
 	sys->R_SetColor( color );
 
 	UI_DrawTopBottom( x, y, width, height );
@@ -511,25 +524,25 @@ void UI_DrawRect( float x, float y, float width, float height, const float *colo
 	sys->R_SetColor( NULL );
 }
 
-void UI_SetColor( const float *rgba ) {
+void UI_SetColor( const float* rgba )
+{
 	sys->R_SetColor( rgba );
 }
 
-void UI_UpdateScreen( void ) {
+void UI_UpdateScreen()
+{
 	sys->UpdateScreen();
 }
 
-
-void UI_DrawTextBox( int x, int y, int width, int lines ) {
+void UI_DrawTextBox( int x, int y, int width, int lines )
+{
 	UI_FillRect( x + BIGCHAR_WIDTH / 2, y + BIGCHAR_HEIGHT / 2, ( width + 1 ) * BIGCHAR_WIDTH, ( lines + 1 ) * BIGCHAR_HEIGHT, colorBlack );
 	UI_DrawRect( x + BIGCHAR_WIDTH / 2, y + BIGCHAR_HEIGHT / 2, ( width + 1 ) * BIGCHAR_WIDTH, ( lines + 1 ) * BIGCHAR_HEIGHT, colorWhite );
 }
 
-qboolean UI_CursorInRect( int x, int y, int width, int height ) {
-	if ( uiInfo.uiDC.cursorx < x ||
-		 uiInfo.uiDC.cursory < y ||
-		 uiInfo.uiDC.cursorx > x + width ||
-		 uiInfo.uiDC.cursory > y + height ) {
+qboolean UI_CursorInRect( int x, int y, int width, int height )
+{
+	if( uiInfo.uiDC.cursorx < x || uiInfo.uiDC.cursory < y || uiInfo.uiDC.cursorx > x + width || uiInfo.uiDC.cursory > y + height ) {
 		return qfalse;
 	}
 

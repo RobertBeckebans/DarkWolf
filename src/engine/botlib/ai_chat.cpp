@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,13 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
 ===========================================================================
 */
-
 
 /*****************************************************************************
  * name:		ai_chat.c
@@ -53,35 +53,35 @@ If you have questions concerning this license or the applicable additional terms
 #include "ai_cmd.h"
 #include "ai_dmnet.h"
 //
-#include "chars.h"               //characteristics
-#include "inv.h"             //indexes into the inventory
-#include "syn.h"             //synonyms
-#include "match.h"               //string matching types and vars
-
+#include "chars.h" //characteristics
+#include "inv.h"   //indexes into the inventory
+#include "syn.h"   //synonyms
+#include "match.h" //string matching types and vars
 
 /*
 ==================
 BotNumActivePlayers
 ==================
 */
-int BotNumActivePlayers( void ) {
-	int i, num;
-	char buf[MAX_INFO_STRING];
+int BotNumActivePlayers()
+{
+	int		   i, num;
+	char	   buf[MAX_INFO_STRING];
 	static int maxclients;
 
-	if ( !maxclients ) {
+	if( !maxclients ) {
 		maxclients = sys->Cvar_VariableIntegerValue( "sv_maxclients" );
 	}
 
 	num = 0;
-	for ( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
+	for( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
 		sys->GetConfigstring( CS_PLAYERS + i, buf, sizeof( buf ) );
-		//if no config string or no name
-		if ( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
+		// if no config string or no name
+		if( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
 			continue;
 		}
-		//skip spectators
-		if ( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
+		// skip spectators
+		if( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
 			continue;
 		}
 		//
@@ -95,30 +95,31 @@ int BotNumActivePlayers( void ) {
 BotIsFirstInRankings
 ==================
 */
-int BotIsFirstInRankings( bot_state_t *bs ) {
-	int i, score;
-	char buf[MAX_INFO_STRING];
-	static int maxclients;
+int BotIsFirstInRankings( bot_state_t* bs )
+{
+	int			  i, score;
+	char		  buf[MAX_INFO_STRING];
+	static int	  maxclients;
 	playerState_t ps;
 
-	if ( !maxclients ) {
+	if( !maxclients ) {
 		maxclients = sys->Cvar_VariableIntegerValue( "sv_maxclients" );
 	}
 
 	score = bs->cur_ps.persistant[PERS_SCORE];
-	for ( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
+	for( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
 		sys->GetConfigstring( CS_PLAYERS + i, buf, sizeof( buf ) );
-		//if no config string or no name
-		if ( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
+		// if no config string or no name
+		if( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
 			continue;
 		}
-		//skip spectators
-		if ( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
+		// skip spectators
+		if( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
 			continue;
 		}
 		//
 		BotAI_GetClientState( i, &ps );
-		if ( score < ps.persistant[PERS_SCORE] ) {
+		if( score < ps.persistant[PERS_SCORE] ) {
 			return qfalse;
 		}
 	}
@@ -130,30 +131,31 @@ int BotIsFirstInRankings( bot_state_t *bs ) {
 BotIsLastInRankings
 ==================
 */
-int BotIsLastInRankings( bot_state_t *bs ) {
-	int i, score;
-	char buf[MAX_INFO_STRING];
-	static int maxclients;
+int BotIsLastInRankings( bot_state_t* bs )
+{
+	int			  i, score;
+	char		  buf[MAX_INFO_STRING];
+	static int	  maxclients;
 	playerState_t ps;
 
-	if ( !maxclients ) {
+	if( !maxclients ) {
 		maxclients = sys->Cvar_VariableIntegerValue( "sv_maxclients" );
 	}
 
 	score = bs->cur_ps.persistant[PERS_SCORE];
-	for ( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
+	for( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
 		sys->GetConfigstring( CS_PLAYERS + i, buf, sizeof( buf ) );
-		//if no config string or no name
-		if ( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
+		// if no config string or no name
+		if( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
 			continue;
 		}
-		//skip spectators
-		if ( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
+		// skip spectators
+		if( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
 			continue;
 		}
 		//
 		BotAI_GetClientState( i, &ps );
-		if ( score > ps.persistant[PERS_SCORE] ) {
+		if( score > ps.persistant[PERS_SCORE] ) {
 			return qfalse;
 		}
 	}
@@ -165,33 +167,34 @@ int BotIsLastInRankings( bot_state_t *bs ) {
 BotFirstClientInRankings
 ==================
 */
-char *BotFirstClientInRankings( void ) {
-	int i, bestscore, bestclient;
-	char buf[MAX_INFO_STRING];
-	static char name[32];
-	static int maxclients;
+char* BotFirstClientInRankings()
+{
+	int			  i, bestscore, bestclient;
+	char		  buf[MAX_INFO_STRING];
+	static char	  name[32];
+	static int	  maxclients;
 	playerState_t ps;
 
-	if ( !maxclients ) {
+	if( !maxclients ) {
 		maxclients = sys->Cvar_VariableIntegerValue( "sv_maxclients" );
 	}
 
-	bestscore = -999999;
+	bestscore  = -999999;
 	bestclient = 0;
-	for ( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
+	for( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
 		sys->GetConfigstring( CS_PLAYERS + i, buf, sizeof( buf ) );
-		//if no config string or no name
-		if ( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
+		// if no config string or no name
+		if( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
 			continue;
 		}
-		//skip spectators
-		if ( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
+		// skip spectators
+		if( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
 			continue;
 		}
 		//
 		BotAI_GetClientState( i, &ps );
-		if ( ps.persistant[PERS_SCORE] > bestscore ) {
-			bestscore = ps.persistant[PERS_SCORE];
+		if( ps.persistant[PERS_SCORE] > bestscore ) {
+			bestscore  = ps.persistant[PERS_SCORE];
 			bestclient = i;
 		}
 	}
@@ -204,32 +207,33 @@ char *BotFirstClientInRankings( void ) {
 BotLastClientInRankings
 ==================
 */
-char *BotLastClientInRankings( void ) {
-	int i, worstscore, bestclient;
-	char buf[MAX_INFO_STRING];
-	static char name[32];
-	static int maxclients;
+char* BotLastClientInRankings()
+{
+	int			  i, worstscore, bestclient;
+	char		  buf[MAX_INFO_STRING];
+	static char	  name[32];
+	static int	  maxclients;
 	playerState_t ps;
 
-	if ( !maxclients ) {
+	if( !maxclients ) {
 		maxclients = sys->Cvar_VariableIntegerValue( "sv_maxclients" );
 	}
 
 	worstscore = 999999;
 	bestclient = 0;
-	for ( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
+	for( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
 		sys->GetConfigstring( CS_PLAYERS + i, buf, sizeof( buf ) );
-		//if no config string or no name
-		if ( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
+		// if no config string or no name
+		if( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
 			continue;
 		}
-		//skip spectators
-		if ( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
+		// skip spectators
+		if( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
 			continue;
 		}
 		//
 		BotAI_GetClientState( i, &ps );
-		if ( ps.persistant[PERS_SCORE] < worstscore ) {
+		if( ps.persistant[PERS_SCORE] < worstscore ) {
 			worstscore = ps.persistant[PERS_SCORE];
 			bestclient = i;
 		}
@@ -243,35 +247,36 @@ char *BotLastClientInRankings( void ) {
 BotRandomOpponentName
 ==================
 */
-char *BotRandomOpponentName( bot_state_t *bs ) {
-	int i, count;
-	char buf[MAX_INFO_STRING];
-	int opponents[MAX_CLIENTS], numopponents;
-	static int maxclients;
+char* BotRandomOpponentName( bot_state_t* bs )
+{
+	int			i, count;
+	char		buf[MAX_INFO_STRING];
+	int			opponents[MAX_CLIENTS], numopponents;
+	static int	maxclients;
 	static char name[32];
 
-	if ( !maxclients ) {
+	if( !maxclients ) {
 		maxclients = sys->Cvar_VariableIntegerValue( "sv_maxclients" );
 	}
 
 	numopponents = 0;
 	opponents[0] = 0;
-	for ( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
-		if ( i == bs->client ) {
+	for( i = 0; i < maxclients && i < MAX_CLIENTS; i++ ) {
+		if( i == bs->client ) {
 			continue;
 		}
 		//
 		sys->GetConfigstring( CS_PLAYERS + i, buf, sizeof( buf ) );
-		//if no config string or no name
-		if ( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
+		// if no config string or no name
+		if( !strlen( buf ) || !strlen( Info_ValueForKey( buf, "n" ) ) ) {
 			continue;
 		}
-		//skip spectators
-		if ( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
+		// skip spectators
+		if( atoi( Info_ValueForKey( buf, "t" ) ) == TEAM_SPECTATOR ) {
 			continue;
 		}
-		//skip team mates
-		if ( BotSameTeam( bs, i ) ) {
+		// skip team mates
+		if( BotSameTeam( bs, i ) ) {
 			continue;
 		}
 		//
@@ -279,9 +284,9 @@ char *BotRandomOpponentName( bot_state_t *bs ) {
 		numopponents++;
 	}
 	count = random() * numopponents;
-	for ( i = 0; i < numopponents; i++ ) {
+	for( i = 0; i < numopponents; i++ ) {
 		count--;
-		if ( count <= 0 ) {
+		if( count <= 0 ) {
 			EasyClientName( opponents[i], name, sizeof( name ) );
 			return name;
 		}
@@ -296,8 +301,9 @@ BotMapTitle
 ==================
 */
 
-char *BotMapTitle( void ) {
-	char info[1024];
+char* BotMapTitle()
+{
+	char		info[1024];
 	static char mapname[128];
 
 	sys->GetServerinfo( info, sizeof( info ) );
@@ -308,28 +314,38 @@ char *BotMapTitle( void ) {
 	return mapname;
 }
 
-
 /*
 ==================
 BotWeaponNameForMeansOfDeath
 ==================
 */
 
-char *BotWeaponNameForMeansOfDeath( int mod ) {
-	switch ( mod ) {
-	case MOD_SHOTGUN: return "Shotgun";
-	case MOD_GAUNTLET: return "Gauntlet";
-	case MOD_MACHINEGUN: return "Machinegun";
-	case MOD_GRENADE:
-	case MOD_GRENADE_SPLASH: return "Grenade Launcher";
-	case MOD_ROCKET:
-	case MOD_ROCKET_SPLASH: return "Rocket Launcher";
-	case MOD_RAILGUN: return "Railgun";
-	case MOD_LIGHTNING: return "Lightning Gun";
-	case MOD_BFG:
-	case MOD_BFG_SPLASH: return "BFG10K";
-	case MOD_GRAPPLE: return "Grapple";
-	default: return "[unknown weapon]";
+char* BotWeaponNameForMeansOfDeath( int mod )
+{
+	switch( mod ) {
+		case MOD_SHOTGUN:
+			return "Shotgun";
+		case MOD_GAUNTLET:
+			return "Gauntlet";
+		case MOD_MACHINEGUN:
+			return "Machinegun";
+		case MOD_GRENADE:
+		case MOD_GRENADE_SPLASH:
+			return "Grenade Launcher";
+		case MOD_ROCKET:
+		case MOD_ROCKET_SPLASH:
+			return "Rocket Launcher";
+		case MOD_RAILGUN:
+			return "Railgun";
+		case MOD_LIGHTNING:
+			return "Lightning Gun";
+		case MOD_BFG:
+		case MOD_BFG_SPLASH:
+			return "BFG10K";
+		case MOD_GRAPPLE:
+			return "Grapple";
+		default:
+			return "[unknown weapon]";
 	}
 }
 
@@ -338,20 +354,30 @@ char *BotWeaponNameForMeansOfDeath( int mod ) {
 BotRandomWeaponName
 ==================
 */
-char *BotRandomWeaponName( void ) {
+char* BotRandomWeaponName()
+{
 	int rnd;
 
 	rnd = random() * 8.9;
-	switch ( rnd ) {
-	case 0: return "Gauntlet";
-	case 1: return "Shotgun";
-	case 2: return "Machinegun";
-	case 3: return "Grenade Launcher";
-	case 4: return "Rocket Launcher";
-	case 5: return "Plasmagun";
-	case 6: return "Railgun";
-	case 7: return "Lightning Gun";
-	default: return "BFG10K";
+	switch( rnd ) {
+		case 0:
+			return "Gauntlet";
+		case 1:
+			return "Shotgun";
+		case 2:
+			return "Machinegun";
+		case 3:
+			return "Grenade Launcher";
+		case 4:
+			return "Rocket Launcher";
+		case 5:
+			return "Plasmagun";
+		case 6:
+			return "Railgun";
+		case 7:
+			return "Lightning Gun";
+		default:
+			return "BFG10K";
 	}
 }
 
@@ -360,39 +386,40 @@ char *BotRandomWeaponName( void ) {
 BotValidChatPosition
 ==================
 */
-int BotValidChatPosition( bot_state_t *bs ) {
-	vec3_t point, start, end, mins, maxs;
+int BotValidChatPosition( bot_state_t* bs )
+{
+	vec3_t		point, start, end, mins, maxs;
 	bsp_trace_t trace;
 
-	//if the bot is dead all positions are valid
-	if ( BotIsDead( bs ) ) {
+	// if the bot is dead all positions are valid
+	if( BotIsDead( bs ) ) {
 		return qtrue;
 	}
-	//must be on the ground
-	//if (bs->cur_ps.groundEntityNum != ENTITYNUM_NONE) return qfalse;
-	//do not chat if in lava or slime
+	// must be on the ground
+	// if (bs->cur_ps.groundEntityNum != ENTITYNUM_NONE) return qfalse;
+	// do not chat if in lava or slime
 	VectorCopy( bs->origin, point );
 	point[2] -= 24;
-	if ( sys->PointContents( point,bs->entitynum ) & ( CONTENTS_LAVA | CONTENTS_SLIME ) ) {
+	if( sys->PointContents( point, bs->entitynum ) & ( CONTENTS_LAVA | CONTENTS_SLIME ) ) {
 		return qfalse;
 	}
-	//do not chat if under water
+	// do not chat if under water
 	VectorCopy( bs->origin, point );
 	point[2] += 32;
-	if ( sys->PointContents( point,bs->entitynum ) & MASK_WATER ) {
+	if( sys->PointContents( point, bs->entitynum ) & MASK_WATER ) {
 		return qfalse;
 	}
-	//must be standing on the world entity
+	// must be standing on the world entity
 	VectorCopy( bs->origin, start );
 	VectorCopy( bs->origin, end );
 	start[2] += 1;
 	end[2] -= 10;
 	sys->AAS_PresenceTypeBoundingBox( PRESENCE_CROUCH, mins, maxs );
 	BotAI_Trace( &trace, start, mins, maxs, end, bs->client, MASK_SOLID );
-	if ( trace.ent != ENTITYNUM_WORLD ) {
+	if( trace.ent != ENTITYNUM_WORLD ) {
 		return qfalse;
 	}
-	//the bot is in a position where it can chat
+	// the bot is in a position where it can chat
 	return qtrue;
 }
 
@@ -401,41 +428,43 @@ int BotValidChatPosition( bot_state_t *bs ) {
 BotChat_EnterGame
 ==================
 */
-int BotChat_EnterGame( bot_state_t *bs ) {
-	char name[32];
+int BotChat_EnterGame( bot_state_t* bs )
+{
+	char  name[32];
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_ENTEREXITGAME, 0, 1 );
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
-	if ( !BotValidChatPosition( bs ) ) {
+	if( !BotValidChatPosition( bs ) ) {
 		return qfalse;
 	}
-	BotAI_BotInitialChat( bs, "game_enter",
-						  EasyClientName( bs->client, name, 32 ), // 0
-						  BotRandomOpponentName( bs ),  // 1
-						  "[invalid var]",          // 2
-						  "[invalid var]",          // 3
-						  BotMapTitle(),                // 4
-						  NULL );
+	BotAI_BotInitialChat( bs,
+		"game_enter",
+		EasyClientName( bs->client, name, 32 ), // 0
+		BotRandomOpponentName( bs ),			// 1
+		"[invalid var]",						// 2
+		"[invalid var]",						// 3
+		BotMapTitle(),							// 4
+		NULL );
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -444,39 +473,41 @@ int BotChat_EnterGame( bot_state_t *bs ) {
 BotChat_ExitGame
 ==================
 */
-int BotChat_ExitGame( bot_state_t *bs ) {
-	char name[32];
+int BotChat_ExitGame( bot_state_t* bs )
+{
+	char  name[32];
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_ENTEREXITGAME, 0, 1 );
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
 	//
-	BotAI_BotInitialChat( bs, "game_exit",
-						  EasyClientName( bs->client, name, 32 ), // 0
-						  BotRandomOpponentName( bs ),  // 1
-						  "[invalid var]",          // 2
-						  "[invalid var]",          // 3
-						  BotMapTitle(),                // 4
-						  NULL );
+	BotAI_BotInitialChat( bs,
+		"game_exit",
+		EasyClientName( bs->client, name, 32 ), // 0
+		BotRandomOpponentName( bs ),			// 1
+		"[invalid var]",						// 2
+		"[invalid var]",						// 3
+		BotMapTitle(),							// 4
+		NULL );
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -485,37 +516,39 @@ int BotChat_ExitGame( bot_state_t *bs ) {
 BotChat_StartLevel
 ==================
 */
-int BotChat_StartLevel( bot_state_t *bs ) {
-	char name[32];
+int BotChat_StartLevel( bot_state_t* bs )
+{
+	char  name[32];
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( BotIsObserver( bs ) ) {
+	if( BotIsObserver( bs ) ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_STARTENDLEVEL, 0, 1 );
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
-	BotAI_BotInitialChat( bs, "level_start",
-						  EasyClientName( bs->client, name, 32 ), // 0
-						  NULL );
+	BotAI_BotInitialChat( bs,
+		"level_start",
+		EasyClientName( bs->client, name, 32 ), // 0
+		NULL );
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -524,60 +557,64 @@ int BotChat_StartLevel( bot_state_t *bs ) {
 BotChat_EndLevel
 ==================
 */
-int BotChat_EndLevel( bot_state_t *bs ) {
-	char name[32];
+int BotChat_EndLevel( bot_state_t* bs )
+{
+	char  name[32];
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( BotIsObserver( bs ) ) {
+	if( BotIsObserver( bs ) ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_STARTENDLEVEL, 0, 1 );
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
 	//
-	if ( BotIsFirstInRankings( bs ) ) {
-		BotAI_BotInitialChat( bs, "level_end_victory",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ), // 1
-							  "[invalid var]",      // 2
-							  BotLastClientInRankings(), // 3
-							  BotMapTitle(),            // 4
-							  NULL );
-	} else if ( BotIsLastInRankings( bs ) )       {
-		BotAI_BotInitialChat( bs, "level_end_lose",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ), // 1
-							  BotFirstClientInRankings(), // 2
-							  "[invalid var]",      // 3
-							  BotMapTitle(),            // 4
-							  NULL );
+	if( BotIsFirstInRankings( bs ) ) {
+		BotAI_BotInitialChat( bs,
+			"level_end_victory",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			"[invalid var]",						// 2
+			BotLastClientInRankings(),				// 3
+			BotMapTitle(),							// 4
+			NULL );
+	} else if( BotIsLastInRankings( bs ) ) {
+		BotAI_BotInitialChat( bs,
+			"level_end_lose",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			BotFirstClientInRankings(),				// 2
+			"[invalid var]",						// 3
+			BotMapTitle(),							// 4
+			NULL );
 	} else {
-		BotAI_BotInitialChat( bs, "level_end",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ), // 1
-							  BotFirstClientInRankings(), // 2
-							  BotLastClientInRankings(), // 3
-							  BotMapTitle(),            // 4
-							  NULL );
+		BotAI_BotInitialChat( bs,
+			"level_end",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			BotFirstClientInRankings(),				// 2
+			BotLastClientInRankings(),				// 3
+			BotMapTitle(),							// 4
+			NULL );
 	}
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -586,97 +623,95 @@ int BotChat_EndLevel( bot_state_t *bs ) {
 BotChat_Death
 ==================
 */
-int BotChat_Death( bot_state_t *bs ) {
-	char name[32];
+int BotChat_Death( bot_state_t* bs )
+{
+	char  name[32];
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_DEATH, 0, 1 );
-	//if fast chatting is off
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	// if fast chatting is off
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
 	//
-	if ( bs->lastkilledby >= 0 && bs->lastkilledby < MAX_CLIENTS ) {
+	if( bs->lastkilledby >= 0 && bs->lastkilledby < MAX_CLIENTS ) {
 		EasyClientName( bs->lastkilledby, name, 32 );
 	} else {
 		strcpy( name, "[world]" );
 	}
 	//
-	if ( TeamPlayIsOn() && BotSameTeam( bs, bs->lastkilledby ) ) {
-		if ( bs->lastkilledby == bs->client ) {
+	if( TeamPlayIsOn() && BotSameTeam( bs, bs->lastkilledby ) ) {
+		if( bs->lastkilledby == bs->client ) {
 			return qfalse;
 		}
 		BotAI_BotInitialChat( bs, "death_teammate", name, NULL );
 		bs->chatto = CHAT_TEAM;
-	} else
-	{
-		//don't chat in teamplay
-		if ( TeamPlayIsOn() ) {
+	} else {
+		// don't chat in teamplay
+		if( TeamPlayIsOn() ) {
 			return qfalse;
 		}
 		//
-		if ( bs->botdeathtype == MOD_WATER ) {
+		if( bs->botdeathtype == MOD_WATER ) {
 			BotAI_BotInitialChat( bs, "death_drown", BotRandomOpponentName( bs ), NULL );
-		} else if ( bs->botdeathtype == MOD_SLIME ) {
+		} else if( bs->botdeathtype == MOD_SLIME ) {
 			BotAI_BotInitialChat( bs, "death_slime", BotRandomOpponentName( bs ), NULL );
-		} else if ( bs->botdeathtype == MOD_LAVA ) {
+		} else if( bs->botdeathtype == MOD_LAVA ) {
 			BotAI_BotInitialChat( bs, "death_lava", BotRandomOpponentName( bs ), NULL );
-		} else if ( bs->botdeathtype == MOD_FALLING ) {
+		} else if( bs->botdeathtype == MOD_FALLING ) {
 			BotAI_BotInitialChat( bs, "death_cratered", BotRandomOpponentName( bs ), NULL );
-		} else if ( bs->botsuicide || //all other suicides by own weapon
-					bs->botdeathtype == MOD_CRUSH ||
-					bs->botdeathtype == MOD_SUICIDE ||
-					bs->botdeathtype == MOD_TARGET_LASER ||
-					bs->botdeathtype == MOD_TRIGGER_HURT ||
-					bs->botdeathtype == MOD_UNKNOWN ) {
+		} else if( bs->botsuicide || // all other suicides by own weapon
+				   bs->botdeathtype == MOD_CRUSH || bs->botdeathtype == MOD_SUICIDE || bs->botdeathtype == MOD_TARGET_LASER || bs->botdeathtype == MOD_TRIGGER_HURT ||
+				   bs->botdeathtype == MOD_UNKNOWN ) {
 			BotAI_BotInitialChat( bs, "death_suicide", BotRandomOpponentName( bs ), NULL );
-		} else if ( bs->botdeathtype == MOD_TELEFRAG ) {
+		} else if( bs->botdeathtype == MOD_TELEFRAG ) {
 			BotAI_BotInitialChat( bs, "death_telefrag", name, NULL );
 		} else {
-			if ( ( bs->botdeathtype == MOD_GAUNTLET ||
-				   bs->botdeathtype == MOD_RAILGUN ||
-				   bs->botdeathtype == MOD_BFG ||
-				   bs->botdeathtype == MOD_BFG_SPLASH ) && random() < 0.5 ) {
-
-				if ( bs->botdeathtype == MOD_GAUNTLET ) {
-					BotAI_BotInitialChat( bs, "death_gauntlet",
-										  name,                                 // 0
-										  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-										  NULL );
-				} else if ( bs->botdeathtype == MOD_RAILGUN ) {
-					BotAI_BotInitialChat( bs, "death_rail",
-										  name,                                 // 0
-										  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-										  NULL );
+			if( ( bs->botdeathtype == MOD_GAUNTLET || bs->botdeathtype == MOD_RAILGUN || bs->botdeathtype == MOD_BFG || bs->botdeathtype == MOD_BFG_SPLASH ) && random() < 0.5 ) {
+				if( bs->botdeathtype == MOD_GAUNTLET ) {
+					BotAI_BotInitialChat( bs,
+						"death_gauntlet",
+						name,											  // 0
+						BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+						NULL );
+				} else if( bs->botdeathtype == MOD_RAILGUN ) {
+					BotAI_BotInitialChat( bs,
+						"death_rail",
+						name,											  // 0
+						BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+						NULL );
 				} else {
-					BotAI_BotInitialChat( bs, "death_bfg",
-										  name,                                 // 0
-										  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-										  NULL );
+					BotAI_BotInitialChat( bs,
+						"death_bfg",
+						name,											  // 0
+						BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+						NULL );
 				}
 			}
-			//choose between insult and praise
-			else if ( random() < sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_INSULT, 0, 1 ) ) {
-				BotAI_BotInitialChat( bs, "death_insult",
-									  name,                                     // 0
-									  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-									  NULL );
+			// choose between insult and praise
+			else if( random() < sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_INSULT, 0, 1 ) ) {
+				BotAI_BotInitialChat( bs,
+					"death_insult",
+					name,											  // 0
+					BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+					NULL );
 			} else {
-				BotAI_BotInitialChat( bs, "death_praise",
-									  name,                                     // 0
-									  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-									  NULL );
+				BotAI_BotInitialChat( bs,
+					"death_praise",
+					name,											  // 0
+					BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+					NULL );
 			}
 		}
 		bs->chatto = CHAT_ALL;
@@ -690,55 +725,55 @@ int BotChat_Death( bot_state_t *bs ) {
 BotChat_Kill
 ==================
 */
-int BotChat_Kill( bot_state_t *bs ) {
-	char name[32];
+int BotChat_Kill( bot_state_t* bs )
+{
+	char  name[32];
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_KILL, 0, 1 );
-	//if fast chat is off
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	// if fast chat is off
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
 	}
-	if ( bs->lastkilledplayer == bs->client ) {
+	if( bs->lastkilledplayer == bs->client ) {
 		return qfalse;
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
-	if ( !BotValidChatPosition( bs ) ) {
+	if( !BotValidChatPosition( bs ) ) {
 		return qfalse;
 	}
 	//
 	EasyClientName( bs->lastkilledplayer, name, 32 );
 	//
 	bs->chatto = CHAT_ALL;
-	if ( TeamPlayIsOn() && BotSameTeam( bs, bs->lastkilledplayer ) ) {
+	if( TeamPlayIsOn() && BotSameTeam( bs, bs->lastkilledplayer ) ) {
 		BotAI_BotInitialChat( bs, "kill_teammate", name, NULL );
 		bs->chatto = CHAT_TEAM;
-	} else
-	{
-		//don't chat in teamplay
-		if ( TeamPlayIsOn() ) {
+	} else {
+		// don't chat in teamplay
+		if( TeamPlayIsOn() ) {
 			return qfalse;
 		}
 		//
-		if ( bs->enemydeathtype == MOD_GAUNTLET ) {
+		if( bs->enemydeathtype == MOD_GAUNTLET ) {
 			BotAI_BotInitialChat( bs, "kill_gauntlet", name, NULL );
-		} else if ( bs->enemydeathtype == MOD_RAILGUN )     {
+		} else if( bs->enemydeathtype == MOD_RAILGUN ) {
 			BotAI_BotInitialChat( bs, "kill_rail", name, NULL );
-		} else if ( bs->enemydeathtype == MOD_TELEFRAG )     {
+		} else if( bs->enemydeathtype == MOD_TELEFRAG ) {
 			BotAI_BotInitialChat( bs, "kill_telefrag", name, NULL );
 		}
-		//choose between insult and praise
-		else if ( random() < sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_INSULT, 0, 1 ) ) {
+		// choose between insult and praise
+		else if( random() < sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_INSULT, 0, 1 ) ) {
 			BotAI_BotInitialChat( bs, "kill_insult", name, NULL );
 		} else {
 			BotAI_BotInitialChat( bs, "kill_praise", name, NULL );
@@ -753,41 +788,44 @@ int BotChat_Kill( bot_state_t *bs ) {
 BotChat_EnemySuicide
 ==================
 */
-int BotChat_EnemySuicide( bot_state_t *bs ) {
-	char name[32];
+int BotChat_EnemySuicide( bot_state_t* bs )
+{
+	char  name[32];
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
 	//
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_KILL, 0, 1 );
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
-	//if fast chat is off
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	// if fast chat is off
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
 	}
-	if ( !BotValidChatPosition( bs ) ) {
+	if( !BotValidChatPosition( bs ) ) {
 		return qfalse;
 	}
 	//
-	if ( bs->enemy >= 0 ) {
+	if( bs->enemy >= 0 ) {
 		EasyClientName( bs->enemy, name, 32 );
-	} else { strcpy( name, "" );}
+	} else {
+		strcpy( name, "" );
+	}
 	BotAI_BotInitialChat( bs, "enemy_suicide", name, NULL );
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -796,44 +834,45 @@ int BotChat_EnemySuicide( bot_state_t *bs ) {
 BotChat_HitTalking
 ==================
 */
-int BotChat_HitTalking( bot_state_t *bs ) {
-	char name[32], *weap;
-	int lasthurt_client;
+int BotChat_HitTalking( bot_state_t* bs )
+{
+	char  name[32], *weap;
+	int	  lasthurt_client;
 	float rnd;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
 	lasthurt_client = g_entities[bs->client].client->lasthurt_client;
-	if ( !lasthurt_client ) {
+	if( !lasthurt_client ) {
 		return qfalse;
 	}
-	if ( lasthurt_client == bs->client ) {
+	if( lasthurt_client == bs->client ) {
 		return qfalse;
 	}
 	//
-	if ( lasthurt_client < 0 || lasthurt_client >= MAX_CLIENTS ) {
+	if( lasthurt_client < 0 || lasthurt_client >= MAX_CLIENTS ) {
 		return qfalse;
 	}
 	//
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_HITTALKING, 0, 1 );
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
-	//if fast chat is off
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd * 0.5 ) {
+	// if fast chat is off
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd * 0.5 ) {
 			return qfalse;
 		}
 	}
-	if ( !BotValidChatPosition( bs ) ) {
+	if( !BotValidChatPosition( bs ) ) {
 		return qfalse;
 	}
 	//
@@ -842,7 +881,7 @@ int BotChat_HitTalking( bot_state_t *bs ) {
 	//
 	BotAI_BotInitialChat( bs, "hit_talking", name, weap, NULL );
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -851,54 +890,55 @@ int BotChat_HitTalking( bot_state_t *bs ) {
 BotChat_HitNoDeath
 ==================
 */
-int BotChat_HitNoDeath( bot_state_t *bs ) {
-	char name[32], *weap;
-	float rnd;
-	int lasthurt_client;
+int BotChat_HitNoDeath( bot_state_t* bs )
+{
+	char			 name[32], *weap;
+	float			 rnd;
+	int				 lasthurt_client;
 	aas_entityinfo_t entinfo;
 
 	lasthurt_client = g_entities[bs->client].client->lasthurt_client;
-	if ( !lasthurt_client ) {
+	if( !lasthurt_client ) {
 		return qfalse;
 	}
-	if ( lasthurt_client == bs->client ) {
-		return qfalse;
-	}
-	//
-	if ( lasthurt_client < 0 || lasthurt_client >= MAX_CLIENTS ) {
+	if( lasthurt_client == bs->client ) {
 		return qfalse;
 	}
 	//
-	if ( bot_nochat.integer ) {
+	if( lasthurt_client < 0 || lasthurt_client >= MAX_CLIENTS ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	//
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+		return qfalse;
+	}
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_HITNODEATH, 0, 1 );
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
-	//if fast chat is off
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd * 0.5 ) {
+	// if fast chat is off
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd * 0.5 ) {
 			return qfalse;
 		}
 	}
-	if ( !BotValidChatPosition( bs ) ) {
+	if( !BotValidChatPosition( bs ) ) {
 		return qfalse;
 	}
-	//if the enemy is visible
-	if ( BotEntityVisible( bs->client, bs->eye, bs->viewangles, 360, bs->enemy ) ) {
+	// if the enemy is visible
+	if( BotEntityVisible( bs->client, bs->eye, bs->viewangles, 360, bs->enemy ) ) {
 		return qfalse;
 	}
 	//
 	BotEntityInfo( bs->enemy, &entinfo );
-	if ( EntityIsShooting( &entinfo ) ) {
+	if( EntityIsShooting( &entinfo ) ) {
 		return qfalse;
 	}
 	//
@@ -907,7 +947,7 @@ int BotChat_HitNoDeath( bot_state_t *bs ) {
 	//
 	BotAI_BotInitialChat( bs, "hit_nodeath", name, weap, NULL );
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -916,41 +956,42 @@ int BotChat_HitNoDeath( bot_state_t *bs ) {
 BotChat_HitNoKill
 ==================
 */
-int BotChat_HitNoKill( bot_state_t *bs ) {
-	char name[32], *weap;
-	float rnd;
+int BotChat_HitNoKill( bot_state_t* bs )
+{
+	char			 name[32], *weap;
+	float			 rnd;
 	aas_entityinfo_t entinfo;
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_HITNOKILL, 0, 1 );
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
-	//if fast chat is off
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd * 0.5 ) {
+	// if fast chat is off
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd * 0.5 ) {
 			return qfalse;
 		}
 	}
-	if ( !BotValidChatPosition( bs ) ) {
+	if( !BotValidChatPosition( bs ) ) {
 		return qfalse;
 	}
-	//if the enemy is visible
-	if ( BotEntityVisible( bs->client, bs->eye, bs->viewangles, 360, bs->enemy ) ) {
+	// if the enemy is visible
+	if( BotEntityVisible( bs->client, bs->eye, bs->viewangles, 360, bs->enemy ) ) {
 		return qfalse;
 	}
 	//
 	BotEntityInfo( bs->enemy, &entinfo );
-	if ( EntityIsShooting( &entinfo ) ) {
+	if( EntityIsShooting( &entinfo ) ) {
 		return qfalse;
 	}
 	//
@@ -959,7 +1000,7 @@ int BotChat_HitNoKill( bot_state_t *bs ) {
 	//
 	BotAI_BotInitialChat( bs, "hit_nokill", name, weap, NULL );
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -968,76 +1009,77 @@ int BotChat_HitNoKill( bot_state_t *bs ) {
 BotChat_Random
 ==================
 */
-int BotChat_Random( bot_state_t *bs ) {
+int BotChat_Random( bot_state_t* bs )
+{
 	float rnd;
-	char name[32];
+	char  name[32];
 
-	if ( bot_nochat.integer ) {
+	if( bot_nochat.integer ) {
 		return qfalse;
 	}
-	if ( BotIsObserver( bs ) ) {
+	if( BotIsObserver( bs ) ) {
 		return qfalse;
 	}
-	if ( bs->lastchat_time > sys->AAS_Time() - 3 ) {
+	if( bs->lastchat_time > sys->AAS_Time() - 3 ) {
 		return qfalse;
 	}
-	//don't chat in teamplay
-	if ( TeamPlayIsOn() ) {
+	// don't chat in teamplay
+	if( TeamPlayIsOn() ) {
 		return qfalse;
 	}
-	//don't chat when doing something important :)
-	if ( bs->ltgtype == LTG_TEAMHELP ||
-		 bs->ltgtype == LTG_TEAMACCOMPANY ||
-		 bs->ltgtype == LTG_RUSHBASE ) {
+	// don't chat when doing something important :)
+	if( bs->ltgtype == LTG_TEAMHELP || bs->ltgtype == LTG_TEAMACCOMPANY || bs->ltgtype == LTG_RUSHBASE ) {
 		return qfalse;
 	}
 	//
 	rnd = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_RANDOM, 0, 1 );
-	if ( random() > bs->thinktime * 0.1 ) {
+	if( random() > bs->thinktime * 0.1 ) {
 		return qfalse;
 	}
-	if ( !bot_fastchat.integer ) {
-		if ( random() > rnd ) {
+	if( !bot_fastchat.integer ) {
+		if( random() > rnd ) {
 			return qfalse;
 		}
-		if ( random() > 0.25 ) {
+		if( random() > 0.25 ) {
 			return qfalse;
 		}
 	}
-	if ( BotNumActivePlayers() <= 1 ) {
+	if( BotNumActivePlayers() <= 1 ) {
 		return qfalse;
 	}
-	if ( !BotValidChatPosition( bs ) ) {
+	if( !BotValidChatPosition( bs ) ) {
 		return qfalse;
 	}
 	//
-	if ( bs->lastkilledplayer == bs->client ) {
+	if( bs->lastkilledplayer == bs->client ) {
 		strcpy( name, BotRandomOpponentName( bs ) );
 	} else {
 		EasyClientName( bs->lastkilledplayer, name, sizeof( name ) );
 	}
 	//
-	if ( random() < sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_MISC, 0, 1 ) ) {
-		BotAI_BotInitialChat( bs, "random_misc",
-							  BotRandomOpponentName( bs ), // 0
-							  name,             // 1
-							  "[invalid var]", // 2
-							  "[invalid var]", // 3
-							  BotMapTitle(),    // 4
-							  BotRandomWeaponName(), // 5
-							  NULL );
+	if( random() < sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_CHAT_MISC, 0, 1 ) ) {
+		BotAI_BotInitialChat( bs,
+			"random_misc",
+			BotRandomOpponentName( bs ), // 0
+			name,						 // 1
+			"[invalid var]",			 // 2
+			"[invalid var]",			 // 3
+			BotMapTitle(),				 // 4
+			BotRandomWeaponName(),		 // 5
+			NULL );
 	} else {
-		BotAI_BotInitialChat( bs, "random_insult",
-							  BotRandomOpponentName( bs ), // 0
-							  name,             // 1
-							  "[invalid var]", // 2
-							  "[invalid var]", // 3
-							  BotMapTitle(),    // 4
-							  BotRandomWeaponName(), // 5
-							  NULL );
+		BotAI_BotInitialChat( bs,
+			"random_insult",
+			BotRandomOpponentName( bs ), // 0
+			name,						 // 1
+			"[invalid var]",			 // 2
+			"[invalid var]",			 // 3
+			BotMapTitle(),				 // 4
+			BotRandomWeaponName(),		 // 5
+			NULL );
 	}
 	bs->lastchat_time = sys->AAS_Time();
-	bs->chatto = CHAT_ALL;
+	bs->chatto		  = CHAT_ALL;
 	return qtrue;
 }
 
@@ -1046,7 +1088,8 @@ int BotChat_Random( bot_state_t *bs ) {
 BotChatTime
 ==================
 */
-float BotChatTime( bot_state_t *bs ) {
+float BotChatTime( bot_state_t* bs )
+{
 	int cpm;
 
 	cpm = sys->Characteristic_BInteger( bs->character, CHARACTERISTIC_CHAT_CPM, 1, 4000 );
@@ -1059,255 +1102,240 @@ float BotChatTime( bot_state_t *bs ) {
 BotChatTest
 ==================
 */
-void BotChatTest( bot_state_t *bs ) {
-
-	char name[32];
-	char *weap;
-	int num, i;
+void BotChatTest( bot_state_t* bs )
+{
+	char  name[32];
+	char* weap;
+	int	  num, i;
 
 	num = sys->BotNumInitialChats( bs->cs, "game_enter" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "game_enter",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ),  // 1
-							  "[invalid var]",          // 2
-							  "[invalid var]",          // 3
-							  BotMapTitle(),                // 4
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"game_enter",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			"[invalid var]",						// 2
+			"[invalid var]",						// 3
+			BotMapTitle(),							// 4
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "game_exit" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "game_exit",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ),  // 1
-							  "[invalid var]",          // 2
-							  "[invalid var]",          // 3
-							  BotMapTitle(),                // 4
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"game_exit",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			"[invalid var]",						// 2
+			"[invalid var]",						// 3
+			BotMapTitle(),							// 4
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "level_start" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "level_start",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"level_start",
+			EasyClientName( bs->client, name, 32 ), // 0
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "level_end_victory" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "level_end_victory",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ), // 1
-							  BotFirstClientInRankings(), // 2
-							  BotLastClientInRankings(), // 3
-							  BotMapTitle(),            // 4
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"level_end_victory",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			BotFirstClientInRankings(),				// 2
+			BotLastClientInRankings(),				// 3
+			BotMapTitle(),							// 4
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "level_end_lose" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "level_end_lose",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ), // 1
-							  BotFirstClientInRankings(), // 2
-							  BotLastClientInRankings(), // 3
-							  BotMapTitle(),            // 4
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"level_end_lose",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			BotFirstClientInRankings(),				// 2
+			BotLastClientInRankings(),				// 3
+			BotMapTitle(),							// 4
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "level_end" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "level_end",
-							  EasyClientName( bs->client, name, 32 ), // 0
-							  BotRandomOpponentName( bs ), // 1
-							  BotFirstClientInRankings(), // 2
-							  BotLastClientInRankings(), // 3
-							  BotMapTitle(),            // 4
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"level_end",
+			EasyClientName( bs->client, name, 32 ), // 0
+			BotRandomOpponentName( bs ),			// 1
+			BotFirstClientInRankings(),				// 2
+			BotLastClientInRankings(),				// 3
+			BotMapTitle(),							// 4
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	EasyClientName( bs->lastkilledby, name, sizeof( name ) );
 	num = sys->BotNumInitialChats( bs->cs, "death_drown" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		//
 		BotAI_BotInitialChat( bs, "death_drown", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_slime" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "death_slime", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_lava" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "death_lava", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_cratered" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "death_cratered", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_suicide" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "death_suicide", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_telefrag" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "death_telefrag", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_gauntlet" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "death_gauntlet",
-							  name,                                 // 0
-							  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"death_gauntlet",
+			name,											  // 0
+			BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_rail" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "death_rail",
-							  name,                                 // 0
-							  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"death_rail",
+			name,											  // 0
+			BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_bfg" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "death_bfg",
-							  name,                                 // 0
-							  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"death_bfg",
+			name,											  // 0
+			BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_insult" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "death_insult",
-							  name,                                     // 0
-							  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"death_insult",
+			name,											  // 0
+			BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "death_praise" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "death_praise",
-							  name,                                     // 0
-							  BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"death_praise",
+			name,											  // 0
+			BotWeaponNameForMeansOfDeath( bs->botdeathtype ), // 1
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	//
 	EasyClientName( bs->lastkilledplayer, name, 32 );
 	//
 	num = sys->BotNumInitialChats( bs->cs, "kill_gauntlet" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		//
 		BotAI_BotInitialChat( bs, "kill_gauntlet", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "kill_rail" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "kill_rail", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "kill_telefrag" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "kill_telefrag", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "kill_insult" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "kill_insult", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "kill_praise" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "kill_praise", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "enemy_suicide" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "enemy_suicide", name, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	ClientName( g_entities[bs->client].client->lasthurt_client, name, sizeof( name ) );
 	weap = BotWeaponNameForMeansOfDeath( g_entities[bs->client].client->lasthurt_client );
-	num = sys->BotNumInitialChats( bs->cs, "hit_talking" );
-	for ( i = 0; i < num; i++ )
-	{
+	num	 = sys->BotNumInitialChats( bs->cs, "hit_talking" );
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "hit_talking", name, weap, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "hit_nodeath" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "hit_nodeath", name, weap, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "hit_nokill" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		BotAI_BotInitialChat( bs, "hit_nokill", name, weap, NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	//
-	if ( bs->lastkilledplayer == bs->client ) {
+	if( bs->lastkilledplayer == bs->client ) {
 		strcpy( name, BotRandomOpponentName( bs ) );
 	} else {
 		EasyClientName( bs->lastkilledplayer, name, sizeof( name ) );
 	}
 	//
 	num = sys->BotNumInitialChats( bs->cs, "random_misc" );
-	for ( i = 0; i < num; i++ )
-	{
+	for( i = 0; i < num; i++ ) {
 		//
-		BotAI_BotInitialChat( bs, "random_misc",
-							  BotRandomOpponentName( bs ), // 0
-							  name,             // 1
-							  "[invalid var]", // 2
-							  "[invalid var]", // 3
-							  BotMapTitle(),    // 4
-							  BotRandomWeaponName(), // 5
-							  NULL );
+		BotAI_BotInitialChat( bs,
+			"random_misc",
+			BotRandomOpponentName( bs ), // 0
+			name,						 // 1
+			"[invalid var]",			 // 2
+			"[invalid var]",			 // 3
+			BotMapTitle(),				 // 4
+			BotRandomWeaponName(),		 // 5
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 	num = sys->BotNumInitialChats( bs->cs, "random_insult" );
-	for ( i = 0; i < num; i++ )
-	{
-		BotAI_BotInitialChat( bs, "random_insult",
-							  BotRandomOpponentName( bs ), // 0
-							  name,             // 1
-							  "[invalid var]", // 2
-							  "[invalid var]", // 3
-							  BotMapTitle(),    // 4
-							  BotRandomWeaponName(), // 5
-							  NULL );
+	for( i = 0; i < num; i++ ) {
+		BotAI_BotInitialChat( bs,
+			"random_insult",
+			BotRandomOpponentName( bs ), // 0
+			name,						 // 1
+			"[invalid var]",			 // 2
+			"[invalid var]",			 // 3
+			BotMapTitle(),				 // 4
+			BotRandomWeaponName(),		 // 5
+			NULL );
 		sys->BotEnterChat( bs->cs, bs->client, CHAT_ALL );
 	}
 }

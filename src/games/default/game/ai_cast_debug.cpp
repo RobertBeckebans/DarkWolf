@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
@@ -35,25 +36,26 @@ If you have questions concerning this license or the applicable additional terms
 //===========================================================================
 
 #include "g_local.h"
-#include "../game/botlib.h"      //bot lib interface
+#include "../game/botlib.h" //bot lib interface
 #include "../game/be_aas.h"
 #include "../game/be_ea.h"
 #include "../game/be_ai_gen.h"
 #include "../game/be_ai_goal.h"
 #include "../game/be_ai_move.h"
-#include "../botai/botai.h"          //bot ai interface
+#include "../botai/botai.h" //bot ai interface
 
 #include "ai_cast.h"
 
-static int numaifuncs;
-static char     *aifuncs[MAX_AIFUNCS];
+static int	 numaifuncs;
+static char* aifuncs[MAX_AIFUNCS];
 
 /*
 ==========
 AICast_DBG_InitAIFuncs
 ==========
 */
-void AICast_DBG_InitAIFuncs( void ) {
+void		 AICast_DBG_InitAIFuncs()
+{
 	numaifuncs = 0;
 }
 
@@ -62,9 +64,10 @@ void AICast_DBG_InitAIFuncs( void ) {
 AICast_DBG_AddAIFunc
 ==========
 */
-void AICast_DBG_AddAIFunc( cast_state_t *cs, char *funcname ) {
-	if ( aicast_debug.integer ) {
-		if ( aicast_debug.integer != 2 || ( g_entities[cs->entityNum].aiName && !strcmp( aicast_debugname.string, g_entities[cs->entityNum].aiName ) ) ) {
+void AICast_DBG_AddAIFunc( cast_state_t* cs, char* funcname )
+{
+	if( aicast_debug.integer ) {
+		if( aicast_debug.integer != 2 || ( g_entities[cs->entityNum].aiName && !strcmp( aicast_debugname.string, g_entities[cs->entityNum].aiName ) ) ) {
 			G_Printf( "%s: %s\n", g_entities[cs->entityNum].aiName, funcname );
 		}
 	}
@@ -77,13 +80,15 @@ void AICast_DBG_AddAIFunc( cast_state_t *cs, char *funcname ) {
 AICast_DBG_ListAIFuncs
 ==========
 */
-void AICast_DBG_ListAIFuncs( cast_state_t *cs, int numprint ) {
+void AICast_DBG_ListAIFuncs( cast_state_t* cs, int numprint )
+{
 	int i;
 
-	if ( aicast_debug.integer != 2 || ( g_entities[cs->entityNum].aiName && !strcmp( aicast_debugname.string, g_entities[cs->entityNum].aiName ) ) ) {
+	if( aicast_debug.integer != 2 || ( g_entities[cs->entityNum].aiName && !strcmp( aicast_debugname.string, g_entities[cs->entityNum].aiName ) ) ) {
 		AICast_Printf( AICAST_PRT_DEBUG, S_COLOR_RED "AICast_ProcessAIFunctions: executed more than %d AI funcs\n", MAX_AIFUNCS );
-		for ( i = MAX_AIFUNCS - numprint; i < MAX_AIFUNCS; i++ )
+		for( i = MAX_AIFUNCS - numprint; i < MAX_AIFUNCS; i++ ) {
 			AICast_Printf( AICAST_PRT_DEBUG, "%s, ", aifuncs[i] );
+		}
 		AICast_Printf( AICAST_PRT_DEBUG, "\n" );
 	}
 }
@@ -93,13 +98,14 @@ void AICast_DBG_ListAIFuncs( cast_state_t *cs, int numprint ) {
 AICast_DebugFrame
 ==========
 */
-void AICast_DebugFrame( cast_state_t *cs ) {
-	gentity_t *ent;
+void AICast_DebugFrame( cast_state_t* cs )
+{
+	gentity_t* ent;
 
-	if ( aicast_debug.integer ) {
+	if( aicast_debug.integer ) {
 		ent = &g_entities[cs->entityNum];
 
-		if ( cs->castScriptStatus.castScriptEventIndex >= 0 ) {
+		if( cs->castScriptStatus.castScriptEventIndex >= 0 ) {
 			ent->client->ps.eFlags |= EF_TALK;
 		} else {
 			ent->client->ps.eFlags &= ~EF_TALK;
@@ -112,33 +118,33 @@ void AICast_DebugFrame( cast_state_t *cs ) {
 AICast_DBG_RouteTable_f
 ===========
 */
-void AICast_DBG_RouteTable_f( vec3_t org, char *param ) {
+void AICast_DBG_RouteTable_f( vec3_t org, char* param )
+{
 	static int srcarea = 0, dstarea = 0;
-//	extern botlib_export_t botlib; // TTimo: unused
+	//	extern botlib_export_t botlib; // TTimo: unused
 
-	if ( !param || strlen( param ) < 1 ) {
+	if( !param || strlen( param ) < 1 ) {
 		sys->Printf( "You must specify 'src', 'dest' or 'show'\n" );
 		return;
 	}
 
-	sys->AAS_SetCurrentWorld( 0 );  // use the default world, which should have a routetable
+	sys->AAS_SetCurrentWorld( 0 ); // use the default world, which should have a routetable
 
-	if ( Q_stricmp( param, "toggle" ) == 0 ) {
-		sys->AAS_RT_ShowRoute( vec3_origin, -666, -666 );   // stupid toggle hack
+	if( Q_stricmp( param, "toggle" ) == 0 ) {
+		sys->AAS_RT_ShowRoute( vec3_origin, -666, -666 ); // stupid toggle hack
 		return;
 	}
 
-	if ( Q_stricmp( param, "src" ) == 0 ) { // set the src
+	if( Q_stricmp( param, "src" ) == 0 ) { // set the src
 		srcarea = 1 + sys->AAS_PointAreaNum( org );
 		return;
-	} else if ( Q_stricmp( param, "dest" ) == 0 )        {
+	} else if( Q_stricmp( param, "dest" ) == 0 ) {
 		dstarea = 1 + sys->AAS_PointAreaNum( org );
 	}
 
-	if ( srcarea && dstarea ) { // show the path
+	if( srcarea && dstarea ) { // show the path
 		sys->AAS_RT_ShowRoute( org, srcarea - 1, dstarea - 1 );
-	} else
-	{
+	} else {
 		sys->Printf( "You must specify 'src' & 'dest' first\n" );
 	}
 }
@@ -148,18 +154,19 @@ void AICast_DBG_RouteTable_f( vec3_t org, char *param ) {
 AICast_DBG_Spawn_f
 ===============
 */
-void AICast_DBG_Spawn_f( gclient_t *client, char *cmd ) {
-	extern qboolean G_CallSpawn( gentity_t *ent );
-	gentity_t   *ent;
-	vec3_t dir;
+void AICast_DBG_Spawn_f( gclient_t* client, char* cmd )
+{
+	extern qboolean G_CallSpawn( gentity_t * ent );
+	gentity_t*		ent;
+	vec3_t			dir;
 
-	ent = G_Spawn();
-	ent->classname = (char *)G_Alloc( strlen( cmd ) + 1 );
+	ent			   = G_Spawn();
+	ent->classname = ( char* )G_Alloc( strlen( cmd ) + 1 );
 	strcpy( ent->classname, cmd );
 	AngleVectors( client->ps.viewangles, dir, NULL, NULL );
 	VectorMA( client->ps.origin, 96, dir, ent->s.origin );
 
-	if ( !G_CallSpawn( ent ) ) {
+	if( !G_CallSpawn( ent ) ) {
 		G_Printf( "Error: unable to spawn \"%s\" entity\n", cmd );
 	}
 }
@@ -171,38 +178,39 @@ AICast_DBG_Cmd_f
   General entry point for all "aicast ..." commands
 ===============
 */
-void AICast_DBG_Cmd_f( int clientNum ) {
-	gentity_t *ent;
-	char cmd[MAX_TOKEN_CHARS];
+void AICast_DBG_Cmd_f( int clientNum )
+{
+	gentity_t* ent;
+	char	   cmd[MAX_TOKEN_CHARS];
 
 	ent = g_entities + clientNum;
-	if ( !ent->client ) {
-		return;     // not fully in game yet
+	if( !ent->client ) {
+		return; // not fully in game yet
 	}
 
 	// get the first word following "aicast"
 	sys->Argv( 1, cmd, sizeof( cmd ) );
 
-	if ( Q_stricmp( cmd, "dbg_routetable" ) == 0 ) {
+	if( Q_stricmp( cmd, "dbg_routetable" ) == 0 ) {
 		sys->Argv( 2, cmd, sizeof( cmd ) );
 		AICast_DBG_RouteTable_f( ent->client->ps.origin, cmd );
 		return;
 	}
-	if ( Q_stricmp( cmd, "spawn" ) == 0 ) {
+	if( Q_stricmp( cmd, "spawn" ) == 0 ) {
 		// spawn a given character
 		sys->Argv( 2, cmd, sizeof( cmd ) );
 		AICast_DBG_Spawn_f( ent->client, cmd );
 		return;
 	}
-	if ( Q_stricmp( cmd, "getname" ) == 0 ) {
+	if( Q_stricmp( cmd, "getname" ) == 0 ) {
 		// get name of character we're looking at
-//		AICast_DBG_GetName_f(ent);
+		//		AICast_DBG_GetName_f(ent);
 		return;
 	}
-	if ( Q_stricmp( cmd, "followme" ) == 0 ) {
+	if( Q_stricmp( cmd, "followme" ) == 0 ) {
 		// tell character to follow us
 		sys->Argv( 2, cmd, sizeof( cmd ) );
-//		AICast_DBG_FollowMe_f(ent->client, cmd);
+		//		AICast_DBG_FollowMe_f(ent->client, cmd);
 		return;
 	}
 }
@@ -215,7 +223,7 @@ void AICast_DBG_Cmd_f( int clientNum ) {
 #define MAX_PATH	MAX_QPATH
 #endif
 
-int Sys_MilliSeconds(void)
+int Sys_MilliSeconds()
 {
 // Ridah, faster Win32 code
 #ifdef _WIN32

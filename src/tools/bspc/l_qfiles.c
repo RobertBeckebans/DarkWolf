@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
@@ -36,249 +37,236 @@ If you have questions concerning this license or the applicable additional terms
 //===========================================================================
 
 #if defined( WIN32 ) | defined( _WIN32 )
-#include <windows.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+	#include <windows.h>
+	#include <sys/types.h>
+	#include <sys/stat.h>
 #else
-#include <glob.h>
-#include <sys/stat.h>
-#include <unistd.h>
+	#include <glob.h>
+	#include <sys/stat.h>
+	#include <unistd.h>
 #endif
 
 #include "qbsp.h"
 #define stricmp strcasecmp
 
-//file extensions with their type
-typedef struct qfile_exttype_s
-{
-	char *extension;
-	int type;
+// file extensions with their type
+typedef struct qfile_exttype_s {
+	char* extension;
+	int	  type;
 } qfile_exttyp_t;
 
-qfile_exttyp_t quakefiletypes[] =
+qfile_exttyp_t quakefiletypes[] = { { QFILEEXT_UNKNOWN, QFILETYPE_UNKNOWN },
+	{ QFILEEXT_PAK, QFILETYPE_PAK },
+	{ QFILEEXT_PK3, QFILETYPE_PK3 },
+	{ QFILEEXT_SIN, QFILETYPE_PAK },
+	{ QFILEEXT_BSP, QFILETYPE_BSP },
+	{ QFILEEXT_MAP, QFILETYPE_MAP },
+	{ QFILEEXT_MDL, QFILETYPE_MDL },
+	{ QFILEEXT_MD2, QFILETYPE_MD2 },
+	{ QFILEEXT_MD3, QFILETYPE_MD3 },
+	{ QFILEEXT_WAL, QFILETYPE_WAL },
+	{ QFILEEXT_WAV, QFILETYPE_WAV },
+	{ QFILEEXT_AAS, QFILETYPE_AAS },
+	{ NULL, 0 } };
+
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//===========================================================================
+int			   QuakeFileExtensionType( char* extension )
 {
-	{QFILEEXT_UNKNOWN, QFILETYPE_UNKNOWN},
-	{QFILEEXT_PAK, QFILETYPE_PAK},
-	{QFILEEXT_PK3, QFILETYPE_PK3},
-	{QFILEEXT_SIN, QFILETYPE_PAK},
-	{QFILEEXT_BSP, QFILETYPE_BSP},
-	{QFILEEXT_MAP, QFILETYPE_MAP},
-	{QFILEEXT_MDL, QFILETYPE_MDL},
-	{QFILEEXT_MD2, QFILETYPE_MD2},
-	{QFILEEXT_MD3, QFILETYPE_MD3},
-	{QFILEEXT_WAL, QFILETYPE_WAL},
-	{QFILEEXT_WAV, QFILETYPE_WAV},
-	{QFILEEXT_AAS, QFILETYPE_AAS},
-	{NULL, 0}
-};
-
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
-int QuakeFileExtensionType( char *extension ) {
 	int i;
 
-	for ( i = 0; quakefiletypes[i].extension; i++ )
-	{
-		if ( !stricmp( extension, quakefiletypes[i].extension ) ) {
+	for( i = 0; quakefiletypes[i].extension; i++ ) {
+		if( !stricmp( extension, quakefiletypes[i].extension ) ) {
 			return quakefiletypes[i].type;
-		} //end if
-	} //end for
+		} // end if
+	} // end for
 	return QFILETYPE_UNKNOWN;
-} //end of the function QuakeFileExtensionType
+} // end of the function QuakeFileExtensionType
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-char *QuakeFileTypeExtension( int type ) {
+char* QuakeFileTypeExtension( int type )
+{
 	int i;
 
-	for ( i = 0; quakefiletypes[i].extension; i++ )
-	{
-		if ( quakefiletypes[i].type == type ) {
+	for( i = 0; quakefiletypes[i].extension; i++ ) {
+		if( quakefiletypes[i].type == type ) {
 			return quakefiletypes[i].extension;
-		} //end if
-	} //end for
+		} // end if
+	} // end for
 	return QFILEEXT_UNKNOWN;
-} //end of the function QuakeFileExtension
+} // end of the function QuakeFileExtension
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int QuakeFileType( char *filename ) {
+int QuakeFileType( char* filename )
+{
 	char ext[_MAX_PATH] = ".";
 
 	ExtractFileExtension( filename, ext + 1 );
 	return QuakeFileExtensionType( ext );
-} //end of the function QuakeFileTypeFromFileName
+} // end of the function QuakeFileTypeFromFileName
 //===========================================================================
 //
 // Parameter:				-
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-char *StringContains( char *str1, char *str2, int casesensitive ) {
+char* StringContains( char* str1, char* str2, int casesensitive )
+{
 	int len, i, j;
 
 	len = strlen( str1 ) - strlen( str2 );
-	for ( i = 0; i <= len; i++, str1++ )
-	{
-		for ( j = 0; str2[j]; j++ )
-		{
-			if ( casesensitive ) {
-				if ( str1[j] != str2[j] ) {
+	for( i = 0; i <= len; i++, str1++ ) {
+		for( j = 0; str2[j]; j++ ) {
+			if( casesensitive ) {
+				if( str1[j] != str2[j] ) {
 					break;
 				}
-			} //end if
-			else
-			{
-				if ( toupper( str1[j] ) != toupper( str2[j] ) ) {
+			} // end if
+			else {
+				if( toupper( str1[j] ) != toupper( str2[j] ) ) {
 					break;
 				}
-			} //end else
-		} //end for
-		if ( !str2[j] ) {
+			} // end else
+		} // end for
+		if( !str2[j] ) {
 			return str1;
 		}
-	} //end for
+	} // end for
 	return NULL;
-} //end of the function StringContains
+} // end of the function StringContains
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int FileFilter( char *filter, char *filename, int casesensitive ) {
-	char buf[1024];
-	char *ptr;
-	int i, found;
+int FileFilter( char* filter, char* filename, int casesensitive )
+{
+	char  buf[1024];
+	char* ptr;
+	int	  i, found;
 
-	while ( *filter )
-	{
-		if ( *filter == '*' ) {
+	while( *filter ) {
+		if( *filter == '*' ) {
 			filter++;
-			for ( i = 0; *filter; i++ )
-			{
-				if ( *filter == '*' || *filter == '?' ) {
+			for( i = 0; *filter; i++ ) {
+				if( *filter == '*' || *filter == '?' ) {
 					break;
 				}
 				buf[i] = *filter;
 				filter++;
-			} //end for
+			} // end for
 			buf[i] = '\0';
-			if ( strlen( buf ) ) {
+			if( strlen( buf ) ) {
 				ptr = StringContains( filename, buf, casesensitive );
-				if ( !ptr ) {
+				if( !ptr ) {
 					return false;
 				}
 				filename = ptr + strlen( buf );
-			} //end if
-		} //end if
-		else if ( *filter == '?' ) {
+			} // end if
+		} // end if
+		else if( *filter == '?' ) {
 			filter++;
 			filename++;
-		} //end else if
-		else if ( *filter == '[' && *( filter + 1 ) == '[' ) {
+		} // end else if
+		else if( *filter == '[' && *( filter + 1 ) == '[' ) {
 			filter++;
-		} //end if
-		else if ( *filter == '[' ) {
+		} // end if
+		else if( *filter == '[' ) {
 			filter++;
 			found = false;
-			while ( *filter && !found )
-			{
-				if ( *filter == ']' && *( filter + 1 ) != ']' ) {
+			while( *filter && !found ) {
+				if( *filter == ']' && *( filter + 1 ) != ']' ) {
 					break;
 				}
-				if ( *( filter + 1 ) == '-' && *( filter + 2 ) && ( *( filter + 2 ) != ']' || *( filter + 3 ) == ']' ) ) {
-					if ( casesensitive ) {
-						if ( *filename >= *filter && *filename <= *( filter + 2 ) ) {
+				if( *( filter + 1 ) == '-' && *( filter + 2 ) && ( *( filter + 2 ) != ']' || *( filter + 3 ) == ']' ) ) {
+					if( casesensitive ) {
+						if( *filename >= *filter && *filename <= *( filter + 2 ) ) {
 							found = true;
 						}
-					} //end if
-					else
-					{
-						if ( toupper( *filename ) >= toupper( *filter ) &&
-							 toupper( *filename ) <= toupper( *( filter + 2 ) ) ) {
+					} // end if
+					else {
+						if( toupper( *filename ) >= toupper( *filter ) && toupper( *filename ) <= toupper( *( filter + 2 ) ) ) {
 							found = true;
 						}
-					} //end else
+					} // end else
 					filter += 3;
-				} //end if
-				else
-				{
-					if ( casesensitive ) {
-						if ( *filter == *filename ) {
+				} // end if
+				else {
+					if( casesensitive ) {
+						if( *filter == *filename ) {
 							found = true;
 						}
-					} //end if
-					else
-					{
-						if ( toupper( *filter ) == toupper( *filename ) ) {
+					} // end if
+					else {
+						if( toupper( *filter ) == toupper( *filename ) ) {
 							found = true;
 						}
-					} //end else
+					} // end else
 					filter++;
-				} //end else
-			} //end while
-			if ( !found ) {
+				} // end else
+			} // end while
+			if( !found ) {
 				return false;
 			}
-			while ( *filter )
-			{
-				if ( *filter == ']' && *( filter + 1 ) != ']' ) {
+			while( *filter ) {
+				if( *filter == ']' && *( filter + 1 ) != ']' ) {
 					break;
 				}
 				filter++;
-			} //end while
+			} // end while
 			filter++;
 			filename++;
-		} //end else if
-		else
-		{
-			if ( casesensitive ) {
-				if ( *filter != *filename ) {
+		} // end else if
+		else {
+			if( casesensitive ) {
+				if( *filter != *filename ) {
 					return false;
 				}
-			} //end if
-			else
-			{
-				if ( toupper( *filter ) != toupper( *filename ) ) {
+			} // end if
+			else {
+				if( toupper( *filter ) != toupper( *filename ) ) {
 					return false;
 				}
-			} //end else
+			} // end else
 			filter++;
 			filename++;
-		} //end else
-	} //end while
+		} // end else
+	} // end while
 	return true;
-} //end of the function FileFilter
+} // end of the function FileFilter
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-quakefile_t *FindQuakeFilesInZip( char *zipfile, char *filter ) {
-	unzFile uf;
-	int err;
+quakefile_t* FindQuakeFilesInZip( char* zipfile, char* filter )
+{
+	unzFile			uf;
+	int				err;
 	unz_global_info gi;
-	char filename_inzip[MAX_PATH];
-	unz_file_info file_info;
-	int i;
-	quakefile_t     *qfiles, *lastqf, *qf;
+	char			filename_inzip[MAX_PATH];
+	unz_file_info	file_info;
+	int				i;
+	quakefile_t *	qfiles, *lastqf, *qf;
 
-	uf = unzOpen( zipfile );
+	uf	= unzOpen( zipfile );
 	err = unzGetGlobalInfo( uf, &gi );
 
-	if ( err != UNZ_OK ) {
+	if( err != UNZ_OK ) {
 		return NULL;
 	}
 
@@ -286,17 +274,16 @@ quakefile_t *FindQuakeFilesInZip( char *zipfile, char *filter ) {
 
 	qfiles = NULL;
 	lastqf = NULL;
-	for ( i = 0; i < gi.number_entry; i++ )
-	{
-		err = unzGetCurrentFileInfo( uf, &file_info, filename_inzip, sizeof( filename_inzip ), NULL,0,NULL,0 );
-		if ( err != UNZ_OK ) {
+	for( i = 0; i < gi.number_entry; i++ ) {
+		err = unzGetCurrentFileInfo( uf, &file_info, filename_inzip, sizeof( filename_inzip ), NULL, 0, NULL, 0 );
+		if( err != UNZ_OK ) {
 			break;
 		}
 
 		ConvertPath( filename_inzip );
-		if ( FileFilter( filter, filename_inzip, false ) ) {
+		if( FileFilter( filter, filename_inzip, false ) ) {
 			qf = malloc( sizeof( quakefile_t ) );
-			if ( !qf ) {
+			if( !qf ) {
 				Error( "out of memory" );
 			}
 			memset( qf, 0, sizeof( quakefile_t ) );
@@ -304,114 +291,111 @@ quakefile_t *FindQuakeFilesInZip( char *zipfile, char *filter ) {
 			strcpy( qf->filename, zipfile );
 			strcpy( qf->origname, filename_inzip );
 			qf->zipfile = true;
-			//memcpy( &buildBuffer[i].zipfileinfo, (unz_s*)uf, sizeof(unz_s));
-			memcpy( &qf->zipinfo, (unz_s*)uf, sizeof( unz_s ) );
+			// memcpy( &buildBuffer[i].zipfileinfo, (unz_s*)uf, sizeof(unz_s));
+			memcpy( &qf->zipinfo, ( unz_s* )uf, sizeof( unz_s ) );
 			qf->offset = 0;
 			qf->length = file_info.uncompressed_size;
-			qf->type = QuakeFileType( filename_inzip );
-			//add the file ot the list
+			qf->type   = QuakeFileType( filename_inzip );
+			// add the file ot the list
 			qf->next = NULL;
-			if ( lastqf ) {
+			if( lastqf ) {
 				lastqf->next = qf;
-			} else { qfiles = qf;}
+			} else {
+				qfiles = qf;
+			}
 			lastqf = qf;
-		} //end if
+		} // end if
 		unzGoToNextFile( uf );
-	} //end for
+	} // end for
 
 	unzClose( uf );
 
 	return qfiles;
-} //end of the function FindQuakeFilesInZip
+} // end of the function FindQuakeFilesInZip
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-quakefile_t *FindQuakeFilesInPak( char *pakfile, char *filter ) {
-	FILE *fp;
-	dpackheader_t packheader;
-	dsinpackfile_t *packfiles;
-	dpackfile_t *idpackfiles;
-	quakefile_t *qfiles, *lastqf, *qf;
-	int numpackdirs, i;
+quakefile_t* FindQuakeFilesInPak( char* pakfile, char* filter )
+{
+	FILE*			fp;
+	dpackheader_t	packheader;
+	dsinpackfile_t* packfiles;
+	dpackfile_t*	idpackfiles;
+	quakefile_t *	qfiles, *lastqf, *qf;
+	int				numpackdirs, i;
 
 	qfiles = NULL;
 	lastqf = NULL;
-	//open the pak file
+	// open the pak file
 	fp = fopen( pakfile, "rb" );
-	if ( !fp ) {
+	if( !fp ) {
 		Warning( "can't open pak file %s", pakfile );
 		return NULL;
-	} //end if
-	  //read pak header, check for valid pak id and seek to the dir entries
-	if ( ( fread( &packheader, 1, sizeof( dpackheader_t ), fp ) != sizeof( dpackheader_t ) )
-		 || ( packheader.ident != IDPAKHEADER && packheader.ident != SINPAKHEADER )
-		 ||  ( fseek( fp, LittleLong( packheader.dirofs ), SEEK_SET ) )
-		 ) {
+	} // end if
+	// read pak header, check for valid pak id and seek to the dir entries
+	if( ( fread( &packheader, 1, sizeof( dpackheader_t ), fp ) != sizeof( dpackheader_t ) ) || ( packheader.ident != IDPAKHEADER && packheader.ident != SINPAKHEADER ) ||
+		( fseek( fp, LittleLong( packheader.dirofs ), SEEK_SET ) ) ) {
 		fclose( fp );
 		Warning( "invalid pak file %s", pakfile );
 		return NULL;
-	} //end if
-	  //if it is a pak file from id software
-	if ( packheader.ident == IDPAKHEADER ) {
-		//number of dir entries in the pak file
+	} // end if
+	// if it is a pak file from id software
+	if( packheader.ident == IDPAKHEADER ) {
+		// number of dir entries in the pak file
 		numpackdirs = LittleLong( packheader.dirlen ) / sizeof( dpackfile_t );
-		idpackfiles = (dpackfile_t *) malloc( numpackdirs * sizeof( dpackfile_t ) );
-		if ( !idpackfiles ) {
+		idpackfiles = ( dpackfile_t* )malloc( numpackdirs * sizeof( dpackfile_t ) );
+		if( !idpackfiles ) {
 			Error( "out of memory" );
 		}
-		//read the dir entry
-		if ( fread( idpackfiles, sizeof( dpackfile_t ), numpackdirs, fp ) != numpackdirs ) {
+		// read the dir entry
+		if( fread( idpackfiles, sizeof( dpackfile_t ), numpackdirs, fp ) != numpackdirs ) {
 			fclose( fp );
 			free( idpackfiles );
 			Warning( "can't read the Quake pak file dir entries from %s", pakfile );
 			return NULL;
-		} //end if
+		} // end if
 		fclose( fp );
-		//convert to sin pack files
-		packfiles = (dsinpackfile_t *) malloc( numpackdirs * sizeof( dsinpackfile_t ) );
-		if ( !packfiles ) {
+		// convert to sin pack files
+		packfiles = ( dsinpackfile_t* )malloc( numpackdirs * sizeof( dsinpackfile_t ) );
+		if( !packfiles ) {
 			Error( "out of memory" );
 		}
-		for ( i = 0; i < numpackdirs; i++ )
-		{
+		for( i = 0; i < numpackdirs; i++ ) {
 			strcpy( packfiles[i].name, idpackfiles[i].name );
 			packfiles[i].filepos = LittleLong( idpackfiles[i].filepos );
 			packfiles[i].filelen = LittleLong( idpackfiles[i].filelen );
-		} //end for
+		} // end for
 		free( idpackfiles );
-	} //end if
-	else //its a Sin pack file
-	{
-		//number of dir entries in the pak file
+	} // end if
+	else { // its a Sin pack file
+		// number of dir entries in the pak file
 		numpackdirs = LittleLong( packheader.dirlen ) / sizeof( dsinpackfile_t );
-		packfiles = (dsinpackfile_t *) malloc( numpackdirs * sizeof( dsinpackfile_t ) );
-		if ( !packfiles ) {
+		packfiles	= ( dsinpackfile_t* )malloc( numpackdirs * sizeof( dsinpackfile_t ) );
+		if( !packfiles ) {
 			Error( "out of memory" );
 		}
-		//read the dir entry
-		if ( fread( packfiles, sizeof( dsinpackfile_t ), numpackdirs, fp ) != numpackdirs ) {
+		// read the dir entry
+		if( fread( packfiles, sizeof( dsinpackfile_t ), numpackdirs, fp ) != numpackdirs ) {
 			fclose( fp );
 			free( packfiles );
 			Warning( "can't read the Sin pak file dir entries from %s", pakfile );
 			return NULL;
-		} //end if
+		} // end if
 		fclose( fp );
-		for ( i = 0; i < numpackdirs; i++ )
-		{
+		for( i = 0; i < numpackdirs; i++ ) {
 			packfiles[i].filepos = LittleLong( packfiles[i].filepos );
 			packfiles[i].filelen = LittleLong( packfiles[i].filelen );
-		} //end for
-	} //end else
-	  //
-	for ( i = 0; i < numpackdirs; i++ )
-	{
+		} // end for
+	} // end else
+	//
+	for( i = 0; i < numpackdirs; i++ ) {
 		ConvertPath( packfiles[i].name );
-		if ( FileFilter( filter, packfiles[i].name, false ) ) {
+		if( FileFilter( filter, packfiles[i].name, false ) ) {
 			qf = malloc( sizeof( quakefile_t ) );
-			if ( !qf ) {
+			if( !qf ) {
 				Error( "out of memory" );
 			}
 			memset( qf, 0, sizeof( quakefile_t ) );
@@ -419,48 +403,50 @@ quakefile_t *FindQuakeFilesInPak( char *pakfile, char *filter ) {
 			strcpy( qf->filename, pakfile );
 			strcpy( qf->origname, packfiles[i].name );
 			qf->zipfile = false;
-			qf->offset = packfiles[i].filepos;
-			qf->length = packfiles[i].filelen;
-			qf->type = QuakeFileType( packfiles[i].name );
-			//add the file ot the list
+			qf->offset	= packfiles[i].filepos;
+			qf->length	= packfiles[i].filelen;
+			qf->type	= QuakeFileType( packfiles[i].name );
+			// add the file ot the list
 			qf->next = NULL;
-			if ( lastqf ) {
+			if( lastqf ) {
 				lastqf->next = qf;
-			} else { qfiles = qf;}
+			} else {
+				qfiles = qf;
+			}
 			lastqf = qf;
-		} //end if
-	} //end for
+		} // end if
+	} // end for
 	free( packfiles );
 	return qfiles;
-} //end of the function FindQuakeFilesInPak
+} // end of the function FindQuakeFilesInPak
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-quakefile_t *FindQuakeFilesWithPakFilter( char *pakfilter, char *filter ) {
+quakefile_t* FindQuakeFilesWithPakFilter( char* pakfilter, char* filter )
+{
 #if defined( WIN32 ) | defined( _WIN32 )
 	WIN32_FIND_DATA filedata;
-	HWND handle;
-	struct _stat statbuf;
+	HWND			handle;
+	struct _stat	statbuf;
 #else
-	glob_t globbuf;
+	glob_t		globbuf;
 	struct stat statbuf;
-	int j;
+	int			j;
 #endif
 	quakefile_t *qfiles, *lastqf, *qf;
-	char pakfile[_MAX_PATH], filename[_MAX_PATH], *str;
-	//int done; //TTimo: unused
+	char		 pakfile[_MAX_PATH], filename[_MAX_PATH], *str;
+	// int done; //TTimo: unused
 
 	qfiles = NULL;
 	lastqf = NULL;
-	if ( pakfilter && strlen( pakfilter ) ) {
+	if( pakfilter && strlen( pakfilter ) ) {
 #if defined( WIN32 ) | defined( _WIN32 )
 		handle = FindFirstFile( pakfilter, &filedata );
-		done = ( handle == INVALID_HANDLE_VALUE );
-		while ( !done )
-		{
+		done   = ( handle == INVALID_HANDLE_VALUE );
+		while( !done ) {
 			_splitpath( pakfilter, pakfile, NULL, NULL, NULL );
 			_splitpath( pakfilter, NULL, &pakfile[strlen( pakfile )], NULL, NULL );
 			AppendPathSeperator( pakfile, _MAX_PATH );
@@ -468,76 +454,78 @@ quakefile_t *FindQuakeFilesWithPakFilter( char *pakfilter, char *filter ) {
 			_stat( pakfile, &statbuf );
 #else
 		glob( pakfilter, 0, NULL, &globbuf );
-		for ( j = 0; j < globbuf.gl_pathc; j++ )
-		{
+		for( j = 0; j < globbuf.gl_pathc; j++ ) {
 			strcpy( pakfile, globbuf.gl_pathv[j] );
 			stat( pakfile, &statbuf );
 #endif
-			//if the file with .pak or .pk3 is a folder
-			if ( statbuf.st_mode & S_IFDIR ) {
+			// if the file with .pak or .pk3 is a folder
+			if( statbuf.st_mode & S_IFDIR ) {
 				strcpy( filename, pakfilter );
 				AppendPathSeperator( filename, _MAX_PATH );
 				strcat( filename, filter );
 				qf = FindQuakeFilesWithPakFilter( NULL, filename );
-				if ( lastqf ) {
+				if( lastqf ) {
 					lastqf->next = qf;
-				} else { qfiles = qf;}
+				} else {
+					qfiles = qf;
+				}
 				lastqf = qf;
-				while ( lastqf->next ) lastqf = lastqf->next;
-			} //end if
-			else
-			{
+				while( lastqf->next ) {
+					lastqf = lastqf->next;
+				}
+			} // end if
+			else {
 #if defined( WIN32 ) | defined( _WIN32 )
 				str = StringContains( pakfile, ".pk3", false );
 #else
 				str = StringContains( pakfile, ".pk3", true );
 #endif
-				if ( str && str == pakfile + strlen( pakfile ) - strlen( ".pk3" ) ) {
+				if( str && str == pakfile + strlen( pakfile ) - strlen( ".pk3" ) ) {
 					qf = FindQuakeFilesInZip( pakfile, filter );
-				} //end if
-				else
-				{
+				} // end if
+				else {
 					qf = FindQuakeFilesInPak( pakfile, filter );
-				} //end else
-				  //
-				if ( qf ) {
-					if ( lastqf ) {
+				} // end else
+				//
+				if( qf ) {
+					if( lastqf ) {
 						lastqf->next = qf;
-					} else { qfiles = qf;}
+					} else {
+						qfiles = qf;
+					}
 					lastqf = qf;
-					while ( lastqf->next ) lastqf = lastqf->next;
-				} //end if
-			} //end else
-			  //
+					while( lastqf->next ) {
+						lastqf = lastqf->next;
+					}
+				} // end if
+			} // end else
+			//
 #if defined( WIN32 ) | defined( _WIN32 )
-			//find the next file
+			// find the next file
 			done = !FindNextFile( handle, &filedata );
-		} //end while
+		} // end while
 #else
-		} //end for
+		} // end for
 		globfree( &globbuf );
 #endif
-	} //end if
-	else
-	{
+	} // end if
+	else {
 #if defined( WIN32 ) | defined( _WIN32 )
 		handle = FindFirstFile( filter, &filedata );
-		done = ( handle == INVALID_HANDLE_VALUE );
-		while ( !done )
-		{
+		done   = ( handle == INVALID_HANDLE_VALUE );
+		while( !done ) {
 			_splitpath( filter, filename, NULL, NULL, NULL );
 			_splitpath( filter, NULL, &filename[strlen( filename )], NULL, NULL );
 			AppendPathSeperator( filename, _MAX_PATH );
 			strcat( filename, filedata.cFileName );
 #else
 		glob( filter, 0, NULL, &globbuf );
-		for ( j = 0; j < globbuf.gl_pathc; j++ )
-		{
+		for( j = 0; j < globbuf.gl_pathc; j++ ) {
 			strcpy( filename, globbuf.gl_pathv[j] );
 #endif
 			//
 			qf = malloc( sizeof( quakefile_t ) );
-			if ( !qf ) {
+			if( !qf ) {
 				Error( "out of memory" );
 			}
 			memset( qf, 0, sizeof( quakefile_t ) );
@@ -546,157 +534,161 @@ quakefile_t *FindQuakeFilesWithPakFilter( char *pakfilter, char *filter ) {
 			strcpy( qf->origname, filename );
 			qf->offset = 0;
 			qf->length = 0;
-			qf->type = QuakeFileType( filename );
-			//add the file ot the list
+			qf->type   = QuakeFileType( filename );
+			// add the file ot the list
 			qf->next = NULL;
-			if ( lastqf ) {
+			if( lastqf ) {
 				lastqf->next = qf;
-			} else { qfiles = qf;}
+			} else {
+				qfiles = qf;
+			}
 			lastqf = qf;
 #if defined( WIN32 ) | defined( _WIN32 )
-			//find the next file
+			// find the next file
 			done = !FindNextFile( handle, &filedata );
-		} //end while
+		} // end while
 #else
-		} //end for
+		} // end for
 		globfree( &globbuf );
 #endif
-	} //end else
+	} // end else
 	return qfiles;
-} //end of the function FindQuakeFilesWithPakFilter
+} // end of the function FindQuakeFilesWithPakFilter
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-quakefile_t *FindQuakeFiles( char *filter ) {
-	char *str;
-	char newfilter[_MAX_PATH];
-	char pakfilter[_MAX_PATH];
-	char filefilter[_MAX_PATH];
+quakefile_t* FindQuakeFiles( char* filter )
+{
+	char* str;
+	char  newfilter[_MAX_PATH];
+	char  pakfilter[_MAX_PATH];
+	char  filefilter[_MAX_PATH];
 
 	strcpy( newfilter, filter );
 	ConvertPath( newfilter );
 	strcpy( pakfilter, newfilter );
 
 	str = StringContains( pakfilter, ".pak", false );
-	if ( !str ) {
+	if( !str ) {
 		str = StringContains( pakfilter, ".pk3", false );
 	}
 
-	if ( str ) {
+	if( str ) {
 		str += strlen( ".pak" );
-		if ( *str ) {
+		if( *str ) {
 			*str++ = '\0';
-			while ( *str == '\\' || *str == '/' ) str++;
+			while( *str == '\\' || *str == '/' ) {
+				str++;
+			}
 			strcpy( filefilter, str );
 			return FindQuakeFilesWithPakFilter( pakfilter, filefilter );
-		} //end if
-	} //end else
+		} // end if
+	} // end else
 	return FindQuakeFilesWithPakFilter( NULL, newfilter );
-} //end of the function FindQuakeFiles
+} // end of the function FindQuakeFiles
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int LoadQuakeFile( quakefile_t *qf, void **bufferptr ) {
-	FILE *fp;
-	void *buffer;
-	int length;
+int LoadQuakeFile( quakefile_t* qf, void** bufferptr )
+{
+	FILE*	fp;
+	void*	buffer;
+	int		length;
 	unzFile zf;
 
-	if ( qf->zipfile ) {
-		//open the zip file
+	if( qf->zipfile ) {
+		// open the zip file
 		zf = unzOpen( qf->pakfile );
-		//set the file pointer
-		qf->zipinfo.file = ( (unz_s *) zf )->file;
-		//open the Quake file in the zip file
+		// set the file pointer
+		qf->zipinfo.file = ( ( unz_s* )zf )->file;
+		// open the Quake file in the zip file
 		unzOpenCurrentFile( &qf->zipinfo );
-		//allocate memory for the buffer
+		// allocate memory for the buffer
 		length = qf->length;
 		buffer = GetMemory( length + 1 );
-		//read the Quake file from the zip file
+		// read the Quake file from the zip file
 		length = unzReadCurrentFile( &qf->zipinfo, buffer, length );
-		//close the Quake file in the zip file
+		// close the Quake file in the zip file
 		unzCloseCurrentFile( &qf->zipinfo );
-		//close the zip file
+		// close the zip file
 		unzClose( zf );
 
 		*bufferptr = buffer;
 		return length;
-	} //end if
-	else
-	{
+	} // end if
+	else {
 		fp = SafeOpenRead( qf->filename );
-		if ( qf->offset ) {
+		if( qf->offset ) {
 			fseek( fp, qf->offset, SEEK_SET );
 		}
 		length = qf->length;
-		if ( !length ) {
+		if( !length ) {
 			length = Q_filelength( fp );
 		}
-		buffer = GetMemory( length + 1 );
-		( (char *)buffer )[length] = 0;
+		buffer						= GetMemory( length + 1 );
+		( ( char* )buffer )[length] = 0;
 		SafeRead( fp, buffer, length );
 		fclose( fp );
 
 		*bufferptr = buffer;
 		return length;
-	} //end else
-} //end of the function LoadQuakeFile
+	} // end else
+} // end of the function LoadQuakeFile
 //===========================================================================
 //
 // Parameter:			-
 // Returns:				-
 // Changes Globals:		-
 //===========================================================================
-int ReadQuakeFile( quakefile_t *qf, void *buffer, int offset, int length ) {
-	FILE *fp;
-	int read;
+int ReadQuakeFile( quakefile_t* qf, void* buffer, int offset, int length )
+{
+	FILE*	fp;
+	int		read;
 	unzFile zf;
-	char tmpbuf[1024];
+	char	tmpbuf[1024];
 
-	if ( qf->zipfile ) {
-		//open the zip file
+	if( qf->zipfile ) {
+		// open the zip file
 		zf = unzOpen( qf->pakfile );
-		//set the file pointer
-		qf->zipinfo.file = ( (unz_s *) zf )->file;
-		//open the Quake file in the zip file
+		// set the file pointer
+		qf->zipinfo.file = ( ( unz_s* )zf )->file;
+		// open the Quake file in the zip file
 		unzOpenCurrentFile( &qf->zipinfo );
 		//
-		while ( offset > 0 )
-		{
+		while( offset > 0 ) {
 			read = offset;
-			if ( read > sizeof( tmpbuf ) ) {
+			if( read > sizeof( tmpbuf ) ) {
 				read = sizeof( tmpbuf );
 			}
 			unzReadCurrentFile( &qf->zipinfo, tmpbuf, read );
 			offset -= read;
-		} //end while
-		  //read the Quake file from the zip file
+		} // end while
+		// read the Quake file from the zip file
 		length = unzReadCurrentFile( &qf->zipinfo, buffer, length );
-		//close the Quake file in the zip file
+		// close the Quake file in the zip file
 		unzCloseCurrentFile( &qf->zipinfo );
-		//close the zip file
+		// close the zip file
 		unzClose( zf );
 
 		return length;
-	} //end if
-	else
-	{
+	} // end if
+	else {
 		fp = SafeOpenRead( qf->filename );
-		if ( qf->offset ) {
+		if( qf->offset ) {
 			fseek( fp, qf->offset, SEEK_SET );
 		}
-		if ( offset ) {
+		if( offset ) {
 			fseek( fp, offset, SEEK_CUR );
 		}
 		SafeRead( fp, buffer, length );
 		fclose( fp );
 
 		return length;
-	} //end else
-} //end of the function ReadQuakeFile
+	} // end else
+} // end of the function ReadQuakeFile

@@ -2,9 +2,9 @@
 ===========================================================================
 
 Return to Castle Wolfenstein single player GPL Source Code
-Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company. 
+Copyright (C) 1999-2010 id Software LLC, a ZeniMax Media company.
 
-This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).  
+This file is part of the Return to Castle Wolfenstein single player GPL Source Code (RTCW SP Source Code).
 
 RTCW SP Source Code is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
@@ -36,10 +37,10 @@ If you have questions concerning this license or the applicable additional terms
 // normal keys should be passed as lowercased ascii
 
 typedef enum {
-	K_TAB = 9,
-	K_ENTER = 13,
+	K_TAB	 = 9,
+	K_ENTER	 = 13,
 	K_ESCAPE = 27,
-	K_SPACE = 32,
+	K_SPACE	 = 32,
 
 	K_BACKSPACE = 127,
 
@@ -157,13 +158,12 @@ typedef enum {
 	K_AUX15,
 	K_AUX16,
 
-	K_LAST_KEY      // this had better be <256!
+	K_LAST_KEY // this had better be <256!
 } keyNum_t;
-
 
 // The menu code needs to get both key and char events, but
 // to avoid duplicating the paths, the char events are just
 // distinguished by or'ing in K_CHAR_FLAG (ugly)
-#define K_CHAR_FLAG     1024
+#define K_CHAR_FLAG 1024
 
 #endif

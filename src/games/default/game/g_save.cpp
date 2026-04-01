@@ -19,7 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RTCW SP Source Code.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
+In addition, the RTCW SP Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU
+General Public License which accompanied the RTCW SP Source Code.  If not, please request a copy in writing from id Software at the address below.
 
 If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
@@ -33,139 +34,127 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "../game/g_local.h"
 #include "../game/q_shared.h"
-#include "../game/botlib.h"      //bot lib interface
+#include "../game/botlib.h" //bot lib interface
 #include "../game/be_aas.h"
 #include "../game/be_ea.h"
 #include "../game/be_ai_gen.h"
 #include "../game/be_ai_goal.h"
 #include "../game/be_ai_move.h"
-#include "../botai/botai.h"          //bot ai interface
-
+#include "../botai/botai.h" //bot ai interface
 
 #include "ai_cast.h"
 
- /*
- Wolf savegame system.
+/*
+Wolf savegame system.
 
- Using the "checkpoint" system, we only need to save at specific locations, but various entities
- may have changed behind us, so therefore we need to save as much as possible, but without going
- overboard.
+Using the "checkpoint" system, we only need to save at specific locations, but various entities
+may have changed behind us, so therefore we need to save as much as possible, but without going
+overboard.
 
- For now, everything is saved from the entity, client and cast_state structures, except the fields
- defined in the ignoreField structures below. Any pointer fields need to be specified in the
- saveField structures below.
+For now, everything is saved from the entity, client and cast_state structures, except the fields
+defined in the ignoreField structures below. Any pointer fields need to be specified in the
+saveField structures below.
 
- !! NOTE: when working on Wolf patches, make sure you only add fields to the very end of the three
-   main structures saved here (entity, client, cast_state). If any fields are inserted in the middle
-   of these structures, savegames will become corrupted, and there is no way of checking for this,
-   so it'll just crash.
+!! NOTE: when working on Wolf patches, make sure you only add fields to the very end of the three
+  main structures saved here (entity, client, cast_state). If any fields are inserted in the middle
+  of these structures, savegames will become corrupted, and there is no way of checking for this,
+  so it'll just crash.
 
- NOTE TTimo: see show_bug.cgi?id=434 for v17 -> v18 savegames
- */
+NOTE TTimo: see show_bug.cgi?id=434 for v17 -> v18 savegames
+*/
 
-
-vmCvar_t musicCvar;
-char musicString[MAX_STRING_CHARS];
+vmCvar_t   musicCvar;
+char	   musicString[MAX_STRING_CHARS];
 
 static int ver;
 
 typedef enum {
 	F_NONE,
 	F_STRING,
-	F_ENTITY,           // index on disk, pointer in memory
-	F_ITEM,             // index on disk, pointer in memory
-	F_CLIENT,           // index on disk, pointer in memory
+	F_ENTITY, // index on disk, pointer in memory
+	F_ITEM,	  // index on disk, pointer in memory
+	F_CLIENT, // index on disk, pointer in memory
 	F_FUNCTION
 } saveFieldtype_t;
 
 typedef struct {
-	size_t ofs;
+	size_t			ofs;
 	saveFieldtype_t type;
 } saveField_t;
 
 //.......................................................................................
 // these are the fields that cannot be saved directly, so they need to be converted
-static saveField_t gentityFields_17[] = {
-	{FOFS(client),      F_CLIENT},
-	{FOFS(classname),   F_STRING},
-	{FOFS(model),       F_STRING},
-	{FOFS(model2),      F_STRING},
-	{FOFS(parent),      F_ENTITY},
-	{FOFS(nextTrain),   F_ENTITY},
-	{FOFS(prevTrain),   F_ENTITY},
-	{FOFS(message),     F_STRING},
-	{FOFS(target),      F_STRING},
-	{FOFS(targetname),  F_STRING},
-	{FOFS(team),        F_STRING},
-	{FOFS(target_ent),  F_ENTITY},
-	{FOFS(think),       F_FUNCTION},
-	{FOFS(reached),     F_FUNCTION},
-	{FOFS(blocked),     F_FUNCTION},
-	{FOFS(touch),       F_FUNCTION},
-	{FOFS(use),         F_FUNCTION},
-	{FOFS(pain),        F_FUNCTION},
-	{FOFS(die),         F_FUNCTION},
-	{FOFS(chain),       F_ENTITY},
-	{FOFS(enemy),       F_ENTITY},
-	{FOFS(activator),   F_ENTITY},
-	{FOFS(teamchain),   F_ENTITY},
-	{FOFS(teammaster),  F_ENTITY},
-	{FOFS(item),        F_ITEM},
-	{FOFS(aiAttributes),F_STRING},
-	{FOFS(aiName),      F_STRING},
-	{FOFS(AIScript_AlertEntity), F_FUNCTION},
-	{FOFS(aiSkin),      F_STRING},
-	{FOFS(aihSkin),     F_STRING},
-	{FOFS(dl_stylestring),  F_STRING},
-	{FOFS(dl_shader),   F_STRING},
-	{FOFS(melee),       F_ENTITY},
-	{FOFS(spawnitem),   F_STRING},
-	{FOFS(track),       F_STRING},
-	{FOFS(scriptName),  F_STRING},
-	{FOFS(scriptStatus.animatingParams),    F_STRING},
-	{FOFS(tagName),     F_STRING},
-	{FOFS(tagParent),   F_ENTITY},
+static saveField_t gentityFields_17[] = { { FOFS( client ), F_CLIENT },
+	{ FOFS( classname ), F_STRING },
+	{ FOFS( model ), F_STRING },
+	{ FOFS( model2 ), F_STRING },
+	{ FOFS( parent ), F_ENTITY },
+	{ FOFS( nextTrain ), F_ENTITY },
+	{ FOFS( prevTrain ), F_ENTITY },
+	{ FOFS( message ), F_STRING },
+	{ FOFS( target ), F_STRING },
+	{ FOFS( targetname ), F_STRING },
+	{ FOFS( team ), F_STRING },
+	{ FOFS( target_ent ), F_ENTITY },
+	{ FOFS( think ), F_FUNCTION },
+	{ FOFS( reached ), F_FUNCTION },
+	{ FOFS( blocked ), F_FUNCTION },
+	{ FOFS( touch ), F_FUNCTION },
+	{ FOFS( use ), F_FUNCTION },
+	{ FOFS( pain ), F_FUNCTION },
+	{ FOFS( die ), F_FUNCTION },
+	{ FOFS( chain ), F_ENTITY },
+	{ FOFS( enemy ), F_ENTITY },
+	{ FOFS( activator ), F_ENTITY },
+	{ FOFS( teamchain ), F_ENTITY },
+	{ FOFS( teammaster ), F_ENTITY },
+	{ FOFS( item ), F_ITEM },
+	{ FOFS( aiAttributes ), F_STRING },
+	{ FOFS( aiName ), F_STRING },
+	{ FOFS( AIScript_AlertEntity ), F_FUNCTION },
+	{ FOFS( aiSkin ), F_STRING },
+	{ FOFS( aihSkin ), F_STRING },
+	{ FOFS( dl_stylestring ), F_STRING },
+	{ FOFS( dl_shader ), F_STRING },
+	{ FOFS( melee ), F_ENTITY },
+	{ FOFS( spawnitem ), F_STRING },
+	{ FOFS( track ), F_STRING },
+	{ FOFS( scriptName ), F_STRING },
+	{ FOFS( scriptStatus.animatingParams ), F_STRING },
+	{ FOFS( tagName ), F_STRING },
+	{ FOFS( tagParent ), F_ENTITY },
 
-	{0, (saveFieldtype_t)0}
-};
+	{ 0, ( saveFieldtype_t )0 } };
 
 // TTimo
 // show_bug.cgi?id=434
 // new field for v18 saved games
 // not in gentityField to keep backward compatibility loading v17
-static saveField_t gentityFields_18[] = {
-	{FOFS(targetdeath), F_STRING},
-	{0, (saveFieldtype_t)0}
-};
+static saveField_t gentityFields_18[] = { { FOFS( targetdeath ), F_STRING }, { 0, ( saveFieldtype_t )0 } };
 
+static saveField_t gclientFields[] = { { CFOFS( hook ), F_ENTITY },
 
-static saveField_t gclientFields[] = {
-	{CFOFS(hook),       F_ENTITY},
+	{ 0, ( saveFieldtype_t )0 } };
 
-	{0, (saveFieldtype_t)0}
-};
+static saveField_t castStateFields[] = { { CSFOFS( aifunc ), F_FUNCTION },
+	{ CSFOFS( oldAifunc ), F_FUNCTION },
+	{ CSFOFS( painfunc ), F_FUNCTION },
+	{ CSFOFS( deathfunc ), F_FUNCTION },
+	{ CSFOFS( sightfunc ), F_FUNCTION },
+	{ CSFOFS( sightEnemy ), F_FUNCTION },
+	{ CSFOFS( sightFriend ), F_FUNCTION },
+	{ CSFOFS( activate ), F_FUNCTION },
+	{ CSFOFS( aifuncAttack1 ), F_FUNCTION },
+	{ CSFOFS( aifuncAttack2 ), F_FUNCTION },
+	{ CSFOFS( aifuncAttack3 ), F_FUNCTION },
 
-static saveField_t castStateFields[] = {
-	{CSFOFS(aifunc),    F_FUNCTION},
-	{CSFOFS(oldAifunc), F_FUNCTION},
-	{CSFOFS(painfunc),  F_FUNCTION},
-	{CSFOFS(deathfunc), F_FUNCTION},
-	{CSFOFS(sightfunc), F_FUNCTION},
-	{CSFOFS(sightEnemy),    F_FUNCTION},
-	{CSFOFS(sightFriend),   F_FUNCTION},
-	{CSFOFS(activate),  F_FUNCTION},
-	{CSFOFS(aifuncAttack1), F_FUNCTION},
-	{CSFOFS(aifuncAttack2), F_FUNCTION},
-	{CSFOFS(aifuncAttack3), F_FUNCTION},
-
-	{0, (saveFieldtype_t)0}
-};
+	{ 0, ( saveFieldtype_t )0 } };
 
 //.......................................................................................
 // this is where we define fields or sections of structures that we should totally ignore
 typedef struct {
 	size_t ofs;
-	int len;
+	int	   len;
 } ignoreField_t;
 
 static ignoreField_t gentityIgnoreFields[] = {
@@ -174,10 +163,10 @@ static ignoreField_t gentityIgnoreFields[] = {
 	//{FOFS(s.eventParms[0]),	sizeof(int) * MAX_EVENTS},
 	//{FOFS(s.eventSequence),	sizeof(int)},
 
-	{FOFS(numScriptEvents), sizeof(int)},
-	{FOFS(scriptEvents),    sizeof(g_script_event_t*) },   // gets created upon parsing the script file, this is static while playing
+	{ FOFS( numScriptEvents ), sizeof( int ) },
+	{ FOFS( scriptEvents ), sizeof( g_script_event_t* ) }, // gets created upon parsing the script file, this is static while playing
 
-	{0, 0}
+	{ 0, 0 }
 };
 
 static ignoreField_t gclientIgnoreFields[] = {
@@ -187,54 +176,44 @@ static ignoreField_t gclientIgnoreFields[] = {
 	//{CFOFS(ps.eventSequence),	sizeof(int)},
 	//{CFOFS(ps.oldEventSequence),sizeof(int)},
 
-	{0, 0}
+	{ 0, 0 }
 };
 
-static ignoreField_t castStateIgnoreFields[] = {
-	{CSFOFS(bs),    sizeof(bot_state_t*)},
-	{CSFOFS(numCastScriptEvents),   sizeof(int)},
-	{CSFOFS(castScriptEvents), sizeof(cast_script_event_t*) }, // gets created upon parsing the script file, this is static while playing
-	{CSFOFS(weaponInfo),    sizeof(cast_weapon_info_t*)},
+static ignoreField_t castStateIgnoreFields[] = { { CSFOFS( bs ), sizeof( bot_state_t* ) },
+	{ CSFOFS( numCastScriptEvents ), sizeof( int ) },
+	{ CSFOFS( castScriptEvents ), sizeof( cast_script_event_t* ) }, // gets created upon parsing the script file, this is static while playing
+	{ CSFOFS( weaponInfo ), sizeof( cast_weapon_info_t* ) },
 
-	{0, 0}
-};
-
-
+	{ 0, 0 } };
 
 //.......................................................................................
 // persistant data is optionally carried across level changes
 // !! WARNING: cannot save pointer or string variables
 typedef struct {
 	size_t ofs;
-	int len;
+	int	   len;
 } persField_t;
 
-static persField_t gentityPersFields[] = {
-	{FOFS(health),              sizeof(int)},
-	{0, 0}
-};
+static persField_t gentityPersFields[] = { { FOFS( health ), sizeof( int ) }, { 0, 0 } };
 
-static persField_t gclientPersFields[] = {
-	{CFOFS(ps.weapon),          sizeof(int)},
-	{CFOFS(ps.ammo[0]),         sizeof(int) * MAX_WEAPONS},
-	{CFOFS(ps.ammoclip[0]),     sizeof(int) * MAX_WEAPONS}, //----(SA)	added for ammo in clip
-	{CFOFS(ps.persistant[0]),   sizeof(int) * MAX_PERSISTANT},
-	{CFOFS(ps.stats[0]),        sizeof(int) * MAX_STATS},
-	{CFOFS(ps.weapons[0]),      sizeof(int) * MAX_WEAPONS / (sizeof(int) * 8)}, // //----(SA)	added.  weapons owned got moved outside stats[]
-	{CFOFS(ps.powerups[0]),     sizeof(int) * MAX_POWERUPS},
-	{CFOFS(ps.holdable[0]),     sizeof(int) * MAX_HOLDABLE},    //----(SA)	added
-	{CFOFS(ps.holding),         sizeof(int)},                   //----(SA)	added
+static persField_t gclientPersFields[] = { { CFOFS( ps.weapon ), sizeof( int ) },
+	{ CFOFS( ps.ammo[0] ), sizeof( int ) * MAX_WEAPONS },
+	{ CFOFS( ps.ammoclip[0] ), sizeof( int ) * MAX_WEAPONS }, //----(SA)	added for ammo in clip
+	{ CFOFS( ps.persistant[0] ), sizeof( int ) * MAX_PERSISTANT },
+	{ CFOFS( ps.stats[0] ), sizeof( int ) * MAX_STATS },
+	{ CFOFS( ps.weapons[0] ), sizeof( int ) * MAX_WEAPONS / ( sizeof( int ) * 8 ) }, // //----(SA)	added.  weapons owned got moved outside stats[]
+	{ CFOFS( ps.powerups[0] ), sizeof( int ) * MAX_POWERUPS },
+	{ CFOFS( ps.holdable[0] ), sizeof( int ) * MAX_HOLDABLE }, //----(SA)	added
+	{ CFOFS( ps.holding ), sizeof( int ) },					   //----(SA)	added
 
-	{0, 0}
-};
+	{ 0, 0 } };
 
 static persField_t castStatePersFields[] = {
 	// TODO: will we be transporting AI's between levels?
 	// FIXME: if so, we can't save strings in here, so how are we going to create the new AI
 	// in the next level, with all his strings and pointers attached?
-	{0, 0}
+	{ 0, 0 }
 };
-
 
 //.......................................................................................
 // this stores all functions in the game code
@@ -243,11 +222,10 @@ typedef struct {
 	byte* funcPtr;
 } funcList_t;
 
-
 #include "g_func_decs.h" // declare all game functions
 
 funcList_t funcList[] = {
-	#include "g_funcs.h"
+#include "g_funcs.h"
 };
 
 //=========================================================
@@ -257,12 +235,13 @@ funcList_t funcList[] = {
 G_SaveWriteError
 ===============
 */
-void G_SaveWriteError(void) {
+void G_SaveWriteError()
+{
 	// TTimo
 #ifdef __linux__
-	G_Error("Unable to save game.\n\nPlease check that you have at least 5mb free of disk space in your home directory.");
+	G_Error( "Unable to save game.\n\nPlease check that you have at least 5mb free of disk space in your home directory." );
 #else
-	G_Error("Insufficient free disk space.\n\nPlease free at least 5mb of free space on game drive.");
+	G_Error( "Insufficient free disk space.\n\nPlease free at least 5mb of free space on game drive." );
 #endif
 }
 
@@ -276,225 +255,215 @@ G_SaveWrite
   check them before we rename to the real file
 ===============
 */
-int G_SaveWrite(const void* buffer, int len, fileHandle_t f) {
+int		   G_SaveWrite( const void* buffer, int len, fileHandle_t f )
+{
 	saveByteCount += len;
 
-	return sys->FS_Write(buffer, len, f);
+	return sys->FS_Write( buffer, len, f );
 }
 
 //=========================================================
 
-funcList_t* G_FindFuncAtAddress(byte* adr) {
+funcList_t* G_FindFuncAtAddress( byte* adr )
+{
 	int i;
 
-	for (i = 0; funcList[i].funcStr; i++) {
-		if (funcList[i].funcPtr == adr) {
+	for( i = 0; funcList[i].funcStr; i++ ) {
+		if( funcList[i].funcPtr == adr ) {
 			return &funcList[i];
 		}
 	}
 	return NULL;
 }
 
-byte* G_FindFuncByName(char* name) {
+byte* G_FindFuncByName( char* name )
+{
 	int i;
 
-	for (i = 0; funcList[i].funcStr; i++) {
-		if (!strcmp(name, funcList[i].funcStr)) {
+	for( i = 0; funcList[i].funcStr; i++ ) {
+		if( !strcmp( name, funcList[i].funcStr ) ) {
 			return funcList[i].funcPtr;
 		}
 	}
 	return NULL;
 }
 
-void WriteField1(saveField_t* field, byte* base) {
-	void* p;
-	int len;
-	int index;
+void WriteField1( saveField_t* field, byte* base )
+{
+	void*		p;
+	int			len;
+	int			index;
 	funcList_t* func;
 
-	p = (void*)(base + field->ofs);
-	switch (field->type)
-	{
-	case F_STRING:
-		if (*(char**)p) {
-			len = strlen(*(char**)p) + 1;
-		}
-		else {
-			len = 0;
-		}
-		*(int*)p = len;
-		break;
-	case F_ENTITY:
-		if (*(gentity_t**)p == NULL) {
-			index = -1;
-		}
-		else {
-			index = *(gentity_t**)p - g_entities;
-		}
-		if (index >= MAX_GENTITIES || index < -1) {
-			G_Error("WriteField1: entity out of range (%i)", index);
-		}
-		*(int*)p = index;
-		break;
-	case F_CLIENT:
-		if (*(gclient_t**)p == NULL) {
-			index = -1;
-		}
-		else {
-			index = *(gclient_t**)p - level.clients;
-		}
-		if (index >= MAX_CLIENTS || index < -1) {
-			G_Error("WriteField1: client out of range (%i)", index);
-		}
-		*(int*)p = index;
-		break;
-	case F_ITEM:
-		if (*(gitem_t**)p == NULL) {
-			index = -1;
-		}
-		else {
-			index = *(gitem_t**)p - bg_itemlist;
-		}
-		*(int*)p = index;
-		break;
+	p = ( void* )( base + field->ofs );
+	switch( field->type ) {
+		case F_STRING:
+			if( *( char** )p ) {
+				len = strlen( *( char** )p ) + 1;
+			} else {
+				len = 0;
+			}
+			*( int* )p = len;
+			break;
+		case F_ENTITY:
+			if( *( gentity_t** )p == NULL ) {
+				index = -1;
+			} else {
+				index = *( gentity_t** )p - g_entities;
+			}
+			if( index >= MAX_GENTITIES || index < -1 ) {
+				G_Error( "WriteField1: entity out of range (%i)", index );
+			}
+			*( int* )p = index;
+			break;
+		case F_CLIENT:
+			if( *( gclient_t** )p == NULL ) {
+				index = -1;
+			} else {
+				index = *( gclient_t** )p - level.clients;
+			}
+			if( index >= MAX_CLIENTS || index < -1 ) {
+				G_Error( "WriteField1: client out of range (%i)", index );
+			}
+			*( int* )p = index;
+			break;
+		case F_ITEM:
+			if( *( gitem_t** )p == NULL ) {
+				index = -1;
+			} else {
+				index = *( gitem_t** )p - bg_itemlist;
+			}
+			*( int* )p = index;
+			break;
 
 		//	match this with a function address in the function list, which is built using the
 		//	"extractfuncs.bat" in the utils folder. We then save the string equivalent
 		//	of the function. This effectively gives us cross-version save games.
-	case F_FUNCTION:
-		if (*(byte**)p == NULL) {
-			len = 0;
-		}
-		else {
-			func = G_FindFuncAtAddress(*(byte**)p);
-			if (!func) {
-				G_Error("WriteField1: unknown function, cannot save game");
+		case F_FUNCTION:
+			if( *( byte** )p == NULL ) {
+				len = 0;
+			} else {
+				func = G_FindFuncAtAddress( *( byte** )p );
+				if( !func ) {
+					G_Error( "WriteField1: unknown function, cannot save game" );
+				}
+				len = strlen( func->funcStr ) + 1;
 			}
-			len = strlen(func->funcStr) + 1;
-		}
-		*(int*)p = len;
-		break;
+			*( int* )p = len;
+			break;
 
-	default:
-		G_Error("WriteField1: unknown field type");
+		default:
+			G_Error( "WriteField1: unknown field type" );
 	}
 }
 
-
-void WriteField2(fileHandle_t f, saveField_t* field, byte* base) {
-	int len;
-	void* p;
+void WriteField2( fileHandle_t f, saveField_t* field, byte* base )
+{
+	int			len;
+	void*		p;
 	funcList_t* func;
 
-	p = (void*)(base + field->ofs);
-	switch (field->type)
-	{
-	case F_STRING:
-		if (*(char**)p) {
-			len = strlen(*(char**)p) + 1;
-			if (!G_SaveWrite(*(char**)p, len, f)) {
-				G_SaveWriteError();
+	p = ( void* )( base + field->ofs );
+	switch( field->type ) {
+		case F_STRING:
+			if( *( char** )p ) {
+				len = strlen( *( char** )p ) + 1;
+				if( !G_SaveWrite( *( char** )p, len, f ) ) {
+					G_SaveWriteError();
+				}
 			}
-		}
-		break;
-	case F_FUNCTION:
-		if (*(byte**)p) {
-			func = G_FindFuncAtAddress(*(byte**)p);
-			if (!func) {
-				G_Error("WriteField1: unknown function, cannot save game");
+			break;
+		case F_FUNCTION:
+			if( *( byte** )p ) {
+				func = G_FindFuncAtAddress( *( byte** )p );
+				if( !func ) {
+					G_Error( "WriteField1: unknown function, cannot save game" );
+				}
+				len = strlen( func->funcStr ) + 1;
+				if( !G_SaveWrite( func->funcStr, len, f ) ) {
+					G_SaveWriteError();
+				}
 			}
-			len = strlen(func->funcStr) + 1;
-			if (!G_SaveWrite(func->funcStr, len, f)) {
-				G_SaveWriteError();
-			}
-		}
-		break;
-	default:
-		break;
+			break;
+		default:
+			break;
 	}
 }
 
-void ReadField(fileHandle_t f, saveField_t* field, byte* base) {
+void ReadField( fileHandle_t f, saveField_t* field, byte* base )
+{
 	void* p;
-	int len;
-	int index;
-	char funcStr[512];
+	int	  len;
+	int	  index;
+	char  funcStr[512];
 
-	p = (void*)(base + field->ofs);
-	switch (field->type)
-	{
-	case F_STRING:
-		len = *(int*)p;
-		if (!len) {
-			*(char**)p = NULL;
-		}
-		else
-		{
-			*(char**)p = (char *)G_Alloc(len);
-			sys->FS_Read(*(char**)p, len, f);
-		}
-		break;
-	case F_ENTITY:
-		index = *(int*)p;
-		if (index >= MAX_GENTITIES || index < -1) {
-			G_Error("ReadField: entity out of range (%i)", index);
-		}
-		if (index == -1) {
-			*(gentity_t**)p = NULL;
-		}
-		else {
-			*(gentity_t**)p = &g_entities[index];
-		}
-		break;
-	case F_CLIENT:
-		index = *(int*)p;
-		if (index >= MAX_CLIENTS || index < -1) {
-			G_Error("ReadField: client out of range (%i)", index);
-		}
-		if (index == -1) {
-			*(gclient_t**)p = NULL;
-		}
-		else {
-			*(gclient_t**)p = &level.clients[index];
-		}
-		break;
-	case F_ITEM:
-		index = *(int*)p;
-		if (index == -1) {
-			*(gitem_t**)p = NULL;
-		}
-		else {
-			*(gitem_t**)p = &bg_itemlist[index];
-		}
-		break;
-
-		//relative to code segment
-	case F_FUNCTION:
-		len = *(int*)p;
-		if (!len) {
-			*(byte**)p = NULL;
-		}
-		else
-		{
-			//funcStr = G_Alloc (len);
-			if (len > sizeof(funcStr)) {
-				G_Error("ReadField: function name is greater than buffer (%li chars)", (long unsigned int)sizeof(funcStr));
+	p = ( void* )( base + field->ofs );
+	switch( field->type ) {
+		case F_STRING:
+			len = *( int* )p;
+			if( !len ) {
+				*( char** )p = NULL;
+			} else {
+				*( char** )p = ( char* )G_Alloc( len );
+				sys->FS_Read( *( char** )p, len, f );
 			}
-			sys->FS_Read(funcStr, len, f);
-			if (!(*(byte**)p = G_FindFuncByName(funcStr))) {
-				G_Error("ReadField: unknown function '%s'\ncannot load game", funcStr);
+			break;
+		case F_ENTITY:
+			index = *( int* )p;
+			if( index >= MAX_GENTITIES || index < -1 ) {
+				G_Error( "ReadField: entity out of range (%i)", index );
 			}
-		}
-		break;
+			if( index == -1 ) {
+				*( gentity_t** )p = NULL;
+			} else {
+				*( gentity_t** )p = &g_entities[index];
+			}
+			break;
+		case F_CLIENT:
+			index = *( int* )p;
+			if( index >= MAX_CLIENTS || index < -1 ) {
+				G_Error( "ReadField: client out of range (%i)", index );
+			}
+			if( index == -1 ) {
+				*( gclient_t** )p = NULL;
+			} else {
+				*( gclient_t** )p = &level.clients[index];
+			}
+			break;
+		case F_ITEM:
+			index = *( int* )p;
+			if( index == -1 ) {
+				*( gitem_t** )p = NULL;
+			} else {
+				*( gitem_t** )p = &bg_itemlist[index];
+			}
+			break;
 
-	default:
-		G_Error("ReadField: unknown field type");
+		// relative to code segment
+		case F_FUNCTION:
+			len = *( int* )p;
+			if( !len ) {
+				*( byte** )p = NULL;
+			} else {
+				// funcStr = G_Alloc (len);
+				if( len > sizeof( funcStr ) ) {
+					G_Error( "ReadField: function name is greater than buffer (%li chars)", ( long unsigned int )sizeof( funcStr ) );
+				}
+				sys->FS_Read( funcStr, len, f );
+				if( !( *( byte** )p = G_FindFuncByName( funcStr ) ) ) {
+					G_Error( "ReadField: unknown function '%s'\ncannot load game", funcStr );
+				}
+			}
+			break;
+
+		default:
+			G_Error( "ReadField: unknown field type" );
 	}
 }
 
 //=========================================================
 
-#define SAVE_ENCODE_COUNT_BYTES     1
+#define SAVE_ENCODE_COUNT_BYTES 1
 
 /*
 ===============
@@ -503,39 +472,38 @@ G_Save_Encode
   returns the number of bytes written to "out"
 ===============
 */
-int G_Save_Encode(byte* raw, byte* out, int rawsize, int outsize) {
-	int rawcount, oldrawcount, outcount;
-	int mode;
-	byte count;     //DAJ was int but caused endian bugs
+int G_Save_Encode( byte* raw, byte* out, int rawsize, int outsize )
+{
+	int	 rawcount, oldrawcount, outcount;
+	int	 mode;
+	byte count; // DAJ was int but caused endian bugs
 
 	rawcount = 0;
 	outcount = 0;
-	while (rawcount < rawsize) {
+	while( rawcount < rawsize ) {
 		oldrawcount = rawcount;
 		// is this a non-zero?
-		if (raw[rawcount]) {
+		if( raw[rawcount] ) {
 			mode = 1;
-		}
-		else {
+		} else {
 			mode = 0;
 		}
 		// calc the count
 		count = 0;
-		while (rawcount < rawsize && (raw[rawcount] != 0) == mode && count < (((1 << (SAVE_ENCODE_COUNT_BYTES * 8 - 1)) - 1))) {
+		while( rawcount < rawsize && ( raw[rawcount] != 0 ) == mode && count < ( ( ( 1 << ( SAVE_ENCODE_COUNT_BYTES * 8 - 1 ) ) - 1 ) ) ) {
 			rawcount++;
 			count++;
 		}
 		// write the count, followed by data if required
-		memcpy(out + outcount, &count, SAVE_ENCODE_COUNT_BYTES);
+		memcpy( out + outcount, &count, SAVE_ENCODE_COUNT_BYTES );
 		// switch the sign bit if zeros
-		if (!mode) {
-			out[outcount + SAVE_ENCODE_COUNT_BYTES - 1] |= (1 << 7);
+		if( !mode ) {
+			out[outcount + SAVE_ENCODE_COUNT_BYTES - 1] |= ( 1 << 7 );
 			outcount += SAVE_ENCODE_COUNT_BYTES;
-		}
-		else {
+		} else {
 			outcount += SAVE_ENCODE_COUNT_BYTES;
 			// write the data
-			memcpy(out + outcount, raw + oldrawcount, count);
+			memcpy( out + outcount, raw + oldrawcount, count );
 			outcount += count;
 		}
 	}
@@ -548,26 +516,26 @@ int G_Save_Encode(byte* raw, byte* out, int rawsize, int outsize) {
 G_Save_Decode
 ===============
 */
-void G_Save_Decode(byte* in, int insize, byte* out, int outsize) {
-	int incount, outcount;
-	byte count;     //DAJ was in but caused endian bugs
+void G_Save_Decode( byte* in, int insize, byte* out, int outsize )
+{
+	int	 incount, outcount;
+	byte count; // DAJ was in but caused endian bugs
 	//
-	incount = 0;
+	incount	 = 0;
 	outcount = 0;
-	while (incount < insize) {
+	while( incount < insize ) {
 		// read the count
 		count = 0;
-		memcpy(&count, in + incount, SAVE_ENCODE_COUNT_BYTES);
+		memcpy( &count, in + incount, SAVE_ENCODE_COUNT_BYTES );
 		incount += SAVE_ENCODE_COUNT_BYTES;
 		// if it's negative, zero it out
-		if (count & (1 << ((SAVE_ENCODE_COUNT_BYTES * 8) - 1))) {
-			count &= ~(1 << ((SAVE_ENCODE_COUNT_BYTES * 8) - 1));
-			memset(out + outcount, 0, count);
+		if( count & ( 1 << ( ( SAVE_ENCODE_COUNT_BYTES * 8 ) - 1 ) ) ) {
+			count &= ~( 1 << ( ( SAVE_ENCODE_COUNT_BYTES * 8 ) - 1 ) );
+			memset( out + outcount, 0, count );
 			outcount += count;
-		}
-		else {
+		} else {
 			// copy the data from "in"
-			memcpy(out + outcount, in + incount, count);
+			memcpy( out + outcount, in + incount, count );
 			outcount += count;
 			incount += count;
 		}
@@ -576,50 +544,48 @@ void G_Save_Decode(byte* in, int insize, byte* out, int outsize) {
 
 //=========================================================
 
-byte clientBuf[2 * sizeof(gentity_t)];
+byte clientBuf[2 * sizeof( gentity_t )];
 
 /*
 ===============
 WriteClient
 ===============
 */
-void WriteClient(fileHandle_t f, gclient_t* cl) {
+void WriteClient( fileHandle_t f, gclient_t* cl )
+{
 	saveField_t* field;
-	gclient_t temp;
-	int length;
+	gclient_t	 temp;
+	int			 length;
 
 	// copy the structure across, then process the fields
 	temp = *cl;
 
 	// first, kill all events (assume they have been processed)
-	memset(temp.ps.events, 0, sizeof(temp.ps.events));
-	memset(temp.ps.eventParms, 0, sizeof(temp.ps.eventParms));
-	temp.ps.eventSequence = 0;
-	temp.ps.oldEventSequence = 0;
+	memset( temp.ps.events, 0, sizeof( temp.ps.events ) );
+	memset( temp.ps.eventParms, 0, sizeof( temp.ps.eventParms ) );
+	temp.ps.eventSequence		= 0;
+	temp.ps.oldEventSequence	= 0;
 	temp.ps.entityEventSequence = 0;
 
 	// change the pointers to lengths or indexes
-	for (field = gclientFields; field->type; field++)
-	{
-		WriteField1(field, (byte*)&temp);
+	for( field = gclientFields; field->type; field++ ) {
+		WriteField1( field, ( byte* )&temp );
 	}
 
 	// write the block
-	//if (!G_SaveWrite (&temp, sizeof(temp), f)) G_SaveWriteError();
-	length = G_Save_Encode((byte*)&temp, clientBuf, sizeof(temp), sizeof(clientBuf));
-	if (!G_SaveWrite(&length, sizeof(length), f)) {
+	// if (!G_SaveWrite (&temp, sizeof(temp), f)) G_SaveWriteError();
+	length = G_Save_Encode( ( byte* )&temp, clientBuf, sizeof( temp ), sizeof( clientBuf ) );
+	if( !G_SaveWrite( &length, sizeof( length ), f ) ) {
 		G_SaveWriteError();
 	}
-	if (!G_SaveWrite(&clientBuf, length, f)) {
+	if( !G_SaveWrite( &clientBuf, length, f ) ) {
 		G_SaveWriteError();
 	}
 
 	// now write any allocated data following the edict
-	for (field = gclientFields; field->type; field++)
-	{
-		WriteField2(f, field, (byte*)cl);
+	for( field = gclientFields; field->type; field++ ) {
+		WriteField2( f, field, ( byte* )cl );
 	}
-
 }
 
 /*
@@ -627,49 +593,48 @@ void WriteClient(fileHandle_t f, gclient_t* cl) {
 ReadClient
 ===============
 */
-void ReadClient(fileHandle_t f, gclient_t* client, int size) {
-	saveField_t* field;
+void ReadClient( fileHandle_t f, gclient_t* client, int size )
+{
+	saveField_t*   field;
 	ignoreField_t* ifield;
-	gclient_t temp;
-	gentity_t* ent;
-	int decodedSize;
+	gclient_t	   temp;
+	gentity_t*	   ent;
+	int			   decodedSize;
 
-	if (ver == 10) {
-		sys->FS_Read(&temp, size, f);
-	}
-	else {
+	if( ver == 10 ) {
+		sys->FS_Read( &temp, size, f );
+	} else {
 		// read the encoded chunk
-		sys->FS_Read(&decodedSize, sizeof(int), f);
-		if (decodedSize > sizeof(clientBuf)) {
-			G_Error("G_LoadGame: encoded chunk is greater than buffer");
+		sys->FS_Read( &decodedSize, sizeof( int ), f );
+		if( decodedSize > sizeof( clientBuf ) ) {
+			G_Error( "G_LoadGame: encoded chunk is greater than buffer" );
 		}
-		sys->FS_Read(clientBuf, decodedSize, f); \
-			// decode it
-			G_Save_Decode(clientBuf, decodedSize, (byte*)&temp, sizeof(temp));
+		sys->FS_Read( clientBuf, decodedSize, f );
+
+		// decode it
+		G_Save_Decode( clientBuf, decodedSize, ( byte* )&temp, sizeof( temp ) );
 	}
 
 	// convert any feilds back to the correct data
-	for (field = gclientFields; field->type; field++)
-	{
-		ReadField(f, field, (byte*)&temp);
+	for( field = gclientFields; field->type; field++ ) {
+		ReadField( f, field, ( byte* )&temp );
 	}
 
 	// backup any fields that we don't want to read in
-	for (ifield = gclientIgnoreFields; ifield->len; ifield++)
-	{
-		memcpy(((byte*)&temp) + ifield->ofs, ((byte*)client) + ifield->ofs, ifield->len);
+	for( ifield = gclientIgnoreFields; ifield->len; ifield++ ) {
+		memcpy( ( ( byte* )&temp ) + ifield->ofs, ( ( byte* )client ) + ifield->ofs, ifield->len );
 	}
 
 	// now copy the temp structure into the existing structure
-	memcpy(client, &temp, size);
+	memcpy( client, &temp, size );
 
 	// make sure they face the right way
-	//client->ps.pm_flags |= PMF_RESPAWNED;
+	// client->ps.pm_flags |= PMF_RESPAWNED;
 	// don't allow full run speed for a bit
-	//if (client->ps.clientNum == 0) {	// only set this for the player
+	// if (client->ps.clientNum == 0) {	// only set this for the player
 	client->ps.pm_flags |= PMF_TIME_LOAD;
 	client->ps.pm_time = 1000;
-	if (client->ps.aiChar) {
+	if( client->ps.aiChar ) {
 		client->ps.pm_time = 800;
 	}
 	//}
@@ -679,34 +644,34 @@ void ReadClient(fileHandle_t f, gclient_t* client, int size) {
 	// make sure they face the right way
 	// if it's the player, see if we need to put them at a mission marker
 
-// (SA) I think this should never be hit at all, but as a precaution I'm commenting it out anyway
-/*
-	if (!(ent->r.svFlags & SVF_CASTAI) && ent->missionObjectives > 0) {
-		gentity_t *trav;
+	// (SA) I think this should never be hit at all, but as a precaution I'm commenting it out anyway
+	/*
+		if (!(ent->r.svFlags & SVF_CASTAI) && ent->missionObjectives > 0) {
+			gentity_t *trav;
 
-		for (trav=NULL; trav = G_Find(trav, FOFS(classname), "info_player_checkpoint"); ) {
-			if (trav->missionObjectives == ent->missionObjectives && Distance(trav->s.origin, ent->r.currentOrigin) < 800) {
-				G_SetOrigin( ent, trav->s.origin );
-				VectorCopy( trav->s.origin, ent->client->ps.origin );
+			for (trav=NULL; trav = G_Find(trav, FOFS(classname), "info_player_checkpoint"); ) {
+				if (trav->missionObjectives == ent->missionObjectives && Distance(trav->s.origin, ent->r.currentOrigin) < 800) {
+					G_SetOrigin( ent, trav->s.origin );
+					VectorCopy( trav->s.origin, ent->client->ps.origin );
 
-				sys->GetUsercmd( ent->client - level.clients, &ent->client->pers.cmd );
-				SetClientViewAngle( ent, trav->s.angles );
-				break;
+					sys->GetUsercmd( ent->client - level.clients, &ent->client->pers.cmd );
+					SetClientViewAngle( ent, trav->s.angles );
+					break;
+				}
 			}
-		}
 
-		if (!trav) {
-			sys->GetUsercmd( ent->client - level.clients, &ent->client->pers.cmd );
-			SetClientViewAngle( ent, ent->client->ps.viewangles );
-		}
-	} else {
-*/
-	sys->GetUsercmd(ent->client - level.clients, &ent->client->pers.cmd);
-	SetClientViewAngle(ent, ent->client->ps.viewangles);
+			if (!trav) {
+				sys->GetUsercmd( ent->client - level.clients, &ent->client->pers.cmd );
+				SetClientViewAngle( ent, ent->client->ps.viewangles );
+			}
+		} else {
+	*/
+	sys->GetUsercmd( ent->client - level.clients, &ent->client->pers.cmd );
+	SetClientViewAngle( ent, ent->client->ps.viewangles );
 	//	}
 
-		// dead characters should stay on last frame after a loadgame
-	if (client->ps.eFlags & EF_DEAD) {
+	// dead characters should stay on last frame after a loadgame
+	if( client->ps.eFlags & EF_DEAD ) {
 		client->ps.eFlags |= EF_FORCE_END_FRAME;
 	}
 
@@ -714,71 +679,69 @@ void ReadClient(fileHandle_t f, gclient_t* client, int size) {
 	// before they are known in the cgame
 	// run a client frame to drop exactly to the floor,
 	// initialize animations and other things
-	//sys->GetUsercmd( ent-g_entities, &ent->client->pers.cmd );
-	//ent->client->ps.commandTime = ent->client->pers.cmd.serverTime - 100;
-	//ClientThink( ent-g_entities );
+	// sys->GetUsercmd( ent-g_entities, &ent->client->pers.cmd );
+	// ent->client->ps.commandTime = ent->client->pers.cmd.serverTime - 100;
+	// ClientThink( ent-g_entities );
 
 	// tell the client to reset it's cgame stuff
-	if (!(ent->r.svFlags & SVF_CASTAI)) {
+	if( !( ent->r.svFlags & SVF_CASTAI ) ) {
 		vmCvar_t cvar;
 		// tell it which weapon to use after spawning in
-		sys->Cvar_Register(&cvar, "cg_loadWeaponSelect", "0", CVAR_ROM);
-		sys->Cvar_Set("cg_loadWeaponSelect", va("%i", client->ps.weapon));
+		sys->Cvar_Register( &cvar, "cg_loadWeaponSelect", "0", CVAR_ROM );
+		sys->Cvar_Set( "cg_loadWeaponSelect", va( "%i", client->ps.weapon ) );
 		//
-		sys->SendServerCommand(client->ps.clientNum, "map_restart\n");
+		sys->SendServerCommand( client->ps.clientNum, "map_restart\n" );
 	}
 }
 
 //=========================================================
 
-byte entityBuf[2 * sizeof(gentity_t)];
+byte entityBuf[2 * sizeof( gentity_t )];
 
 /*
 ===============
 WriteEntity
 ===============
 */
-void WriteEntity(fileHandle_t f, gentity_t* ent) {
+void WriteEntity( fileHandle_t f, gentity_t* ent )
+{
 	saveField_t* field;
-	gentity_t temp;
-	int length;
+	gentity_t	 temp;
+	int			 length;
 
 	// copy the structure across, then process the fields
 	temp = *ent;
 
 	// first, kill all events (assume they have been processed)
-	memset(temp.s.events, 0, sizeof(temp.s.events));
-	memset(temp.s.eventParms, 0, sizeof(temp.s.eventParms));
+	memset( temp.s.events, 0, sizeof( temp.s.events ) );
+	memset( temp.s.eventParms, 0, sizeof( temp.s.eventParms ) );
 	temp.s.eventSequence = 0;
 
 	// change the pointers to lengths or indexes
-	for (field = gentityFields_17; field->type; field++)
-	{
-		WriteField1(field, (byte*)&temp);
+	for( field = gentityFields_17; field->type; field++ ) {
+		WriteField1( field, ( byte* )&temp );
 	}
 	// TTimo
 	// show_bug.cgi?id=434
-	WriteField1(gentityFields_18, (byte*)&temp);
+	WriteField1( gentityFields_18, ( byte* )&temp );
 
 	// write the block
-	//if (!G_SaveWrite (&temp, sizeof(temp), f)) G_SaveWriteError();
-	length = G_Save_Encode((byte*)&temp, entityBuf, sizeof(temp), sizeof(entityBuf));
-	if (!G_SaveWrite(&length, sizeof(length), f)) {
+	// if (!G_SaveWrite (&temp, sizeof(temp), f)) G_SaveWriteError();
+	length = G_Save_Encode( ( byte* )&temp, entityBuf, sizeof( temp ), sizeof( entityBuf ) );
+	if( !G_SaveWrite( &length, sizeof( length ), f ) ) {
 		G_SaveWriteError();
 	}
-	if (!G_SaveWrite(&entityBuf, length, f)) {
+	if( !G_SaveWrite( &entityBuf, length, f ) ) {
 		G_SaveWriteError();
 	}
 
 	// now write any allocated data following the edict
-	for (field = gentityFields_17; field->type; field++)
-	{
-		WriteField2(f, field, (byte*)ent);
+	for( field = gentityFields_17; field->type; field++ ) {
+		WriteField2( f, field, ( byte* )ent );
 	}
 	// TTimo
 	// show_bug.cgi?id=434
-	WriteField2(f, gentityFields_18, (byte*)ent);
-
+	WriteField2( f, gentityFields_18, ( byte* )ent );
 }
 
 /*
@@ -786,118 +749,113 @@ void WriteEntity(fileHandle_t f, gentity_t* ent) {
 ReadEntity
 ===============
 */
-void ReadEntity(fileHandle_t f, gentity_t* ent, int size) {
-	saveField_t* field;
+void ReadEntity( fileHandle_t f, gentity_t* ent, int size )
+{
+	saveField_t*   field;
 	ignoreField_t* ifield;
-	gentity_t temp = { {0} }, backup, backup2;
-	vmCvar_t cvar;
-	int decodedSize;
+	gentity_t	   temp = { { 0 } }, backup, backup2;
+	vmCvar_t	   cvar;
+	int			   decodedSize;
 
 	backup = *ent;
 
-	if (ver == 10) {
-		sys->FS_Read(&temp, size, f);
-	}
-	else {
+	if( ver == 10 ) {
+		sys->FS_Read( &temp, size, f );
+	} else {
 		// read the encoded chunk
-		sys->FS_Read(&decodedSize, sizeof(int), f);
-		if (decodedSize > sizeof(entityBuf)) {
-			G_Error("G_LoadGame: encoded chunk is greater than buffer");
+		sys->FS_Read( &decodedSize, sizeof( int ), f );
+		if( decodedSize > sizeof( entityBuf ) ) {
+			G_Error( "G_LoadGame: encoded chunk is greater than buffer" );
 		}
-		sys->FS_Read(entityBuf, decodedSize, f);
+		sys->FS_Read( entityBuf, decodedSize, f );
 		// decode it
-		G_Save_Decode(entityBuf, decodedSize, (byte*)&temp, sizeof(temp));
+		G_Save_Decode( entityBuf, decodedSize, ( byte* )&temp, sizeof( temp ) );
 	}
 
 	// convert any fields back to the correct data
-	for (field = gentityFields_17; field->type; field++)
-	{
-		ReadField(f, field, (byte*)&temp);
+	for( field = gentityFields_17; field->type; field++ ) {
+		ReadField( f, field, ( byte* )&temp );
 	}
 	// TTimo
 	// show_bug.cgi?id=434
-	if (ver >= 18) {
-		ReadField(f, gentityFields_18, (byte*)&temp);
+	if( ver >= 18 ) {
+		ReadField( f, gentityFields_18, ( byte* )&temp );
 	}
 
 	// backup any fields that we don't want to read in
-	for (ifield = gentityIgnoreFields; ifield->len; ifield++)
-	{
-		memcpy(((byte*)&temp) + ifield->ofs, ((byte*)ent) + ifield->ofs, ifield->len);
+	for( ifield = gentityIgnoreFields; ifield->len; ifield++ ) {
+		memcpy( ( ( byte* )&temp ) + ifield->ofs, ( ( byte* )ent ) + ifield->ofs, ifield->len );
 	}
 
 	// kill all events (assume they have been processed)
-	if (!temp.freeAfterEvent) {
+	if( !temp.freeAfterEvent ) {
 		temp.s.event = 0;
-		memset(temp.s.events, 0, sizeof(temp.s.events));
-		memset(temp.s.eventParms, 0, sizeof(temp.s.eventParms));
+		memset( temp.s.events, 0, sizeof( temp.s.events ) );
+		memset( temp.s.eventParms, 0, sizeof( temp.s.eventParms ) );
 		temp.s.eventSequence = 0;
-		temp.eventTime = 0;
+		temp.eventTime		 = 0;
 	}
 
 	// now copy the temp structure into the existing structure
-	memcpy(ent, &temp, size);
+	memcpy( ent, &temp, size );
 
 	// notify server of changes in position/orientation
-	if (ent->r.linked && (!(ent->r.svFlags & SVF_CASTAI) || !ent->aiInactive)) {
-		sys->LinkEntity(ent);
-	}
-	else {
-		sys->UnlinkEntity(ent);
+	if( ent->r.linked && ( !( ent->r.svFlags & SVF_CASTAI ) || !ent->aiInactive ) ) {
+		sys->LinkEntity( ent );
+	} else {
+		sys->UnlinkEntity( ent );
 	}
 
 	// if this is a mover, check areaportals
-	if (ent->s.eType == ET_MOVER && ent->moverState != backup.moverState) {
-		if (ent->teammaster == ent || !ent->teammaster) {
-			if (ent->moverState == MOVER_POS1ROTATE || ent->moverState == MOVER_POS1) {
+	if( ent->s.eType == ET_MOVER && ent->moverState != backup.moverState ) {
+		if( ent->teammaster == ent || !ent->teammaster ) {
+			if( ent->moverState == MOVER_POS1ROTATE || ent->moverState == MOVER_POS1 ) {
 				// closed areaportal
-				sys->AdjustAreaPortalState(ent, qfalse);
-			}
-			else {    // must be open
+				sys->AdjustAreaPortalState( ent, qfalse );
+			} else { // must be open
 				// portals are always opened before the mover starts to open, so we must move
 				// it back to the start position, link, set portals, then move it back
 				backup2 = *ent;
-				*ent = backup;
+				*ent	= backup;
 				// link it at original position
-				sys->LinkEntity(ent);
+				sys->LinkEntity( ent );
 				// set portals
-				sys->AdjustAreaPortalState(ent, qtrue);
+				sys->AdjustAreaPortalState( ent, qtrue );
 				// put it back
 				*ent = backup2;
-				sys->LinkEntity(ent);
+				sys->LinkEntity( ent );
 			}
 		}
 	}
 
 	// check for blocking AAS at save time
-	if (ent->AASblocking) {
-		G_SetAASBlockingEntity(ent, qtrue);
+	if( ent->AASblocking ) {
+		G_SetAASBlockingEntity( ent, qtrue );
 	}
 
 	// check for this being a tagconnect entity
-	if (ent->tagName && ent->tagParent) {   // the parent might not be there yet
-		G_ProcessTagConnect(ent, qfalse);
+	if( ent->tagName && ent->tagParent ) { // the parent might not be there yet
+		G_ProcessTagConnect( ent, qfalse );
 	}
 
 	// if this is a camera, then make it the current global camera (silly global variables..)
-	if (ent->s.eType == ET_CAMERA) {
+	if( ent->s.eType == ET_CAMERA ) {
 		g_camEnt = ent;
 	}
 
 	// if this is the player
-	if (ent->s.number == 0) {
+	if( ent->s.number == 0 ) {
 		int i;
 
-		sys->Cvar_Set("cg_yougotMail", "0");
+		sys->Cvar_Set( "cg_yougotMail", "0" );
 
 		// set up met objectives
-		for (i = 0; i < sizeof(ent->missionObjectives) * 8; i++) {
-			if (ent->missionObjectives & (1 << i)) {
-				sys->Cvar_Register(&cvar, va("g_objective%i", i + 1), "1", CVAR_ROM); //set g_objective<n> cvar
-				sys->Cvar_Set(va("g_objective%i", i + 1), "1");                           // set it to make sure
-			}
-			else {
-				sys->Cvar_Set(va("g_objective%i", i + 1), "0");                           // make sure it's clear
+		for( i = 0; i < sizeof( ent->missionObjectives ) * 8; i++ ) {
+			if( ent->missionObjectives & ( 1 << i ) ) {
+				sys->Cvar_Register( &cvar, va( "g_objective%i", i + 1 ), "1", CVAR_ROM ); // set g_objective<n> cvar
+				sys->Cvar_Set( va( "g_objective%i", i + 1 ), "1" );						  // set it to make sure
+			} else {
+				sys->Cvar_Set( va( "g_objective%i", i + 1 ), "0" ); // make sure it's clear
 			}
 		}
 
@@ -907,48 +865,45 @@ void ReadEntity(fileHandle_t f, gentity_t* ent, int size) {
 				sys->Cvar_Set( "g_episode", va( "%d", ent->missionLevel ) );
 		*/
 	}
-
 }
 
 //=========================================================
 
-byte castStateBuf[2 * sizeof(cast_state_t)];
+byte castStateBuf[2 * sizeof( cast_state_t )];
 
 /*
 ===============
 WriteCastState
 ===============
 */
-void WriteCastState(fileHandle_t f, cast_state_t* cs) {
+void WriteCastState( fileHandle_t f, cast_state_t* cs )
+{
 	saveField_t* field;
 	cast_state_t temp;
-	int length;
+	int			 length;
 
 	// copy the structure across, then process the fields
 	temp = *cs;
 
 	// change the pointers to lengths or indexes
-	for (field = castStateFields; field->type; field++)
-	{
-		WriteField1(field, (byte*)&temp);
+	for( field = castStateFields; field->type; field++ ) {
+		WriteField1( field, ( byte* )&temp );
 	}
 
 	// write the block
-	//if (!G_SaveWrite (&temp, sizeof(temp), f)) G_SaveWriteError();
-	length = G_Save_Encode((byte*)&temp, castStateBuf, sizeof(temp), sizeof(castStateBuf));
-	if (!G_SaveWrite(&length, sizeof(length), f)) {
+	// if (!G_SaveWrite (&temp, sizeof(temp), f)) G_SaveWriteError();
+	length = G_Save_Encode( ( byte* )&temp, castStateBuf, sizeof( temp ), sizeof( castStateBuf ) );
+	if( !G_SaveWrite( &length, sizeof( length ), f ) ) {
 		G_SaveWriteError();
 	}
-	if (!G_SaveWrite(&castStateBuf, length, f)) {
+	if( !G_SaveWrite( &castStateBuf, length, f ) ) {
 		G_SaveWriteError();
 	}
 
 	// now write any allocated data following the edict
-	for (field = castStateFields; field->type; field++)
-	{
-		WriteField2(f, field, (byte*)cs);
+	for( field = castStateFields; field->type; field++ ) {
+		WriteField2( f, field, ( byte* )cs );
 	}
-
 }
 
 /*
@@ -956,77 +911,75 @@ void WriteCastState(fileHandle_t f, cast_state_t* cs) {
 ReadCastState
 ===============
 */
-void ReadCastState(fileHandle_t f, cast_state_t* cs, int size) {
-	saveField_t* field;
+void ReadCastState( fileHandle_t f, cast_state_t* cs, int size )
+{
+	saveField_t*   field;
 	ignoreField_t* ifield;
-	cast_state_t temp;
-	int decodedSize;
+	cast_state_t   temp;
+	int			   decodedSize;
 
-	if (ver == 10) {
-		sys->FS_Read(&temp, size, f);
-	}
-	else {
+	if( ver == 10 ) {
+		sys->FS_Read( &temp, size, f );
+	} else {
 		// read the encoded chunk
-		sys->FS_Read(&decodedSize, sizeof(int), f);
-		if (decodedSize > sizeof(castStateBuf)) {
-			G_Error("G_LoadGame: encoded chunk is greater than buffer");
+		sys->FS_Read( &decodedSize, sizeof( int ), f );
+		if( decodedSize > sizeof( castStateBuf ) ) {
+			G_Error( "G_LoadGame: encoded chunk is greater than buffer" );
 		}
-		sys->FS_Read(castStateBuf, decodedSize, f); \
-			// decode it
-			G_Save_Decode(castStateBuf, decodedSize, (byte*)&temp, sizeof(temp));
+		sys->FS_Read( castStateBuf, decodedSize, f );
+
+		// decode it
+		G_Save_Decode( castStateBuf, decodedSize, ( byte* )&temp, sizeof( temp ) );
 	}
 
 	// convert any feilds back to the correct data
-	for (field = castStateFields; field->type; field++)
-	{
-		ReadField(f, field, (byte*)&temp);
+	for( field = castStateFields; field->type; field++ ) {
+		ReadField( f, field, ( byte* )&temp );
 	}
 
 	// backup any fields that we don't want to read in
-	for (ifield = castStateIgnoreFields; ifield->len; ifield++)
-	{
-		memcpy(((byte*)&temp) + ifield->ofs, ((byte*)cs) + ifield->ofs, ifield->len);
+	for( ifield = castStateIgnoreFields; ifield->len; ifield++ ) {
+		memcpy( ( ( byte* )&temp ) + ifield->ofs, ( ( byte* )cs ) + ifield->ofs, ifield->len );
 	}
 
 	// now copy the temp structure into the existing structure
-	memcpy(cs, &temp, size);
+	memcpy( cs, &temp, size );
 
 	// if this is an AI, init the cur_ps
-	if (cs->bs && !cs->deathTime) {
+	if( cs->bs && !cs->deathTime ) {
 		// clear out the delta_angles
-		memset(g_entities[cs->entityNum].client->ps.delta_angles, 0, sizeof(g_entities[cs->entityNum].client->ps.delta_angles));
-		VectorCopy(cs->ideal_viewangles, cs->viewangles);
-		VectorCopy(cs->ideal_viewangles, g_entities[cs->entityNum].client->ps.viewangles);
+		memset( g_entities[cs->entityNum].client->ps.delta_angles, 0, sizeof( g_entities[cs->entityNum].client->ps.delta_angles ) );
+		VectorCopy( cs->ideal_viewangles, cs->viewangles );
+		VectorCopy( cs->ideal_viewangles, g_entities[cs->entityNum].client->ps.viewangles );
 		// copy the ps
-		memcpy(&cs->bs->cur_ps, &g_entities[cs->entityNum].client->ps, sizeof(playerState_t));
+		memcpy( &cs->bs->cur_ps, &g_entities[cs->entityNum].client->ps, sizeof( playerState_t ) );
 		// make sure they think right away
 		cs->lastThink = -9999;
 		// reset the input
-		sys->EA_ResetInput(cs->entityNum, NULL);
+		sys->EA_ResetInput( cs->entityNum, NULL );
 	}
-
 }
-
 
 /*
 ==============
 WriteTime
 ==============
 */
-void WriteTime(fileHandle_t f) {
+void WriteTime( fileHandle_t f )
+{
 	qtime_t tm;
 
 	// just save it all so it can be interpreted as desired
-	sys->RealTime(&tm);
-	G_SaveWrite(&tm.tm_sec, sizeof(tm.tm_sec), f);     /* seconds after the minute - [0,59] */
-	G_SaveWrite(&tm.tm_min, sizeof(tm.tm_min), f);     /* minutes after the hour - [0,59] */
-	G_SaveWrite(&tm.tm_hour, sizeof(tm.tm_hour), f);     /* hours since midnight - [0,23] */
-	G_SaveWrite(&tm.tm_mday, sizeof(tm.tm_mday), f);     /* day of the month - [1,31] */
-	G_SaveWrite(&tm.tm_mon, sizeof(tm.tm_mon), f);     /* months since January - [0,11] */
-	G_SaveWrite(&tm.tm_year, sizeof(tm.tm_year), f);     /* years since 1900 */
-	G_SaveWrite(&tm.tm_wday, sizeof(tm.tm_wday), f);     /* days since Sunday - [0,6] */
-	G_SaveWrite(&tm.tm_yday, sizeof(tm.tm_yday), f);     /* days since January 1 - [0,365] */
-	G_SaveWrite(&tm.tm_isdst, sizeof(tm.tm_isdst), f);     /* daylight savings time flag */
+	sys->RealTime( &tm );
+	G_SaveWrite( &tm.tm_sec, sizeof( tm.tm_sec ), f );	   /* seconds after the minute - [0,59] */
+	G_SaveWrite( &tm.tm_min, sizeof( tm.tm_min ), f );	   /* minutes after the hour - [0,59] */
+	G_SaveWrite( &tm.tm_hour, sizeof( tm.tm_hour ), f );   /* hours since midnight - [0,23] */
+	G_SaveWrite( &tm.tm_mday, sizeof( tm.tm_mday ), f );   /* day of the month - [1,31] */
+	G_SaveWrite( &tm.tm_mon, sizeof( tm.tm_mon ), f );	   /* months since January - [0,11] */
+	G_SaveWrite( &tm.tm_year, sizeof( tm.tm_year ), f );   /* years since 1900 */
+	G_SaveWrite( &tm.tm_wday, sizeof( tm.tm_wday ), f );   /* days since Sunday - [0,6] */
+	G_SaveWrite( &tm.tm_yday, sizeof( tm.tm_yday ), f );   /* days since January 1 - [0,365] */
+	G_SaveWrite( &tm.tm_isdst, sizeof( tm.tm_isdst ), f ); /* daylight savings time flag */
 }
 
 /*
@@ -1034,16 +987,17 @@ void WriteTime(fileHandle_t f) {
 ReadTime
 ==============
 */
-void ReadTime(fileHandle_t f, qtime_t* tm) {
-	sys->FS_Read(&tm->tm_sec, sizeof(tm->tm_sec), f);
-	sys->FS_Read(&tm->tm_min, sizeof(tm->tm_min), f);
-	sys->FS_Read(&tm->tm_hour, sizeof(tm->tm_hour), f);
-	sys->FS_Read(&tm->tm_mday, sizeof(tm->tm_mday), f);
-	sys->FS_Read(&tm->tm_mon, sizeof(tm->tm_mon), f);
-	sys->FS_Read(&tm->tm_year, sizeof(tm->tm_year), f);
-	sys->FS_Read(&tm->tm_wday, sizeof(tm->tm_wday), f);
-	sys->FS_Read(&tm->tm_yday, sizeof(tm->tm_yday), f);
-	sys->FS_Read(&tm->tm_isdst, sizeof(tm->tm_isdst), f);
+void ReadTime( fileHandle_t f, qtime_t* tm )
+{
+	sys->FS_Read( &tm->tm_sec, sizeof( tm->tm_sec ), f );
+	sys->FS_Read( &tm->tm_min, sizeof( tm->tm_min ), f );
+	sys->FS_Read( &tm->tm_hour, sizeof( tm->tm_hour ), f );
+	sys->FS_Read( &tm->tm_mday, sizeof( tm->tm_mday ), f );
+	sys->FS_Read( &tm->tm_mon, sizeof( tm->tm_mon ), f );
+	sys->FS_Read( &tm->tm_year, sizeof( tm->tm_year ), f );
+	sys->FS_Read( &tm->tm_wday, sizeof( tm->tm_wday ), f );
+	sys->FS_Read( &tm->tm_yday, sizeof( tm->tm_yday ), f );
+	sys->FS_Read( &tm->tm_isdst, sizeof( tm->tm_isdst ), f );
 }
 
 /*
@@ -1051,49 +1005,44 @@ void ReadTime(fileHandle_t f, qtime_t* tm) {
 G_Save_TimeStr
 ==============
 */
-char* G_Save_TimeStr(void) {
+char* G_Save_TimeStr()
+{
 	qtime_t tm;
 	//
-	sys->RealTime(&tm);
+	sys->RealTime( &tm );
 	//
-	return va("%2i:%s%i:%s%i %s",
-		(1 + (tm.tm_hour + 11) % 12), // 12 hour format
-		(tm.tm_min > 9 ? "" : "0"),    // minute padding
+	return va( "%2i:%s%i:%s%i %s",
+		( 1 + ( tm.tm_hour + 11 ) % 12 ), // 12 hour format
+		( tm.tm_min > 9 ? "" : "0" ),	  // minute padding
 		tm.tm_min,
-		(tm.tm_sec > 9 ? "" : "0"),    // second padding
+		( tm.tm_sec > 9 ? "" : "0" ), // second padding
 		tm.tm_sec,
-		(tm.tm_hour < 12 ? "am" : "pm"));
+		( tm.tm_hour < 12 ? "am" : "pm" ) );
 }
 
-static char* monthStr[12] =
-{
-	"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
-};
+static char* monthStr[12] = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
 
 /*
 ==============
 G_Save_DateStr
 ==============
 */
-char* G_Save_DateStr(void) {
+char*		 G_Save_DateStr()
+{
 	qtime_t tm;
 	//
-	sys->RealTime(&tm);
+	sys->RealTime( &tm );
 	//
-	return va("%s %i, %i",
-		monthStr[tm.tm_mon],
-		tm.tm_mday,
-		1900 + tm.tm_year);
+	return va( "%s %i, %i", monthStr[tm.tm_mon], tm.tm_mday, 1900 + tm.tm_year );
 }
 
 //=========================================================
 
 static char infoString[SAVE_INFOSTRING_LENGTH];
 
-
-#define SA_MOVEDSTUFF   15  // moved time/music/skill in ver 15
-#define SA_ADDEDMUSIC   8   //
-#define SA_ADDEDFOG     16  //
+#define SA_MOVEDSTUFF 15 // moved time/music/skill in ver 15
+#define SA_ADDEDMUSIC 8	 //
+#define SA_ADDEDFOG	  16 //
 
 /*
 ===============
@@ -1107,43 +1056,44 @@ G_SaveGame
   so full disks don't result in lost saved games.
 ===============
 */
-qboolean G_SaveGame(char* username) {
-	char filename[MAX_QPATH];
-	char mapstr[MAX_QPATH];
-	char leveltime[MAX_QPATH];
-	char healthstr[MAX_QPATH];
-	vmCvar_t mapname, episode;
-	fileHandle_t f;
-	int i, len;
-	gentity_t* ent;
-	gclient_t* cl;
+qboolean G_SaveGame( char* username )
+{
+	char		  filename[MAX_QPATH];
+	char		  mapstr[MAX_QPATH];
+	char		  leveltime[MAX_QPATH];
+	char		  healthstr[MAX_QPATH];
+	vmCvar_t	  mapname, episode;
+	fileHandle_t  f;
+	int			  i, len;
+	gentity_t*	  ent;
+	gclient_t*	  cl;
 	cast_state_t* cs;
-	int playtime, minutes;
+	int			  playtime, minutes;
 
-	//if (reloading)
+	// if (reloading)
 	//	return qtrue;	// actually this should be qtrue, but we should make it silent during reloading
 
-	if (g_entities[0].health <= 0) { // no save when dead
+	if( g_entities[0].health <= 0 ) { // no save when dead
 		return qtrue;
 	}
 
-	if (g_gametype.integer != GT_SINGLE_PLAYER) {    // don't allow saves in MP
+	if( g_gametype.integer != GT_SINGLE_PLAYER ) { // don't allow saves in MP
 		return qtrue;
 	}
 
-	G_DPrintf("G_SaveGame '%s'\n", username);
+	G_DPrintf( "G_SaveGame '%s'\n", username );
 
 	// update the playtime
-	AICast_AgePlayTime(0);
+	AICast_AgePlayTime( 0 );
 
-	if (!username) {
+	if( !username ) {
 		username = "current";
 	}
 
 	// validate the filename
-	for (i = 0; i < strlen(username); i++) {
-		if (!Q_isforfilename(username[i]) && username[i] != '\\') { // (allow '\\' so games can be saved in subdirs)
-			G_Printf("G_SaveGame: '%s'.  Invalid character (%c) in filename. Must use alphanumeric characters only.\n", username, username[i]);
+	for( i = 0; i < strlen( username ); i++ ) {
+		if( !Q_isforfilename( username[i] ) && username[i] != '\\' ) { // (allow '\\' so games can be saved in subdirs)
+			G_Printf( "G_SaveGame: '%s'.  Invalid character (%c) in filename. Must use alphanumeric characters only.\n", username, username[i] );
 			return qtrue;
 		}
 	}
@@ -1151,9 +1101,9 @@ qboolean G_SaveGame(char* username) {
 	saveByteCount = 0;
 
 	// open the file
-	Com_sprintf(filename, MAX_QPATH, "save\\temp.svg");
-	if (sys->FS_FOpenFile(filename, &f, FS_WRITE) < 0) {
-		G_Error("G_SaveGame: cannot open file for saving\n");
+	Com_sprintf( filename, MAX_QPATH, "save\\temp.svg" );
+	if( sys->FS_FOpenFile( filename, &f, FS_WRITE ) < 0 ) {
+		G_Error( "G_SaveGame: cannot open file for saving\n" );
 	}
 
 	// write the version
@@ -1162,226 +1112,216 @@ qboolean G_SaveGame(char* username) {
 	// show_bug.cgi?id=434
 	// make sure we keep the global version number consistent with what we are doing
 	ver = SAVE_VERSION;
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
 
 	// write the mapname
-	sys->Cvar_Register(&mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM);
-	Com_sprintf(mapstr, MAX_QPATH, "%s", mapname.string);
-	if (!G_SaveWrite(mapstr, MAX_QPATH, f)) {
+	sys->Cvar_Register( &mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM );
+	Com_sprintf( mapstr, MAX_QPATH, "%s", mapname.string );
+	if( !G_SaveWrite( mapstr, MAX_QPATH, f ) ) {
 		G_SaveWriteError();
 	}
 
 	// write out the level time
-	if (!G_SaveWrite(&level.time, sizeof(level.time), f)) {
+	if( !G_SaveWrite( &level.time, sizeof( level.time ), f ) ) {
 		G_SaveWriteError();
 	}
 
 	// write the totalPlayTime
 	i = caststates[0].totalPlayTime;
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
 
 	//----(SA)	had to add 'episode' tracking.
-		// this is only set in the map scripts, and was previously only handled in the menu's
+	// this is only set in the map scripts, and was previously only handled in the menu's
 
-		// write the 'episode'
-	if (SAVE_VERSION >= 13) {
-		sys->Cvar_Register(&episode, "g_episode", "0", CVAR_ROM);
+	// write the 'episode'
+	if( SAVE_VERSION >= 13 ) {
+		sys->Cvar_Register( &episode, "g_episode", "0", CVAR_ROM );
 
 		i = episode.integer;
-		if (!G_SaveWrite(&i, sizeof(i), f)) {
+		if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 			G_SaveWriteError();
 		}
-
 	}
 	//----(SA)	end
 
-
-
 	playtime = caststates[0].totalPlayTime;
-	if (playtime < 3600000) {
-		minutes = (playtime / 1000) / 60;
-	}
-	else {
-		minutes = ((playtime % 3600000) / 1000) / 60; // handle hours in a map
-
+	if( playtime < 3600000 ) {
+		minutes = ( playtime / 1000 ) / 60;
+	} else {
+		minutes = ( ( playtime % 3600000 ) / 1000 ) / 60; // handle hours in a map
 	}
 	// create and write the info string
 	// (SA) I made another cvar so there's no confusion
-	Q_strncpyz(mapstr, mapname.string, sizeof(mapstr));
-	for (i = 0; i < strlen(mapstr); i++) mapstr[i] = toupper(mapstr[i]);
-	memset(infoString, 0, sizeof(infoString));
+	Q_strncpyz( mapstr, mapname.string, sizeof( mapstr ) );
+	for( i = 0; i < strlen( mapstr ); i++ ) {
+		mapstr[i] = toupper( mapstr[i] );
+	}
+	memset( infoString, 0, sizeof( infoString ) );
 
-	sys->Cvar_VariableStringBuffer("svg_timestring", leveltime, sizeof(leveltime));
-	if (!strlen(leveltime)) {
-		Com_sprintf(leveltime, sizeof(leveltime), "Leveltime");
+	sys->Cvar_VariableStringBuffer( "svg_timestring", leveltime, sizeof( leveltime ) );
+	if( !strlen( leveltime ) ) {
+		Com_sprintf( leveltime, sizeof( leveltime ), "Leveltime" );
 	}
 
-	sys->Cvar_VariableStringBuffer("svg_healthstring", healthstr, sizeof(healthstr));
-	if (!strlen(healthstr)) {
-		Com_sprintf(healthstr, sizeof(healthstr), "Health");
+	sys->Cvar_VariableStringBuffer( "svg_healthstring", healthstr, sizeof( healthstr ) );
+	if( !strlen( healthstr ) ) {
+		Com_sprintf( healthstr, sizeof( healthstr ), "Health" );
 	}
-
 
 	//	Com_sprintf( infoString, sizeof(infoString), "Mission: %s\nDate: %s\nTime: %s\nGametime: %s\nHealth: %i",
-	Com_sprintf(infoString, sizeof(infoString), "%s\n%s: %s\n%s: %i",
+	Com_sprintf( infoString,
+		sizeof( infoString ),
+		"%s\n%s: %s\n%s: %i",
 		mapstr,
 		leveltime,
 		//		G_Save_DateStr(),
 		//		G_Save_TimeStr(),
-		va("%2ih%s%im%s%is",
-			(((playtime / 1000) / 60) / 60), // hour
-			(minutes > 9 ? "" : "0"), // minute padding
+		va( "%2ih%s%im%s%is",
+			( ( ( playtime / 1000 ) / 60 ) / 60 ), // hour
+			( minutes > 9 ? "" : "0" ),			   // minute padding
 			minutes,
-			((playtime / 1000) % 60 > 9 ? "" : "0"), // second padding
-			((playtime / 1000) % 60)),
+			( ( playtime / 1000 ) % 60 > 9 ? "" : "0" ), // second padding
+			( ( playtime / 1000 ) % 60 ) ),
 		healthstr,
-		g_entities[0].health);
+		g_entities[0].health );
 	// write it out
 	// length
-	i = strlen(infoString);
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	i = strlen( infoString );
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
 	// string
-	if (!G_SaveWrite(infoString, strlen(infoString), f)) {
+	if( !G_SaveWrite( infoString, strlen( infoString ), f ) ) {
 		G_SaveWriteError();
 	}
 
-
 	// write out current time/date info
-	WriteTime(f);
+	WriteTime( f );
 
 	//----(SA)	added
 
 	//----(SA)	end
 
-		// write music
-	sys->Cvar_Register(&musicCvar, "s_currentMusic", "", CVAR_ROM);
-	if (!G_SaveWrite(musicCvar.string, MAX_QPATH, f)) {
+	// write music
+	sys->Cvar_Register( &musicCvar, "s_currentMusic", "", CVAR_ROM );
+	if( !G_SaveWrite( musicCvar.string, MAX_QPATH, f ) ) {
 		G_SaveWriteError();
 	}
 
 	//----(SA)	write fog
 	//	sys->Cvar_VariableStringBuffer( "sg_fog", infoString, sizeof(infoString) );
-	sys->GetConfigstring(CS_FOGVARS, infoString, sizeof(infoString));
+	sys->GetConfigstring( CS_FOGVARS, infoString, sizeof( infoString ) );
 
-	i = strlen(infoString);
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	i = strlen( infoString );
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
 	// if there's fog info to save
-	if (!i) {
-		Q_strncpyz(&infoString[0], "none", sizeof(infoString));
+	if( !i ) {
+		Q_strncpyz( &infoString[0], "none", sizeof( infoString ) );
 	}
 
-	if (!G_SaveWrite(infoString, strlen(infoString), f)) {
+	if( !G_SaveWrite( infoString, strlen( infoString ), f ) ) {
 		G_SaveWriteError();
 	}
 	//----(SA)	end
 
-		// save the skill level
-	if (!G_SaveWrite(&g_gameskill.integer, sizeof(g_gameskill.integer), f)) {
+	// save the skill level
+	if( !G_SaveWrite( &g_gameskill.integer, sizeof( g_gameskill.integer ), f ) ) {
 		G_SaveWriteError();
 	}
 
 	// write out the entity structures
-	i = sizeof(gentity_t);
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	i = sizeof( gentity_t );
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
-	for (i = 0; i < level.num_entities; i++)
-	{
+	for( i = 0; i < level.num_entities; i++ ) {
 		ent = &g_entities[i];
-		if (!ent->inuse || ent->s.number == ENTITYNUM_WORLD) {
+		if( !ent->inuse || ent->s.number == ENTITYNUM_WORLD ) {
 			continue;
 		}
-		if (!G_SaveWrite(&i, sizeof(i), f)) {
+		if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 			G_SaveWriteError();
 		}
-		WriteEntity(f, ent);
+		WriteEntity( f, ent );
 	}
 	i = -1;
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
 
 	// write out the client structures
-	i = sizeof(gclient_t);
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	i = sizeof( gclient_t );
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
-	for (i = 0; i < MAX_CLIENTS; i++)
-	{
+	for( i = 0; i < MAX_CLIENTS; i++ ) {
 		cl = &level.clients[i];
-		if (cl->pers.connected != CON_CONNECTED) {
+		if( cl->pers.connected != CON_CONNECTED ) {
 			continue;
 		}
-		if (!G_SaveWrite(&i, sizeof(i), f)) {
+		if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 			G_SaveWriteError();
 		}
-		WriteClient(f, cl);
+		WriteClient( f, cl );
 	}
 	i = -1;
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
 
 	// write out the cast_state structures
-	i = sizeof(cast_state_t);
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	i = sizeof( cast_state_t );
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
-	for (i = 0; i < level.numConnectedClients; i++)
-	{
+	for( i = 0; i < level.numConnectedClients; i++ ) {
 		cs = &caststates[i];
-		if (!g_entities[i].inuse) {
+		if( !g_entities[i].inuse ) {
 			continue;
 		}
-		if (!G_SaveWrite(&i, sizeof(i), f)) {
+		if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 			G_SaveWriteError();
 		}
-		WriteCastState(f, cs);
+		WriteCastState( f, cs );
 	}
 
 	i = -1;
-	if (!G_SaveWrite(&i, sizeof(i), f)) {
+	if( !G_SaveWrite( &i, sizeof( i ), f ) ) {
 		G_SaveWriteError();
 	}
 
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	// check the byte count
-	if ((len = sys->FS_FOpenFile(filename, &f, FS_READ)) != saveByteCount) {
-		sys->FS_FCloseFile(f);
+	if( ( len = sys->FS_FOpenFile( filename, &f, FS_READ ) ) != saveByteCount ) {
+		sys->FS_FCloseFile( f );
 		G_SaveWriteError();
 		return qfalse;
 	}
 
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	// now rename the file to the actual file
-	Com_sprintf(mapstr, MAX_QPATH, "save\\%s.svg", username);
-	sys->FS_Rename(filename, mapstr);
+	Com_sprintf( mapstr, MAX_QPATH, "save\\%s.svg", username );
+	sys->FS_Rename( filename, mapstr );
 
 	// double check that it saved ok
-	if ((len = sys->FS_FOpenFile(mapstr, &f, FS_READ)) != saveByteCount) {
-		sys->FS_FCloseFile(f);
+	if( ( len = sys->FS_FOpenFile( mapstr, &f, FS_READ ) ) != saveByteCount ) {
+		sys->FS_FCloseFile( f );
 		G_SaveWriteError();
 		return qfalse;
 	}
 
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	return qtrue;
 }
-
-
-
-
 
 /*
 ===============
@@ -1390,182 +1330,178 @@ G_LoadGame
   Always loads in "current.svg". So if loading a specific savegame, first copy it to that.
 ===============
 */
-void G_LoadGame(char* filename) {
-	char mapname[MAX_QPATH];
-	char mapstr[MAX_QPATH];
-	fileHandle_t f;
-	int i, leveltime, size, last;
-	gentity_t* ent;
-	gclient_t* cl;
+void G_LoadGame( char* filename )
+{
+	char		  mapname[MAX_QPATH];
+	char		  mapstr[MAX_QPATH];
+	fileHandle_t  f;
+	int			  i, leveltime, size, last;
+	gentity_t*	  ent;
+	gclient_t*	  cl;
 	cast_state_t* cs;
-	qtime_t tm;
-	qboolean serverEntityUpdate = qfalse;
-	vmCvar_t episode;
+	qtime_t		  tm;
+	qboolean	  serverEntityUpdate = qfalse;
+	vmCvar_t	  episode;
 
-	if (g_gametype.integer != GT_SINGLE_PLAYER) {    // don't allow loads in MP
+	if( g_gametype.integer != GT_SINGLE_PLAYER ) { // don't allow loads in MP
 		return;
 	}
 
-	if (saveGamePending) {
+	if( saveGamePending ) {
 		return;
 	}
 
-	G_DPrintf("G_LoadGame '%s'\n", filename);
+	G_DPrintf( "G_LoadGame '%s'\n", filename );
 
 	// enforce the "current" savegame, since that is used for all loads
 	filename = "save\\current.svg";
 
 	// open the file
-	if (sys->FS_FOpenFile(filename, &f, FS_READ) < 0) {
-		G_Error("G_LoadGame: savegame '%s' not found\n", filename);
+	if( sys->FS_FOpenFile( filename, &f, FS_READ ) < 0 ) {
+		G_Error( "G_LoadGame: savegame '%s' not found\n", filename );
 	}
 
 	// read the version
-	sys->FS_Read(&i, sizeof(i), f);
+	sys->FS_Read( &i, sizeof( i ), f );
 	// TTimo
 	// show_bug.cgi?id=434
 	// 17 is the only version actually out in the wild
-	if (i != SAVE_VERSION && i != 17 && i != 13 && i != 14 && i != 15) {    // 13 is beta7, 14 is pre "SA_MOVEDSTUFF"
-		sys->FS_FCloseFile(f);
-		G_Error("G_LoadGame: savegame '%s' is wrong version (%i, should be %i)\n", filename, i, SAVE_VERSION);
+	if( i != SAVE_VERSION && i != 17 && i != 13 && i != 14 && i != 15 ) { // 13 is beta7, 14 is pre "SA_MOVEDSTUFF"
+		sys->FS_FCloseFile( f );
+		G_Error( "G_LoadGame: savegame '%s' is wrong version (%i, should be %i)\n", filename, i, SAVE_VERSION );
 	}
 	ver = i;
 
-	if (ver == 17) {
+	if( ver == 17 ) {
 		// 17 saved games can be buggy (bug #434), let's just warn about it
-		G_Printf("WARNING: backward compatibility, loading a version 17 saved game.\n"
-			"some version 17 saved games may cause crashes during play.\n");
+		G_Printf( "WARNING: backward compatibility, loading a version 17 saved game.\n"
+				  "some version 17 saved games may cause crashes during play.\n" );
 	}
 
 	// read the mapname (this is only used in the sever exe, so just discard it)
-	sys->FS_Read(mapname, MAX_QPATH, f);
-	Com_sprintf(mapstr, MAX_QPATH, "%s", mapname);
+	sys->FS_Read( mapname, MAX_QPATH, f );
+	Com_sprintf( mapstr, MAX_QPATH, "%s", mapname );
 
 	// read the level time
-	sys->FS_Read(&i, sizeof(i), f);
+	sys->FS_Read( &i, sizeof( i ), f );
 	leveltime = i;
 
 	// read the totalPlayTime
-	sys->FS_Read(&i, sizeof(i), f);
-	if (i > g_totalPlayTime.integer) {
-		sys->Cvar_Set("g_totalPlayTime", va("%i", i));
+	sys->FS_Read( &i, sizeof( i ), f );
+	if( i > g_totalPlayTime.integer ) {
+		sys->Cvar_Set( "g_totalPlayTime", va( "%i", i ) );
 	}
 
 	//----(SA)	had to add 'episode' tracking.
-		// this is only set in the map scripts, and was previously only handled in the menu's
-		// read the 'episode'
-	if (ver >= 13) {
-		sys->FS_Read(&i, sizeof(i), f);
-		sys->Cvar_Register(&episode, "g_episode", "0", CVAR_ROM);
-		sys->Cvar_Set("g_episode", va("%i", i));
+	// this is only set in the map scripts, and was previously only handled in the menu's
+	// read the 'episode'
+	if( ver >= 13 ) {
+		sys->FS_Read( &i, sizeof( i ), f );
+		sys->Cvar_Register( &episode, "g_episode", "0", CVAR_ROM );
+		sys->Cvar_Set( "g_episode", va( "%i", i ) );
 	}
 	//----(SA)	end
 
-		// NOTE: do not change the above order without also changing the server code
+	// NOTE: do not change the above order without also changing the server code
 
-		// read the info string length
-	sys->FS_Read(&i, sizeof(i), f);
+	// read the info string length
+	sys->FS_Read( &i, sizeof( i ), f );
 
 	// read the info string
-	sys->FS_Read(infoString, i, f);
+	sys->FS_Read( infoString, i, f );
 
-	if (ver >= SA_MOVEDSTUFF) {
-		if (ver > SA_ADDEDMUSIC) {
+	if( ver >= SA_MOVEDSTUFF ) {
+		if( ver > SA_ADDEDMUSIC ) {
 			// read current time/date info
-			ReadTime(f, &tm);
+			ReadTime( f, &tm );
 
 			// read music
-			sys->FS_Read(musicString, MAX_QPATH, f);
+			sys->FS_Read( musicString, MAX_QPATH, f );
 
-			if (strlen(musicString)) {
-				sys->Cvar_Register(&musicCvar, "s_currentMusic", "", CVAR_ROM); // get current music
-				if (Q_stricmp(musicString, musicCvar.string)) {      // it's different than what's playing, so fade out and queue up
+			if( strlen( musicString ) ) {
+				sys->Cvar_Register( &musicCvar, "s_currentMusic", "", CVAR_ROM ); // get current music
+				if( Q_stricmp( musicString, musicCvar.string ) ) {				  // it's different than what's playing, so fade out and queue up
 					//					sys->SendServerCommand(-1, "mu_fade 0 1000\n");
 					//					sys->SetConfigstring( CS_MUSIC_QUEUE, musicString);
-					sys->SendServerCommand(-1, va("mu_start %s 1000\n", musicString));       // (SA) trying this instead
+					sys->SendServerCommand( -1, va( "mu_start %s 1000\n", musicString ) ); // (SA) trying this instead
 				}
 			}
-
 		}
 
 		//----(SA)	added
-		if (ver >= SA_ADDEDFOG) {
+		if( ver >= SA_ADDEDFOG ) {
 			char* p;
-			int k;
+			int	  k;
 
 			// get length
-			sys->FS_Read(&i, sizeof(i), f);
+			sys->FS_Read( &i, sizeof( i ), f );
 			// get fog string
-			sys->FS_Read(infoString, i, f);
+			sys->FS_Read( infoString, i, f );
 			infoString[i] = 0;
 
 			// set the configstring so the 'savegame current' has good fog
 
-			if (!Q_stricmp(infoString, "0")) { // no fog
-				sys->Cvar_Set("r_savegameFogColor", "none");
-			}
-			else {
-
+			if( !Q_stricmp( infoString, "0" ) ) { // no fog
+				sys->Cvar_Set( "r_savegameFogColor", "none" );
+			} else {
 				// send it off to get set on the client
-				for (p = &infoString[0], k = 0; *p; p++) {
-					if (*p == ' ') {
+				for( p = &infoString[0], k = 0; *p; p++ ) {
+					if( *p == ' ' ) {
 						k++;
 					}
-					if (k == 6) {  // the last parameter
+					if( k == 6 ) { // the last parameter
 						infoString[p - infoString + 1] = '0';
 						infoString[p - infoString + 2] = 0;
 						break;
 					}
 				}
-				sys->Cvar_Set("r_savegameFogColor", infoString);
+				sys->Cvar_Set( "r_savegameFogColor", infoString );
 			}
-			sys->SetConfigstring(CS_FOGVARS, infoString);
+			sys->SetConfigstring( CS_FOGVARS, infoString );
 		}
 		//----(SA)	end
 
-		if (ver > 13) {
+		if( ver > 13 ) {
 			// read the game skill
-			sys->FS_Read(&i, sizeof(i), f);
+			sys->FS_Read( &i, sizeof( i ), f );
 			// set the skill level
-			sys->Cvar_Set("g_gameskill", va("%i", i));
+			sys->Cvar_Set( "g_gameskill", va( "%i", i ) );
 			// update this
-			aicast_skillscale = (float)i / (float)GSKILL_MAX;
+			aicast_skillscale = ( float )i / ( float )GSKILL_MAX;
 		}
 	}
 
 	// reset all AAS blocking entities
-	sys->AAS_SetAASBlockingEntity(vec3_origin, vec3_origin, -1);
+	sys->AAS_SetAASBlockingEntity( vec3_origin, vec3_origin, -1 );
 
 	// Don't read in this stuff for mid-game cutscenes
-	if (!(!Q_stricmpn(mapstr, "cutscene6", 9) || !Q_stricmpn(mapstr, "cutscene9", 9) || !Q_stricmpn(mapstr, "cutscene11", 10) || !Q_stricmpn(mapstr, "cutscene14", 10))) {
+	if( !( !Q_stricmpn( mapstr, "cutscene6", 9 ) || !Q_stricmpn( mapstr, "cutscene9", 9 ) || !Q_stricmpn( mapstr, "cutscene11", 10 ) || !Q_stricmpn( mapstr, "cutscene14", 10 ) ) ) {
 		// read the entity structures
-		sys->FS_Read(&i, sizeof(i), f);
+		sys->FS_Read( &i, sizeof( i ), f );
 		size = i;
 		last = 0;
-		while (1)
-		{
-			sys->FS_Read(&i, sizeof(i), f);
-			if (i < 0) {
+		while( 1 ) {
+			sys->FS_Read( &i, sizeof( i ), f );
+			if( i < 0 ) {
 				break;
 			}
-			if (i >= MAX_GENTITIES) {
-				sys->FS_FCloseFile(f);
-				G_Error("G_LoadGame: entitynum out of range (%i, MAX = %i)\n", i, MAX_GENTITIES);
+			if( i >= MAX_GENTITIES ) {
+				sys->FS_FCloseFile( f );
+				G_Error( "G_LoadGame: entitynum out of range (%i, MAX = %i)\n", i, MAX_GENTITIES );
 			}
-			if (i >= level.num_entities) {  // notify server
+			if( i >= level.num_entities ) { // notify server
 				level.num_entities = i;
 				serverEntityUpdate = qtrue;
 			}
 			ent = &g_entities[i];
-			ReadEntity(f, ent, size);
+			ReadEntity( f, ent, size );
 			// free all entities that we skipped
-			for (; last < i; last++) {
-				if (g_entities[last].inuse && i != ENTITYNUM_WORLD) {
-					if (last < MAX_CLIENTS) {
-						sys->DropClient(last, "");
-					}
-					else {
-						G_FreeEntity(&g_entities[last]);
+			for( ; last < i; last++ ) {
+				if( g_entities[last].inuse && i != ENTITYNUM_WORLD ) {
+					if( last < MAX_CLIENTS ) {
+						sys->DropClient( last, "" );
+					} else {
+						G_FreeEntity( &g_entities[last] );
 					}
 				}
 			}
@@ -1573,97 +1509,93 @@ void G_LoadGame(char* filename) {
 		}
 
 		// clear all remaining entities
-		for (ent = &g_entities[last]; last < MAX_GENTITIES; last++, ent++) {
-			memset(ent, 0, sizeof(*ent));
+		for( ent = &g_entities[last]; last < MAX_GENTITIES; last++, ent++ ) {
+			memset( ent, 0, sizeof( *ent ) );
 			ent->classname = "freed";
-			ent->freetime = level.time;
-			ent->inuse = qfalse;
+			ent->freetime  = level.time;
+			ent->inuse	   = qfalse;
 		}
 
 		// read the client structures
-		sys->FS_Read(&i, sizeof(i), f);
+		sys->FS_Read( &i, sizeof( i ), f );
 		size = i;
-		while (1)
-		{
-			sys->FS_Read(&i, sizeof(i), f);
-			if (i < 0) {
+		while( 1 ) {
+			sys->FS_Read( &i, sizeof( i ), f );
+			if( i < 0 ) {
 				break;
 			}
-			if (i > MAX_CLIENTS) {
-				sys->FS_FCloseFile(f);
-				G_Error("G_LoadGame: clientnum out of range\n");
+			if( i > MAX_CLIENTS ) {
+				sys->FS_FCloseFile( f );
+				G_Error( "G_LoadGame: clientnum out of range\n" );
 			}
 			cl = &level.clients[i];
-			if (cl->pers.connected == CON_DISCONNECTED) {
-				sys->FS_FCloseFile(f);
-				G_Error("G_LoadGame: client mis-match in savegame");
+			if( cl->pers.connected == CON_DISCONNECTED ) {
+				sys->FS_FCloseFile( f );
+				G_Error( "G_LoadGame: client mis-match in savegame" );
 			}
-			ReadClient(f, cl, size);
+			ReadClient( f, cl, size );
 		}
 
 		// read the cast_state structures
-		sys->FS_Read(&i, sizeof(i), f);
+		sys->FS_Read( &i, sizeof( i ), f );
 		size = i;
-		while (1)
-		{
-			sys->FS_Read(&i, sizeof(i), f);
-			if (i < 0) {
+		while( 1 ) {
+			sys->FS_Read( &i, sizeof( i ), f );
+			if( i < 0 ) {
 				break;
 			}
-			if (i > MAX_CLIENTS) {
-				sys->FS_FCloseFile(f);
-				G_Error("G_LoadGame: clientnum out of range\n");
+			if( i > MAX_CLIENTS ) {
+				sys->FS_FCloseFile( f );
+				G_Error( "G_LoadGame: clientnum out of range\n" );
 			}
 			cs = &caststates[i];
-			ReadCastState(f, cs, size);
+			ReadCastState( f, cs, size );
 		}
 
 		// inform server of entity count if it has increased
-		if (serverEntityUpdate) {
+		if( serverEntityUpdate ) {
 			// let the server system know that there are more entities
-			sys->LocateGameData(level.gentities, level.num_entities, sizeof(gentity_t),
-				&level.clients[0].ps, sizeof(level.clients[0]));
+			sys->LocateGameData( level.gentities, level.num_entities, sizeof( gentity_t ), &level.clients[0].ps, sizeof( level.clients[0] ) );
 		}
-
 	}
 
 	//----(SA)	moved these up in ver 15
-	if (ver < SA_MOVEDSTUFF) {
-		if (ver > SA_ADDEDMUSIC) {
+	if( ver < SA_MOVEDSTUFF ) {
+		if( ver > SA_ADDEDMUSIC ) {
 			// read current time/date info
-			ReadTime(f, &tm);
+			ReadTime( f, &tm );
 
 			// read music
-			sys->FS_Read(musicString, MAX_QPATH, f);
+			sys->FS_Read( musicString, MAX_QPATH, f );
 
-			if (strlen(musicString)) {
-				sys->Cvar_Register(&musicCvar, "s_currentMusic", "", CVAR_ROM); // get current music
-				if (Q_stricmp(musicString, musicCvar.string)) {      // it's different than what's playing, so fade out and queue up
-					sys->SendServerCommand(-1, "mu_fade 0 1000\n");
-					sys->SetConfigstring(CS_MUSIC_QUEUE, musicString);
+			if( strlen( musicString ) ) {
+				sys->Cvar_Register( &musicCvar, "s_currentMusic", "", CVAR_ROM ); // get current music
+				if( Q_stricmp( musicString, musicCvar.string ) ) {				  // it's different than what's playing, so fade out and queue up
+					sys->SendServerCommand( -1, "mu_fade 0 1000\n" );
+					sys->SetConfigstring( CS_MUSIC_QUEUE, musicString );
 				}
 			}
 		}
 
-		if (ver > 13) {
+		if( ver > 13 ) {
 			// read the game skill
-			sys->FS_Read(&i, sizeof(i), f);
+			sys->FS_Read( &i, sizeof( i ), f );
 			// set the skill level
-			sys->Cvar_Set("g_gameskill", va("%i", i));
+			sys->Cvar_Set( "g_gameskill", va( "%i", i ) );
 			// update this
-			aicast_skillscale = (float)i / (float)GSKILL_MAX;
+			aicast_skillscale = ( float )i / ( float )GSKILL_MAX;
 		}
 	}
 	//----(SA)	end moved
 
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	// now increment the attempts field and update totalplaytime according to cvar
-	sys->Cvar_Update(&g_attempts);
-	sys->Cvar_Set("g_attempts", va("%i", g_attempts.integer + 1));
-	caststates[0].attempts = g_attempts.integer + 1;
+	sys->Cvar_Update( &g_attempts );
+	sys->Cvar_Set( "g_attempts", va( "%i", g_attempts.integer + 1 ) );
+	caststates[0].attempts	   = g_attempts.integer + 1;
 	caststates[0].lastLoadTime = level.time;
-	if (caststates[0].totalPlayTime < g_totalPlayTime.integer) {
+	if( caststates[0].totalPlayTime < g_totalPlayTime.integer ) {
 		caststates[0].totalPlayTime = g_totalPlayTime.integer;
 	}
 
@@ -1698,13 +1630,14 @@ void G_LoadGame(char* filename) {
 PersWriteClient
 ===============
 */
-void PersWriteClient(fileHandle_t f, gclient_t* cl) {
+void PersWriteClient( fileHandle_t f, gclient_t* cl )
+{
 	persField_t* field;
 
 	// save the fields
-	for (field = gclientPersFields; field->len; field++)
-	{   // write the block
-		G_SaveWrite((void*)((byte*)cl + field->ofs), field->len, f);
+	for( field = gclientPersFields; field->len; field++ ) {
+		// write the block
+		G_SaveWrite( ( void* )( ( byte* )cl + field->ofs ), field->len, f );
 	}
 }
 
@@ -1713,13 +1646,14 @@ void PersWriteClient(fileHandle_t f, gclient_t* cl) {
 PersReadClient
 ===============
 */
-void PersReadClient(fileHandle_t f, gclient_t* cl) {
+void PersReadClient( fileHandle_t f, gclient_t* cl )
+{
 	persField_t* field;
 
 	// read the fields
-	for (field = gclientPersFields; field->len; field++)
-	{   // read the block
-		sys->FS_Read((void*)((byte*)cl + field->ofs), field->len, f);
+	for( field = gclientPersFields; field->len; field++ ) {
+		// read the block
+		sys->FS_Read( ( void* )( ( byte* )cl + field->ofs ), field->len, f );
 	}
 }
 
@@ -1730,13 +1664,14 @@ void PersReadClient(fileHandle_t f, gclient_t* cl) {
 PersWriteEntity
 ===============
 */
-void PersWriteEntity(fileHandle_t f, gentity_t* ent) {
+void PersWriteEntity( fileHandle_t f, gentity_t* ent )
+{
 	persField_t* field;
 
 	// save the fields
-	for (field = gentityPersFields; field->len; field++)
-	{   // write the block
-		G_SaveWrite((void*)((byte*)ent + field->ofs), field->len, f);
+	for( field = gentityPersFields; field->len; field++ ) {
+		// write the block
+		G_SaveWrite( ( void* )( ( byte* )ent + field->ofs ), field->len, f );
 	}
 }
 
@@ -1745,17 +1680,16 @@ void PersWriteEntity(fileHandle_t f, gentity_t* ent) {
 PersReadEntity
 ===============
 */
-void PersReadEntity(fileHandle_t f, gentity_t* cl) {
+void PersReadEntity( fileHandle_t f, gentity_t* cl )
+{
 	persField_t* field;
 
 	// read the fields
-	for (field = gentityPersFields; field->len; field++)
-	{   // read the block
-		sys->FS_Read((void*)((byte*)cl + field->ofs), field->len, f);
+	for( field = gentityPersFields; field->len; field++ ) {
+		// read the block
+		sys->FS_Read( ( void* )( ( byte* )cl + field->ofs ), field->len, f );
 	}
 }
-
-
 
 //=========================================================
 
@@ -1764,13 +1698,14 @@ void PersReadEntity(fileHandle_t f, gentity_t* cl) {
 PersWriteCastState
 ===============
 */
-void PersWriteCastState(fileHandle_t f, cast_state_t* cs) {
+void PersWriteCastState( fileHandle_t f, cast_state_t* cs )
+{
 	persField_t* field;
 
 	// save the fields
-	for (field = castStatePersFields; field->len; field++)
-	{   // write the block
-		G_SaveWrite((void*)((byte*)cs + field->ofs), field->len, f);
+	for( field = castStatePersFields; field->len; field++ ) {
+		// write the block
+		G_SaveWrite( ( void* )( ( byte* )cs + field->ofs ), field->len, f );
 	}
 }
 
@@ -1779,13 +1714,14 @@ void PersWriteCastState(fileHandle_t f, cast_state_t* cs) {
 PersReadCastState
 ===============
 */
-void PersReadCastState(fileHandle_t f, cast_state_t* cs) {
+void PersReadCastState( fileHandle_t f, cast_state_t* cs )
+{
 	persField_t* field;
 
 	// read the fields
-	for (field = castStatePersFields; field->len; field++)
-	{   // read the block
-		sys->FS_Read((void*)((byte*)cs + field->ofs), field->len, f);
+	for( field = castStatePersFields; field->len; field++ ) {
+		// read the block
+		sys->FS_Read( ( void* )( ( byte* )cs + field->ofs ), field->len, f );
 	}
 }
 
@@ -1805,58 +1741,59 @@ G_SavePersistant
   so full disks don't result in lost saved games.
 ===============
 */
-qboolean G_SavePersistant(char* nextmap) {
-	char filename[MAX_QPATH];
+qboolean G_SavePersistant( char* nextmap )
+{
+	char		 filename[MAX_QPATH];
 	fileHandle_t f;
-	int persid;
+	int			 persid;
 
 	saveByteCount = 0;
 
 	// open the file
-	Com_sprintf(filename, MAX_QPATH, "save\\temp.psw");
-	if (sys->FS_FOpenFile(filename, &f, FS_WRITE) < 0) {
-		G_Error("G_SavePersistant: cannot open '%s' for saving\n", filename);
+	Com_sprintf( filename, MAX_QPATH, "save\\temp.psw" );
+	if( sys->FS_FOpenFile( filename, &f, FS_WRITE ) < 0 ) {
+		G_Error( "G_SavePersistant: cannot open '%s' for saving\n", filename );
 	}
 
 	// write the mapname
-	G_SaveWrite(nextmap, MAX_QPATH, f);
+	G_SaveWrite( nextmap, MAX_QPATH, f );
 
 	// save out the pers id
-	persid = sys->Milliseconds() + (rand() & 0xffff);
-	G_SaveWrite(&persid, sizeof(persid), f);
-	sys->Cvar_Set("persid", va("%i", persid));
+	persid = sys->Milliseconds() + ( rand() & 0xffff );
+	G_SaveWrite( &persid, sizeof( persid ), f );
+	sys->Cvar_Set( "persid", va( "%i", persid ) );
 
 	// write out the entity structure
-	PersWriteEntity(f, &g_entities[0]);
+	PersWriteEntity( f, &g_entities[0] );
 
 	// write out the client structure
-	PersWriteClient(f, &level.clients[0]);
+	PersWriteClient( f, &level.clients[0] );
 
 	// write out the cast_state structure
-	PersWriteCastState(f, AICast_GetCastState(0));
+	PersWriteCastState( f, AICast_GetCastState( 0 ) );
 
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	// now check that it is the correct size
-	Com_sprintf(filename, MAX_QPATH, "save\\temp.psw");
-	if (sys->FS_FOpenFile(filename, &f, FS_READ) < saveByteCount) {
-		sys->FS_FCloseFile(f);
+	Com_sprintf( filename, MAX_QPATH, "save\\temp.psw" );
+	if( sys->FS_FOpenFile( filename, &f, FS_READ ) < saveByteCount ) {
+		sys->FS_FCloseFile( f );
 		G_SaveWriteError();
 		return qfalse;
 	}
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	// rename it to the real file
-	sys->FS_Rename("save\\temp.psw", "save\\current.psw");
+	sys->FS_Rename( "save\\temp.psw", "save\\current.psw" );
 
 	// now check that it is the correct size
-	Com_sprintf(filename, MAX_QPATH, "save\\current.psw");
-	if (sys->FS_FOpenFile(filename, &f, FS_READ) < saveByteCount) {
-		sys->FS_FCloseFile(f);
+	Com_sprintf( filename, MAX_QPATH, "save\\current.psw" );
+	if( sys->FS_FOpenFile( filename, &f, FS_READ ) < saveByteCount ) {
+		sys->FS_FCloseFile( f );
 		G_SaveWriteError();
 		return qfalse;
 	}
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	return qtrue;
 }
@@ -1866,47 +1803,48 @@ qboolean G_SavePersistant(char* nextmap) {
 G_LoadPersistant
 ===============
 */
-void G_LoadPersistant(void) {
+void G_LoadPersistant()
+{
 	fileHandle_t f;
-	char* filename;
-	char mapstr[MAX_QPATH];
-	vmCvar_t cvar_mapname;
-	int persid;
+	char*		 filename;
+	char		 mapstr[MAX_QPATH];
+	vmCvar_t	 cvar_mapname;
+	int			 persid;
 
 	filename = "save\\current.psw";
 
 	// open the file
-	if (sys->FS_FOpenFile(filename, &f, FS_READ) < 0) {
+	if( sys->FS_FOpenFile( filename, &f, FS_READ ) < 0 ) {
 		// not here, we shall assume they didn't want one
 		return;
 	}
 
 	// read the mapname, if it's not the same, then ignore the file
-	sys->FS_Read(mapstr, MAX_QPATH, f);
-	sys->Cvar_Register(&cvar_mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM);
-	if (Q_strcasecmp(cvar_mapname.string, mapstr)) {
-		sys->FS_FCloseFile(f);
+	sys->FS_Read( mapstr, MAX_QPATH, f );
+	sys->Cvar_Register( &cvar_mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM );
+	if( Q_strcasecmp( cvar_mapname.string, mapstr ) ) {
+		sys->FS_FCloseFile( f );
 		return;
 	}
 
 	// check the pers id
-	sys->FS_Read(&persid, sizeof(persid), f);
-	if (persid != sys->Cvar_VariableIntegerValue("persid")) {
-		sys->FS_FCloseFile(f);
+	sys->FS_Read( &persid, sizeof( persid ), f );
+	if( persid != sys->Cvar_VariableIntegerValue( "persid" ) ) {
+		sys->FS_FCloseFile( f );
 		return;
 	}
 
 	// read the entity structure
-	PersReadEntity(f, &g_entities[0]);
+	PersReadEntity( f, &g_entities[0] );
 
 	// read the client structure
-	PersReadClient(f, &level.clients[0]);
+	PersReadClient( f, &level.clients[0] );
 
 	// read the cast_state structure
-	PersReadCastState(f, AICast_GetCastState(0));
+	PersReadCastState( f, AICast_GetCastState( 0 ) );
 
-	sys->FS_FCloseFile(f);
+	sys->FS_FCloseFile( f );
 
 	// clear out the persid, since the persistent data has been read
-	sys->Cvar_Set("persid", "0");
+	sys->Cvar_Set( "persid", "0" );
 }
