@@ -126,7 +126,7 @@ project "DarkWolf"
         "../engine/qcommon/files.cpp",
         "../engine/qcommon/huffman.cpp",
         "../engine/qcommon/md4.cpp",
-        "../engine/qcommon/md5.cpp",
+        --"../engine/qcommon/md5.cpp",
         "../engine/qcommon/msg.cpp",
         --"../engine/qcommon/puff.cpp",
         --"../engine/qcommon/vm.cpp",
@@ -219,11 +219,11 @@ project "DarkWolf"
             "../libs/opengl/include",
         }
         links {
-            "SDL2",
-            "SDL2main",
+            --"SDL2",
+            --"SDL2main",
             "winmm",
             "wsock32",
-            "opengl32",
+            --"opengl32",
             "user32",
             "advapi32",
             "ws2_32",

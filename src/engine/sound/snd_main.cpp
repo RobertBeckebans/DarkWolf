@@ -1,7 +1,7 @@
 // snd_main.cpp
 //
 
-#include "../game/q_shared.h"
+#include "q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "snd_local.h"
 
@@ -1252,8 +1252,6 @@ void S_StartSoundEx( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx,
 	oalSfx_t*	  s;
 	float		  pitch;
 
-	()flags;
-
 	if( !OAL_IsInitialized() || g_soundDisabled ) {
 		return;
 	}
@@ -1353,8 +1351,6 @@ void S_StartLocalSound( sfxHandle_t sfx, int channelNum )
 
 void S_StartBackgroundTrack( const char* intro, const char* loop, int fadeupTime )
 {
-	()fadeupTime;
-
 	if( !OAL_IsInitialized() || g_soundDisabled ) {
 		return;
 	}
@@ -1452,8 +1448,6 @@ void S_QueueBackgroundTrack( const char* loop )
 
 void S_FadeStreamingSound( float targetvol, int time, int ssNum )
 {
-	()time;
-
 	if( ssNum < 0 || ssNum >= ( int )ARRAY_LEN( g_entStreams ) ) {
 		return;
 	}
@@ -1466,7 +1460,6 @@ void S_FadeStreamingSound( float targetvol, int time, int ssNum )
 void S_FadeAllSounds( float targetvol, int time )
 {
 	int i;
-	()time;
 
 	for( i = 0; i < OAL_MAX_SOURCES; ++i ) {
 		if( g_channels[i].source ) {
@@ -1762,9 +1755,6 @@ void S_Respatialize( int entityNum, const vec3_t origin, vec3_t axis[3], int inw
 	ALfloat ori[6];
 	int		i;
 
-	()entityNum;
-	()inwater;
-
 	if( !OAL_IsInitialized() || g_soundDisabled ) {
 		return;
 	}
@@ -1944,7 +1934,7 @@ sfxHandle_t S_RegisterSound( const char* sample, qboolean compressed )
 	int			rate, width, channels, sizeBytes;
 
 #ifndef DOOMSOUND
-	()compressed;
+	//()compressed;
 #endif
 
 	if( !sample || !sample[0] ) {

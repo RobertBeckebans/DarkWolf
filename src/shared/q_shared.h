@@ -1319,10 +1319,10 @@ typedef struct {
 //
 // NOTE: all fields in here must be 32 bits (or those within sub-structures)
 
-struct entityLighting_t {
+typedef struct entityLighting_s {
 	int	   lightRadius;
 	vec3_t lightColor;
-};
+} entityLighting_t;
 
 typedef struct entityState_s {
 	int				 number; // entity index

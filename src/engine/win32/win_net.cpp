@@ -29,7 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 
 // net_wins.c
 
-#include "../game/q_shared.h"
+#include "q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "win_local.h"
 

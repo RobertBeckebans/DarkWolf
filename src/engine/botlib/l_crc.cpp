@@ -39,8 +39,8 @@ If you have questions concerning this license or the applicable additional terms
 #include <stdio.h>
 #include <string.h>
 
-#include "../shared/q_shared.h"
-#include "../botlib/botlib.h"
+#include "q_shared.h"
+#include "botshared/botlib.h"
 #include "be_interface.h" //for botimport.Print
 
 // FIXME: byte swap?

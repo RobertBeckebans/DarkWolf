@@ -35,12 +35,12 @@ If you have questions concerning this license or the applicable additional terms
  *
  *****************************************************************************/
 
-#include "../game/q_shared.h"
+#include "q_shared.h"
 #include "l_memory.h"
 #include "l_script.h"
 #include "l_precomp.h"
 #include "l_struct.h"
-#include "../game/botlib.h"
+#include "botlib.h"
 #include "be_interface.h"
 
 #define MAX_USERMOVE		   400

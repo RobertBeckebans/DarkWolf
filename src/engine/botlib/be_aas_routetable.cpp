@@ -35,7 +35,7 @@ If you have questions concerning this license or the applicable additional terms
 // Tab Size:		3
 //===========================================================================
 
-#include "../game/q_shared.h"
+#include "q_shared.h"
 #include "l_memory.h"
 #include "l_script.h"
 #include "l_precomp.h"
@@ -43,8 +43,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "l_libvar.h"
 #include "l_utils.h"
 #include "aasfile.h"
-#include "../game/botlib.h"
-#include "../game/be_aas.h"
+#include "botshared/botlib.h"
+#include "botshared/be_aas.h"
 #include "be_interface.h"
 #include "be_aas_def.h"
 
@@ -1083,7 +1083,8 @@ aas_rt_route_t* AAS_RT_GetRoute( int srcnum, vec3_t origin, int destnum )
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-#include "../game/be_ai_goal.h"
+#include "botshared/be_ai_goal.h"
+
 int	 BotGetReachabilityToGoal( vec3_t origin,
 	 int							  areanum,
 	 int							  entnum,
