@@ -133,6 +133,7 @@ project "DarkWolf"
         -- "../engine/qcommon/vm_x86.c",
         "../engine/qcommon/net_*.cpp",
         "../engine/qcommon/unzip.cpp",
+        "../engine/qcommon/zone.cpp",
 		"../engine/sys/sys_local.h",
         "../engine/collision/*.cpp", "../engine/collision/*.h",
         "../engine/botlib/*.cpp", "../engine/botlib/*.h",
@@ -161,6 +162,7 @@ project "DarkWolf"
         --"USE_LOCAL_HEADERS",
     }
     excludes {
+        "../engine/splines/q_shared.cpp",
         "../engine/server/sv_rankings.c",
         "../engine/renderer/tr_animation_mdm.c",
         "../engine/renderer/tr_model_mdm.c",
@@ -219,16 +221,17 @@ project "DarkWolf"
             "../libs/opengl/include",
         }
         links {
-            --"SDL2",
-            --"SDL2main",
             "winmm",
             "wsock32",
-            --"opengl32",
             "user32",
             "advapi32",
             "ws2_32",
             "Psapi",
 			"Shlwapi",
+			"d3d12",
+            "dxgi",
+            -- "dxguid",
+            -- "d3dcompiler"
         }
         buildoptions {
             -- "/MT"

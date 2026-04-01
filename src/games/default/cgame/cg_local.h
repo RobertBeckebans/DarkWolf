@@ -1919,7 +1919,7 @@ void			CG_Item_f();
 //
 // cg_weapons.c
 //
-void			CG_LastWeaponUsed_f();   //----(SA)	added
+void			CG_LastWeaponUsed_f();	 //----(SA)	added
 void			CG_NextWeaponInBank_f(); //----(SA)	added
 void			CG_PrevWeaponInBank_f(); //----(SA)	added
 void			CG_AltWeapon_f();

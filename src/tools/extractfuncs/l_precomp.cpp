@@ -1419,7 +1419,7 @@ define_t* PC_DefineFromString( char* string )
 #else
 	def = src.defines;
 #endif // DEFINEHASHING
-	//
+	   //
 #if DEFINEHASHING
 	FreeMemory( src.definehash );
 #endif // DEFINEHASHING

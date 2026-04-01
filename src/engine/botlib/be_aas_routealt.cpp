@@ -212,7 +212,7 @@ int AAS_AlternativeRouteGoals( vec3_t start, vec3_t goal, int travelflags, aas_a
 		if( color ) {
 			AAS_DrawPermanentCross( ( *aasworld ).areas[bestareanum].center, 10, color );
 		} // end if
-			// AAS_ShowArea(bestarea, qtrue);
+		  // AAS_ShowArea(bestarea, qtrue);
 	#endif
 		// don't return more than the maximum alternative route goals
 		if( numaltroutegoals >= maxaltroutegoals ) {

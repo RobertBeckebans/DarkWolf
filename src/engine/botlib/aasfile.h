@@ -220,7 +220,7 @@ typedef struct aas_area_s {
 typedef struct aas_node_s {
 	int planenum;
 	int children[2]; // child nodes of this node, or convex areas as leaves when negative
-	// when a child is zero it's a solid leaf
+					 // when a child is zero it's a solid leaf
 } aas_node_t;
 
 //=========== aas file ===============

@@ -112,7 +112,7 @@ ammotable_t ammoTable[] = {
 	{ 5, 1, 1, 1000, DELAY_SHOULDER, 2000, 0, 0, MOD_PANZERFAUST },		  //	WP_PANZERFAUST			// 7
 	//	{	MAX_AMMO_VENOM,	1,		500,	3000,	750,			30,		5000,	200,	MOD_VENOM				},	//	WP_VENOM				// -
 	{ MAX_AMMO_VENOM, 1, 500, 3000, 750, 45, 5000, 200, MOD_VENOM }, //	WP_VENOM				// 8	// JPW NOTE: changed next_shot 50->45 to genlock firing to every server frame (fire rate
-																	 //shouldn't be framerate dependent now)
+																	 // shouldn't be framerate dependent now)
 	{ 150, 1, 150, 1000, DELAY_LOW, 50, 0, 0, MOD_FLAMETHROWER },	 //	WP_FLAMETHROWER			// 9
 	{ 300, 1, 300, 1000, DELAY_LOW, 0, 0, 0, MOD_TESLA },			 //	WP_TESLA				// 10
 	//	{	50,				1,		50,		1000,	DELAY_LOW,		1200,	0,		0,		MOD_SPEARGUN			},	//	WP_SPEARGUN				// 11

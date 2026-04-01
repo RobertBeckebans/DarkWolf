@@ -1308,8 +1308,8 @@ int				FS_FOpenFileRead( const char* filename, fileHandle_t* file, qboolean uniq
 			// I had the problem on show_bug.cgi?id=8
 			// turned out I used FS_FileExists instead
 			if( fs_restrict->integer || fs_numServerPaks ) {
-				if( Q_stricmp( filename + l - 4, ".cfg" ) // for config files
-														  //					&& Q_stricmp( filename + l - 5, ".menu" )	// menu files
+				if( Q_stricmp( filename + l - 4, ".cfg" )					  // for config files
+																			  //					&& Q_stricmp( filename + l - 5, ".menu" )	// menu files
 					&& Q_stricmp( filename + l - 4, ".svg" )				  // savegames
 					&& Q_stricmp( filename + l - 5, ".game" )				  // menu files
 					&& Q_stricmp( filename + l - strlen( demoExt ), demoExt ) // menu files

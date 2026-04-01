@@ -80,7 +80,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "tr_local.h"
 #include "../qcommon/qcommon.h"
 
-#define BUILD_FREETYPE
+// #define BUILD_FREETYPE
 #ifdef BUILD_FREETYPE
 
 extern "C" {

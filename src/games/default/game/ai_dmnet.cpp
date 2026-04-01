@@ -294,7 +294,7 @@ int BotGetItemLongTermGoal( bot_state_t* bs, int tfl, bot_goal_t* goal )
 			*/
 			bs->ltg_time = sys->AAS_Time() + 20;
 		} else { // the bot gets sorta stuck with all the avoid timings, shouldn't happen though
-			//
+				 //
 #ifdef DEBUG
 			char netname[128];
 

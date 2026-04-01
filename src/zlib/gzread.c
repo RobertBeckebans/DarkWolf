@@ -557,7 +557,7 @@ int ZEXPORT gzungetc( int c, gzFile file )
 
 	/* in case this was just opened, set up the input buffer */
 	if( state->how == LOOK && state->x.have == 0 ) {
-		()gz_look( state );
+		() gz_look( state );
 	}
 
 	/* check that there was no (serious) error */
@@ -694,7 +694,7 @@ int ZEXPORT gzdirect( gzFile file )
 	/* if the state is not known, but we can find out, then do so (this is
 	   mainly for right after a gzopen() or gzdopen()) */
 	if( state->mode == GZ_READ && state->how == LOOK && state->x.have == 0 ) {
-		()gz_look( state );
+		() gz_look( state );
 	}
 
 	/* return 1 if transparent, 0 if processing a gzip stream */

@@ -630,7 +630,6 @@ public:
 
 	virtual void S_StopLoopingSound( int entityNum ) override
 	{
-		
 	}
 
 	virtual void S_StopStreamingSound( int entityNum ) override

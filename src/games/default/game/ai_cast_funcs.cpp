@@ -3628,8 +3628,8 @@ char* AIFunc_BattleTakeCover( cast_state_t* cs )
 			}
 		} else if( !cs->crouchHideFlag ) { // no enemy, and no need to crouch, so stop crouching
 										   // if (cs->attackcrouch_time > level.time + 1000) {
-			//	cs->attackcrouch_time = level.time + 1000;
-			// }
+										   //	cs->attackcrouch_time = level.time + 1000;
+										   // }
 		}
 		// reload?
 		AICast_IdleReload( cs );

@@ -1457,7 +1457,7 @@ int ZEXPORT inflateUndermine( z_streamp strm, int subvert )
 	state->sane = !subvert;
 	return Z_OK;
 #else
-	()subvert;
+	() subvert;
 	state->sane = 1;
 	return Z_DATA_ERROR;
 #endif

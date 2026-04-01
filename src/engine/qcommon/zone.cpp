@@ -1,4 +1,4 @@
-#include "../game/q_shared.h"
+#include "q_shared.h"
 #include "qcommon.h"
 #include <setjmp.h>
 #ifdef __linux__

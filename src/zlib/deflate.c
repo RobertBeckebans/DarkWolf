@@ -1368,8 +1368,8 @@ int ZEXPORT deflateEnd( z_streamp strm )
 int ZEXPORT deflateCopy( z_streamp dest, z_streamp source )
 {
 #ifdef MAXSEG_64K
-	()dest;
-	()source;
+	() dest;
+	() source;
 	return Z_STREAM_ERROR;
 #else
 	deflate_state* ds;

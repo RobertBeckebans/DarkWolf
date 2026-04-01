@@ -169,8 +169,8 @@ typedef struct {
 typedef enum {
 	FOG_NONE, //	0
 
-	FOG_SKY,		//	1	fog values to apply to the sky when using density fog for the world (non-distance clipping fog) (only used if(glfogsettings[FOG_MAP].registered) or
-					//if(glfogsettings[FOG_MAP].registered))
+	FOG_SKY, //	1	fog values to apply to the sky when using density fog for the world (non-distance clipping fog) (only used if(glfogsettings[FOG_MAP].registered) or
+			 // if(glfogsettings[FOG_MAP].registered))
 	FOG_PORTALVIEW, //	2	used by the portal sky scene
 	FOG_HUD,		//	3	used by the 3D hud scene
 

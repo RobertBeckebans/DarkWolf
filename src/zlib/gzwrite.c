@@ -413,7 +413,7 @@ local int gz_vacate( gz_statep state )
 	if( strm->next_in + strm->avail_in <= state->in + state->size ) {
 		return 0;
 	}
-	()gz_comp( state, Z_NO_FLUSH );
+	() gz_comp( state, Z_NO_FLUSH );
 	if( strm->avail_in == 0 ) {
 		strm->next_in = state->in;
 		return 0;
@@ -434,7 +434,7 @@ int ZEXPORTVA gzvprintf( gzFile file, const char* format, va_list va )
 		#warning "vsnprintf() not available -- gzprintf() stub returns Z_STREAM_ERROR"
 		#warning "you can recompile with ZLIB_INSECURE defined to use vsprintf()"
 	/* prevent use of insecure vsprintf(), unless purposefully requested */
-	()file, ()format, ()va;
+	() file, () format, () va;
 	return Z_STREAM_ERROR;
 	#else
 	int		  len, ret;
@@ -488,7 +488,7 @@ int ZEXPORTVA gzvprintf( gzFile file, const char* format, va_list va )
 	next[state->size - 1] = 0;
 		#ifdef NO_vsnprintf
 			#ifdef HAS_vsprintf_void
-	()vsprintf( next, format, va );
+	() vsprintf( next, format, va );
 	for( len = 0; len < state->size; len++ )
 		if( next[len] == 0 ) {
 			break;
@@ -498,7 +498,7 @@ int ZEXPORTVA gzvprintf( gzFile file, const char* format, va_list va )
 			#endif
 		#else
 			#ifdef HAS_vsnprintf_void
-	()vsnprintf( next, state->size, format, va );
+	() vsnprintf( next, state->size, format, va );
 	len = strlen( next );
 			#else
 	len = vsnprintf( next, state->size, format, va );
@@ -564,8 +564,7 @@ int ZEXPORTVA gzprintf( gzFile file,
 		#warning "snprintf() not available -- gzprintf() stub returns Z_STREAM_ERROR"
 		#warning "you can recompile with ZLIB_INSECURE defined to use sprintf()"
 	/* prevent use of insecure sprintf(), unless purposefully requested */
-	()file, ()format, ()a1, ()a2, ()a3, ()a4, ()a5, ()a6, ()a7, ()a8, ()a9, ()a10, ()a11, ()a12, ()a13,
-		()a14, ()a15, ()a16, ()a17, ()a18, ()a19, ()a20;
+	() file, () format, () a1, () a2, () a3, () a4, () a5, () a6, () a7, () a8, () a9, () a10, () a11, () a12, () a13, () a14, () a15, () a16, () a17, () a18, () a19, () a20;
 	return Z_STREAM_ERROR;
 	#else
 	int		  ret;
@@ -690,7 +689,7 @@ int ZEXPORT gzflush( gzFile file, int flush )
 	}
 
 	/* compress remaining data with requested flush */
-	()gz_comp( state, flush );
+	() gz_comp( state, flush );
 	return state->err;
 }
 
@@ -764,7 +763,7 @@ int ZEXPORT gzclose_w( gzFile file )
 	}
 	if( state->size ) {
 		if( !state->direct ) {
-			()deflateEnd( &( state->strm ) );
+			() deflateEnd( &( state->strm ) );
 			free( state->out );
 		}
 		free( state->in );

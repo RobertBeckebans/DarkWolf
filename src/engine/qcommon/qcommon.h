@@ -699,7 +699,7 @@ temp file loading
 */
 
 #if defined( _DEBUG ) && !defined( BSPC )
-	#define ZONE_DEBUG
+	// #define ZONE_DEBUG
 #endif
 
 #ifdef ZONE_DEBUG

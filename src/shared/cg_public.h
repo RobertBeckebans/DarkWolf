@@ -77,7 +77,7 @@ public:
 
 	virtual void		 Print( const char* fmt ) = 0;
 	virtual void		 Error( const char* fmt ) = 0;
-	virtual int			 Milliseconds()	  = 0;
+	virtual int			 Milliseconds()			  = 0;
 
 	virtual void		 RenderRaytracing() = 0;
 
@@ -86,7 +86,7 @@ public:
 	virtual void		 Cvar_Set( const char* var_name, const char* value )										 = 0;
 	virtual void		 Cvar_VariableStringBuffer( const char* var_name, char* buffer, int bufsize )				 = 0;
 
-	virtual int			 Argc()								   = 0;
+	virtual int			 Argc()										   = 0;
 	virtual void		 Argv( int n, char* buffer, int bufferLength ) = 0;
 	virtual void		 Args( char* buffer, int bufferLength )		   = 0;
 
@@ -98,10 +98,10 @@ public:
 	virtual void		 SendConsoleCommand( const char* text ) = 0;
 	virtual void		 AddCommand( const char* cmdName )		= 0;
 	virtual void		 SendClientCommand( const char* s )		= 0;
-	virtual void		 UpdateScreen()					= 0;
+	virtual void		 UpdateScreen()							= 0;
 
 	virtual void		 CM_LoadMap( const char* mapname )																			 = 0;
-	virtual int			 CM_NumInlineModels()																					 = 0;
+	virtual int			 CM_NumInlineModels()																						 = 0;
 	virtual clipHandle_t CM_InlineModel( int index )																				 = 0;
 	virtual clipHandle_t CM_TempBoxModel( const vec3_t mins, const vec3_t maxs )													 = 0;
 	virtual clipHandle_t CM_TempCapsuleModel( const vec3_t mins, const vec3_t maxs )												 = 0;
@@ -137,7 +137,7 @@ public:
 	virtual void		S_FadeBackgroundTrack( float targetvol, int time, int num )														 = 0;
 	virtual void		S_FadeAllSound( float targetvol, int time )																		 = 0;
 	virtual void		S_StartStreamingSound( const char* intro, const char* loop, int entnum, int channel, int attenuation )			 = 0;
-	virtual void		S_StopBackgroundTrack()																					 = 0;
+	virtual void		S_StopBackgroundTrack()																							 = 0;
 
 	virtual void		R_LoadWorldMap( const char* mapname )															  = 0;
 	virtual qhandle_t	R_RegisterModel( const char* name )																  = 0;
@@ -147,7 +147,7 @@ public:
 	virtual qhandle_t	R_RegisterShader( const char* name )															  = 0;
 	virtual qhandle_t	R_RegisterShaderNoMip( const char* name )														  = 0;
 	virtual void		R_RegisterFont( const char* fontName, int pointSize, fontInfo_t* font )							  = 0;
-	virtual void		R_ClearScene()																			  = 0;
+	virtual void		R_ClearScene()																					  = 0;
 	virtual void		R_AddRefEntityToScene( const refEntity_t* re )													  = 0;
 	virtual void		R_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts )					  = 0;
 	virtual void		R_AddPolysToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts, int numPolys )		  = 0;
@@ -171,7 +171,7 @@ public:
 	virtual void		GetCurrentSnapshotNumber( int* snapshotNumber, int* serverTime )					  = 0;
 	virtual qboolean	GetSnapshot( int snapshotNumber, snapshot_t* snapshot )								  = 0;
 	virtual qboolean	GetServerCommand( int serverCommandNumber )											  = 0;
-	virtual int			GetCurrentCmdNumber()															  = 0;
+	virtual int			GetCurrentCmdNumber()																  = 0;
 	virtual qboolean	GetUserCmd( int cmdNumber, usercmd_t* ucmd )										  = 0;
 	virtual void		SetUserCmdValue( int stateValue, int holdableValue, float sensitivityScale, int cld ) = 0;
 
@@ -186,7 +186,7 @@ public:
 	virtual qboolean	GetCameraInfo( int camNum, int time, vec3_t* origin, vec3_t* angles, float* fov ) = 0;
 
 	virtual qboolean	Key_IsDown( int keynum )		  = 0;
-	virtual int			Key_GetCatcher()			  = 0;
+	virtual int			Key_GetCatcher()				  = 0;
 	virtual void		Key_SetCatcher( int catcher )	  = 0;
 	virtual int			Key_GetKey( const char* binding ) = 0;
 

@@ -1215,7 +1215,7 @@ qboolean AICast_ScriptAction_SelectWeapon( cast_state_t* cs, char* params )
 			g_entities[cs->entityNum].client->ps.weaponTime = 750; // (SA) HACK: FIXME: TODO: delay to catch initial weapon reload
 																   // tell it which weapon to use after spawning in
 																   // sys->Cvar_Register( &cvar, "cg_loadWeaponSelect", "0", CVAR_ROM );
-			// sys->Cvar_Set( "cg_loadWeaponSelect", va("%i", g_entities[cs->entityNum].client->ps.weapon ) );
+																   // sys->Cvar_Set( "cg_loadWeaponSelect", va("%i", g_entities[cs->entityNum].client->ps.weapon ) );
 		}
 
 	} else {

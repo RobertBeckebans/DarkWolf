@@ -50,7 +50,7 @@ public:
 
 	virtual void		Print( const char* string ) = 0;
 	virtual void		Error( const char* string ) = 0;
-	virtual int			Milliseconds()		= 0;
+	virtual int			Milliseconds()				= 0;
 
 	virtual void		Cvar_Register( vmCvar_t* cvar, const char* var_name, const char* value, int flags ) = 0;
 	virtual void		Cvar_Update( vmCvar_t* cvar )														= 0;
@@ -62,7 +62,7 @@ public:
 	virtual void		Cvar_Create( const char* var_name, const char* var_value, int flags )				= 0;
 	virtual void		Cvar_InfoStringBuffer( int bit, char* buffer, int bufsize )							= 0;
 
-	virtual int			Argc()									   = 0;
+	virtual int			Argc()											   = 0;
 	virtual void		Argv( int n, char* buffer, int bufferLength )	   = 0;
 	virtual void		Cmd_ExecuteText( int exec_when, const char* text ) = 0;
 
@@ -78,7 +78,7 @@ public:
 	virtual qhandle_t	R_RegisterSkin( const char* name )																				  = 0;
 	virtual void		R_RegisterFont( const char* fontName, int pointSize, fontInfo_t* font )											  = 0;
 	virtual qhandle_t	R_RegisterShaderNoMip( const char* name )																		  = 0;
-	virtual void		R_ClearScene()																							  = 0;
+	virtual void		R_ClearScene()																									  = 0;
 	virtual void		R_AddRefEntityToScene( const refEntity_t* re )																	  = 0;
 	virtual void		R_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts )									  = 0;
 	virtual void		R_AddLightToScene( const vec3_t org, float intensity, float r, float g, float b, int overdraw )					  = 0;
@@ -97,17 +97,17 @@ public:
 	virtual sfxHandle_t S_RegisterSound( const char* sample )										  = 0;
 	virtual void		S_FadeBackgroundTrack( float targetvol, int time, int num )					  = 0;
 	virtual void		S_FadeAllSound( float targetvol, int time )									  = 0;
-	virtual void		S_StopBackgroundTrack()												  = 0;
+	virtual void		S_StopBackgroundTrack()														  = 0;
 	virtual void		S_StartBackgroundTrack( const char* intro, const char* loop, int fadeupTime ) = 0;
 
 	virtual void		Key_KeynumToStringBuf( int keynum, char* buf, int buflen ) = 0;
 	virtual void		Key_GetBindingBuf( int keynum, char* buf, int buflen )	   = 0;
 	virtual void		Key_SetBinding( int keynum, const char* binding )		   = 0;
 	virtual qboolean	Key_IsDown( int keynum )								   = 0;
-	virtual qboolean	Key_GetOverstrikeMode()							   = 0;
+	virtual qboolean	Key_GetOverstrikeMode()									   = 0;
 	virtual void		Key_SetOverstrikeMode( qboolean state )					   = 0;
-	virtual void		Key_ClearStates()									   = 0;
-	virtual int			Key_GetCatcher()									   = 0;
+	virtual void		Key_ClearStates()										   = 0;
+	virtual int			Key_GetCatcher()										   = 0;
 	virtual void		Key_SetCatcher( int catcher )							   = 0;
 
 	virtual void		GetClipboardData( char* buf, int bufsize )			   = 0;
@@ -115,11 +115,11 @@ public:
 	virtual void		GetGlconfig( glconfig_t* glconfig )					   = 0;
 	virtual int			GetConfigString( int index, char* buff, int buffsize ) = 0;
 
-	virtual int			LAN_GetLocalServerCount()												  = 0;
+	virtual int			LAN_GetLocalServerCount()													  = 0;
 	virtual void		LAN_GetLocalServerAddressString( int n, char* buf, int buflen )				  = 0;
-	virtual int			LAN_GetGlobalServerCount()											  = 0;
+	virtual int			LAN_GetGlobalServerCount()													  = 0;
 	virtual void		LAN_GetGlobalServerAddressString( int n, char* buf, int buflen )			  = 0;
-	virtual int			LAN_GetPingQueueCount()												  = 0;
+	virtual int			LAN_GetPingQueueCount()														  = 0;
 	virtual void		LAN_ClearPing( int n )														  = 0;
 	virtual void		LAN_GetPing( int n, char* buf, int buflen, int* pingtime )					  = 0;
 	virtual void		LAN_GetPingInfo( int n, char* buf, int buflen )								  = 0;
@@ -133,8 +133,8 @@ public:
 	virtual int			LAN_GetServerPing( int source, int n )										  = 0;
 	virtual int			LAN_ServerIsVisible( int source, int n )									  = 0;
 	virtual int			LAN_ServerStatus( const char* serverAddress, char* serverStatus, int maxLen ) = 0;
-	virtual void		LAN_SaveCachedServers()												  = 0;
-	virtual void		LAN_LoadCachedServers()												  = 0;
+	virtual void		LAN_SaveCachedServers()														  = 0;
+	virtual void		LAN_LoadCachedServers()														  = 0;
 	virtual void		LAN_MarkServerVisible( int source, int n, qboolean visible )				  = 0;
 	virtual void		LAN_ResetPings( int n )														  = 0;
 

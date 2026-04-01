@@ -122,9 +122,9 @@ public:
 	// core
 	virtual void	 Printf( const char* fmt )					   = 0;
 	virtual void	 Error( const char* fmt )					   = 0;
-	virtual void	 Endgame()							   = 0;
-	virtual int		 Milliseconds()						   = 0;
-	virtual int		 Argc()								   = 0;
+	virtual void	 Endgame()									   = 0;
+	virtual int		 Milliseconds()								   = 0;
+	virtual int		 Argc()										   = 0;
 	virtual void	 Argv( int n, char* buffer, int bufferLength ) = 0;
 
 	// filesystem
@@ -170,7 +170,7 @@ public:
 	virtual qboolean EntityContactCapsule( const vec3_t mins, const vec3_t maxs, const gentity_t* ent )																  = 0;
 
 	// clients / commands
-	virtual int		 BotAllocateClient()						= 0;
+	virtual int		 BotAllocateClient()							= 0;
 	virtual void	 BotFreeClient( int clientNum )					= 0;
 	virtual void	 GetUsercmd( int clientNum, usercmd_t* cmd )	= 0;
 	virtual qboolean GetEntityToken( char* buffer, int bufferSize ) = 0;
@@ -182,8 +182,8 @@ public:
 	virtual qboolean GetTag( int clientNum, char* tagName, orientation_t* or )		= 0;
 
 	// botlib core
-	virtual int		 BotLibSetup()											  = 0;
-	virtual int		 BotLibShutdown()											  = 0;
+	virtual int		 BotLibSetup()													  = 0;
+	virtual int		 BotLibShutdown()												  = 0;
 	virtual int		 BotLibVarSet( char* var_name, char* value )					  = 0;
 	virtual int		 BotLibVarGet( char* var_name, char* value, int size )			  = 0;
 	virtual int		 BotLibDefine( char* string )									  = 0;
@@ -197,9 +197,9 @@ public:
 
 	// AAS
 	virtual void	 AAS_EntityInfo( int entnum, void* info )																				  = 0;
-	virtual int		 AAS_Initialized()																								  = 0;
+	virtual int		 AAS_Initialized()																										  = 0;
 	virtual void	 AAS_PresenceTypeBoundingBox( int presencetype, vec3_t mins, vec3_t maxs )												  = 0;
-	virtual float	 AAS_Time()																										  = 0;
+	virtual float	 AAS_Time()																												  = 0;
 	virtual void	 AAS_SetCurrentWorld( int index )																						  = 0;
 	virtual int		 AAS_PointAreaNum( vec3_t point )																						  = 0;
 	virtual int		 AAS_TraceAreas( vec3_t start, vec3_t end, int* areas, vec3_t* points, int maxareas )									  = 0;
@@ -269,7 +269,7 @@ public:
 	virtual int		 Characteristic_Integer( int character, int index )																														  = 0;
 	virtual int		 Characteristic_BInteger( int character, int index, int min, int max )																									  = 0;
 	virtual void	 Characteristic_String( int character, int index, char* buf, int size )																									  = 0;
-	virtual int		 BotAllocChatState()																																				  = 0;
+	virtual int		 BotAllocChatState()																																					  = 0;
 	virtual void	 BotFreeChatState( int handle )																																			  = 0;
 	virtual void	 BotQueueConsoleMessage( int chatstate, int type, char* message )																										  = 0;
 	virtual void	 BotRemoveConsoleMessage( int chatstate, int handle )																													  = 0;
@@ -310,8 +310,8 @@ public:
 	virtual int		 BotGetNextCampSpotGoal( int num, void* goal )																 = 0;
 	virtual int		 BotGetMapLocationGoal( char* name, void* goal )															 = 0;
 	virtual float	 BotAvoidGoalTime( int goalstate, int number )																 = 0;
-	virtual void	 BotInitLevelItems()																					 = 0;
-	virtual void	 BotUpdateEntityItems()																				 = 0;
+	virtual void	 BotInitLevelItems()																						 = 0;
+	virtual void	 BotUpdateEntityItems()																						 = 0;
 	virtual int		 BotLoadItemWeights( int goalstate, char* filename )														 = 0;
 	virtual void	 BotFreeItemWeights( int goalstate )																		 = 0;
 	virtual void	 BotInterbreedGoalFuzzyLogic( int parent1, int parent2, int child )											 = 0;
@@ -329,7 +329,7 @@ public:
 	virtual int		 BotReachabilityArea( vec3_t origin, int testground )												 = 0;
 	virtual int		 BotMovementViewTarget( int movestate, void* goal, int travelflags, float lookahead, vec3_t target ) = 0;
 	virtual int		 BotPredictVisiblePosition( vec3_t origin, int areanum, void* goal, int travelflags, vec3_t target ) = 0;
-	virtual int		 BotAllocMoveState()																			 = 0;
+	virtual int		 BotAllocMoveState()																				 = 0;
 	virtual void	 BotFreeMoveState( int handle )																		 = 0;
 	virtual void	 BotInitMoveState( int handle, void* initmove )														 = 0;
 	virtual void	 BotInitAvoidReach( int handle )																	 = 0;
@@ -338,7 +338,7 @@ public:
 	virtual int		 BotChooseBestFightWeapon( int weaponstate, int* inventory )	   = 0;
 	virtual void	 BotGetWeaponInfo( int weaponstate, int weapon, void* weaponinfo ) = 0;
 	virtual int		 BotLoadWeaponWeights( int weaponstate, char* filename )		   = 0;
-	virtual int		 BotAllocWeaponState()									   = 0;
+	virtual int		 BotAllocWeaponState()											   = 0;
 	virtual void	 BotFreeWeaponState( int weaponstate )							   = 0;
 	virtual void	 BotResetWeaponState( int weaponstate )							   = 0;
 
