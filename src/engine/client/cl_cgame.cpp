@@ -30,7 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 // cl_cgame.c  -- client system interaction with client game
 
 #include "client.h"
-#include "../game/botlib.h"
+#include "botshared/botlib.h"
 
 static dllhandle_t		vmHandle = NULL;
 idClientGameVM*			cgvm	 = NULL;
@@ -630,7 +630,7 @@ public:
 
 	virtual void S_StopLoopingSound( int entityNum ) override
 	{
-		()entityNum;
+		
 	}
 
 	virtual void S_StopStreamingSound( int entityNum ) override
@@ -972,7 +972,6 @@ public:
 
 	virtual void UI_ClosePopup( const char* arg0 ) override
 	{
-		()arg0;
 		uivm->KeyEvent( K_ESCAPE, qtrue );
 	}
 

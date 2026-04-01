@@ -32,14 +32,14 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "ui_shared.h"
 
-#include "../cgame/tr_types.h"
+#include "tr_types.h"
 #ifdef UI_EXPORTS
-	#include "../ui/ui_public.h"
+	#include "ui_public.h"
 
 extern idUISystemCalls* sys;
 #elif CGAMEDLL
-	#include "../game/bg_public.h"
-	#include "../cgame/cg_public.h"
+	#include "bg_public.h"
+	#include "cg_public.h"
 
 extern idCGSystemCalls* sys;
 #endif

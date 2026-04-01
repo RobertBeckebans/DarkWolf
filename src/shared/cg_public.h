@@ -67,7 +67,7 @@ functions imported from the main executable
 ==================================================================
 */
 
-#include "../game/bg_public.h"
+#include "bg_public.h"
 
 #define CGAME_IMPORT_API_VERSION 3
 class idCGSystemCalls

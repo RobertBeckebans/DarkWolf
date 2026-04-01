@@ -38,17 +38,17 @@ If you have questions concerning this license or the applicable additional terms
 #include "bg_public.h"
 
 #ifdef UI_EXPORTS
-	#include "../cgame/tr_types.h"
-	#include "../ui/ui_public.h"
+	#include "tr_types.h"
+	#include "ui_public.h"
 
 extern idUISystemCalls* sys;
 #elif GAMEDLL
-	#include "../game/g_public.h"
+	#include "g_public.h"
 
 extern idGameSystemCalls* sys;
 #elif CGAMEDLL
-	#include "../cgame/tr_types.h"
-	#include "../cgame/cg_public.h"
+	#include "tr_types.h"
+	#include "cg_public.h"
 
 extern idCGSystemCalls* sys;
 #endif

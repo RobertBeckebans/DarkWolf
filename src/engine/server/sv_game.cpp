@@ -32,13 +32,13 @@ If you have questions concerning this license or the applicable additional terms
 #include "server.h"
 
 #define MAX_STRINGFIELD 80
-#include "../game/botlib.h"
-#include "../game/be_ai_goal.h"
-#include "../game/be_ai_move.h"
-#include "../game/be_ai_weap.h"
-#include "../game/be_ai_chat.h"
-#include "../game/be_ai_char.h"
-#include "../game/be_ai_gen.h"
+#include "botshared/botlib.h"
+#include "botshared/be_ai_goal.h"
+#include "botshared/be_ai_move.h"
+#include "botshared/be_ai_weap.h"
+#include "botshared/be_ai_chat.h"
+#include "botshared/be_ai_char.h"
+#include "botshared/be_ai_gen.h"
 
 static dllhandle_t vmHandle = NULL;
 idGameVM*		   gvm		= NULL;

@@ -1506,7 +1506,7 @@ static void LoadJPG( const char* filename, unsigned char** pic, int* width, int*
 
 	/* Step 3: read file parameters with jpeg_read_header() */
 
-	()jpeg_read_header( &cinfo, TRUE );
+	jpeg_read_header( &cinfo, TRUE );
 	/* We can ignore the return value from jpeg_read_header since
 	 *   (a) suspension is not possible with the stdio data source, and
 	 *   (b) we passed TRUE to reject a tables-only JPEG file as an error.
@@ -1521,7 +1521,7 @@ static void LoadJPG( const char* filename, unsigned char** pic, int* width, int*
 
 	/* Step 5: Start decompressor */
 
-	()jpeg_start_decompress( &cinfo );
+	jpeg_start_decompress( &cinfo );
 	/* We can ignore the return value since suspension is not possible
 	 * with the stdio data source.
 	 */
@@ -1554,7 +1554,7 @@ static void LoadJPG( const char* filename, unsigned char** pic, int* width, int*
 		 */
 		bbuf   = ( ( out + ( row_stride * cinfo.output_scanline ) ) );
 		buffer = &bbuf;
-		()jpeg_read_scanlines( &cinfo, buffer, 1 );
+		jpeg_read_scanlines( &cinfo, buffer, 1 );
 	}
 
 	// clear all the alphas to 255
@@ -1572,7 +1572,7 @@ static void LoadJPG( const char* filename, unsigned char** pic, int* width, int*
 
 	/* Step 7: Finish decompression */
 
-	()jpeg_finish_decompress( &cinfo );
+	jpeg_finish_decompress( &cinfo );
 	/* We can ignore the return value since suspension is not possible
 	 * with the stdio data source.
 	 */
@@ -1873,7 +1873,7 @@ void SaveJPG( char* filename, int quality, int image_width, int image_height, un
 		 * more than one scanline at a time if that's more convenient.
 		 */
 		row_pointer[0] = &image_buffer[( ( cinfo.image_height - 1 ) * row_stride ) - cinfo.next_scanline * row_stride];
-		()jpeg_write_scanlines( &cinfo, row_pointer, 1 );
+		jpeg_write_scanlines( &cinfo, row_pointer, 1 );
 	}
 
 	/* Step 6: Finish compression */

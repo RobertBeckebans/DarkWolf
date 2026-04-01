@@ -29,7 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 
 // cmd.c -- Quake script command processing module
 
-#include "../game/q_shared.h"
+#include "q_shared.h"
 #include "qcommon.h"
 
 #define MAX_CMD_BUFFER 16384

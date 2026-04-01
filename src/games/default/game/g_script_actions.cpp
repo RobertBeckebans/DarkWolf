@@ -35,8 +35,8 @@ If you have questions concerning this license or the applicable additional terms
 // Tab Size:		4 (real tabs)
 //===========================================================================
 
-#include "../game/g_local.h"
-#include "../game/q_shared.h"
+#include "g_local.h"
+#include "q_shared.h"
 
 /*
 Contains the code to handle the various commands available with an event script.

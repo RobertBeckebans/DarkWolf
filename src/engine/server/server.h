@@ -29,10 +29,10 @@ If you have questions concerning this license or the applicable additional terms
 
 // server.h
 
-#include "../game/q_shared.h"
+#include "../shared/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "../game/g_public.h"
-#include "../game/bg_public.h"
+#include "../shared/g_public.h"
+#include "../shared/bg_public.h"
 
 //=============================================================================
 

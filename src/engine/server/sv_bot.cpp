@@ -30,8 +30,8 @@ If you have questions concerning this license or the applicable additional terms
 // sv_bot.c
 
 #include "server.h"
-#include "../game/botlib.h"
-#include "../botai/botai.h"
+#include "botshared/botlib.h"
+#include "botshared/botai.h"
 
 #define MAX_DEBUGPOLYS 128
 

@@ -30,7 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 // g_bot.c
 
 #include "g_local.h"
-#include "../botai/botai.h"
+#include "botshared/botai.h"
 
 static int	g_numBots;
 static char g_botInfos[MAX_BOTS][MAX_INFO_STRING];

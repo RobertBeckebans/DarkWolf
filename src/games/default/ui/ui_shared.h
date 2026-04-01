@@ -30,8 +30,8 @@ If you have questions concerning this license or the applicable additional terms
 #ifndef __UI_SHARED_H
 #define __UI_SHARED_H
 
-#include "../game/q_shared.h"
-#include "../cgame/tr_types.h"
+#include "../shared/q_shared.h"
+#include "../shared/tr_types.h"
 #include "keycodes.h"
 
 #include "../../main/ui/menudef.h"

@@ -19,7 +19,7 @@ project "cgamedll"
 		"../game/bg_*.h",
 
 		"../ui/ui_shared.h",
-		"../ui/ui_shared.c",
+		"../ui/ui_shared.cpp",
 	}
 	excludes
 	{

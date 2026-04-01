@@ -26,6 +26,7 @@ project "uidll"
 	{
 		"UI",
 		"UIDLL",
+		"UI_EXPORTS"
 	}
 
 	filter "system:windows"

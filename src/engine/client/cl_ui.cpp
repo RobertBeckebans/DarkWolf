@@ -29,7 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "client.h"
 
-#include "../game/botlib.h"
+#include "botshared/botlib.h"
 
 extern botlib_export_t* botlib_export;
 

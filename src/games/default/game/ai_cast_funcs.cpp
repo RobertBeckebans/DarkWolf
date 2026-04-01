@@ -34,15 +34,15 @@ If you have questions concerning this license or the applicable additional terms
  *
  */
 
-#include "../game/g_local.h"
-#include "../game/q_shared.h"
-#include "../game/botlib.h" //bot lib interface
-#include "../game/be_aas.h"
-#include "../game/be_ea.h"
-#include "../game/be_ai_gen.h"
-#include "../game/be_ai_goal.h"
-#include "../game/be_ai_move.h"
-#include "../botai/botai.h" //bot ai interface
+#include "g_local.h"
+#include "q_shared.h"
+#include "botshared/botlib.h" //bot lib interface
+#include "botshared/be_aas.h"
+#include "botshared/be_ea.h"
+#include "botshared/be_ai_gen.h"
+#include "botshared/be_ai_goal.h"
+#include "botshared/be_ai_move.h"
+#include "botshared/botai.h" //bot ai interface
 
 #include "ai_cast.h"
 
