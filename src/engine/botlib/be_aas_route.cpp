@@ -2040,17 +2040,11 @@ void AAS_DecompressVis( byte* in, int numareas, byte* decompressed )
 
 	// row = (numareas+7)>>3;
 	out = decompressed;
-	end = ( byte* )( ( int )decompressed + numareas );
+
+	// RB: skip the int cast for 64 bit
+	end = ( byte* )( decompressed + numareas );
 
 	do {
-		/*
-		if (*in)
-		{
-			*out++ = *in++;
-			continue;
-		}
-		*/
-
 		c = in[1];
 		if( !c ) {
 			AAS_Error( "DecompressVis: 0 repeat" );
@@ -2059,13 +2053,6 @@ void AAS_DecompressVis( byte* in, int numareas, byte* decompressed )
 			memset( out, 1, c );
 		}
 		in += 2;
-		/*
-		while (c)
-		{
-			*out++ = 0;
-			c--;
-		}
-		*/
 		out += c;
 	} while( out < end );
 } // end of the function AAS_DecompressVis
@@ -2537,7 +2524,8 @@ int AAS_FindAttackSpotWithinRange( int srcnum, int rangenum, int enemynum, float
 			// if this area doesn't have a vis list, ignore it
 			if( ( *aasworld ).areavisibility[nextareanum] ) {
 				// if the nextarea can see the enemy area
-				if( AAS_AreaVisible( enemyarea, nextareanum ) ) {																	 // now last of all, check that this area is a good attacking spot
+				if( AAS_AreaVisible( enemyarea, nextareanum ) ) {
+					// now last of all, check that this area is a good attacking spot
 					if( ( ( *aasworld ).visCache[nextareanum] == 2 ) || ( !( *aasworld ).visCache[nextareanum] && ( count += 10 ) && // we are about to use lots of CPU time
 																			botimport.AICast_CheckAttackAtPos( srcnum, enemynum, ( *aasworld ).areawaypoints[nextareanum], qfalse, qfalse ) ) ) {
 						( *aasworld ).visCache[nextareanum] = 2;

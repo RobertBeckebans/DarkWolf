@@ -633,10 +633,10 @@ void* QDECL Sys_LoadDll( const char* name, int apiVersion, void* importAPI, void
 #endif
 	char filename[MAX_QPATH];
 
-#ifdef _DEBUG
-	Com_sprintf( filename, sizeof( filename ), "%sx64_d.dll", name );
+#ifdef _M_X64
+	Com_sprintf( filename, sizeof( filename ), "%s_sp_x64.dll", name );
 #else
-	Com_sprintf( filename, sizeof( filename ), "%sx64.dll", name );
+	Com_sprintf( filename, sizeof( filename ), "%s_sp_x86.dll", name );
 #endif
 
 	// check current folder only if we are a developer
@@ -1374,5 +1374,3 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	// never gets here
 }
-
-
