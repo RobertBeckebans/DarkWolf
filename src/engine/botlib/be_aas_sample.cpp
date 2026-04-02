@@ -1222,7 +1222,7 @@ aas_link_t* AAS_LinkEntityClientBBox( vec3_t absmins, vec3_t absmaxs, int entnum
 aas_plane_t* AAS_PlaneFromNum( int planenum )
 {
 	if( !( *aasworld ).loaded ) {
-		return 0;
+		return NULL;
 	}
 
 	return &( *aasworld ).planes[planenum];

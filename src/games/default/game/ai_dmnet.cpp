@@ -53,10 +53,10 @@ If you have questions concerning this license or the applicable additional terms
 #include "ai_cmd.h"
 #include "ai_dmnet.h"
 // data file headers
-#include "chars.h" //characteristics
-#include "inv.h"   //indexes into the inventory
-#include "syn.h"   //synonyms
-#include "match.h" //string matching types and vars
+#include "ai_chars.h" //characteristics
+#include "ai_inv.h"	  //indexes into the inventory
+#include "ai_syn.h"	  //synonyms
+#include "ai_match.h" //string matching types and vars
 
 // goal flag, see be_ai_goal.h for the other GFL_*
 #define GFL_AIR 16

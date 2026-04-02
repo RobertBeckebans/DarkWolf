@@ -54,9 +54,9 @@ If you have questions concerning this license or the applicable additional terms
 #include "ai_cmd.h"
 #include "ai_dmnet.h"
 //
-#include "chars.h"
-#include "inv.h"
-#include "syn.h"
+#include "ai_chars.h"
+#include "ai_inv.h"
+#include "ai_syn.h"
 
 #define MAX_PATH 144
 
