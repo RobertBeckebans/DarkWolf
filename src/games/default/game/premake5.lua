@@ -1,6 +1,6 @@
 project "gamedll"
 	targetname  "game"
-	targetdir 	"../../../../main"
+	targetdir 	"../../../build/bin/%{cfg.system}/%{cfg.architecture}/%{cfg.buildcfg}"
 	language    "C++"
 	kind        "SharedLib"
 	files
@@ -27,7 +27,12 @@ project "gamedll"
 	filter "system:windows"
 		linkoptions
 		{
-			"/DEF:game.def",
+			'/DEF:"' .. path.join(_SCRIPT_DIR, "game.def") .. '"',
+		}
+		postbuildcommands
+		{
+			'if not exist "$(SolutionDir)..\\..\\..\\main" mkdir "$(SolutionDir)..\\..\\..\\main"',
+			'copy /Y "$(TargetPath)" "$(SolutionDir)..\\..\\..\\main\\"',
 		}
 		defines
 		{

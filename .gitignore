@@ -1,0 +1,6 @@
+main/save
+main/wolfconfig.cfg
+src/build
+memory.log
+*.pk3
+*.zip

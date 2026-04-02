@@ -29,16 +29,15 @@ if errorlevel 1 (
 )
 popd
 
-echo === Generating Visual Studio 2022 projects ===
-"%PREMAKE_EXE%" --file="premake5.lua" vs2022
+echo === Generating Visual Studio 2026 projects ===
+"%PREMAKE_EXE%" --file="premake5.lua" vs2026
 if errorlevel 1 (
     echo [ERROR] Premake generation failed.
     pause
     exit /b 1
 )
 
-for %%I in ("%~dp0..\build\vs2022\DarkWolf.sln") do set "SOLUTION_PATH=%%~fI"
+for %%I in ("%~dp0..\build\vs2026\DarkWolf.sln") do set "SOLUTION_PATH=%%~fI"
 echo [INFO] Solution: "%SOLUTION_PATH%"
 echo === Done ===
 pause
-exit /b 0

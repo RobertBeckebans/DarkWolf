@@ -1,6 +1,6 @@
 project "cgamedll"
 	targetname  "cgame"
-	targetdir 	"../../../../main"
+	targetdir 	"../../../build/bin/%{cfg.system}/%{cfg.architecture}/%{cfg.buildcfg}"
 	language    "C++"
 	kind        "SharedLib"
 	files
@@ -38,7 +38,12 @@ project "cgamedll"
 	filter "system:windows"
 		linkoptions
 		{
-			"/DEF:cgame.def",
+			'/DEF:"' .. _SCRIPT_DIR .. '/cgame.def"',
+		}
+		postbuildcommands
+		{
+			'if not exist "$(SolutionDir)..\\..\\..\\main" mkdir "$(SolutionDir)..\\..\\..\\main"',
+			'copy /Y "$(TargetPath)" "$(SolutionDir)..\\..\\..\\main\\"',
 		}
 		defines
 		{

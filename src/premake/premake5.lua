@@ -5,6 +5,8 @@ solution "DarkWolf"
     configurations { "Debug", "Profile", "Release" }
     platforms { "x64" }
     characterset ("ASCII")
+    location ("../build/%{_ACTION}")
+    objdir ("../build/obj/%{prj.name}/%{cfg.system}/%{cfg.architecture}/%{cfg.buildcfg}")
 
     filter "configurations:Debug"
         defines { "_DEBUG" }
@@ -27,7 +29,8 @@ solution "DarkWolf"
         warnings "Extra"
 
     filter "system:windows"
-        targetdir ".."
+        targetdir ("../build/bin/windows/%{cfg.architecture}/%{cfg.buildcfg}")
+        debugdir (path.getabsolute("../.."))
         flags {
             "NoManifest",
             "NoMinimalRebuild",
@@ -71,43 +74,13 @@ solution "DarkWolf"
 -- Options
 --
 newoption {
-    trigger     = "with-pch",
-    description = "Enable precompiled headers"
-}
-
-newoption {
-    trigger     = "with-bfg",
-    description = "Compile with RBDOOM-3-BFG renderer"
-}
-
-newoption {
     trigger = "with-freetype",
     description = "Compile with freetype support"
-}
-
-newoption {
-    trigger = "with-openal",
-    value = "TYPE",
-    description = "Specify which OpenAL library",
-    allowed = {
-        { "none", "No support for OpenAL" },
-        { "dlopen", "Dynamically load OpenAL library if available" },
-        { "link", "Link the OpenAL library as normal" },
-        { "openal-dlopen", "Dynamically load OpenAL library if available" },
-        { "openal-link", "Link the OpenAL library as normal" }
-    }
 }
 
 --
 -- Platform specific defaults
 --
--- Default to dlopen version of OpenAL
-if not _OPTIONS["with-openal"] then
-    _OPTIONS["with-openal"] = "dlopen"
-end
-if _OPTIONS["with-openal"] then
-    _OPTIONS["with-openal"] = "openal-" .. _OPTIONS["with-openal"]
-end
 
 -- main engine code
 project "DarkWolf"
@@ -233,6 +206,12 @@ project "DarkWolf"
             -- "dxguid",
             -- "d3dcompiler"
         }
+        postbuildcommands {
+            'if exist "$(SolutionDir)..\\..\\..\\OpenAL32.dll" copy /Y "$(SolutionDir)..\\..\\..\\OpenAL32.dll" "$(TargetDir)"',
+            'if exist "$(SolutionDir)..\\..\\..\\dxcompiler.dll" copy /Y "$(SolutionDir)..\\..\\..\\dxcompiler.dll" "$(TargetDir)"',
+            'if exist "$(SolutionDir)..\\..\\..\\dxil.dll" copy /Y "$(SolutionDir)..\\..\\..\\dxil.dll" "$(TargetDir)"',
+            'if exist "$(TargetPath)" copy /Y "$(TargetPath)" "$(SolutionDir)..\\..\\..\\"',
+        }
         buildoptions {
             -- "/MT"
         }
@@ -241,7 +220,7 @@ project "DarkWolf"
         }
 
     filter { "system:windows", "platforms:x64" }
-        targetdir "../.."
+        targetdir ("../build/bin/windows/%{cfg.architecture}/%{cfg.buildcfg}")
         libdirs {
             "../libs/sdl2/lib/x64",
             "../libs/openal/libs/win64",
@@ -264,10 +243,10 @@ project "DarkWolf"
         }
 
     filter { "system:linux", "platforms:x64" }
-        targetdir "../bin/linux-x86_64"
+        targetdir ("../build/bin/linux-x86_64/%{cfg.buildcfg}")
 
     filter { "system:linux", "platforms:native" }
-        targetdir "../bin/linux-native"
+        targetdir ("../build/bin/linux-native/%{cfg.buildcfg}")
 
     filter "system:linux"
         targetname "PanzerBFG"
