@@ -4,3 +4,5 @@ src/build
 memory.log
 *.pk3
 *.zip
+*.exe
+*.dll
