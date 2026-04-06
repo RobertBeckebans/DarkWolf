@@ -147,16 +147,8 @@ If you have questions concerning this license or the applicable additional terms
 	#define ALIGN_ON  #pragma align( 16 )
 	#define ALIGN_OFF #pragma align()
 
-	#ifdef __cplusplus
-
-	#endif
-
 void* osxAllocateMemory( long size );
 void  osxFreeMemory( void* pointer );
-
-	 #ifdef __cplusplus
-
-	 #endif
 
 #endif
 

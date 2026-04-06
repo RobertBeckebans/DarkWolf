@@ -69,12 +69,14 @@ fi
 # Copy different configs because -style=file: did not work
 cp .clang-format-header .clang-format
 find . -regex ".*\.\(h\|hpp\)" \
+	! -path "./.venv/*" \
 	! -path "./libs/*" \
 	! -path "./extern/*" \
 	-print0 | xargs -0 -P 16 "$CLANGFMT_BIN" -i --verbose
 
 cp .clang-format-cpp .clang-format
 find . -regex ".*\.\(c\|cpp\)" \
+	! -path "./.venv/*" \
 	! -path "./libs/*" \
 	! -path "./extern/*" \
 	! -path "./engine/win32/win_cpu.cpp" \

@@ -1,0 +1,1562 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+doxy_xml_inserter_ai.py — Doxygen-XML-supported comment inserter
+with *mandatory* Pydantic-AI-Agent for intelligent documentation generation.
+
+Process:
+1. Parse Doxygen XML
+2. Extract function signature + implementation
+3. Pydantic-AI Agent generates final Doxygen comment
+4. Comment is inserted in header/CPP (idempotent, no duplicates)
+5. Old comment in CPP is deleted
+"""
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import xxhash
+from pydantic import BaseModel, Field
+from pydantic_ai import (
+    Agent,
+    ModelMessage,
+    ModelMessagesTypeAdapter,
+    RunContext,
+    UsageLimits,
+)
+from pydantic_ai.mcp import MCPServerStdio
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.ollama import OllamaProvider
+from pydantic_core import to_jsonable_python
+from termcolor import colored
+from tqdm import tqdm
+
+STATE_DIR = Path("chats")
+STATE_DIR.mkdir(exist_ok=True)
+
+HEADER_EXTS = {".h", ".hpp", ".hh", ".hxx"}
+SOURCE_EXTS = {".c", ".cc", ".cpp", ".cxx"}
+
+
+def is_header(p: Path) -> bool:
+    return p.suffix.lower() in HEADER_EXTS
+
+
+def is_source(p: Path) -> bool:
+    return p.suffix.lower() in SOURCE_EXTS
+
+
+def read_file(path: Path) -> List[str]:
+    return path.read_text(encoding="utf-8", errors="ignore").splitlines()
+
+
+def write_file(path: Path, lines: List[str]):
+    text = "\n".join(lines)
+    if not text.endswith("\n"):
+        text += "\n"
+    path.write_text(text, encoding="utf-8")
+
+
+def extract_text(node: ET.Element) -> str:
+    return "".join(node.itertext()).strip()
+
+
+def has_existing_doxygen(lines: List[str], decl_idx: int) -> bool:
+    """
+    Checks whether a Doxygen comment already exists for the declaration at decl_idx (0-based).
+
+    Supports:
+    - /// comments
+    - //! comments
+    - /** ... */ blocks
+    - /*! ... */ blocks
+    even when we are currently on the closing line '*/'.
+    """
+    i = decl_idx - 1
+    # Skip empty lines directly above
+    while i >= 0 and lines[i].strip() == "":
+        i -= 1
+    if i < 0:
+        return False
+
+    s = lines[i].lstrip()
+
+    # 1) /// chain?
+    if s.startswith("///"):
+        return True
+
+    # 2) //! Doxygen one-liner
+    if s.startswith("//!"):
+        return True
+
+    # 3) Start of a Doxygen block?
+    if s.startswith("/**") or s.startswith("/*!"):
+        return True
+
+    # 4) We might be on '*/' or a middle '* …' line.
+    #    In that case, go upward until the block start '/*' and check
+    #    if it's a Doxygen block.
+    if "*/" in s or s.startswith("*"):
+        j = i
+        while j >= 0 and "/*" not in lines[j]:
+            j -= 1
+        if j >= 0:
+            start = lines[j].lstrip()
+            if start.startswith("/**") or start.startswith("/*!"):
+                return True
+
+    return False
+
+
+# -----------------------------------------------------------------------------
+# Data Model
+# -----------------------------------------------------------------------------
+@dataclass
+class FuncInfo:
+    file: Path
+    line: int
+    bodyfile: Optional[Path]
+    bodystart: Optional[int]
+    bodyend: Optional[int]
+    name: str
+    definition: str
+    argsstring: str
+    params: List[Tuple[str, Optional[str]]]
+    returns: Optional[str]
+    brief: str
+
+
+def get_func_identifier(func: FuncInfo) -> str:
+    """
+    Provides a stable identifier for the function, e.g.,
+        "idParallelJobList::AddJob"
+    from the Doxygen definition + argsstring.
+
+    Fallback is the plain function name ("AddJob").
+
+    Examples:
+
+    definition = "void idParallelJobList::AddJob"
+    → ident = "idParallelJobList::AddJob"
+
+    definition = "ID_INLINE uint64 idParallelJobList::GetWaitTimeMicroSec() const"
+    → ident = "idParallelJobList::GetWaitTimeMicroSec"
+
+    definition = "void SomeFreeFunc"
+    → ident = "SomeFreeFunc"
+    """
+    sig = (func.definition + func.argsstring).strip()
+    if not sig:
+        return func.name
+
+    # Take everything before the first parenthesis
+    head = sig.split("(", 1)[0]
+    head = head.strip()
+    if not head:
+        return func.name
+
+    # Last token is usually "Class::Func" or "Func"
+    parts = head.split()
+    ident = parts[-1]
+
+    # If something goes wrong, at least return the plain name
+    return ident or func.name
+
+
+# -----------------------------------------------------------------------------
+# XML Parser
+# -----------------------------------------------------------------------------
+def parse_doxygen_xml(xml_dir: Path, repo_root: Path, prefer_decl: bool = True) -> List[FuncInfo]:
+    funcs: List[FuncInfo] = []
+
+    for xf in xml_dir.glob("*.xml"):
+        try:
+            root = ET.parse(xf).getroot()
+        except:
+            continue
+
+        for md in root.findall(".//memberdef[@kind='function']"):
+            name = md.findtext("name") or ""
+            definition = md.findtext("definition") or ""
+            argsstring = md.findtext("argsstring") or ""
+
+            # briefdescription
+            bd = md.find("briefdescription")
+            brief = extract_text(bd) if bd is not None else ""
+
+            # return type
+            tnode = md.find("type")
+            returns = extract_text(tnode) if tnode is not None else None
+            if returns and returns.lower() in ("void", "void*"):
+                returns = None
+
+            # params
+            params = []
+            for p in md.findall("param"):
+                pname = p.findtext("declname") or ""
+                ptype_node = p.find("type")
+                ptype = extract_text(ptype_node) if ptype_node is not None else None
+                params.append((pname, ptype))
+
+            # location
+            loc = md.find("location")
+            if loc is None:
+                continue
+
+            file_decl = loc.get("file")
+            line_decl = loc.get("line")
+            bodyfile = loc.get("bodyfile")
+            bodystart = loc.get("bodystart")
+            bodyend = loc.get("bodyend")
+
+            if prefer_decl and file_decl and line_decl:
+                target_file = Path(file_decl)
+                target_line = int(line_decl)
+            elif bodyfile and bodystart:
+                target_file = Path(bodyfile)
+                target_line = int(bodystart)
+            else:
+                continue
+
+            try:
+                target_file = target_file.resolve().relative_to(repo_root.resolve())
+            except ValueError:
+                continue
+
+            bf = Path(bodyfile) if bodyfile else None
+            if bf:
+                try:
+                    bf = bf.resolve().relative_to(repo_root.resolve())
+                except ValueError:
+                    continue
+
+            funcs.append(
+                FuncInfo(
+                    file=target_file,
+                    line=target_line,
+                    bodyfile=bf,
+                    bodystart=int(bodystart) if bodystart else None,
+                    bodyend=int(bodyend) if bodyend else None,
+                    name=name,
+                    definition=definition,
+                    argsstring=argsstring,
+                    params=params,
+                    returns=returns,
+                    brief=brief,
+                )
+            )
+    return funcs
+
+
+# -----------------------------------------------------------------------------
+# Implementation Extractor
+# -----------------------------------------------------------------------------
+def extract_implementation(func: FuncInfo, repo_root: Path, max_chars=6000) -> str:
+    bodyfile = func.bodyfile or func.file
+    if not bodyfile.is_absolute():
+        bodyfile = (repo_root / bodyfile).resolve()
+
+    if not bodyfile.exists():
+        return ""
+
+    lines = read_file(bodyfile)
+    start = (func.bodystart or func.line) - 1
+    end = (func.bodyend or func.line) - 1
+
+    start = max(0, min(start, len(lines) - 1))
+    end = max(start, min(end, len(lines) - 1))
+
+    excerpt = "\n".join(lines[start : end + 1])
+    if len(excerpt) > max_chars:
+        excerpt = excerpt[:max_chars] + "\n/* ... truncated ... */"
+
+    return excerpt
+
+
+def extract_inline_comment(line: str) -> str:
+    """
+    Extracts a comment that appears on the same line behind code.
+    Supports //, ///, //! as well as /* ... */ at the end of the line.
+    """
+    # prefer Doxygen variants
+    for marker in ("///", "//!"):
+        pos = line.find(marker)
+        if pos != -1:
+            return line[pos:].rstrip("\n")
+
+    # normal // comment
+    pos = line.find("//")
+    if pos != -1:
+        return line[pos:].rstrip("\n")
+
+    # simple block comment at the end of line
+    pos = line.find("/*")
+    if pos != -1:
+        return line[pos:].rstrip("\n")
+
+    return ""
+
+
+def extract_trailing_comment_lines(lines: list[str], idx: int) -> str:
+    """
+    Collects pure comment lines directly underneath the declaration line idx.
+    Stops once something 'real' (code) appears or a block is complete.
+    """
+    collected: list[str] = []
+    i = idx + 1
+    started = False
+
+    while i < len(lines):
+        line = lines[i].rstrip("\n")
+        stripped = line.lstrip()
+
+        if not stripped:
+            # Empty lines:
+            if started:
+                # after start, an empty line separates from the rest
+                break
+            i += 1
+            continue
+
+        # pure comment lines (Doxygen or normal)
+        if (
+            stripped.startswith("///")
+            or stripped.startswith("//!")
+            or stripped.startswith("///<")
+            or stripped.startswith("//!<")
+        ):
+            collected.append(line)
+            started = True
+            i += 1
+            continue
+
+        # block comment underneath
+        if stripped.startswith("/*") or stripped.startswith("/**"):
+            started = True
+            collected.append(line)
+            i += 1
+            # collect the whole block
+            while i < len(lines):
+                line2 = lines[i].rstrip("\n")
+                collected.append(line2)
+                if "*/" in line2:
+                    i += 1
+                    break
+                i += 1
+            break
+
+        # anything else (code) → stop
+        break
+
+        i += 1
+
+    return "\n".join(collected)
+
+
+def extract_comment_block_above(lines: list[str], idx: int) -> str:
+    """
+    Collects contiguous comment lines directly above idx (function line).
+    Supports //, /* ... */, /** ... */.
+    """
+    i = idx - 1
+    collected: list[str] = []
+
+    in_block = False
+
+    while i >= 0:
+        line = lines[i].rstrip("\n")
+
+        # Empty lines between comment and function are still allowed
+        if not line.strip():
+            if collected:
+                # we already have something, an empty line separates from the rest
+                break
+            i -= 1
+            continue
+
+        # Block comments
+        if "*/" in line:
+            in_block = True
+            collected.append(line)
+            i -= 1
+            continue
+
+        if in_block:
+            collected.append(line)
+            if "/*" in line:
+                # block complete
+                break
+            i -= 1
+            continue
+
+        # Line comments (//)
+        stripped = line.lstrip()
+        if (
+            stripped.startswith("//")
+            or stripped.startswith("/*")
+            or stripped.startswith("/**")
+        ):
+            collected.append(line)
+            i -= 1
+            continue
+
+        # anything else (code) → stop
+        break
+
+    collected.reverse()
+    return "\n".join(collected)
+
+
+def extract_comments_for_declaration(lines: list[str], idx: int) -> str:
+    """
+    Combines:
+    - Comment block directly above the function line
+    - Inline comment in the function line itself
+    - Doxygen/comment lines directly below
+    """
+    above = extract_comment_block_above(lines, idx)
+    inline = extract_inline_comment(lines[idx])
+    trailing = extract_trailing_comment_lines(lines, idx)
+
+    parts = [p for p in (above, inline, trailing) if p and p.strip()]
+    return "\n".join(parts)
+
+
+def _strip_comments(code: str) -> str:
+    # Roughly remove line and block comments
+    code = re.sub(r"//.*", "", code)
+    code = re.sub(r"/\*.*?\*/", "", code, flags=re.S)
+    return code
+
+
+def _looks_like_simple_return_body(func: FuncInfo, impl: str) -> bool:
+    """
+    Trivial getter, robust even for inline definitions like:
+        ID_INLINE const idVec3& idPlane::Normal() const
+        {
+            return *reinterpret_cast<const idVec3*>( &a );
+        }
+
+    Criteria:
+    - non-void return value
+    - no parameters
+    - body contains exactly ONE return statement
+    - otherwise only signature/macros/braces, no further logic
+    """
+    # 1) Must return something
+    if func.returns is None:
+        return False
+
+    # 2) No parameters -> classic getter
+    if any(name for name, _ in func.params):
+        return False
+
+    if not impl.strip():
+        return False
+
+    code = _strip_comments(impl)
+    raw_lines = code.splitlines()
+
+    # Remove empty lines and bare braces/semicolons
+    lines = []
+    for ln in raw_lines:
+        s = ln.strip()
+        if not s:
+            continue
+        if s in ("{", "}", ";"):
+            continue
+        lines.append(s)
+
+    saw_return = False
+
+    for ln in lines:
+        # 1) Return line?
+        if "return" in ln:
+            # only one return allowed
+            if saw_return:
+                return False
+
+            # should start at line beginning
+            m = re.match(r"^return\s+(.+);?$", ln)
+            if not m:
+                return False
+            expr = m.group(1).strip().rstrip(";").strip()
+            if not expr:
+                return False
+
+            # no operators/function calls etc.
+            # forbidden = set("()+-*/%&|^!?<>,:")
+            # if any(ch in forbidden for ch in expr):
+            #     return False
+
+            # no whitespaces in expression
+            if " " in expr or "\t" in expr:
+                return False
+
+            # simple member/this->member expression
+            if not re.match(r"^(this->)?[A-Za-z_]\w*(::[A-Za-z_]\w*)*$", expr):
+                return False
+
+            saw_return = True
+            continue
+
+        # 2) Allowed signature/macro lines
+        #    e.g., "ID_INLINE const idVec3& idPlane::Normal() const"
+        #    or just "ID_INLINE"
+        if func.name in ln and "(" in ln and ")" in ln:
+            # looks like function header -> ok
+            continue
+
+        if re.match(r"^[A-Z_][A-Z0-9_]*$", ln):
+            # pure macro line: ID_INLINE, FORCE_INLINE, etc.
+            continue
+
+        # anything else means additional logic -> not a trivial getter
+        return False
+
+    return saw_return
+
+
+def is_trivial_getter_from_signature(func: FuncInfo) -> bool:
+    if func.returns is None:
+        return False
+    if any(name for name, _ in func.params):
+        return False
+    if "::" not in func.definition:
+        return False
+
+    sig = (func.definition + " " + func.argsstring).strip()
+    is_const = " const" in sig or sig.endswith("const")
+    if not is_const:
+        return False
+
+    name = func.name
+    if name.startswith("Get") and len(name) > 3:
+        return True
+    if name.startswith("Is") and len(name) > 2:
+        return True
+    if name.startswith("Has") and len(name) > 3:
+        return True
+    if name.startswith("To") and len(name) > 2:
+        return True
+
+    return False
+
+
+def is_trivial_getter(func: FuncInfo, impl: str) -> bool:
+    if _looks_like_simple_return_body(func, impl):
+        return True
+    return is_trivial_getter_from_signature(func)
+
+
+def is_trivial_setter(func: FuncInfo, impl: str) -> bool:
+    """
+    Heuristics for trivial setters:
+    - void return value (or None in FuncInfo)
+    - exactly one parameter
+    - body consists of exactly one assignment 'member = param;'
+    """
+
+    # Return value: None in FuncInfo means "void"
+    if func.returns not in (None, "void", "void "):
+        return False
+
+    if len(func.params) != 1:
+        return False
+
+    pname, _ptype = func.params[0]
+    if not pname:
+        return False
+
+    if not impl.strip():
+        return False
+
+    code = _strip_comments(impl)
+    lines = [ln.strip() for ln in code.splitlines()]
+    body_lines = [ln for ln in lines if ln and ln not in ("{", "}", ";")]
+
+    if len(body_lines) != 1:
+        return False
+
+    line = body_lines[0]
+    if not line.endswith(";"):
+        return False
+    line = line[:-1].strip()
+
+    if "=" not in line:
+        return False
+    lhs, rhs = [x.strip() for x in line.split("=", 1)]
+    if rhs != pname:
+        return False
+
+    # LHS should be a simple member expression
+    if any(ch in lhs for ch in "()+-*/%&|^!?<>,: "):
+        return False
+
+    return True
+
+
+# -----------------------------------------------------------------------------
+# Pydantic AI Comment Generator
+# -----------------------------------------------------------------------------
+ollama_model = OpenAIChatModel(
+    model_name="gpt-oss:20b", # good
+    # model_name="ministral-3", # fails many times
+    # model_name="glm-4.7-flash", # good but slow
+    # model_name="qwen3-coder",
+    provider=OllamaProvider(base_url="http://localhost:11434/v1"),
+)
+
+# llama_cpp_model = OpenAIChatModel(
+#     model_name="gpt-oss:20b", # does not matter
+#     provider=OpenAIProvider(base_url='http://localhost:8080/v1'),
+# )
+
+# Build an MCP stdio server wrapper that will communicate with the subprocess
+# mcp_cpp_server = MCPServerStdio(
+#     command="mcp-cpp-server.exe", args=["--log-file", "logs/mcp_server.log"]
+# )
+mcp_cpp_server = None
+
+
+class CommentModel(BaseModel):
+    brief: str = "MISSING"
+    details: Optional[str] = None
+    params: Dict[str, str] = Field(default_factory=dict)
+    returns: Optional[str] = None
+    throws: Optional[str] = None
+
+
+def render_ai_block(model: CommentModel, trivial: bool) -> str:
+    if trivial:
+        return f"\t//! {model.brief}"
+
+    lines = ["\t/*!"]
+    lines.append(f"\t\t\\brief {model.brief}")
+
+    if model.details:
+        lines.append("")
+        for ln in model.details.split("\n"):
+            lines.append(f"\t\t{ln}")
+        lines.append("")
+
+    for pname, pdesc in model.params.items():
+        lines.append(f"\t\t\\param {pname} {pdesc}")
+
+    if model.returns:
+        lines.append(f"\t\t\\return {model.returns}")
+    if model.throws:
+        lines.append(f"\t\t\\throws {model.throws}")
+
+    lines.append("\t*/")
+    return "\n".join(lines) + "\n"
+
+
+def save_history(chat_id: str, messages: list[ModelMessage], title: str):
+    p = STATE_DIR / f"{chat_id}.json"
+    try:
+        as_python_objects = [to_jsonable_python(msg) for msg in messages]
+        data = {"chat_id": chat_id, "title": title, "messages": as_python_objects}
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except IOError as e:
+        print(
+            colored(
+                f"Fehler beim Speichern der History für chat_id={chat_id}: {e}", "red"
+            )
+        )
+
+
+def mcp_collect_context(
+    func: FuncInfo,
+    func_id: str,
+    decl_file: Path,
+    repo_root: Path,
+    mcp_toolset,
+    max_examples: int = 3,
+    timeout_s: int = 20,
+) -> str:
+    if not mcp_toolset or MCPServerStdio is None:
+        return ""
+
+    try:
+        loc_file = decl_file
+        if not loc_file.is_absolute():
+            loc_file = (repo_root / loc_file).resolve()
+
+        location_hint = f"{loc_file}:{func.line}:1"
+
+        system_prompt = (
+            "You are a C++ documentation assistant. "
+            "Use the MCP C++ tools to gather symbol context for the given function. "
+            "Always call get_project_details first, then search_symbols, then analyze_symbol_context. "
+            "Return a compact, plain-text summary of: purpose, key behavior, parameters/returns, "
+            "usage examples, and relationships (calls/inheritance) when available."
+        )
+
+        user_payload = {
+            "symbol": func_id or func.name,
+            "fallback_symbol": func.name,
+            "location_hint": location_hint,
+            "max_examples": max_examples,
+            "timeout_s": timeout_s,
+        }
+
+        mcp_agent = Agent(
+            ollama_model,
+            toolsets=[mcp_toolset],
+            output_type=str,
+            system_prompt=system_prompt,
+        )
+
+        res = mcp_agent.run_sync(user_prompt=str(user_payload))
+        out = getattr(res, "output", None)
+        return out if isinstance(out, str) else ""
+    except Exception as e:
+        print(f"MCP context collection error for {func_id}: {e}")
+        return ""
+
+
+def ai_generate_comment(
+    func: FuncInfo,
+    impl: str,
+    llm: str,
+    trivial: bool,
+    original_comment: str | None = None,
+    mcp_context: str | None = None,
+) -> CommentModel:
+    signature = (func.definition + func.argsstring).strip()
+
+    system_prompt = (
+        "You are an experienced senior C++ software engineer. "
+        "Your job is to fill the fields of CommentModel for a single C++ function.\n"
+        "You're dealing with a derivate of the Doom 3 BFG code base by id Software called RBDOOM-3-BFG.\n"
+        "\n"
+        "INPUT YOU RECEIVE:\n"
+        "- mode: 'full' or 'trivial'\n"
+        "- C++ function signature\n"
+        "- Declared return type\n"
+        "- List of parameters (name + type)\n"
+        "- An excerpt of the implementation/body code\n"
+        "- Optional MCP tool context summary\n"
+        "\n"
+        "YOUR OUTPUT MUST FOLLOW THESE RULES STRICTLY:\n"
+        "1) You ONLY fill the JSON fields of CommentModel: 'brief', 'details', 'params', "
+        "'returns', 'throws'.\n"
+        "2) NEVER include any C++ or Doxygen comment delimiters in any field:\n"
+        "   - Do NOT use '/*', '*/', '/**', '/*!', '///', '//' anywhere.\n"
+        "3) NEVER include Doxygen tags in any field:\n"
+        "   - Do NOT write '@brief', '\\brief', '@param', '\\param', '@return', '\\return', etc.\n"
+        "   - Just write natural language descriptions.\n"
+        "4) 'brief' is a single concise sentence describing what the function does.\n"
+        "5) 'details' (optional) may contain multiple sentences/paragraphs of plain text, "
+        "but no comment markers and no Doxygen tags.\n"
+        "6) 'params' is a map from parameter name to a short description. "
+        "Descriptions must NOT start with '\\param' or '@param', only text.\n"
+        "7) 'returns' (if non-void) should be a plain description of the return value "
+        "without any Doxygen tags.\n"
+        "8) If information is unknown or ambiguous (e.g. units, ownership), "
+        "you MUST explicitly write 'TODO: clarify ...' instead of guessing.\n"
+        "9) Never wrap anything in code fences or Markdown. Output is pure data for CommentModel.\n"
+        "10) Never fill returns for a constructor or destructor.\n"
+        "11) Only fill throws if throw is called or it contains an assertation.\n"
+        "12) If mode == 'trivial':\n"
+        "   - Fill ONLY 'brief' with a single clear sentence.\n"
+        "   - All other fields must remain empty (defaults).\n"
+        "13) If mode == 'full':\n"
+        "   - Fill brief and – if sensible – details, params, returns, throws, pre, post, threadsafety.\n"
+        "   - No generic phrases, no repetition of the signature in words.\n"
+        "14) If you have get an original_comment than consider it as a viable source for your new comment.\n"
+        "15) If mcp_context is provided, use it to improve accuracy. If it conflicts with the implementation, "
+        "prefer the implementation and write 'TODO: clarify ...' for ambiguous details.\n"
+        "\n"
+        "IMPORTANT: The final Doxygen comment block will be rendered by another component. "
+        "You ONLY provide raw text content for the fields, NOT full comment blocks.\n"
+    )
+
+    user_prompt = {
+        "mode": "trivial" if trivial else "full",
+        "signature": signature,
+        "returns": func.returns or "",
+        "params": [{"name": n, "type": t or ""} for n, t in func.params],
+        "impl": impl,
+        "original_comment": original_comment or "<none>",
+        "mcp_context": mcp_context or "<none>",
+    }
+
+    agent = Agent(ollama_model, output_type=CommentModel, system_prompt=system_prompt)
+
+    try:
+        r = agent.run_sync(user_prompt=str(user_prompt))
+
+        with open("chats/prompt.md", "w", encoding="utf-8") as f:
+            user_prompt_str = json.dumps(user_prompt, indent=2, ensure_ascii=False)
+            f.write(
+                f"# System prompt\n {system_prompt}\n\n # User prompt\n {user_prompt_str} \n\n"
+            )
+
+        #with open("chats/prompt.md", "a", encoding="utf-8") as f:
+            block = render_ai_block(r.output, False)
+            f.write(f"\n\n# Model output\n{block}\n")
+
+        # func_id = get_func_identifier(func)
+        # chat_name = func_id.replace("::", ".")
+        # save_history(chat_name, r.all_messages(), f"ai_generate_comment for {func_id}")
+
+        return r.output
+    except Exception as e:
+        print(f"AI comment generation error: {e}")
+        return CommentModel()
+
+
+# -----------------------------------------------------------------------------
+# Insert Comment
+# -----------------------------------------------------------------------------
+def strip_inline_non_doxygen_comment(line: str) -> str:
+    """
+    Removes simple inline comments on the same line
+    that are not Doxygen comments.
+    - // ... (but not ///)
+    - /* ... */ on the same line (but not /** or /*!)
+    """
+    s = line
+
+    # First remove inline // (not ///)
+    idx = s.find("//")
+    if idx != -1:
+        # check if it doesn't start with '///'
+        prefix = s[:idx]
+        if not s.lstrip().startswith("///"):
+            s = s[:idx].rstrip()
+
+    # Then simple /* ... */ on the same line (not /** or /*!)
+    idx2 = s.find("/*")
+    if idx2 != -1:
+        after = s[idx2:]
+        if "*/" in after:
+            # ensure it's not /** or /*!
+            if not after.startswith("/**") and not after.startswith("/*!"):
+                s = s[:idx2].rstrip()
+
+    return s
+
+
+def find_declaration_line_for_body(
+    lines: list[str],
+    start_idx: int,
+    func_id: str,  # z.B. "idParallelJobManagerLocal::Init"
+    max_search_up: int = 80,
+) -> int:
+    """
+    Findet die Implementierungszeile für eine Funktion anhand ihres vollqualifizierten Namens.
+    Beispiel: func_id = "idParallelJobManagerLocal::Init"
+    """
+    if not lines or start_idx < 0 or start_idx >= len(lines):
+        return -1
+
+    # Entferne Parameterliste, falls mitgegeben (manchmal ist func_id = "idClass::Func(int)")
+    base_func_id = func_id.split("(")[0].strip()
+
+    # 1. Lokale Suche nach oben (fast immer ausreichend)
+    limit = max(start_idx - max_search_up, -1)
+    for i in range(start_idx, limit, -1):
+        line = lines[i]
+
+        # Muss den exakten Namen enthalten und eine öffnende Klammer
+        if base_func_id in line and "(" in line:
+            stripped = line.strip()
+
+            # Ignoriere Kommentare
+            if stripped.startswith(("//", "/*", "*")):
+                continue
+
+            # Ignoriere Forward-Deklarationen
+            if stripped.endswith(";"):
+                continue
+
+            # Wenn { in dieser oder den nächsten 2 Zeilen → das ist die Implementierung
+            if (
+                "{" in line
+                or (i + 1 < len(lines) and "{" in lines[i + 1])
+                or (i + 2 < len(lines) and "{" in lines[i + 2])
+            ):
+                return i
+
+            # Oder: wenn es nicht mit ; endet → auch gut
+            if not stripped.endswith(";"):
+                return i
+
+    # 2. Fallback: ganze Datei nach EXAKTEM vollqualifiziertem Namen + Implementierung durchsuchen
+    pattern = re.compile(rf"{re.escape(base_func_id)}\s*\([^)]*\)\s*{{")
+
+    for idx, line in enumerate(lines):
+        if base_func_id in line and "(" in line:
+            stripped = line.strip()
+            if stripped.startswith(("//", "/*", "*")) or stripped.endswith(";"):
+                continue
+
+            # Exakter Treffer: Name + ( + Parameter + ) + direkt {
+            # if pattern.search(line):
+            return idx
+
+            # Oder: { steht in der nächsten Zeile (häufig wegen const/noexcept/override)
+            if idx + 1 < len(lines) and "{" in lines[idx + 1]:
+                next_line = lines[idx + 1].strip()
+                if not next_line.startswith(("//", "/*", "*")):
+                    return idx
+
+            # Oder: { steht zwei Zeilen später (z.B. bei = default; oder attribute)
+            if idx + idx + 2 < len(lines) and "{" in lines[idx + 2]:
+                return idx
+
+    # 3. Letzter Notfall: einfach die erste (und einzige!) Zeile mit dem vollqualifizierten Namen finden,
+    #     die KEINE Forward-Deklaration ist
+    for idx, line in enumerate(lines):
+        if base_func_id in line and "(" in line:
+            stripped = line.strip()
+            if not stripped.startswith(("//", "/*", "*")) and not stripped.endswith(
+                ";"
+            ):
+                return idx
+
+    # Wenn alles scheitert: gib den Body-Start zurück (besser als falsch)
+    return -1
+
+
+def cleanup_comments_above(
+    lines: list[str], idx: int, func_id: str, allow_skip_doxygen: bool = False
+) -> int:
+    """
+    Removes legacy non-Doxygen comment blocks *above* a function declaration/definition.
+
+    Patterns removed:
+        - Doom3-style banners:
+              /* ================= idPlane::Func ================ */
+              // ================= idPlane::Func =================
+        - Any multi-line /* ... */ block containing the function name
+        - Any multi-line /* ... */ block containing ASCII separators (=====, ----, ****)
+        - Single-line non-Doxygen comments containing the function name
+
+    Doxygen comments are preserved, depending on allow_skip_doxygen
+
+    Returns the possibly updated index of the function line.
+    """
+
+    # If already at the top, nothing to do
+    if idx <= 0:
+        return idx
+
+    short_name = func_id.split("::")[-1] if "::" in func_id else func_id
+
+    # --------------------------------------------
+    # Helper: determines if a comment line is Doxygen
+    # --------------------------------------------
+    def is_doxygen_line(s: str) -> bool:
+        stripped = s.lstrip()
+        return (
+            stripped.startswith("/**")
+            or stripped.startswith("/*!")
+            or stripped.startswith("///")
+            or stripped.startswith("//!")
+        )
+
+    # --------------------------------------------
+    # Helper: Doom-style banner detection
+    # --------------------------------------------
+    doom_banner_re = re.compile(r"(=+|-+|\*+).*(%s).*(=+|-+|\*+)" % re.escape(func_id))
+
+    # --------------------------------------------
+    # Start scanning upward
+    # --------------------------------------------
+    i = idx - 1
+    while i >= 0:
+        line = lines[i].rstrip()
+
+        if line.strip() == "":
+            i -= 1
+            continue
+
+        if is_doxygen_line(line):
+            if not allow_skip_doxygen:
+                break
+            i -= 1
+            continue
+
+        # --------------------------------------------
+        # 1) Inline Doom3 banner on a single line
+        # --------------------------------------------
+        if doom_banner_re.search(line):
+            del lines[i]
+            idx -= 1
+            i -= 1
+            continue
+
+        # --------------------------------------------
+        # 2) Single-line comment containing the func_id or pure function name
+        # --------------------------------------------
+        if (
+            (line.strip().startswith("//") or line.strip().startswith("/*"))
+            and not is_doxygen_line(line)
+            and (func_id in line or short_name in line)
+        ):
+            del lines[i]
+            idx -= 1
+            i -= 1
+            continue
+
+        # --------------------------------------------
+        # 3) Multi-line /* ... */ block → fully collect and check if either
+        #    func_id or short_name is present
+        # --------------------------------------------
+        if line.strip().startswith("*/") or line.strip().startswith("*"):
+            end = i
+            start = i
+            while start >= 0 and "/*" not in lines[start]:
+                start -= 1
+            if start >= 0:
+                block = "\n".join(lines[start : end + 1])
+                if (
+                    (func_id in block)
+                    or (short_name in block)
+                    or re.search(r"(=|-|\*){5,}", block)
+                ):
+                    del lines[start : end + 1]
+                    removed_count = end - start + 1
+                    idx -= removed_count
+                    i = start - 1
+                    continue
+            # If this line is not a comment at all → stop
+            break
+
+        if not line.strip().startswith(("//", "/*", "*")):
+            break
+
+        i -= 1
+
+    # --------------------------------------------
+    # Fallback: simply remove the non-Doxygen comment block directly above the function
+    # --------------------------------------------
+    # j = idx - 1
+    # if j >= 0:
+    #     start = j
+    #     # scan upward until we hit a non-comment line
+    #     while start >= 0:
+    #         s = lines[start].lstrip()
+    #         if not s:
+    #             # empty line separates from rest
+    #             break
+    #         # only "normal" comments (not Doxygen)
+    #         if (s.startswith("//") or s.startswith("/*") or s.startswith("*")) and not is_doxygen_line(s):
+    #             start -= 1
+    #             continue
+    #         break
+
+    #     start += 1  # one line back, because we fell into the first non-comment line
+    #     if start <= j:
+    #         # delete everything between start and idx (exclusive)
+    #         del lines[start:idx]
+    #         removed = idx - start
+    #         idx -= removed
+
+    return idx
+
+
+def remove_doxygen_block_above(lines: List[str], decl_idx: int) -> int:
+    """
+    Removes a Doxygen comment directly above decl_idx (0-based).
+    Supports:
+      - ///, //! - chains
+      - /** ... */, /*! ... */ - blocks
+    Returns the new index of the declaration line.
+    """
+    i = decl_idx - 1
+    if i < 0:
+        return decl_idx
+
+    # like has_existing_doxygen: skip empty lines
+    while i >= 0 and lines[i].strip() == "":
+        i -= 1
+    if i < 0:
+        return decl_idx
+
+    s = lines[i].lstrip()
+
+    # 1) line-based Doxygen comments (///, //!)
+    if s.startswith("///") or s.startswith("//!"):
+        end = i
+        start = i
+        # collect upwards as long as there are also Doxygen line comments
+        while start - 1 >= 0:
+            prev = lines[start - 1].lstrip()
+            if prev.startswith("///") or prev.startswith("//!"):
+                start -= 1
+            else:
+                break
+        del lines[start : end + 1]
+        removed = end - start + 1
+        return decl_idx - removed
+
+    # 2) Block Doxygen – we may be on '*/' or a '*' line
+    if "*/" in s or s.startswith("*"):
+        end = i
+        j = i
+        while j >= 0 and "/*" not in lines[j]:
+            j -= 1
+        if j >= 0:
+            start_line = lines[j].lstrip()
+            if start_line.startswith("/**") or start_line.startswith("/*!"):
+                start = j
+                del lines[start : end + 1]
+                removed = end - start + 1
+                return decl_idx - removed
+
+    # 3) Block Doxygen – we are directly on '/**' or '/*!'
+    if s.startswith("/**") or s.startswith("/*!"):
+        start = i
+        j = i
+        while j < len(lines) and "*/" not in lines[j]:
+            j += 1
+        end = j if j < len(lines) else i
+        del lines[start : end + 1]
+        removed = end - start + 1
+        return decl_idx - removed
+
+    return decl_idx
+
+
+def _camel_to_words(name: str) -> str:
+    # FooBar -> "foo bar"
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name)
+    return s.lower()
+
+
+# -----------------------------------------------------------------------------
+# Cache / DB
+# -----------------------------------------------------------------------------
+
+
+def compute_normalized_body_hash(impl: str) -> str:
+    code = impl
+    # Remove comments
+    code = re.sub(r"//.*?$|/\*.*?\*/", "", code, flags=re.S | re.M)
+    # Normalize whitespace
+    code = re.sub(r"\s+", " ", code).strip()
+
+    h = xxhash.xxh3_128()
+    h.update(code)
+    return h.hexdigest()
+
+
+def make_func_key(func: FuncInfo, func_id: str) -> str:
+    # As stable and unique as possible
+    # return f"{func.file}:{func_id}:{func.definition}{func.argsstring}"
+    return f"{func.definition}{func.argsstring}"
+
+
+class FunctionCacheEntry(BaseModel):
+    body_hash: str
+    has_doxygen: bool
+    generated_by_ai: bool = False
+    comment_hash: Optional[str] = None
+
+
+class CacheFile(BaseModel):
+    version: int = 1
+    functions: Dict[str, FunctionCacheEntry] = {}
+
+
+def load_cache(path: Path) -> CacheFile:
+    if not path.exists():
+        return CacheFile()
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return CacheFile(**data)
+
+
+def save_cache(path: Path, cache: CacheFile) -> None:
+    path.write_text(cache.model_dump_json(indent=2), encoding="utf-8")
+
+
+# -----------------------------------------------------------------------------
+# Core Logic
+# -----------------------------------------------------------------------------
+def generate_doxygen_comments(
+    funcs: List[FuncInfo],
+    repo_root: Path,
+    llm: str,
+    dry_run: bool,
+    maximpl: int,
+    cache_path: Optional[Path] = None,
+    mcp_toolset: Optional[object] = None,
+    mcp_enabled: bool = False,
+    mcp_max_examples: int = 3,
+    mcp_timeout: int = 20,
+) -> int:
+    insert_map: Dict[Path, List[Tuple[int, str]]] = {}
+    impl_cleanup_map: Dict[Path, List[Tuple[int, str]]] = {}
+
+    cache = load_cache(cache_path) if cache_path else CacheFile()
+
+    num_comments = 0
+    ai_candidates = []
+
+    # ------------------------------------------------------
+    # 1. Scan functions if they need Doxygen comments (fast)
+    # ------------------------------------------------------
+    for func in tqdm(funcs, desc="Scanning functions"):
+        fpath = func.file
+        if not fpath.is_absolute():
+            fpath = (repo_root / fpath).resolve()
+        if not fpath.exists():
+            continue
+
+        # Ignore operators because they are usually too trivial
+        if func.name.startswith("operator"):
+            continue
+
+        if func.name == "va":
+            continue
+
+        # HACK: only use files whose path contains 'Angles'
+        # if (
+        #     "Plane" != fpath.stem
+        #     and "Str" != fpath.stem
+        #     and "Vector" != fpath.stem
+        #     and "BTree" != fpath.stem
+        #     and "ParallelJobList" != fpath.stem
+        #     and "Timer" != fpath.stem
+        #     and "Parser" != fpath.stem
+        #     and "Dict" != fpath.stem
+        # ):
+        #     continue
+
+        # if func.name != "HeightFit":
+        #    continue
+
+        func_id = get_func_identifier(func)
+
+        impl = extract_implementation(func, repo_root, max_chars=maximpl)
+        if not impl.strip():
+            continue
+
+        if impl.endswith(";"):
+            print(
+                colored(
+                    f" Could not fetch body for {func_id}\n",
+                    "red",
+                    "on_black",
+                    ["bold", "blink"],
+                )
+            )
+            # impl = extract_implementation(func, repo_root, max_chars=maximpl)
+            continue
+
+        body_hash = compute_normalized_body_hash(impl)
+        func_key = make_func_key(func, func_id)
+        entry = cache.functions.get(func_key)
+
+        # --- Read file to check Doxygen status ---
+        lines = read_file(fpath)
+        idx = max(0, min(func.line - 1, len(lines) - 1))
+        has_doxy = has_existing_doxygen(lines, idx)
+
+        # --- Skip Criteria ---
+        # 1) Body not changed and Doxygen already present -> skip completely
+        if entry and entry.body_hash == body_hash and entry.has_doxygen:
+            # optional: you could distinguish generated vs. manual comments here
+            continue
+
+        # 2) Body not changed, but Doxygen already present (manually) -> skip
+        if has_doxy and entry and entry.body_hash == body_hash:
+            continue
+
+        # 3) Doxygen exists, but no cache entry -> just update cache, no AI
+        if has_doxy and not entry:
+            cache.functions[func_key] = FunctionCacheEntry(
+                body_hash=body_hash,
+                has_doxygen=True,
+                generated_by_ai=False,
+                comment_hash=None,
+            )
+            continue
+
+        # At this point:
+        # - either no Doxygen,
+        # - or body changed -> AI can proceed
+        bodypath = func.bodyfile
+        if bodypath and not bodypath.is_absolute():
+            bodypath = (repo_root / bodypath).resolve()
+
+        ai_candidates.append(
+            (func, func_id, func_key, impl, fpath, bodypath, body_hash)
+        )
+
+    # ----------------------------------
+    # 2. Generate AI comments (slow)
+    # ----------------------------------
+    progressbar = tqdm(ai_candidates, desc="AI generating comments")
+    for func, func_id, func_key, impl, fpath, bodypath, body_hash in progressbar:
+        progressbar.set_postfix(func=func_id)
+
+        trivial = is_trivial_getter(func, impl) or is_trivial_setter(func, impl)
+
+        lines = read_file(fpath)
+        idx = max(0, min(func.line - 1, len(lines) - 1))
+        orig_comment = extract_comments_for_declaration(lines, idx)
+        if not orig_comment.strip():
+            orig_comment = None
+
+        # if orig_comment:
+        #    print(f"func {func.name} - original comment: {orig_comment}\n")
+
+        mcp_context = None
+        if mcp_cpp_server:
+            mcp_context = mcp_collect_context(
+                func,
+                func_id,
+                fpath,
+                repo_root,
+                mcp_cpp_server,
+                max_examples=mcp_max_examples,
+                timeout_s=mcp_timeout,
+            )
+
+        model = ai_generate_comment(
+            func,
+            impl,
+            llm,
+            trivial,
+            orig_comment,
+            mcp_context=mcp_context,
+        )
+        if model.brief == "MISSING":
+            continue
+        block = render_ai_block(model, trivial)
+
+        insert_map.setdefault(fpath, []).append((func.line, block, func_id))
+        num_comments += 1
+
+        # Update Cache (although it gets not saved to disc yet)
+        comment_hash = compute_normalized_body_hash(block)
+        cache.functions[func_key] = FunctionCacheEntry(
+            body_hash=body_hash,
+            has_doxygen=True,
+            generated_by_ai=True,
+            comment_hash=comment_hash,
+        )
+
+        if not bodypath or not bodypath.exists():
+            continue
+
+        if not func.bodystart:
+            print("bodystart missing")
+            continue
+
+        # if fpath != bodypath:
+        impl_cleanup_map.setdefault(bodypath, []).append((func.bodystart, func_id))
+
+        # if num_comments > 5:
+        #    break
+
+    # ----------------------------------
+    # 3. Insert comments
+    # ----------------------------------
+    total = 0
+    for path, items in tqdm(insert_map.items(), desc="Inserting comments"):
+        lines = read_file(path)
+        items.sort(key=lambda x: x[0], reverse=True)
+
+        changed = False
+        for line_1b, block, func_id in items:
+            idx = line_1b - 1  # Doxygen line of the function (0-based)
+            if idx < 0 or idx >= len(lines):
+                continue
+
+            # 0) Remove all existing Doxygen comments directly above the declaration
+            #    (if you had multiple AI runs, they will be cleaned up one after another)
+            while has_existing_doxygen(lines, idx):
+                idx = remove_doxygen_block_above(lines, idx)
+
+            # 1) Remove inline comments on the declaration line
+            lines[idx] = strip_inline_non_doxygen_comment(lines[idx])
+
+            # 2) Clean up non-Doxygen comments directly above
+            idx = cleanup_comments_above(lines, idx, func_id)
+
+            # 3) Insert comment directly above the function line
+            comment_start = idx  # this is where the block will be inserted
+
+            # 4) If there's no empty line directly above, insert an empty line
+            if comment_start > 0 and lines[comment_start - 1].strip() != "":
+                lines.insert(comment_start, "")
+                comment_start += 1  # Comment moves down one line
+
+            # 5) Insert comment block (without additional empty line after!)
+            block_lines = block.splitlines()
+            lines[comment_start:comment_start] = block_lines
+
+            changed = True
+            total += 1
+
+        if changed and not dry_run:
+            write_file(path, lines)
+
+    # ------------------------------------------------------------------------
+    # 4. Clean up legacy autogenerated comments in implementation (.cpp) files
+    # ------------------------------------------------------------------------
+    for path, items in tqdm(impl_cleanup_map.items(), desc="Cleaning impl comments"):
+        if not path.exists():
+            continue
+
+        lines = read_file(path)
+        # Again, process from bottom to top to avoid index shifting issues
+        items.sort(key=lambda x: x[0], reverse=True)
+
+        changed = False
+        for line_1b, func_id in items:
+            # bodystart → meistens erste Codezeile IM Body
+            body_idx = line_1b - 1
+            if body_idx < 0 or body_idx >= len(lines):
+                continue
+
+            # 1) Zur Deklarationszeile hochlaufen
+            decl_idx = find_declaration_line_for_body(lines, body_idx, func_id)
+
+            if decl_idx == -1:
+                continue
+
+            # 2) Von dort aus Banner / alte Kommentare oberhalb entfernen
+            new_idx = cleanup_comments_above(
+                lines, decl_idx, func_id, allow_skip_doxygen=True
+            )
+            if new_idx != decl_idx:
+                changed = True
+
+        if changed and not dry_run:
+            write_file(path, lines)
+
+    if cache_path:
+        save_cache(cache_path, cache)
+
+    return total
+
+
+# -----------------------------------------------------------------------------
+# CLI
+# -----------------------------------------------------------------------------
+def run_doxygen(
+    config_file: str, doxygen_exe: str = "doxygen", clean_xml: bool = True, repo_root: Optional[Path] = None
+) -> None:
+    """
+    Runs doxygen with a specified configuration file.
+    Ensures that the XML output exists.
+    Aborts with RuntimeError if doxygen reports an error.
+    :param config_file: Path to the Doxyfile configuration (.cfg)
+    :param doxygen_exe: Path to doxygen.exe (or simply "doxygen" if in PATH)
+    :param clean_xml: Optional, deletes the XML folder before generation (recommended)
+    """
+
+    cfg = Path(config_file).resolve()
+    if not cfg.exists():
+        raise FileNotFoundError(f"Doxygen config file not found: {cfg}")
+
+    # Target directory from the Doxyfile
+    xml_output_dir = None
+    with cfg.open("r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip().startswith("OUTPUT_DIRECTORY"):
+                xml_output_dir = line.split("=")[1].strip()
+            if line.strip().startswith("XML_OUTPUT"):
+                xml_subdir = line.split("=")[1].strip()
+
+    # Defaults, if not specified
+    xml_output_dir = Path(xml_output_dir or ".")
+    xml_subdir = xml_subdir or "xml"
+
+    xml_full_path = (xml_output_dir / xml_subdir).resolve()
+
+    # Delete old XML folder to avoid stale files
+    if clean_xml and xml_full_path.exists():
+        print(f"[Doxygen] Removing previous XML directory: {xml_full_path}")
+        shutil.rmtree(xml_full_path)
+
+    print(f"[Doxygen] Starting Doxygen with config: {cfg}")
+    print(f"[Doxygen] Output expected in: {xml_full_path}")
+
+    try:
+        if repo_root:
+            import tempfile
+            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".cfg", dir=".") as tmp:
+                tmp.write(f"@INCLUDE = {cfg.resolve().as_posix()}\n")
+                tmp.write(f'INPUT = "{repo_root.resolve().as_posix()}"\n')
+                tmp_cfg = tmp.name
+            completed = subprocess.run(
+                [doxygen_exe, tmp_cfg], capture_output=True, text=True, shell=False
+            )
+            Path(tmp_cfg).unlink()
+        else:
+            completed = subprocess.run(
+                [doxygen_exe, str(cfg)], capture_output=True, text=True, shell=False
+            )
+    except Exception as exc:
+        raise RuntimeError(f"Error starting Doxygen: {exc}") from exc
+
+    # Log output
+    if completed.stdout:
+        print("[Doxygen STDOUT]")
+        print(completed.stdout)
+    if completed.stderr:
+        print("[Doxygen STDERR]")
+        print(completed.stderr)
+
+    # Check for errors
+    if completed.returncode != 0:
+        raise RuntimeError(f"Doxygen failed (Exit {completed.returncode}).")
+
+    # Verify that XML was actually created
+    if not xml_full_path.exists() or not any(xml_full_path.iterdir()):
+        raise RuntimeError(f"Doxygen did not create XML data under {xml_full_path}")
+
+    print("[Doxygen] Successfully generated.\n")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--xml-dir", default="doxygen-xml/xml")
+    ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--llm", default="ollama/gpt-oss:20b")
+    ap.add_argument("--max-impl", type=int, default=6000)
+    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--cache-file", default="doxy_ai_cache.json")
+    args = ap.parse_args()
+
+    xml_dir = Path(args.xml_dir)
+    repo_root = Path(args.repo_root)
+    cache_path = repo_root / args.cache_file
+
+    print("Create Doxygen XML …")
+    run_doxygen("Doxyfile-xmlgen.cfg", doxygen_exe="doxygen.exe", repo_root=repo_root)
+
+    funcs = parse_doxygen_xml(xml_dir, repo_root, prefer_decl=True)
+    total = generate_doxygen_comments(
+        funcs,
+        repo_root,
+        llm=args.llm,
+        dry_run=False,  # not args.apply,
+        maximpl=args.max_impl,
+        cache_path=cache_path,
+    )
+
+    print(f"Comments inserted: {total}")
+
+
+if __name__ == "__main__":
+    main()
