@@ -154,9 +154,9 @@ If you have questions concerning this license or the applicable additional terms
 void* osxAllocateMemory( long size );
 void  osxFreeMemory( void* pointer );
 
-	#ifdef __cplusplus
+	 #ifdef __cplusplus
 
-	#endif
+	 #endif
 
 #endif
 
