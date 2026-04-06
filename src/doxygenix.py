@@ -1,5 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+# Copyright 2026 Robert Beckebans
+
+# MIT License
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+# and associated documentation files (the “Software”), to deal in the Software without restriction, 
+# including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+# and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all copies or 
+# substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
 """
 doxy_xml_inserter_ai.py — Doxygen-XML-supported comment inserter
 with *mandatory* Pydantic-AI-Agent for intelligent documentation generation.
@@ -1207,6 +1229,41 @@ def generate_doxygen_comments(
     num_comments = 0
     ai_candidates = []
 
+    # Build one canonical documentation target per function signature:
+    # - Prefer declarations in header files
+    # - Otherwise fall back to first occurrence (typically implementation)
+    canonical_target_by_key: Dict[str, Tuple[Path, int, bool]] = {}
+    for f in funcs:
+        p = f.file
+        if not p.is_absolute():
+            p = (repo_root / p).resolve()
+        if not p.exists():
+            continue
+
+        # if f.name != "AxisToAngles":
+        #     continue
+
+        key = make_func_key(f, get_func_identifier(f))
+        is_header = p.suffix.lower() in {".h", ".hpp", ".hh", ".hxx"}
+        current = canonical_target_by_key.get(key)
+        candidate = (p, f.line, is_header)
+
+        if current is None:
+            canonical_target_by_key[key] = candidate
+            continue
+
+        # Prefer header over non-header
+        if candidate[2] and not current[2]:
+            canonical_target_by_key[key] = candidate
+            continue
+
+        # If same kind (both header or both non-header), choose deterministic earliest location
+        if candidate[2] == current[2]:
+            if str(candidate[0]) < str(current[0]) or (
+                str(candidate[0]) == str(current[0]) and candidate[1] < current[1]
+            ):
+                canonical_target_by_key[key] = candidate
+
     # ------------------------------------------------------
     # 1. Scan functions if they need Doxygen comments (fast)
     # ------------------------------------------------------
@@ -1240,7 +1297,17 @@ def generate_doxygen_comments(
         # if func.name != "HeightFit":
         #    continue
 
+        # if func.name != "AxisToAngles":
+        #     continue
+
         func_id = get_func_identifier(func)
+        func_key = make_func_key(func, func_id)
+
+        # Only process the canonical target for this signature
+        canonical = canonical_target_by_key.get(func_key)
+        if canonical is not None:
+            if str(fpath) != str(canonical[0]) or func.line != canonical[1]:
+                continue
 
         impl = extract_implementation(func, repo_root, max_chars=maximpl)
         if not impl.strip():
@@ -1259,7 +1326,6 @@ def generate_doxygen_comments(
             continue
 
         body_hash = compute_normalized_body_hash(impl)
-        func_key = make_func_key(func, func_id)
         entry = cache.functions.get(func_key)
 
         # --- Read file to check Doxygen status ---
@@ -1530,7 +1596,7 @@ def run_doxygen(
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--xml-dir", default="doxygen-xml/xml")
-    ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--repo-root", default="shared")
     ap.add_argument("--llm", default="ollama/gpt-oss:20b")
     ap.add_argument("--max-impl", type=int, default=6000)
     ap.add_argument("--apply", action="store_true")
