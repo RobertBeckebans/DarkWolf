@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 #include <vector>
+#include <thread>
+#include <atomic>
+#include <algorithm>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -182,35 +185,63 @@ static D3D12_GPU_DESCRIPTOR_HANDLE glRaytracingOffsetGpu( D3D12_GPU_DESCRIPTOR_H
 struct glRaytracingCmdContext_t {
 	ComPtr<ID3D12Device5>			   device;
 	ComPtr<ID3D12CommandQueue>		   queue;
+
 	ComPtr<ID3D12CommandAllocator>	   cmdAlloc;
 	ComPtr<ID3D12GraphicsCommandList4> cmdList;
+	UINT64							   cmdLastFenceValue;
+
+	ComPtr<ID3D12CommandAllocator>	   blasCmdAlloc;
+	ComPtr<ID3D12GraphicsCommandList4> blasCmdList;
+	UINT64							   blasLastFenceValue;
+
+	ComPtr<ID3D12CommandAllocator>	   tlasCmdAlloc;
+	ComPtr<ID3D12GraphicsCommandList4> tlasCmdList;
+	UINT64							   tlasLastFenceValue;
+
 	ComPtr<ID3D12Fence>				   fence;
 	HANDLE							   fenceEvent;
-	UINT64							   fenceValue;
+	UINT64							   nextFenceValue;
 	bool							   initialized;
 
 	glRaytracingCmdContext_t()
 	{
-		fenceEvent	= nullptr;
-		fenceValue	= 0;
-		initialized = false;
+		cmdLastFenceValue  = 0;
+		blasLastFenceValue = 0;
+		tlasLastFenceValue = 0;
+		fenceEvent		   = nullptr;
+		nextFenceValue	   = 0;
+		initialized		   = false;
 	}
 };
 
 static glRaytracingCmdContext_t g_glRaytracingCmd;
 
-static void						glRaytracingWaitIdle( void )
+static void						glRaytracingWaitFenceValue( UINT64 value )
 {
-	if( !g_glRaytracingCmd.queue || !g_glRaytracingCmd.fence )
+	if( !value || !g_glRaytracingCmd.fence )
 		return;
 
-	++g_glRaytracingCmd.fenceValue;
-	g_glRaytracingCmd.queue->Signal( g_glRaytracingCmd.fence.Get(), g_glRaytracingCmd.fenceValue );
+	if( g_glRaytracingCmd.fence->GetCompletedValue() >= value )
+		return;
 
-	if( g_glRaytracingCmd.fence->GetCompletedValue() < g_glRaytracingCmd.fenceValue ) {
-		g_glRaytracingCmd.fence->SetEventOnCompletion( g_glRaytracingCmd.fenceValue, g_glRaytracingCmd.fenceEvent );
-		WaitForSingleObject( g_glRaytracingCmd.fenceEvent, INFINITE );
-	}
+	g_glRaytracingCmd.fence->SetEventOnCompletion( value, g_glRaytracingCmd.fenceEvent );
+	WaitForSingleObject( g_glRaytracingCmd.fenceEvent, INFINITE );
+}
+
+static UINT64 glRaytracingSignalQueue( void )
+{
+	if( !g_glRaytracingCmd.queue || !g_glRaytracingCmd.fence )
+		return 0;
+
+	const UINT64 value = ++g_glRaytracingCmd.nextFenceValue;
+	g_glRaytracingCmd.queue->Signal( g_glRaytracingCmd.fence.Get(), value );
+	return value;
+}
+
+static void glRaytracingWaitIdle( void )
+{
+	const UINT64 value = glRaytracingSignalQueue();
+	glRaytracingWaitFenceValue( value );
 }
 
 static int glRaytracingInitCmdContext( void )
@@ -234,6 +265,18 @@ static int glRaytracingInitCmdContext( void )
 	GLR_CHECK( g_glRaytracingCmd.device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_glRaytracingCmd.cmdAlloc.Get(), nullptr, IID_PPV_ARGS( &g_glRaytracingCmd.cmdList ) ) );
 
 	GLR_CHECK( g_glRaytracingCmd.cmdList->Close() );
+
+	GLR_CHECK( g_glRaytracingCmd.device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &g_glRaytracingCmd.blasCmdAlloc ) ) );
+
+	GLR_CHECK( g_glRaytracingCmd.device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_glRaytracingCmd.blasCmdAlloc.Get(), nullptr, IID_PPV_ARGS( &g_glRaytracingCmd.blasCmdList ) ) );
+
+	GLR_CHECK( g_glRaytracingCmd.blasCmdList->Close() );
+
+	GLR_CHECK( g_glRaytracingCmd.device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &g_glRaytracingCmd.tlasCmdAlloc ) ) );
+
+	GLR_CHECK( g_glRaytracingCmd.device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_glRaytracingCmd.tlasCmdAlloc.Get(), nullptr, IID_PPV_ARGS( &g_glRaytracingCmd.tlasCmdList ) ) );
+
+	GLR_CHECK( g_glRaytracingCmd.tlasCmdList->Close() );
 
 	GLR_CHECK( g_glRaytracingCmd.device->CreateFence( 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS( &g_glRaytracingCmd.fence ) ) );
 
@@ -264,7 +307,7 @@ static void glRaytracingShutdownCmdContext( void )
 
 static int glRaytracingBeginCmd( void )
 {
-	glRaytracingWaitIdle();
+	glRaytracingWaitFenceValue( g_glRaytracingCmd.cmdLastFenceValue );
 
 	GLR_CHECK( g_glRaytracingCmd.cmdAlloc->Reset() );
 	GLR_CHECK( g_glRaytracingCmd.cmdList->Reset( g_glRaytracingCmd.cmdAlloc.Get(), nullptr ) );
@@ -278,8 +321,49 @@ static int glRaytracingEndCmd( void )
 	ID3D12CommandList* lists[] = { g_glRaytracingCmd.cmdList.Get() };
 	g_glRaytracingCmd.queue->ExecuteCommandLists( 1, lists );
 
-	glRaytracingWaitIdle();
+	g_glRaytracingCmd.cmdLastFenceValue = glRaytracingSignalQueue();
+	glRaytracingWaitFenceValue( g_glRaytracingCmd.cmdLastFenceValue );
 	return 1;
+}
+
+static int glRaytracingBeginBlasCmd( void )
+{
+	glRaytracingWaitFenceValue( g_glRaytracingCmd.blasLastFenceValue );
+
+	GLR_CHECK( g_glRaytracingCmd.blasCmdAlloc->Reset() );
+	GLR_CHECK( g_glRaytracingCmd.blasCmdList->Reset( g_glRaytracingCmd.blasCmdAlloc.Get(), nullptr ) );
+	return 1;
+}
+
+static UINT64 glRaytracingEndBlasCmd( void )
+{
+	GLR_CHECK( g_glRaytracingCmd.blasCmdList->Close() );
+
+	ID3D12CommandList* lists[] = { g_glRaytracingCmd.blasCmdList.Get() };
+	g_glRaytracingCmd.queue->ExecuteCommandLists( 1, lists );
+
+	g_glRaytracingCmd.blasLastFenceValue = glRaytracingSignalQueue();
+	return g_glRaytracingCmd.blasLastFenceValue;
+}
+
+static int glRaytracingBeginTlasCmd( void )
+{
+	glRaytracingWaitFenceValue( g_glRaytracingCmd.tlasLastFenceValue );
+
+	GLR_CHECK( g_glRaytracingCmd.tlasCmdAlloc->Reset() );
+	GLR_CHECK( g_glRaytracingCmd.tlasCmdList->Reset( g_glRaytracingCmd.tlasCmdAlloc.Get(), nullptr ) );
+	return 1;
+}
+
+static UINT64 glRaytracingEndTlasCmd( void )
+{
+	GLR_CHECK( g_glRaytracingCmd.tlasCmdList->Close() );
+
+	ID3D12CommandList* lists[] = { g_glRaytracingCmd.tlasCmdList.Get() };
+	g_glRaytracingCmd.queue->ExecuteCommandLists( 1, lists );
+
+	g_glRaytracingCmd.tlasLastFenceValue = glRaytracingSignalQueue();
+	return g_glRaytracingCmd.tlasLastFenceValue;
 }
 
 // ============================================================
@@ -299,68 +383,89 @@ struct glRaytracingMeshRecord_t {
 	glRaytracingBuffer_t			  indexBuffer;
 
 	glRaytracingBuffer_t			  blasScratch;
-	glRaytracingBuffer_t			  blasResult;
+	glRaytracingBuffer_t			  blasResult[2];
 
 	UINT64							  blasScratchSize;
 	UINT64							  blasResultSize;
 
 	int								  blasBuilt;
 	int								  dirty;
+	int								  currentBlasIndex;
 
 	glRaytracingMeshRecord_t()
 	{
 		handle = 0;
 		alive  = 0;
 		memset( &descCpu, 0, sizeof( descCpu ) );
-		blasScratchSize = 0;
-		blasResultSize	= 0;
-		blasBuilt		= 0;
-		dirty			= 0;
+		blasScratchSize	 = 0;
+		blasResultSize	 = 0;
+		blasBuilt		 = 0;
+		dirty			 = 0;
+		currentBlasIndex = 0;
 	}
 };
 
 struct glRaytracingInstanceRecord_t {
-	uint32_t				   handle;
-	int						   alive;
-	glRaytracingInstanceDesc_t descCpu;
-	int						   dirty;
+	uint32_t					   handle;
+	int							   alive;
+	glRaytracingInstanceDesc_t	   descCpu;
+	int							   dirty;
+	int							   cachedActive;
+	D3D12_GPU_VIRTUAL_ADDRESS	   cachedBlasGpuVA;
+	D3D12_RAYTRACING_INSTANCE_DESC cachedDescCpu;
 
 	glRaytracingInstanceRecord_t()
 	{
 		handle = 0;
 		alive  = 0;
 		memset( &descCpu, 0, sizeof( descCpu ) );
-		dirty = 0;
+		dirty			= 0;
+		cachedActive	= 0;
+		cachedBlasGpuVA = 0;
+		memset( &cachedDescCpu, 0, sizeof( cachedDescCpu ) );
+	}
+};
+
+struct glRaytracingSceneUploadBuffer_t {
+	glRaytracingBuffer_t			buffer;
+	UINT64							capacityBytes;
+	D3D12_RAYTRACING_INSTANCE_DESC* mapped;
+
+	glRaytracingSceneUploadBuffer_t()
+	{
+		capacityBytes = 0;
+		mapped		  = nullptr;
 	}
 };
 
 struct glRaytracingSceneState_t {
-	std::vector<glRaytracingMeshRecord_t>	  meshes;
-	std::vector<glRaytracingInstanceRecord_t> instances;
+	std::vector<glRaytracingMeshRecord_t>		meshes;
+	std::vector<glRaytracingInstanceRecord_t>	instances;
+	std::vector<int>							activeInstanceIndices;
+	std::vector<D3D12_RAYTRACING_INSTANCE_DESC> cpuInstanceDescs;
 
-	std::vector<int>						  meshHandleToIndex;
+	std::vector<int>							meshHandleToIndex;
+	std::vector<int>							instanceHandleToIndex;
 
-	uint32_t								  nextMeshHandle;
-	uint32_t								  nextInstanceHandle;
+	uint32_t									nextMeshHandle;
+	uint32_t									nextInstanceHandle;
 
-	glRaytracingBuffer_t					  instanceDescUpload;
-	glRaytracingBuffer_t					  tlasScratch;
-	glRaytracingBuffer_t					  tlasResult;
+	glRaytracingSceneUploadBuffer_t				instanceDescUpload[2];
+	glRaytracingBuffer_t						tlasScratch;
+	glRaytracingBuffer_t						tlasResult[2];
 
-	UINT64									  tlasScratchSize;
-	UINT64									  tlasResultSize;
+	UINT64										tlasScratchSize;
+	UINT64										tlasResultSize;
 
-	int										  initialized;
+	int											initialized;
 
-	UINT64									  instanceDescCapacityBytes;
-	D3D12_RAYTRACING_INSTANCE_DESC*			  mappedInstanceDescs;
+	UINT										activeInstanceCount;
+	UINT										builtInstanceCount;
 
-	UINT									  activeInstanceCount;
-	UINT									  builtInstanceCount;
-
-	int										  tlasBuilt;
-	int										  tlasNeedsRebuild;
-	int										  tlasNeedsUpdate;
+	int											tlasBuilt;
+	int											tlasNeedsRebuild;
+	int											tlasNeedsUpdate;
+	int											currentTLASIndex;
 
 	glRaytracingSceneState_t()
 	{
@@ -370,22 +475,68 @@ struct glRaytracingSceneState_t {
 		tlasResultSize	   = 0;
 		initialized		   = 0;
 
-		instanceDescCapacityBytes = 0;
-		mappedInstanceDescs		  = nullptr;
-		activeInstanceCount		  = 0;
-		builtInstanceCount		  = 0;
-		tlasBuilt				  = 0;
-		tlasNeedsRebuild		  = 1;
-		tlasNeedsUpdate			  = 1;
+		activeInstanceCount = 0;
+		builtInstanceCount	= 0;
+		tlasBuilt			= 0;
+		tlasNeedsRebuild	= 1;
+		tlasNeedsUpdate		= 1;
+		currentTLASIndex	= 0;
 	}
 };
 
 static glRaytracingSceneState_t g_glRaytracingScene;
 
+extern "C" void					glRaytracingClear( void );
+
 static void						glRaytracingEnsureMeshHandleTable( uint32_t handle )
 {
 	if( handle >= g_glRaytracingScene.meshHandleToIndex.size() )
 		g_glRaytracingScene.meshHandleToIndex.resize( ( size_t )handle + 1, -1 );
+}
+
+static void glRaytracingEnsureInstanceHandleTable( uint32_t handle )
+{
+	if( handle >= g_glRaytracingScene.instanceHandleToIndex.size() )
+		g_glRaytracingScene.instanceHandleToIndex.resize( ( size_t )handle + 1, -1 );
+}
+
+static glRaytracingBuffer_t* glRaytracingGetMeshCurrentBLAS( glRaytracingMeshRecord_t* mesh )
+{
+	if( !mesh )
+		return nullptr;
+	return &mesh->blasResult[mesh->currentBlasIndex & 1];
+}
+
+static const glRaytracingBuffer_t* glRaytracingGetMeshCurrentBLASConst( const glRaytracingMeshRecord_t* mesh )
+{
+	if( !mesh )
+		return nullptr;
+	return &mesh->blasResult[mesh->currentBlasIndex & 1];
+}
+
+static int glRaytracingGetInactiveTLASIndex( void )
+{
+	return g_glRaytracingScene.currentTLASIndex ^ 1;
+}
+
+static glRaytracingSceneUploadBuffer_t* glRaytracingGetBuildInstanceUpload( void )
+{
+	return &g_glRaytracingScene.instanceDescUpload[glRaytracingGetInactiveTLASIndex()];
+}
+
+static glRaytracingBuffer_t* glRaytracingGetCurrentTLASBuffer( void )
+{
+	return &g_glRaytracingScene.tlasResult[g_glRaytracingScene.currentTLASIndex & 1];
+}
+
+static const glRaytracingBuffer_t* glRaytracingGetCurrentTLASBufferConst( void )
+{
+	return &g_glRaytracingScene.tlasResult[g_glRaytracingScene.currentTLASIndex & 1];
+}
+
+static glRaytracingBuffer_t* glRaytracingGetBuildTLASBuffer( void )
+{
+	return &g_glRaytracingScene.tlasResult[glRaytracingGetInactiveTLASIndex()];
 }
 
 static int glRaytracingEnsureTLASBuffers( const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS* inputs )
@@ -413,18 +564,18 @@ static int glRaytracingEnsureTLASBuffers( const D3D12_BUILD_RAYTRACING_ACCELERAT
 		g_glRaytracingScene.tlasScratchSize = requiredScratch;
 	}
 
-	if( !g_glRaytracingScene.tlasResult.resource || g_glRaytracingScene.tlasResultSize < requiredResult ) {
-		g_glRaytracingScene.tlasResult.resource.Reset();
-		g_glRaytracingScene.tlasResult = glRaytracingCreateBuffer(
-			g_glRaytracingCmd.device.Get(), requiredResult, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS );
+	for( int i = 0; i < 2; ++i ) {
+		if( !g_glRaytracingScene.tlasResult[i].resource || g_glRaytracingScene.tlasResultSize < requiredResult ) {
+			g_glRaytracingScene.tlasResult[i].resource.Reset();
+			g_glRaytracingScene.tlasResult[i] = glRaytracingCreateBuffer(
+				g_glRaytracingCmd.device.Get(), requiredResult, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS );
 
-		if( !g_glRaytracingScene.tlasResult.resource )
-			return 0;
-
-		g_glRaytracingScene.tlasResultSize = requiredResult;
-		g_glRaytracingScene.tlasBuilt	   = 0;
+			if( !g_glRaytracingScene.tlasResult[i].resource )
+				return 0;
+		}
 	}
 
+	g_glRaytracingScene.tlasResultSize = requiredResult;
 	return 1;
 }
 
@@ -462,11 +613,306 @@ static const glRaytracingMeshRecord_t* glRaytracingFindMeshConst( uint32_t handl
 
 static glRaytracingInstanceRecord_t* glRaytracingFindInstance( uint32_t handle )
 {
-	for( size_t i = 0; i < g_glRaytracingScene.instances.size(); ++i ) {
-		if( g_glRaytracingScene.instances[i].alive && g_glRaytracingScene.instances[i].handle == handle )
-			return &g_glRaytracingScene.instances[i];
+	if( handle == 0 || handle >= g_glRaytracingScene.instanceHandleToIndex.size() )
+		return nullptr;
+
+	const int index = g_glRaytracingScene.instanceHandleToIndex[handle];
+	if( index < 0 || ( size_t )index >= g_glRaytracingScene.instances.size() )
+		return nullptr;
+
+	glRaytracingInstanceRecord_t& inst = g_glRaytracingScene.instances[( size_t )index];
+	if( !inst.alive || inst.handle != handle )
+		return nullptr;
+
+	return &inst;
+}
+
+static int glRaytracingEnsureMeshScratch( glRaytracingMeshRecord_t* mesh, UINT64 requiredScratch )
+{
+	if( !mesh )
+		return 0;
+
+	requiredScratch = glRaytracingAlignUp( requiredScratch, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT );
+
+	if( !mesh->blasScratch.resource || mesh->blasScratchSize < requiredScratch ) {
+		mesh->blasScratch.resource.Reset();
+		mesh->blasScratch =
+			glRaytracingCreateBuffer( g_glRaytracingCmd.device.Get(), requiredScratch, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS );
+
+		if( !mesh->blasScratch.resource )
+			return 0;
+
+		mesh->blasScratchSize = requiredScratch;
 	}
-	return nullptr;
+
+	return 1;
+}
+
+static int glRaytracingEnsureMeshResultBuffers( glRaytracingMeshRecord_t* mesh, UINT64 requiredResult )
+{
+	if( !mesh )
+		return 0;
+
+	requiredResult = glRaytracingAlignUp( requiredResult, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT );
+
+	const int resultCount = mesh->descCpu.allowUpdate ? 2 : 1;
+	for( int i = 0; i < resultCount; ++i ) {
+		if( !mesh->blasResult[i].resource || mesh->blasResultSize < requiredResult ) {
+			mesh->blasResult[i].resource.Reset();
+			mesh->blasResult[i] = glRaytracingCreateBuffer(
+				g_glRaytracingCmd.device.Get(), requiredResult, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS );
+
+			if( !mesh->blasResult[i].resource )
+				return 0;
+		}
+	}
+
+	if( !mesh->descCpu.allowUpdate )
+		mesh->blasResult[1].resource.Reset();
+
+	mesh->blasResultSize = requiredResult;
+	return 1;
+}
+
+static inline void glRaytracingBuildInstanceDesc( D3D12_RAYTRACING_INSTANCE_DESC* outDesc, const glRaytracingInstanceRecord_t& inst, D3D12_GPU_VIRTUAL_ADDRESS blasGpuVA )
+{
+	memcpy( outDesc->Transform, inst.descCpu.transform, sizeof( float ) * 12 );
+	outDesc->InstanceID							 = inst.descCpu.instanceID;
+	outDesc->InstanceMask						 = ( UINT8 )( inst.descCpu.mask ? inst.descCpu.mask : 0xFF );
+	outDesc->InstanceContributionToHitGroupIndex = 0;
+	outDesc->Flags								 = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+	outDesc->AccelerationStructure				 = blasGpuVA;
+}
+
+static void glRaytracingInvalidateInstanceCache( glRaytracingInstanceRecord_t* inst )
+{
+	if( !inst )
+		return;
+
+	inst->cachedActive	  = 0;
+	inst->cachedBlasGpuVA = 0;
+	memset( &inst->cachedDescCpu, 0, sizeof( inst->cachedDescCpu ) );
+}
+
+static int glRaytracingResolveInstanceDesc( glRaytracingInstanceRecord_t* inst, D3D12_RAYTRACING_INSTANCE_DESC* outDesc, D3D12_GPU_VIRTUAL_ADDRESS* outBlasGpuVA )
+{
+	if( !inst || !inst->alive )
+		return 0;
+
+	const glRaytracingMeshRecord_t* mesh = glRaytracingFindMeshConst( inst->descCpu.meshHandle );
+	if( !mesh || !mesh->blasBuilt )
+		return 0;
+
+	const glRaytracingBuffer_t* blas = glRaytracingGetMeshCurrentBLASConst( mesh );
+	if( !blas || !blas->resource || blas->gpuVA == 0 )
+		return 0;
+
+	if( outDesc )
+		glRaytracingBuildInstanceDesc( outDesc, *inst, blas->gpuVA );
+	if( outBlasGpuVA )
+		*outBlasGpuVA = blas->gpuVA;
+	return 1;
+}
+
+static int glRaytracingRebuildActiveInstanceCache( void )
+{
+	g_glRaytracingScene.activeInstanceIndices.clear();
+	g_glRaytracingScene.cpuInstanceDescs.clear();
+	g_glRaytracingScene.activeInstanceIndices.reserve( g_glRaytracingScene.instances.size() );
+	g_glRaytracingScene.cpuInstanceDescs.reserve( g_glRaytracingScene.instances.size() );
+
+	for( size_t i = 0; i < g_glRaytracingScene.instances.size(); ++i ) {
+		glRaytracingInstanceRecord_t& inst = g_glRaytracingScene.instances[i];
+		glRaytracingInvalidateInstanceCache( &inst );
+
+		if( !inst.alive )
+			continue;
+
+		D3D12_RAYTRACING_INSTANCE_DESC desc		 = {};
+		D3D12_GPU_VIRTUAL_ADDRESS	   blasGpuVA = 0;
+		if( !glRaytracingResolveInstanceDesc( &inst, &desc, &blasGpuVA ) )
+			continue;
+
+		inst.cachedActive	 = 1;
+		inst.cachedBlasGpuVA = blasGpuVA;
+		inst.cachedDescCpu	 = desc;
+		inst.dirty			 = 0;
+
+		g_glRaytracingScene.activeInstanceIndices.push_back( ( int )i );
+		g_glRaytracingScene.cpuInstanceDescs.push_back( desc );
+	}
+
+	g_glRaytracingScene.activeInstanceCount = ( UINT )g_glRaytracingScene.cpuInstanceDescs.size();
+	return 1;
+}
+
+static int glRaytracingRefreshDirtyInstanceCache( void )
+{
+	for( size_t listIndex = 0; listIndex < g_glRaytracingScene.activeInstanceIndices.size(); ++listIndex ) {
+		const int instIndex = g_glRaytracingScene.activeInstanceIndices[listIndex];
+		if( instIndex < 0 || ( size_t )instIndex >= g_glRaytracingScene.instances.size() )
+			return 0;
+
+		glRaytracingInstanceRecord_t& inst = g_glRaytracingScene.instances[( size_t )instIndex];
+		if( !inst.alive )
+			return 0;
+
+		D3D12_RAYTRACING_INSTANCE_DESC desc		 = {};
+		D3D12_GPU_VIRTUAL_ADDRESS	   blasGpuVA = 0;
+		if( !glRaytracingResolveInstanceDesc( &inst, &desc, &blasGpuVA ) )
+			return 0;
+
+		if( inst.dirty || !inst.cachedActive || inst.cachedBlasGpuVA != blasGpuVA ) {
+			inst.cachedActive								= 1;
+			inst.cachedBlasGpuVA							= blasGpuVA;
+			inst.cachedDescCpu								= desc;
+			g_glRaytracingScene.cpuInstanceDescs[listIndex] = desc;
+		}
+
+		inst.dirty = 0;
+	}
+
+	g_glRaytracingScene.activeInstanceCount = ( UINT )g_glRaytracingScene.cpuInstanceDescs.size();
+	return 1;
+}
+
+static int glRaytracingEnsureSceneUploadBuffer( UINT64 requiredBytes );
+static int glRaytracingUploadCachedInstanceDescs( void )
+{
+	const UINT	 activeCount = ( UINT )g_glRaytracingScene.cpuInstanceDescs.size();
+	const UINT64 instBytes	 = glRaytracingAlignUp( ( UINT64 )activeCount * ( UINT64 )sizeof( D3D12_RAYTRACING_INSTANCE_DESC ), D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT );
+
+	if( !glRaytracingEnsureSceneUploadBuffer( instBytes ) )
+		return 0;
+
+	glRaytracingSceneUploadBuffer_t* upload = glRaytracingGetBuildInstanceUpload();
+	if( !upload->mapped )
+		return 0;
+
+	if( activeCount > 0 )
+		memcpy( upload->mapped, g_glRaytracingScene.cpuInstanceDescs.data(), ( size_t )activeCount * sizeof( D3D12_RAYTRACING_INSTANCE_DESC ) );
+
+	return 1;
+}
+
+static int glRaytracingUploadMeshBuffers( glRaytracingMeshRecord_t* mesh );
+
+static int glRaytracingBuildDirtyMeshesInternal( void )
+{
+	std::vector<glRaytracingMeshRecord_t*> dirtyMeshes;
+	dirtyMeshes.reserve( g_glRaytracingScene.meshes.size() );
+
+	for( size_t i = 0; i < g_glRaytracingScene.meshes.size(); ++i ) {
+		glRaytracingMeshRecord_t& mesh = g_glRaytracingScene.meshes[i];
+		if( !mesh.alive )
+			continue;
+
+		if( !mesh.blasBuilt || mesh.dirty )
+			dirtyMeshes.push_back( &mesh );
+	}
+
+	if( dirtyMeshes.empty() )
+		return 1;
+
+	struct glRaytracingMeshBuildInfo_t {
+		glRaytracingMeshRecord_t*							 mesh;
+		D3D12_RAYTRACING_GEOMETRY_DESC						 geomDesc;
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs;
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC	 buildDesc;
+		ID3D12Resource*										 barrierResource;
+		int													 newBlasIndex;
+	};
+
+	std::vector<glRaytracingMeshBuildInfo_t> builds;
+	builds.resize( dirtyMeshes.size() );
+
+	for( size_t i = 0; i < dirtyMeshes.size(); ++i ) {
+		glRaytracingMeshRecord_t* mesh = dirtyMeshes[i];
+		if( !mesh->vertexBuffer.resource || !mesh->indexBuffer.resource ) {
+			if( !glRaytracingUploadMeshBuffers( mesh ) )
+				return 0;
+		}
+
+		glRaytracingMeshBuildInfo_t& info = builds[i];
+		memset( &info, 0, sizeof( info ) );
+		info.mesh = mesh;
+
+		info.geomDesc.Type								   = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+		info.geomDesc.Flags								   = mesh->descCpu.opaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
+		info.geomDesc.Triangles.Transform3x4			   = 0;
+		info.geomDesc.Triangles.IndexFormat				   = DXGI_FORMAT_R32_UINT;
+		info.geomDesc.Triangles.VertexFormat			   = DXGI_FORMAT_R32G32B32_FLOAT;
+		info.geomDesc.Triangles.IndexCount				   = ( UINT )mesh->indicesCpu.size();
+		info.geomDesc.Triangles.VertexCount				   = ( UINT )mesh->verticesCpu.size();
+		info.geomDesc.Triangles.IndexBuffer				   = mesh->indexBuffer.gpuVA;
+		info.geomDesc.Triangles.VertexBuffer.StartAddress  = mesh->vertexBuffer.gpuVA;
+		info.geomDesc.Triangles.VertexBuffer.StrideInBytes = sizeof( glRaytracingVertex_t );
+
+		info.inputs.Type		   = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+		info.inputs.DescsLayout	   = D3D12_ELEMENTS_LAYOUT_ARRAY;
+		info.inputs.NumDescs	   = 1;
+		info.inputs.pGeometryDescs = &info.geomDesc;
+		info.inputs.Flags = mesh->descCpu.allowUpdate ? ( D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE ) :
+														D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+
+		const bool canUpdateInPlace = ( mesh->blasBuilt != 0 ) && ( mesh->descCpu.allowUpdate != 0 );
+		if( canUpdateInPlace )
+			info.inputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuild = {};
+		g_glRaytracingCmd.device->GetRaytracingAccelerationStructurePrebuildInfo( &info.inputs, &prebuild );
+		if( prebuild.ResultDataMaxSizeInBytes == 0 ) {
+			glRaytracingFatal( "BLAS prebuild size is zero" );
+			return 0;
+		}
+
+		if( !glRaytracingEnsureMeshScratch( mesh, prebuild.ScratchDataSizeInBytes ) )
+			return 0;
+		if( !glRaytracingEnsureMeshResultBuffers( mesh, prebuild.ResultDataMaxSizeInBytes ) )
+			return 0;
+
+		const int oldIndex = mesh->currentBlasIndex & 1;
+		info.newBlasIndex  = ( mesh->descCpu.allowUpdate && mesh->blasBuilt ) ? ( oldIndex ^ 1 ) : oldIndex;
+
+		info.buildDesc.Inputs							= info.inputs;
+		info.buildDesc.ScratchAccelerationStructureData = mesh->blasScratch.gpuVA;
+		info.buildDesc.DestAccelerationStructureData	= mesh->blasResult[info.newBlasIndex].gpuVA;
+		info.buildDesc.SourceAccelerationStructureData	= 0;
+
+		if( canUpdateInPlace )
+			info.buildDesc.SourceAccelerationStructureData = mesh->blasResult[oldIndex].gpuVA;
+
+		info.barrierResource = mesh->blasResult[info.newBlasIndex].resource.Get();
+	}
+
+	if( !glRaytracingBeginBlasCmd() )
+		return 0;
+
+	for( size_t i = 0; i < builds.size(); ++i ) {
+		g_glRaytracingCmd.blasCmdList->BuildRaytracingAccelerationStructure( &builds[i].buildDesc, 0, nullptr );
+
+		D3D12_RESOURCE_BARRIER uav = {};
+		uav.Type				   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		uav.UAV.pResource		   = builds[i].barrierResource;
+		g_glRaytracingCmd.blasCmdList->ResourceBarrier( 1, &uav );
+	}
+
+	const UINT64 blasFenceValue = glRaytracingEndBlasCmd();
+	if( !blasFenceValue )
+		return 0;
+
+	glRaytracingWaitFenceValue( blasFenceValue );
+
+	for( size_t i = 0; i < builds.size(); ++i ) {
+		glRaytracingMeshRecord_t* mesh = builds[i].mesh;
+		mesh->currentBlasIndex		   = builds[i].newBlasIndex;
+		mesh->blasBuilt				   = 1;
+		mesh->dirty					   = 0;
+	}
+
+	g_glRaytracingScene.tlasNeedsRebuild = 1;
+	g_glRaytracingScene.tlasNeedsUpdate	 = 0;
+	return 1;
 }
 
 static int glRaytracingUploadMeshBuffers( glRaytracingMeshRecord_t* mesh )
@@ -498,129 +944,76 @@ static int glRaytracingBuildMeshInternal( glRaytracingMeshRecord_t* mesh )
 	if( !mesh )
 		return 0;
 
-	if( !mesh->vertexBuffer.resource || !mesh->indexBuffer.resource ) {
-		if( !glRaytracingUploadMeshBuffers( mesh ) )
-			return 0;
-	}
-
-	D3D12_RAYTRACING_GEOMETRY_DESC geomDesc = {};
-	geomDesc.Type							= D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-	geomDesc.Flags							= mesh->descCpu.opaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
-
-	geomDesc.Triangles.Transform3x4				  = 0;
-	geomDesc.Triangles.IndexFormat				  = DXGI_FORMAT_R32_UINT;
-	geomDesc.Triangles.VertexFormat				  = DXGI_FORMAT_R32G32B32_FLOAT;
-	geomDesc.Triangles.IndexCount				  = ( UINT )mesh->indicesCpu.size();
-	geomDesc.Triangles.VertexCount				  = ( UINT )mesh->verticesCpu.size();
-	geomDesc.Triangles.IndexBuffer				  = mesh->indexBuffer.gpuVA;
-	geomDesc.Triangles.VertexBuffer.StartAddress  = mesh->vertexBuffer.gpuVA;
-	geomDesc.Triangles.VertexBuffer.StrideInBytes = sizeof( glRaytracingVertex_t );
-
-	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs = {};
-	inputs.Type													= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-	inputs.DescsLayout											= D3D12_ELEMENTS_LAYOUT_ARRAY;
-	inputs.NumDescs												= 1;
-	inputs.pGeometryDescs										= &geomDesc;
-	inputs.Flags = mesh->descCpu.allowUpdate ? ( D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE ) :
-											   D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
-
-	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuild = {};
-	g_glRaytracingCmd.device->GetRaytracingAccelerationStructurePrebuildInfo( &inputs, &prebuild );
-
-	if( prebuild.ResultDataMaxSizeInBytes == 0 ) {
-		glRaytracingFatal( "BLAS prebuild size is zero" );
-		return 0;
-	}
-
-	mesh->blasScratchSize = glRaytracingAlignUp( prebuild.ScratchDataSizeInBytes, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT );
-	mesh->blasResultSize  = glRaytracingAlignUp( prebuild.ResultDataMaxSizeInBytes, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT );
-
-	mesh->blasScratch =
-		glRaytracingCreateBuffer( g_glRaytracingCmd.device.Get(), mesh->blasScratchSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS );
-
-	mesh->blasResult = glRaytracingCreateBuffer(
-		g_glRaytracingCmd.device.Get(), mesh->blasResultSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS );
-
-	if( !mesh->blasScratch.resource || !mesh->blasResult.resource )
-		return 0;
-
-	if( !glRaytracingBeginCmd() )
-		return 0;
-
-	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
-	buildDesc.Inputs											 = inputs;
-	buildDesc.ScratchAccelerationStructureData					 = mesh->blasScratch.gpuVA;
-	buildDesc.DestAccelerationStructureData						 = mesh->blasResult.gpuVA;
-	buildDesc.SourceAccelerationStructureData					 = 0;
-
-	g_glRaytracingCmd.cmdList->BuildRaytracingAccelerationStructure( &buildDesc, 0, nullptr );
-
-	D3D12_RESOURCE_BARRIER uav = {};
-	uav.Type				   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uav.UAV.pResource		   = mesh->blasResult.resource.Get();
-	g_glRaytracingCmd.cmdList->ResourceBarrier( 1, &uav );
-
-	if( !glRaytracingEndCmd() )
-		return 0;
-
-	mesh->blasBuilt = 1;
-	mesh->dirty		= 0;
-	return 1;
+	const int oldDirty = mesh->dirty;
+	mesh->dirty		   = 1;
+	const int ok	   = glRaytracingBuildDirtyMeshesInternal();
+	if( !ok )
+		mesh->dirty = oldDirty;
+	return ok;
 }
 
 static int glRaytracingEnsureSceneUploadBuffer( UINT64 requiredBytes )
 {
+	glRaytracingSceneUploadBuffer_t* upload = glRaytracingGetBuildInstanceUpload();
+
 	if( requiredBytes == 0 )
 		requiredBytes = D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT;
 
 	requiredBytes = glRaytracingAlignUp( requiredBytes, D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT );
 
-	if( g_glRaytracingScene.instanceDescUpload.resource && g_glRaytracingScene.instanceDescCapacityBytes >= requiredBytes && g_glRaytracingScene.mappedInstanceDescs ) {
+	if( upload->buffer.resource && upload->capacityBytes >= requiredBytes && upload->mapped ) {
 		return 1;
 	}
 
-	g_glRaytracingScene.mappedInstanceDescs = nullptr;
-	g_glRaytracingScene.instanceDescUpload.resource.Reset();
-	g_glRaytracingScene.instanceDescCapacityBytes = 0;
+	if( upload->buffer.resource && upload->mapped )
+		upload->buffer.resource->Unmap( 0, nullptr );
 
-	g_glRaytracingScene.instanceDescUpload =
-		glRaytracingCreateBuffer( g_glRaytracingCmd.device.Get(), requiredBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE );
+	upload->mapped = nullptr;
+	upload->buffer.resource.Reset();
+	upload->capacityBytes = 0;
 
-	if( !g_glRaytracingScene.instanceDescUpload.resource )
+	upload->buffer = glRaytracingCreateBuffer( g_glRaytracingCmd.device.Get(), requiredBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE );
+
+	if( !upload->buffer.resource )
 		return 0;
 
 	void*		mapped	  = nullptr;
 	D3D12_RANGE readRange = {};
-	if( FAILED( g_glRaytracingScene.instanceDescUpload.resource->Map( 0, &readRange, &mapped ) ) || !mapped ) {
-		g_glRaytracingScene.instanceDescUpload.resource.Reset();
+	if( FAILED( upload->buffer.resource->Map( 0, &readRange, &mapped ) ) || !mapped ) {
+		upload->buffer.resource.Reset();
 		return 0;
 	}
 
-	g_glRaytracingScene.mappedInstanceDescs		  = ( D3D12_RAYTRACING_INSTANCE_DESC* )mapped;
-	g_glRaytracingScene.instanceDescCapacityBytes = requiredBytes;
+	upload->mapped		  = ( D3D12_RAYTRACING_INSTANCE_DESC* )mapped;
+	upload->capacityBytes = requiredBytes;
 	return 1;
 }
 
+struct glRaytracingResolvedInstance_t {
+	const glRaytracingInstanceRecord_t* inst;
+	D3D12_GPU_VIRTUAL_ADDRESS			blasGpuVA;
+};
+
 static int glRaytracingBuildSceneInternal( void )
 {
-	UINT activeCount  = 0;
+	UINT aliveCount	  = 0;
 	int	 anyDirty	  = 0;
 	int	 needsRebuild = g_glRaytracingScene.tlasNeedsRebuild;
 	int	 needsUpdate  = g_glRaytracingScene.tlasNeedsUpdate;
 
-	// Pass 1: count alive instances and see whether any instance changed.
 	for( size_t i = 0; i < g_glRaytracingScene.instances.size(); ++i ) {
 		const glRaytracingInstanceRecord_t& inst = g_glRaytracingScene.instances[i];
 		if( !inst.alive )
 			continue;
 
-		++activeCount;
-
+		++aliveCount;
 		if( inst.dirty )
 			anyDirty = 1;
 	}
 
-	if( activeCount == 0 ) {
+	if( aliveCount == 0 ) {
+		g_glRaytracingScene.activeInstanceIndices.clear();
+		g_glRaytracingScene.cpuInstanceDescs.clear();
 		g_glRaytracingScene.activeInstanceCount = 0;
 		g_glRaytracingScene.builtInstanceCount	= 0;
 		g_glRaytracingScene.tlasBuilt			= 0;
@@ -632,45 +1025,27 @@ static int glRaytracingBuildSceneInternal( void )
 	if( !g_glRaytracingScene.tlasBuilt )
 		needsRebuild = 1;
 
-	if( activeCount != g_glRaytracingScene.builtInstanceCount )
+	if( ( UINT )g_glRaytracingScene.activeInstanceIndices.size() != g_glRaytracingScene.builtInstanceCount )
 		needsRebuild = 1;
 
-	// Nothing changed at all.
-	if( !needsRebuild && !needsUpdate && !anyDirty ) {
-		g_glRaytracingScene.activeInstanceCount = activeCount;
-		return 1;
+	if( needsRebuild ) {
+		if( !glRaytracingRebuildActiveInstanceCache() )
+			return 0;
+	} else {
+		if( !needsUpdate && !anyDirty ) {
+			g_glRaytracingScene.activeInstanceCount = ( UINT )g_glRaytracingScene.cpuInstanceDescs.size();
+			return 1;
+		}
+
+		if( !glRaytracingRefreshDirtyInstanceCache() ) {
+			g_glRaytracingScene.tlasNeedsRebuild = 1;
+			if( !glRaytracingRebuildActiveInstanceCache() )
+				return 0;
+			needsRebuild = 1;
+		}
 	}
 
-	const UINT64 instBytes = glRaytracingAlignUp( ( UINT64 )activeCount * ( UINT64 )sizeof( D3D12_RAYTRACING_INSTANCE_DESC ), D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT );
-
-	if( !glRaytracingEnsureSceneUploadBuffer( instBytes ) )
-		return 0;
-
-	// Pass 2: emit only valid live instances whose BLAS is ready.
-	UINT outIndex = 0;
-	for( size_t i = 0; i < g_glRaytracingScene.instances.size(); ++i ) {
-		const glRaytracingInstanceRecord_t& inst = g_glRaytracingScene.instances[i];
-		if( !inst.alive )
-			continue;
-
-		const glRaytracingMeshRecord_t* mesh = glRaytracingFindMeshConst( inst.descCpu.meshHandle );
-		if( !mesh || !mesh->blasBuilt || !mesh->blasResult.resource || mesh->blasResult.gpuVA == 0 )
-			continue;
-
-		D3D12_RAYTRACING_INSTANCE_DESC& d = g_glRaytracingScene.mappedInstanceDescs[outIndex];
-
-		memcpy( d.Transform, inst.descCpu.transform, sizeof( float ) * 12 );
-		d.InstanceID						  = inst.descCpu.instanceID;
-		d.InstanceMask						  = ( UINT8 )( inst.descCpu.mask ? inst.descCpu.mask : 0xFF );
-		d.InstanceContributionToHitGroupIndex = 0;
-		d.Flags								  = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
-		d.AccelerationStructure				  = mesh->blasResult.gpuVA;
-
-		++outIndex;
-	}
-
-	activeCount = outIndex;
-
+	const UINT activeCount = ( UINT )g_glRaytracingScene.cpuInstanceDescs.size();
 	if( activeCount == 0 ) {
 		g_glRaytracingScene.activeInstanceCount = 0;
 		g_glRaytracingScene.builtInstanceCount	= 0;
@@ -680,45 +1055,57 @@ static int glRaytracingBuildSceneInternal( void )
 		return 1;
 	}
 
-	// If the number of actually emitted instances changed because some BLAS
-	// was missing, force a rebuild.
 	if( !g_glRaytracingScene.tlasBuilt || activeCount != g_glRaytracingScene.builtInstanceCount )
 		needsRebuild = 1;
+
+	if( !glRaytracingUploadCachedInstanceDescs() )
+		return 0;
+
+	glRaytracingSceneUploadBuffer_t*					 upload = glRaytracingGetBuildInstanceUpload();
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs = {};
 	inputs.Type													= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	inputs.DescsLayout											= D3D12_ELEMENTS_LAYOUT_ARRAY;
 	inputs.NumDescs												= activeCount;
-	inputs.InstanceDescs										= g_glRaytracingScene.instanceDescUpload.gpuVA;
+	inputs.InstanceDescs										= upload->buffer.gpuVA;
 	inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
 	if( !glRaytracingEnsureTLASBuffers( &inputs ) )
 		return 0;
 
-	if( !glRaytracingBeginCmd() )
+	glRaytracingBuffer_t*		dstTLAS = glRaytracingGetBuildTLASBuffer();
+	const glRaytracingBuffer_t* srcTLAS = glRaytracingGetCurrentTLASBufferConst();
+
+	glRaytracingWaitFenceValue( g_glRaytracingCmd.blasLastFenceValue );
+
+	if( !glRaytracingBeginTlasCmd() )
 		return 0;
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
 	buildDesc.Inputs											 = inputs;
 	buildDesc.ScratchAccelerationStructureData					 = g_glRaytracingScene.tlasScratch.gpuVA;
-	buildDesc.DestAccelerationStructureData						 = g_glRaytracingScene.tlasResult.gpuVA;
+	buildDesc.DestAccelerationStructureData						 = dstTLAS->gpuVA;
 	buildDesc.SourceAccelerationStructureData					 = 0;
 
 	if( !needsRebuild && g_glRaytracingScene.tlasBuilt ) {
 		buildDesc.Inputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
-		buildDesc.SourceAccelerationStructureData = g_glRaytracingScene.tlasResult.gpuVA;
+		buildDesc.SourceAccelerationStructureData = srcTLAS->gpuVA;
 	}
 
-	g_glRaytracingCmd.cmdList->BuildRaytracingAccelerationStructure( &buildDesc, 0, nullptr );
+	g_glRaytracingCmd.tlasCmdList->BuildRaytracingAccelerationStructure( &buildDesc, 0, nullptr );
 
 	D3D12_RESOURCE_BARRIER uav = {};
 	uav.Type				   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uav.UAV.pResource		   = g_glRaytracingScene.tlasResult.resource.Get();
-	g_glRaytracingCmd.cmdList->ResourceBarrier( 1, &uav );
+	uav.UAV.pResource		   = dstTLAS->resource.Get();
+	g_glRaytracingCmd.tlasCmdList->ResourceBarrier( 1, &uav );
 
-	if( !glRaytracingEndCmd() )
+	const UINT64 tlasFenceValue = glRaytracingEndTlasCmd();
+	if( !tlasFenceValue )
 		return 0;
 
+	glRaytracingWaitFenceValue( tlasFenceValue );
+
+	g_glRaytracingScene.currentTLASIndex	= glRaytracingGetInactiveTLASIndex();
 	g_glRaytracingScene.activeInstanceCount = activeCount;
 	g_glRaytracingScene.builtInstanceCount	= activeCount;
 	g_glRaytracingScene.tlasBuilt			= 1;
@@ -755,6 +1142,7 @@ extern "C" void glRaytracingShutdown( void )
 	if( !g_glRaytracingScene.initialized )
 		return;
 
+	glRaytracingClear();
 	g_glRaytracingScene = glRaytracingSceneState_t();
 	glRaytracingShutdownCmdContext();
 }
@@ -763,24 +1151,28 @@ extern "C" void glRaytracingClear( void )
 {
 	g_glRaytracingScene.meshes.clear();
 	g_glRaytracingScene.instances.clear();
+	g_glRaytracingScene.activeInstanceIndices.clear();
+	g_glRaytracingScene.cpuInstanceDescs.clear();
+	g_glRaytracingScene.meshHandleToIndex.clear();
+	g_glRaytracingScene.instanceHandleToIndex.clear();
 
-	g_glRaytracingScene.instanceDescUpload.resource.Reset();
-	g_glRaytracingScene.tlasScratch.resource.Reset();
-	g_glRaytracingScene.tlasResult.resource.Reset();
-	g_glRaytracingScene.tlasScratchSize = 0;
-	g_glRaytracingScene.tlasResultSize	= 0;
+	for( int i = 0; i < 2; ++i ) {
+		if( g_glRaytracingScene.instanceDescUpload[i].buffer.resource && g_glRaytracingScene.instanceDescUpload[i].mapped )
+			g_glRaytracingScene.instanceDescUpload[i].buffer.resource->Unmap( 0, nullptr );
 
-	if( g_glRaytracingScene.instanceDescUpload.resource && g_glRaytracingScene.mappedInstanceDescs ) {
-		g_glRaytracingScene.instanceDescUpload.resource->Unmap( 0, nullptr );
-		g_glRaytracingScene.mappedInstanceDescs = nullptr;
+		g_glRaytracingScene.instanceDescUpload[i] = glRaytracingSceneUploadBuffer_t();
+		g_glRaytracingScene.tlasResult[i].resource.Reset();
 	}
 
-	g_glRaytracingScene.instanceDescCapacityBytes = 0;
-	g_glRaytracingScene.activeInstanceCount		  = 0;
-	g_glRaytracingScene.builtInstanceCount		  = 0;
-	g_glRaytracingScene.tlasBuilt				  = 0;
-	g_glRaytracingScene.tlasNeedsRebuild		  = 1;
-	g_glRaytracingScene.tlasNeedsUpdate			  = 1;
+	g_glRaytracingScene.tlasScratch.resource.Reset();
+	g_glRaytracingScene.tlasScratchSize		= 0;
+	g_glRaytracingScene.tlasResultSize		= 0;
+	g_glRaytracingScene.activeInstanceCount = 0;
+	g_glRaytracingScene.builtInstanceCount	= 0;
+	g_glRaytracingScene.tlasBuilt			= 0;
+	g_glRaytracingScene.tlasNeedsRebuild	= 1;
+	g_glRaytracingScene.tlasNeedsUpdate		= 1;
+	g_glRaytracingScene.currentTLASIndex	= 0;
 }
 
 extern "C" glRaytracingMeshHandle_t glRaytracingCreateMesh( const glRaytracingMeshDesc_t* desc )
@@ -830,10 +1222,20 @@ extern "C" int glRaytracingUpdateMesh( glRaytracingMeshHandle_t meshHandle, cons
 	mesh->vertexBuffer.resource.Reset();
 	mesh->indexBuffer.resource.Reset();
 	mesh->blasScratch.resource.Reset();
-	mesh->blasResult.resource.Reset();
-	mesh->blasBuilt						 = 0;
-	mesh->dirty							 = 1;
+	mesh->blasResult[0].resource.Reset();
+	mesh->blasResult[1].resource.Reset();
+	mesh->blasBuilt		   = 0;
+	mesh->dirty			   = 1;
+	mesh->currentBlasIndex = 0;
+
+	for( size_t i = 0; i < g_glRaytracingScene.instances.size(); ++i ) {
+		if( g_glRaytracingScene.instances[i].alive && g_glRaytracingScene.instances[i].descCpu.meshHandle == meshHandle ) {
+			glRaytracingInvalidateInstanceCache( &g_glRaytracingScene.instances[i] );
+			g_glRaytracingScene.instances[i].dirty = 1;
+		}
+	}
 	g_glRaytracingScene.tlasNeedsRebuild = 1;
+	g_glRaytracingScene.tlasNeedsUpdate	 = 0;
 
 	return 1;
 }
@@ -846,7 +1248,10 @@ extern "C" void glRaytracingDeleteMesh( glRaytracingMeshHandle_t meshHandle )
 
 	for( size_t i = 0; i < g_glRaytracingScene.instances.size(); ++i ) {
 		if( g_glRaytracingScene.instances[i].alive && g_glRaytracingScene.instances[i].descCpu.meshHandle == meshHandle ) {
+			glRaytracingInvalidateInstanceCache( &g_glRaytracingScene.instances[i] );
 			g_glRaytracingScene.instances[i].alive = 0;
+			if( g_glRaytracingScene.instances[i].handle < g_glRaytracingScene.instanceHandleToIndex.size() )
+				g_glRaytracingScene.instanceHandleToIndex[g_glRaytracingScene.instances[i].handle] = -1;
 		}
 	}
 
@@ -873,7 +1278,10 @@ extern "C" glRaytracingInstanceHandle_t glRaytracingCreateInstance( const glRayt
 	inst.dirty	 = 1;
 
 	g_glRaytracingScene.instances.push_back( inst );
-	g_glRaytracingScene.tlasNeedsRebuild = 1;
+	const size_t newIndex = g_glRaytracingScene.instances.size() - 1;
+	glRaytracingEnsureInstanceHandleTable( inst.handle );
+	g_glRaytracingScene.instanceHandleToIndex[inst.handle] = ( int )newIndex;
+	g_glRaytracingScene.tlasNeedsRebuild				   = 1;
 	return inst.handle;
 }
 
@@ -894,10 +1302,12 @@ extern "C" int glRaytracingUpdateInstance( glRaytracingInstanceHandle_t instance
 	inst->descCpu = *desc;
 	inst->dirty	  = 1;
 
-	if( oldMeshHandle != desc->meshHandle )
+	if( oldMeshHandle != desc->meshHandle ) {
+		glRaytracingInvalidateInstanceCache( inst );
 		g_glRaytracingScene.tlasNeedsRebuild = 1;
-	else
+	} else {
 		g_glRaytracingScene.tlasNeedsUpdate = 1;
+	}
 
 	return 1;
 }
@@ -908,7 +1318,12 @@ extern "C" void glRaytracingDeleteInstance( glRaytracingInstanceHandle_t instanc
 	if( !inst )
 		return;
 
+	glRaytracingInvalidateInstanceCache( inst );
 	inst->alive = 0;
+	if( instanceHandle < g_glRaytracingScene.instanceHandleToIndex.size() )
+		g_glRaytracingScene.instanceHandleToIndex[instanceHandle] = -1;
+	g_glRaytracingScene.tlasNeedsRebuild = 1;
+	g_glRaytracingScene.tlasNeedsUpdate	 = 0;
 }
 
 extern "C" int glRaytracingBuildMesh( glRaytracingMeshHandle_t meshHandle )
@@ -928,18 +1343,7 @@ extern "C" int glRaytracingBuildAllMeshes( void )
 	if( !g_glRaytracingScene.initialized )
 		return 0;
 
-	for( size_t i = 0; i < g_glRaytracingScene.meshes.size(); ++i ) {
-		glRaytracingMeshRecord_t& mesh = g_glRaytracingScene.meshes[i];
-		if( !mesh.alive )
-			continue;
-
-		if( !mesh.blasBuilt || mesh.dirty ) {
-			if( !glRaytracingBuildMeshInternal( &mesh ) )
-				return 0;
-		}
-	}
-
-	return 1;
+	return glRaytracingBuildDirtyMeshesInternal();
 }
 
 extern "C" int glRaytracingBuildScene( void )
@@ -955,7 +1359,7 @@ extern "C" int glRaytracingBuildScene( void )
 
 extern "C" ID3D12Resource* glRaytracingGetTopLevelAS( void )
 {
-	return g_glRaytracingScene.tlasResult.resource.Get();
+	return glRaytracingGetCurrentTLASBuffer()->resource.Get();
 }
 
 extern "C" uint32_t glRaytracingGetMeshCount( void )
@@ -1081,7 +1485,7 @@ static const uint GL_RAYTRACING_LIGHT_TYPE_POINT = 0;
 static const uint GL_RAYTRACING_LIGHT_TYPE_RECT  = 1;
 
 static const uint GEOMETRY_FLAG_SKELETAL = 1;
-static const uint GEOMETRY_FLAG_UNLIT = 2;
+static const uint GEOMETRY_FLAG_UNLIT    = 2;
 
 float3 LoadScenePosition(uint2 pixel)
 {
@@ -1120,7 +1524,7 @@ float TraceShadow(float3 origin, float3 dir, float maxT)
 
     TraceRay(
         gSceneBVH,
-        RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH,
+        RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_CULL_FRONT_FACING_TRIANGLES,
         0xFF,
         0,
         1,
@@ -1232,6 +1636,7 @@ float TraceSoftShadow(float3 worldPos, float3 N, Light Lgt, float3 toLight, floa
 
     return shadowAccum / (float)SHADOW_SAMPLES;
 }
+
 float RectLightShadow(float3 worldPos, float3 N, Light Lgt, uint2 pixel)
 {
     uint sampleCount = max(Lgt.samples, 1u);
@@ -1241,7 +1646,6 @@ float RectLightShadow(float3 worldPos, float3 N, Light Lgt, uint2 pixel)
 
     float rand = Hash12((float2)pixel + worldPos.xy + float2(worldPos.z, dot(N.xy, N.xy)));
 
-    // receiver bias only
     float NoL_center = saturate(dot(N, normalize(Lgt.position - worldPos)));
     float normalBias = lerp(gShadowBias * 4.0, gShadowBias * 0.75, NoL_center);
     float3 baseOrigin = worldPos + N * normalBias;
@@ -1252,7 +1656,6 @@ float RectLightShadow(float3 worldPos, float3 N, Light Lgt, uint2 pixel)
         float2 xi = Hammersley2D(s, sampleCount, rand);
         float2 uv = xi * 2.0 - 1.0;
 
-        // sample directly on the rect surface
         float3 sampleLightPos =
             Lgt.position +
             Lgt.axisU * (uv.x * Lgt.halfWidth) +
@@ -1269,14 +1672,12 @@ float RectLightShadow(float3 worldPos, float3 N, Light Lgt, uint2 pixel)
 
         float3 L = toLight / distToLight;
 
-        // receiver must face the light
         float NdotL = dot(N, L);
         if (NdotL <= 0.0)
         {
             continue;
         }
 
-        // emitter must face the receiver
         float emitTerm = (Lgt.twoSided != 0)
             ? abs(dot(Lgt.normal, -L))
             : dot(Lgt.normal, -L);
@@ -1286,7 +1687,6 @@ float RectLightShadow(float3 worldPos, float3 N, Light Lgt, uint2 pixel)
             continue;
         }
 
-        // small ray-direction push helps self-hit rejection
         float3 shadowOrigin = baseOrigin + L * (gShadowBias * 0.5);
         float shadowTMax = max(distToLight - gShadowBias, 0.001);
 
@@ -1321,7 +1721,7 @@ float ComputeAmbientOcclusion(float3 worldPos, float3 N, uint2 pixel)
 
         aoDir = normalize(aoDir);
 
-        float3 aoOrigin = worldPos + N * (gShadowBias * 2.0) + aoDir * (gShadowBias * 1.5);
+        float3 aoOrigin = worldPos + N * (gShadowBias * 0.15);
 
         visibility += TraceShadow(aoOrigin, aoDir, AO_RADIUS);
     }
@@ -1331,6 +1731,7 @@ float ComputeAmbientOcclusion(float3 worldPos, float3 N, uint2 pixel)
 
     return visibility;
 }
+
 
 float ComputeSkyVisibility(float3 worldPos, float3 N, uint2 pixel)
 {
@@ -1417,6 +1818,38 @@ float ComputeCavity(uint2 pixel, float3 worldPos, float3 N)
     return 1.0 - cavity * 0.18;
 }
 
+float3 ComputeSpecular(float3 N, float3 V, float3 L, float3 lightColor, float lightIntensity, float atten, float shadow, float3 baseAlbedo)
+{
+    if (gEnableSpecular == 0)
+        return 0.0;
+
+    float3 H = normalize(V + L);
+
+    float NdotL = saturate(dot(N, L));
+    float NdotV = saturate(dot(N, V));
+    float NdotH = saturate(dot(N, H));
+    float VdotH = saturate(dot(V, H));
+
+    if (NdotL <= 0.0 || NdotV <= 0.0)
+        return 0.0;
+
+    float shininess = 48.0;
+    float specPow = pow(NdotH, shininess);
+
+    float3 dielectricF0 = float3(0.04, 0.04, 0.04);
+    float luminance = dot(baseAlbedo, float3(0.299, 0.587, 0.114));
+    float metalHint = saturate((max(max(baseAlbedo.r, baseAlbedo.g), baseAlbedo.b) - 0.75) * 1.5);
+    float3 F0 = lerp(dielectricF0, baseAlbedo, metalHint);
+
+    float3 fresnel = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+
+    float energyNorm = (shininess + 8.0) * 0.125;
+    float3 spec = fresnel * specPow * energyNorm;
+
+    return lightColor * (lightIntensity * atten * shadow * NdotL) * spec;
+}
+)"
+																R"(
 [shader("raygeneration")]
 void RayGen()
 {
@@ -1434,11 +1867,11 @@ void RayGen()
         return;
     }
 
-    float3 baseAlbedo = albedoSample.rgb;
-    float3 worldPos   = LoadScenePosition(pixel);
+    float3 baseAlbedo    = albedoSample.rgb;
+    float3 worldPos      = LoadScenePosition(pixel);
     float4 normalSample  = LoadSceneNormal(pixel);
-    float3 N = normalize(normalSample.xyz);
-    float3 V          = normalize(gCameraPos.xyz - worldPos);
+    float3 N             = normalize(normalSample.xyz);
+    float3 V             = normalize(gCameraPos.xyz - worldPos);
 
     float geoFlag = normalSample.w;
 
@@ -1447,7 +1880,8 @@ void RayGen()
     float3 albedo = baseAlbedo * cavity;
     albedo *= microShadow;
 
-    float ao      = ComputeAmbientOcclusion(worldPos, N, pixel);
+    float aoRay      = ComputeAmbientOcclusion(worldPos, N, pixel);
+	float ao         = aoRay;
     float skyVis  = ComputeSkyVisibility(worldPos, N, pixel);
 
     float upness = saturate(N.z * 0.5 + 0.5);
@@ -1457,10 +1891,12 @@ void RayGen()
 
     float skyStrength = 2.0;
 
-    float3 lightingAccum = 0.05;
+    float3 lightingAccum = 0.2;
+    float3 specularAccum = 0.0;
+
     lightingAccum += skyColor * (skyStrength * skyVis);
 
-    if(geoFlag == GEOMETRY_FLAG_SKELETAL)
+    if (geoFlag == GEOMETRY_FLAG_SKELETAL)
     {
         lightingAccum += 0.2;
     }
@@ -1477,22 +1913,24 @@ void RayGen()
             float  dist    = sqrt(max(distSq, 1e-6));
             float3 L       = toLight / dist;
 
-            float radius = max(Lgt.radius * 1.6, 1e-4);
+            float radius = max(Lgt.radius, 1e-4);
 
             float atten = saturate((radius - dist) / radius);
             atten = atten * atten;
 
             float wrap = 0.35;
-            float NdotL = saturate((dot(N, L) + wrap) / (1.0 + wrap));
+            float NdotLWrap = saturate((dot(N, L) + wrap) / (1.0 + wrap));
 
             float shadow = 1.0;
-            if (NdotL > 0.0001 && atten > 0.0 && dist > 0.01)
+            if (NdotLWrap > 0.0001 && atten > 0.0 && dist > 0.01)
             {
                 shadow = TraceSoftShadow(worldPos, N, Lgt, toLight, dist);
             }
 
-            float3 diffuse = Lgt.color * (Lgt.intensity * atten * NdotL * shadow);
-            lightingAccum += clamp(diffuse, 0.0, 1.0);
+            float3 diffuse = Lgt.color * (Lgt.intensity * atten * NdotLWrap * shadow);
+            lightingAccum += diffuse;
+
+            specularAccum += ComputeSpecular(N, V, L, Lgt.color, Lgt.intensity, atten, shadow, baseAlbedo);
         }
         else if (Lgt.type == GL_RAYTRACING_LIGHT_TYPE_RECT)
         {
@@ -1514,7 +1952,8 @@ void RayGen()
             uint sampleCount = max(Lgt.samples, 1u);
             sampleCount = min(sampleCount, 16u);
 
-            float3 rectAccum = 0.0;
+            float3 rectDiffuseAccum = 0.0;
+            float3 rectSpecAccum = 0.0;
             float rand = Hash12((float2)pixel * 0.73 + worldPos.xy + float2(worldPos.z, centerDist));
 
             [loop]
@@ -1539,27 +1978,46 @@ void RayGen()
                     ? abs(dot(-L, Lgt.normal))
                     : saturate(dot(-L, Lgt.normal));
 
-                rectAccum += Lgt.color * (Lgt.intensity * NdotL * faceTerm);
+                float sampleWeight = Lgt.intensity * NdotL * faceTerm;
+
+                rectDiffuseAccum += Lgt.color * sampleWeight;
+
+                rectSpecAccum += ComputeSpecular(
+                    N,
+                    V,
+                    L,
+                    Lgt.color,
+                    Lgt.intensity * faceTerm,
+                    1.0,
+                    1.0,
+                    baseAlbedo);
             }
 
-            rectAccum /= (float)sampleCount;
-            lightingAccum += clamp(rectAccum * atten * shadow, 0.0, 4.0);
+            rectDiffuseAccum /= (float)sampleCount;
+            rectSpecAccum    /= (float)sampleCount;
+
+            lightingAccum += clamp(rectDiffuseAccum * atten * shadow, 0.0, 4.0);
+            specularAccum += rectSpecAccum * atten * shadow;
         }
     }
 
-    lightingAccum = lightingAccum * ao * 1.5;
+    lightingAccum *= ao;
+    specularAccum *= ao;
 
-    if(geoFlag == GEOMETRY_FLAG_SKELETAL) {
-        lightingAccum = lightingAccum * 1.2;
+    if (geoFlag == GEOMETRY_FLAG_SKELETAL)
+    {
+        lightingAccum *= 1.2;
+        specularAccum *= 1.15;
     }
 
-    if(geoFlag == GEOMETRY_FLAG_UNLIT) 
+    if (geoFlag == GEOMETRY_FLAG_UNLIT)
     {
         gOutputTex[pixel] = float4(baseAlbedo, albedoSample.a);
     }
     else
     {
-        gOutputTex[pixel] = float4(albedo * lightingAccum, albedoSample.a);
+        float3 finalColor = albedo * lightingAccum + specularAccum;
+        gOutputTex[pixel] = float4(finalColor, albedoSample.a);
     }
 }
 )";
