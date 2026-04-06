@@ -2472,6 +2472,10 @@ static void R_CreateRaytracingWorldMeshes()
 			continue;
 		}
 
+		if( surf->shader && ( surf->shader->surfaceFlags & SURF_ALPHASHADOW ) ) {
+			continue;
+		}
+
 		if( surf->shader && surf->shader->isSky ) {
 			continue;
 		}

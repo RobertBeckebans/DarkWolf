@@ -300,17 +300,14 @@ static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXY
 	int	   j, k;
 	float  boxSize;
 
-	//	if(glfogNum > FOG_NONE && glfogsettings[FOG_CURRENT].mode == GL_EXP) {
-	if( glfogsettings[FOG_SKY].registered ) { // (SA) trying this...
-		///		boxSize = backEnd.viewParms.zFar / 1.75;		// div sqrt(3)
-		//		boxSize = glfogsettings[FOG_CURRENT].end / 1.75;
-		boxSize = glfogsettings[FOG_SKY].end; // (SA) trying this...
+	if( glfogsettings[FOG_SKY].registered ) {
+		boxSize = glfogsettings[FOG_SKY].end;
 	} else {
-		boxSize = backEnd.viewParms.zFar / 1.75; // div sqrt(3)
+		boxSize = backEnd.viewParms.zFar / 1.75f;
 	}
 	// make sure the sky is not near clipped
-	if( boxSize < r_znear->value * 2.0 ) {
-		boxSize = r_znear->value * 2.0;
+	if( boxSize < r_znear->value * 2.0f ) {
+		boxSize = r_znear->value * 2.0f;
 	}
 
 	b[0] = s * boxSize;
@@ -327,8 +324,16 @@ static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXY
 	}
 
 	// avoid bilerp seam
-	s = ( s + 1 ) * 0.5;
-	t = ( t + 1 ) * 0.5;
+	s = ( s + 1.0f ) * 0.5f;
+	t = ( t + 1.0f ) * 0.5f;
+
+	// Slight PS2-ish horizon compression so the sky feels less perfectly cubic.
+	{
+		float horizonBias = 0.82f;
+		float centeredT	  = ( t - 0.5f ) * horizonBias;
+		t				  = 0.5f + centeredT;
+	}
+
 	if( s < sky_min ) {
 		s = sky_min;
 	} else if( s > sky_max ) {
@@ -341,7 +346,7 @@ static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXY
 		t = sky_max;
 	}
 
-	t = 1.0 - t;
+	t = 1.0f - t;
 
 	if( outSt ) {
 		outSt[0] = s;
@@ -359,6 +364,9 @@ static void	  DrawSkySide( struct image_s* image, const int mins[2], const int m
 
 	GL_Bind( image );
 
+	// Darken the outer sky slightly so the layered inner pass pops more.
+	glColor4f( tr.identityLight * 0.72f, tr.identityLight * 0.72f, tr.identityLight * 0.78f, 1.0f );
+
 	for( t = mins[1] + HALF_SKY_SUBDIVISIONS; t < maxs[1] + HALF_SKY_SUBDIVISIONS; t++ ) {
 		glBegin( GL_TRIANGLE_STRIP );
 
@@ -372,6 +380,8 @@ static void	  DrawSkySide( struct image_s* image, const int mins[2], const int m
 
 		glEnd();
 	}
+
+	glColor4f( 1, 1, 1, 1 );
 }
 
 static void DrawSkySideInner( struct image_s* image, const int mins[2], const int maxs[2] )
@@ -380,10 +390,12 @@ static void DrawSkySideInner( struct image_s* image, const int mins[2], const in
 
 	GL_Bind( image );
 
-	// glDisable (GL_BLEND);
-	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	// Additive blend gives a brighter, bloomier console-style layered sky.
 	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
 	GL_TexEnv( GL_MODULATE );
+
+	glColor4f( tr.identityLight * 0.95f, tr.identityLight * 0.98f, tr.identityLight * 1.10f, 0.55f );
 
 	for( t = mins[1] + HALF_SKY_SUBDIVISIONS; t < maxs[1] + HALF_SKY_SUBDIVISIONS; t++ ) {
 		glBegin( GL_TRIANGLE_STRIP );
@@ -399,6 +411,7 @@ static void DrawSkySideInner( struct image_s* image, const int mins[2], const in
 		glEnd();
 	}
 
+	glColor4f( 1, 1, 1, 1 );
 	glDisable( GL_BLEND );
 }
 
@@ -924,7 +937,7 @@ void		RB_StageIteratorSky()
 
 	// draw the outer skybox
 	if( tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage ) {
-		glColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
+		glColor4f( 1, 1, 1, 1 );
 
 		glPushMatrix();
 		GL_State( 0 );
@@ -944,7 +957,7 @@ void		RB_StageIteratorSky()
 	// draw the inner skybox
 	// Rafael - drawing inner skybox
 	if( tess.shader->sky.innerbox[0] && tess.shader->sky.innerbox[0] != tr.defaultImage ) {
-		glColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
+		glColor4f( 1, 1, 1, 1 );
 
 		glPushMatrix();
 		GL_State( 0 );
