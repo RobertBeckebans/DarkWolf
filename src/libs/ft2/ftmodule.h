@@ -15,35 +15,30 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef FTMODULE_H
-#define FTMODULE_H
+	#define FTMODULE_H
 
-#include "freetype.h"
+	#include "freetype.h"
 
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
-
+	#endif
 
 /* module bit flags */
-typedef enum  FT_Module_Flags_
-{
-	ft_module_font_driver         = 1,     /* this module is a font driver  */
-	ft_module_renderer            = 2,     /* this module is a renderer     */
-	ft_module_hinter              = 4,     /* this module is a glyph hinter */
-	ft_module_styler              = 8,     /* this module is a styler       */
+typedef enum FT_Module_Flags_ {
+	ft_module_font_driver = 1, /* this module is a font driver  */
+	ft_module_renderer	  = 2, /* this module is a renderer     */
+	ft_module_hinter	  = 4, /* this module is a glyph hinter */
+	ft_module_styler	  = 8, /* this module is a styler       */
 
-	ft_module_driver_scalable     = 0x100, /* the driver supports scalable  */
-										   /* fonts                         */
-	ft_module_driver_no_outlines  = 0x200, /* the driver does not support   */
-										   /* vector outlines               */
-	ft_module_driver_has_hinter   = 0x400  /* the driver provides its own   */
-										   /* hinter                        */
+	ft_module_driver_scalable = 0x100,	  /* the driver supports scalable  */
+										  /* fonts                         */
+	ft_module_driver_no_outlines = 0x200, /* the driver does not support   */
+										  /* vector outlines               */
+	ft_module_driver_has_hinter = 0x400	  /* the driver provides its own   */
+										  /* hinter                        */
 
 } FT_Module_Flags;
-
 
 typedef void ( *FT_Module_Interface )( void );
 
@@ -51,9 +46,7 @@ typedef FT_Error ( *FT_Module_Constructor )( FT_Module module );
 
 typedef void ( *FT_Module_Destructor )( FT_Module module );
 
-typedef FT_Module_Interface ( *FT_Module_Requester )( FT_Module module,
-													  const char*  name );
-
+typedef FT_Module_Interface ( *FT_Module_Requester )( FT_Module module, const char* name );
 
 /*************************************************************************/
 /*                                                                       */
@@ -86,22 +79,20 @@ typedef FT_Module_Interface ( *FT_Module_Requester )( FT_Module module,
 /*    get_interface     :: Queries a given module for a specific         */
 /*                         interface by name.                            */
 /*                                                                       */
-typedef struct  FT_Module_Class_
-{
-	FT_ULong module_flags;
-	FT_Int module_size;
-	const FT_String*       module_name;
-	FT_Fixed module_version;
-	FT_Fixed module_requires;
+typedef struct FT_Module_Class_ {
+	FT_ULong			  module_flags;
+	FT_Int				  module_size;
+	const FT_String*	  module_name;
+	FT_Fixed			  module_version;
+	FT_Fixed			  module_requires;
 
-	const void*            module_interface;
+	const void*			  module_interface;
 
 	FT_Module_Constructor module_init;
-	FT_Module_Destructor module_done;
-	FT_Module_Requester get_interface;
+	FT_Module_Destructor  module_done;
+	FT_Module_Requester	  get_interface;
 
 } FT_Module_Class;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -123,9 +114,7 @@ typedef struct  FT_Module_Class_
 /*    An error will be returned if a module already exists by that name, */
 /*    or if the module requires a version of FreeType that is too great. */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Add_Module( FT_Library library,
-										  const FT_Module_Class *  clazz );
-
+FT_EXPORT_DEF( FT_Error ) FT_Add_Module( FT_Library library, const FT_Module_Class* clazz );
 
 /*************************************************************************/
 /*                                                                       */
@@ -147,9 +136,7 @@ FT_EXPORT_DEF( FT_Error )  FT_Add_Module( FT_Library library,
 /*    You should better be familiar with FreeType internals to know      */
 /*    which module to look for :-)                                       */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Module )  FT_Get_Module( FT_Library library,
-										   const char*  module_name );
-
+FT_EXPORT_DEF( FT_Module ) FT_Get_Module( FT_Library library, const char* module_name );
 
 /*************************************************************************/
 /*                                                                       */
@@ -170,9 +157,7 @@ FT_EXPORT_DEF( FT_Module )  FT_Get_Module( FT_Library library,
 /* <Note>                                                                */
 /*    The module object is destroyed by the function in case of success. */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Remove_Module( FT_Library library,
-											 FT_Module module );
-
+FT_EXPORT_DEF( FT_Error ) FT_Remove_Module( FT_Library library, FT_Module module );
 
 /*************************************************************************/
 /*                                                                       */
@@ -193,9 +178,7 @@ FT_EXPORT_DEF( FT_Error )  FT_Remove_Module( FT_Library library,
 /* <Return>                                                              */
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_New_Library( FT_Memory memory,
-										   FT_Library *  library );
-
+FT_EXPORT_DEF( FT_Error ) FT_New_Library( FT_Memory memory, FT_Library* library );
 
 /*************************************************************************/
 /*                                                                       */
@@ -212,12 +195,9 @@ FT_EXPORT_DEF( FT_Error )  FT_New_Library( FT_Memory memory,
 /* <Return>                                                              */
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Done_Library( FT_Library library );
+FT_EXPORT_DEF( FT_Error ) FT_Done_Library( FT_Library library );
 
-
-
-typedef void ( *FT_DebugHook_Func )( void*  arg );
-
+typedef void ( *FT_DebugHook_Func )( void* arg );
 
 /*************************************************************************/
 /*                                                                       */
@@ -241,11 +221,7 @@ typedef void ( *FT_DebugHook_Func )( void*  arg );
 /*    Currently, four debug hook slots are available, but only two (for  */
 /*    the TrueType and the Type 1 interpreter) are defined.              */
 /*                                                                       */
-FT_EXPORT_DEF( void )  FT_Set_Debug_Hook( FT_Library library,
-										  FT_UInt hook_index,
-										  FT_DebugHook_Func debug_hook );
-
-
+FT_EXPORT_DEF( void ) FT_Set_Debug_Hook( FT_Library library, FT_UInt hook_index, FT_DebugHook_Func debug_hook );
 
 /*************************************************************************/
 /*                                                                       */
@@ -260,15 +236,12 @@ FT_EXPORT_DEF( void )  FT_Set_Debug_Hook( FT_Library library,
 /* <InOut>                                                               */
 /*    library :: A handle to a new library object.                       */
 /*                                                                       */
-FT_EXPORT_DEF( void )  FT_Add_Default_Modules( FT_Library library );
+FT_EXPORT_DEF( void ) FT_Add_Default_Modules( FT_Library library );
 
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
-
+	#endif
 
 #endif /* FTMODULE_H */
-
 
 /* END */

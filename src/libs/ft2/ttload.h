@@ -16,117 +16,73 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef TTLOAD_H
-#define TTLOAD_H
+	#define TTLOAD_H
 
+	#include "ftstream.h"
+	#include "tttypes.h"
 
-#include "ftstream.h"
-#include "tttypes.h"
-
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
-
-
-LOCAL_DEF
-TT_Table*  TT_LookUp_Table( TT_Face face,
-							FT_ULong tag );
+	#endif
 
 LOCAL_DEF
-FT_Error  TT_Goto_Table( TT_Face face,
-						 FT_ULong tag,
-						 FT_Stream stream,
-						 FT_ULong*  length );
-
+TT_Table* TT_LookUp_Table( TT_Face face, FT_ULong tag );
 
 LOCAL_DEF
-FT_Error  TT_Load_SFNT_Header( TT_Face face,
-							   FT_Stream stream,
-							   FT_Long face_index,
-							   SFNT_Header*  sfnt );
-LOCAL_DEF
-FT_Error  TT_Load_Directory( TT_Face face,
-							 FT_Stream stream,
-							 SFNT_Header*  sfnt );
+FT_Error TT_Goto_Table( TT_Face face, FT_ULong tag, FT_Stream stream, FT_ULong* length );
 
 LOCAL_DEF
-FT_Error  TT_Load_Any( TT_Face face,
-					   FT_ULong tag,
-					   FT_Long offset,
-					   FT_Byte*   buffer,
-					   FT_ULong*  length );
-
+FT_Error TT_Load_SFNT_Header( TT_Face face, FT_Stream stream, FT_Long face_index, SFNT_Header* sfnt );
+LOCAL_DEF
+FT_Error TT_Load_Directory( TT_Face face, FT_Stream stream, SFNT_Header* sfnt );
 
 LOCAL_DEF
-FT_Error  TT_Load_Header( TT_Face face,
-						  FT_Stream stream );
-
+FT_Error TT_Load_Any( TT_Face face, FT_ULong tag, FT_Long offset, FT_Byte* buffer, FT_ULong* length );
 
 LOCAL_DEF
-FT_Error  TT_Load_Metrics_Header( TT_Face face,
-								  FT_Stream stream,
-								  FT_Bool vertical );
-
+FT_Error TT_Load_Header( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_CMap( TT_Face face,
-						FT_Stream stream );
-
+FT_Error TT_Load_Metrics_Header( TT_Face face, FT_Stream stream, FT_Bool vertical );
 
 LOCAL_DEF
-FT_Error  TT_Load_MaxProfile( TT_Face face,
-							  FT_Stream stream );
-
+FT_Error TT_Load_CMap( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_Names( TT_Face face,
-						 FT_Stream stream );
-
+FT_Error TT_Load_MaxProfile( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_OS2( TT_Face face,
-					   FT_Stream stream );
-
+FT_Error TT_Load_Names( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_PostScript( TT_Face face,
-							  FT_Stream stream );
-
+FT_Error TT_Load_OS2( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_Hdmx( TT_Face face,
-						FT_Stream stream );
+FT_Error TT_Load_PostScript( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_PCLT( TT_Face face,
-						FT_Stream stream );
+FT_Error TT_Load_Hdmx( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-void  TT_Free_Names( TT_Face face );
-
-
-LOCAL_DEF
-void  TT_Free_Hdmx( TT_Face face );
-
+FT_Error TT_Load_PCLT( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_Kern( TT_Face face,
-						FT_Stream stream );
-
+void TT_Free_Names( TT_Face face );
 
 LOCAL_DEF
-FT_Error  TT_Load_Gasp( TT_Face face,
-						FT_Stream stream );
+void TT_Free_Hdmx( TT_Face face );
 
+LOCAL_DEF
+FT_Error TT_Load_Kern( TT_Face face, FT_Stream stream );
 
-#ifdef __cplusplus
+LOCAL_DEF
+FT_Error TT_Load_Gasp( TT_Face face, FT_Stream stream );
+
+	#ifdef __cplusplus
 }
-#endif
-
+	#endif
 
 #endif /* TTLOAD_H */
-
 
 /* END */

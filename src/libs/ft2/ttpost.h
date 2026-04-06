@@ -16,37 +16,29 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef TTPOST_H
-#define TTPOST_H
+	#define TTPOST_H
 
-#include "ftconfig.h"
-#include "tttypes.h"
+	#include "ftconfig.h"
+	#include "tttypes.h"
 
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
+	#endif
 
-
-#define TT_Err_Invalid_Post_Table_Format  0x0B00
-#define TT_Err_Invalid_Post_Table         0x0B01
-
+	#define TT_Err_Invalid_Post_Table_Format 0x0B00
+	#define TT_Err_Invalid_Post_Table		 0x0B01
 
 LOCAL_DEF
-FT_Error TT_Get_PS_Name( TT_Face face,
-						 FT_UInt index,
-						 FT_String**  PSname );
+FT_Error TT_Get_PS_Name( TT_Face face, FT_UInt index, FT_String** PSname );
 
 LOCAL_DEF
-void  TT_Free_Post_Names( TT_Face face );
+void TT_Free_Post_Names( TT_Face face );
 
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
-
+	#endif
 
 #endif /* TTPOST_H */
-
 
 /* END */

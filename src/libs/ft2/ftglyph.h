@@ -15,7 +15,6 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 /*************************************************************************/
 /*                                                                       */
 /* This file contains the definition of several convenience functions    */
@@ -28,19 +27,17 @@
 /*                                                                       */
 /*************************************************************************/
 
-
 #ifndef FTGLYPH_H
-#define FTGLYPH_H
+	#define FTGLYPH_H
 
-#include "freetype.h"
+	#include "freetype.h"
 
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
+	#endif
 
 /* forward declaration to a private type */
 typedef struct FT_Glyph_Class_ FT_Glyph_Class;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -60,15 +57,13 @@ typedef struct FT_Glyph_Class_ FT_Glyph_Class;
 /*                                                                       */
 /*    advance :: A 16.16 vector that gives the glyph's advance width.    */
 /*                                                                       */
-typedef struct  FT_GlyphRec_
-{
-	FT_Library library;
-	const FT_Glyph_Class*  clazz;
-	FT_Glyph_Format format;
-	FT_Vector advance;
+typedef struct FT_GlyphRec_ {
+	FT_Library			  library;
+	const FT_Glyph_Class* clazz;
+	FT_Glyph_Format		  format;
+	FT_Vector			  advance;
 
 } FT_GlyphRec, *FT_Glyph;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -100,15 +95,13 @@ typedef struct  FT_GlyphRec_
 /*    The corresponding pixel buffer is always owned by the BitmapGlyph  */
 /*    and is thus created and destroyed with it.                         */
 /*                                                                       */
-typedef struct  FT_BitmapGlyphRec_
-{
+typedef struct FT_BitmapGlyphRec_ {
 	FT_GlyphRec root;
-	FT_Int left;
-	FT_Int top;
-	FT_Bitmap bitmap;
+	FT_Int		left;
+	FT_Int		top;
+	FT_Bitmap	bitmap;
 
 } FT_BitmapGlyphRec, *FT_BitmapGlyph;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -136,13 +129,11 @@ typedef struct  FT_BitmapGlyphRec_
 /*    The outline's tables are always owned by the object and are        */
 /*    destroyed with it.                                                 */
 /*                                                                       */
-typedef struct  FT_OutlineGlyphRec_
-{
+typedef struct FT_OutlineGlyphRec_ {
 	FT_GlyphRec root;
-	FT_Outline outline;
+	FT_Outline	outline;
 
 } FT_OutlineGlyphRec, *FT_OutlineGlyph;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -161,9 +152,7 @@ typedef struct  FT_OutlineGlyphRec_
 /* <Return>                                                              */
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Get_Glyph( FT_GlyphSlot slot,
-										 FT_Glyph *     aglyph );
-
+FT_EXPORT_DEF( FT_Error ) FT_Get_Glyph( FT_GlyphSlot slot, FT_Glyph* aglyph );
 
 /*************************************************************************/
 /*                                                                       */
@@ -183,9 +172,7 @@ FT_EXPORT_DEF( FT_Error )  FT_Get_Glyph( FT_GlyphSlot slot,
 /* <Return>                                                              */
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Glyph_Copy( FT_Glyph source,
-										  FT_Glyph *  target );
-
+FT_EXPORT_DEF( FT_Error ) FT_Glyph_Copy( FT_Glyph source, FT_Glyph* target );
 
 /*************************************************************************/
 /*                                                                       */
@@ -211,18 +198,9 @@ FT_EXPORT_DEF( FT_Error )  FT_Glyph_Copy( FT_Glyph source,
 /*    The 2x2 transformation matrix is also applied to the glyph's       */
 /*    advance vector.                                                    */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Glyph_Transform( FT_Glyph glyph,
-											   FT_Matrix *  matrix,
-											   FT_Vector *  delta );
+FT_EXPORT_DEF( FT_Error ) FT_Glyph_Transform( FT_Glyph glyph, FT_Matrix* matrix, FT_Vector* delta );
 
-
-enum
-{
-	ft_glyph_bbox_pixels    = 0,
-	ft_glyph_bbox_subpixels = 1,
-	ft_glyph_bbox_gridfit   = 2
-};
-
+enum { ft_glyph_bbox_pixels = 0, ft_glyph_bbox_subpixels = 1, ft_glyph_bbox_gridfit = 2 };
 
 /*************************************************************************/
 /*                                                                       */
@@ -268,10 +246,7 @@ enum
 /*                                                                       */
 /*    The default value (0) for `bbox_mode' is `ft_glyph_bbox_pixels'.   */
 /*                                                                       */
-FT_EXPORT_DEF( void )  FT_Glyph_Get_CBox( FT_Glyph glyph,
-										  FT_UInt bbox_mode,
-										  FT_BBox *  cbox );
-
+FT_EXPORT_DEF( void ) FT_Glyph_Get_CBox( FT_Glyph glyph, FT_UInt bbox_mode, FT_BBox* cbox );
 
 /*************************************************************************/
 /*                                                                       */
@@ -344,11 +319,7 @@ FT_EXPORT_DEF( void )  FT_Glyph_Get_CBox( FT_Glyph glyph,
 /*    This function will always fail if the glyph's format isn't         */
 /*    scalable.                                                          */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Glyph_To_Bitmap( FT_Glyph *   the_glyph,
-											   FT_ULong render_mode,
-											   FT_Vector *  origin,
-											   FT_Bool destroy );
-
+FT_EXPORT_DEF( FT_Error ) FT_Glyph_To_Bitmap( FT_Glyph* the_glyph, FT_ULong render_mode, FT_Vector* origin, FT_Bool destroy );
 
 /*************************************************************************/
 /*                                                                       */
@@ -361,11 +332,9 @@ FT_EXPORT_DEF( FT_Error )  FT_Glyph_To_Bitmap( FT_Glyph *   the_glyph,
 /* <Input>                                                               */
 /*    glyph :: A handle to the target glyph object.                      */
 /*                                                                       */
-FT_EXPORT_DEF( void )  FT_Done_Glyph( FT_Glyph glyph );
-
+FT_EXPORT_DEF( void ) FT_Done_Glyph( FT_Glyph glyph );
 
 /* other helpful functions */
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -387,9 +356,7 @@ FT_EXPORT_DEF( void )  FT_Done_Glyph( FT_Glyph glyph );
 /* <Note>                                                                */
 /*    The result is undefined if either `a' or `b' is zero.              */
 /*                                                                       */
-FT_EXPORT_DEF( void )  FT_Matrix_Multiply( FT_Matrix *  a,
-										   FT_Matrix *  b );
-
+FT_EXPORT_DEF( void ) FT_Matrix_Multiply( FT_Matrix* a, FT_Matrix* b );
 
 /*************************************************************************/
 /*                                                                       */
@@ -409,14 +376,12 @@ FT_EXPORT_DEF( void )  FT_Matrix_Multiply( FT_Matrix *  a,
 /* <MT-Note>                                                             */
 /*    Yes.                                                               */
 /*                                                                       */
-FT_EXPORT_DEF( FT_Error )  FT_Matrix_Invert( FT_Matrix *  matrix );
+FT_EXPORT_DEF( FT_Error ) FT_Matrix_Invert( FT_Matrix* matrix );
 
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
+	#endif
 
 #endif /* FTGLYPH_H */
-
 
 /* END */

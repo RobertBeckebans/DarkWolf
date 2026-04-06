@@ -18,7 +18,6 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 /*************************************************************************/
 /*                                                                       */
 /* This defines the AH_GlyphLoader type in two different ways:           */
@@ -31,93 +30,82 @@
 /*                                                                       */
 /*************************************************************************/
 
-
 #ifndef AHLOADER_H
-#define AHLOADER_H
+	#define AHLOADER_H
 
-#ifdef _STANDALONE_
+	#ifdef _STANDALONE_
 
-typedef struct  AH_GlyphLoad_
-{
-	FT_Outline outline;          /* outline             */
-	FT_UInt num_subglyphs;       /* number of subglyphs */
-	FT_SubGlyph*  subglyphs;     /* subglyphs           */
-	FT_Vector*    extra_points;  /* extra points table  */
+typedef struct AH_GlyphLoad_ {
+	FT_Outline	 outline;		/* outline             */
+	FT_UInt		 num_subglyphs; /* number of subglyphs */
+	FT_SubGlyph* subglyphs;		/* subglyphs           */
+	FT_Vector*	 extra_points;	/* extra points table  */
 
 } AH_GlyphLoad;
 
-
-struct  AH_GlyphLoader_
-{
-	FT_Memory memory;
-	FT_UInt max_points;
-	FT_UInt max_contours;
-	FT_UInt max_subglyphs;
-	FT_Bool use_extra;
+struct AH_GlyphLoader_ {
+	FT_Memory	 memory;
+	FT_UInt		 max_points;
+	FT_UInt		 max_contours;
+	FT_UInt		 max_subglyphs;
+	FT_Bool		 use_extra;
 
 	AH_GlyphLoad base;
 	AH_GlyphLoad current;
 
-	void*         other;        /* for possible future extensions */
+	void*		 other; /* for possible future extensions */
 };
 
+LOCAL_DEF
+FT_Error AH_GlyphLoader_New( FT_Memory memory, AH_GlyphLoader** aloader );
 
 LOCAL_DEF
-FT_Error  AH_GlyphLoader_New( FT_Memory memory,
-							  AH_GlyphLoader**  aloader );
+FT_Error AH_GlyphLoader_Create_Extra( AH_GlyphLoader* loader );
 
 LOCAL_DEF
-FT_Error  AH_GlyphLoader_Create_Extra( AH_GlyphLoader*  loader );
+void AH_GlyphLoader_Done( AH_GlyphLoader* loader );
 
 LOCAL_DEF
-void  AH_GlyphLoader_Done( AH_GlyphLoader*  loader );
+void AH_GlyphLoader_Reset( AH_GlyphLoader* loader );
 
 LOCAL_DEF
-void  AH_GlyphLoader_Reset( AH_GlyphLoader*  loader );
+void AH_GlyphLoader_Rewind( AH_GlyphLoader* loader );
 
 LOCAL_DEF
-void  AH_GlyphLoader_Rewind( AH_GlyphLoader*  loader );
+FT_Error AH_GlyphLoader_Check_Points( AH_GlyphLoader* loader, FT_UInt n_points, FT_UInt n_contours );
 
 LOCAL_DEF
-FT_Error  AH_GlyphLoader_Check_Points( AH_GlyphLoader*  loader,
-									   FT_UInt n_points,
-									   FT_UInt n_contours );
+FT_Error AH_GlyphLoader_Check_Subglyphs( AH_GlyphLoader* loader, FT_UInt n_subs );
 
 LOCAL_DEF
-FT_Error  AH_GlyphLoader_Check_Subglyphs( AH_GlyphLoader*  loader,
-										  FT_UInt n_subs );
+void AH_GlyphLoader_Prepare( AH_GlyphLoader* loader );
 
 LOCAL_DEF
-void  AH_GlyphLoader_Prepare( AH_GlyphLoader*  loader );
+void AH_GlyphLoader_Add( AH_GlyphLoader* loader );
 
 LOCAL_DEF
-void  AH_GlyphLoader_Add( AH_GlyphLoader*  loader );
+FT_Error AH_GlyphLoader_Copy_Points( AH_GlyphLoader* target, FT_GlyphLoader* source );
 
-LOCAL_DEF
-FT_Error  AH_GlyphLoader_Copy_Points( AH_GlyphLoader*  target,
-									  FT_GlyphLoader*  source );
+	#else /* _STANDALONE */
 
-#else /* _STANDALONE */
+		#include "ftobjs.h"
 
-#include "ftobjs.h"
+		#define AH_Load					  FT_GlyphLoad
+		#define AH_Loader				  FT_GlyphLoader
 
-  #define AH_Load    FT_GlyphLoad
-  #define AH_Loader  FT_GlyphLoader
+		#define ah_loader_new			  FT_GlyphLoader_New
+		#define ah_loader_done			  FT_GlyphLoader_Done
+		#define ah_loader_reset			  FT_GlyphLoader_Reset
+		#define ah_loader_rewind		  FT_GlyphLoader_Rewind
+		#define ah_loader_create_extra	  FT_GlyphLoader_Create_Extra
+		#define ah_loader_check_points	  FT_GlyphLoader_Check_Points
+		#define ah_loader_check_subglyphs FT_GlyphLoader_Check_Subglyphs
+		#define ah_loader_prepare		  FT_GlyphLoader_Prepare
+		#define ah_loader_add			  FT_GlyphLoader_Add
+		#define ah_loader_copy_points	  FT_GlyphLoader_Copy_Points
 
-  #define ah_loader_new              FT_GlyphLoader_New
-  #define ah_loader_done             FT_GlyphLoader_Done
-  #define ah_loader_reset            FT_GlyphLoader_Reset
-  #define ah_loader_rewind           FT_GlyphLoader_Rewind
-  #define ah_loader_create_extra     FT_GlyphLoader_Create_Extra
-  #define ah_loader_check_points     FT_GlyphLoader_Check_Points
-  #define ah_loader_check_subglyphs  FT_GlyphLoader_Check_Subglyphs
-  #define ah_loader_prepare          FT_GlyphLoader_Prepare
-  #define ah_loader_add              FT_GlyphLoader_Add
-  #define ah_loader_copy_points      FT_GlyphLoader_Copy_Points
-
-#endif /* _STANDALONE_ */
+	#endif /* _STANDALONE_ */
 
 #endif /* AHLOADER_H */
-
 
 /* END */

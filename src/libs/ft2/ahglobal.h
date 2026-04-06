@@ -19,24 +19,19 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef AHGLOBAL_H
-#define AHGLOBAL_H
+	#define AHGLOBAL_H
 
-#include "ahtypes.h"
+	#include "ahtypes.h"
 
-#include "ftobjs.h"
+	#include "ftobjs.h"
 
-#define AH_IS_TOP_BLUE( b )  ( ( b ) == ah_blue_capital_top || \
-							   ( b ) == ah_blue_small_top   )
-
+	#define AH_IS_TOP_BLUE( b ) ( ( b ) == ah_blue_capital_top || ( b ) == ah_blue_small_top )
 
 /* compute global metrics automatically */
 LOCAL_DEF
-FT_Error  ah_hinter_compute_globals( AH_Hinter*  hinter );
-
+FT_Error ah_hinter_compute_globals( AH_Hinter* hinter );
 
 #endif /* AHGLOBAL_H */
-
 
 /* END */

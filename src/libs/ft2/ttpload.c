@@ -15,7 +15,6 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #include "ftdebug.h"
 #include "ftobjs.h"
 #include "ftstream.h"
@@ -25,16 +24,14 @@
 
 #include "tterrors.h"
 
-
 /*************************************************************************/
 /*                                                                       */
 /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
 /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
 /* messages during execution.                                            */
 /*                                                                       */
-#undef  FT_COMPONENT
-#define FT_COMPONENT  trace_ttpload
-
+#undef FT_COMPONENT
+#define FT_COMPONENT trace_ttpload
 
 /*************************************************************************/
 /*                                                                       */
@@ -54,70 +51,62 @@
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
 LOCAL_FUNC
-FT_Error  TT_Load_Locations( TT_Face face,
-							 FT_Stream stream ) {
-	FT_Error error;
+FT_Error TT_Load_Locations( TT_Face face, FT_Stream stream )
+{
+	FT_Error  error;
 	FT_Memory memory = stream->memory;
-	FT_Short LongOffsets;
-	FT_ULong table_len;
-
+	FT_Short  LongOffsets;
+	FT_ULong  table_len;
 
 	FT_TRACE2( ( "Locations " ) );
 	LongOffsets = face->header.Index_To_Loc_Format;
 
 	error = face->goto_table( face, TTAG_loca, stream, &table_len );
-	if ( error ) {
+	if( error ) {
 		error = TT_Err_Locations_Missing;
 		goto Exit;
 	}
 
-	if ( LongOffsets != 0 ) {
-		face->num_locations = (FT_UShort)( table_len >> 2 );
+	if( LongOffsets != 0 ) {
+		face->num_locations = ( FT_UShort )( table_len >> 2 );
 
 		FT_TRACE2( ( "(32bit offsets): %12d ", face->num_locations ) );
 
-		if ( ALLOC_ARRAY( face->glyph_locations,
-						  face->num_locations,
-						  FT_Long ) ) {
+		if( ALLOC_ARRAY( face->glyph_locations, face->num_locations, FT_Long ) ) {
 			goto Exit;
 		}
 
-		if ( ACCESS_Frame( face->num_locations * 4L ) ) {
+		if( ACCESS_Frame( face->num_locations * 4L ) ) {
 			goto Exit;
 		}
 
 		{
-			FT_Long*  loc   = face->glyph_locations;
-			FT_Long*  limit = loc + face->num_locations;
+			FT_Long* loc   = face->glyph_locations;
+			FT_Long* limit = loc + face->num_locations;
 
-
-			for ( ; loc < limit; loc++ )
+			for( ; loc < limit; loc++ )
 				*loc = GET_Long();
 		}
 
 		FORGET_Frame();
-	} else
-	{
-		face->num_locations = (FT_UShort)( table_len >> 1 );
+	} else {
+		face->num_locations = ( FT_UShort )( table_len >> 1 );
 
 		FT_TRACE2( ( "(16bit offsets): %12d ", face->num_locations ) );
 
-		if ( ALLOC_ARRAY( face->glyph_locations,
-						  face->num_locations,
-						  FT_Long ) ) {
+		if( ALLOC_ARRAY( face->glyph_locations, face->num_locations, FT_Long ) ) {
 			goto Exit;
 		}
 
-		if ( ACCESS_Frame( face->num_locations * 2L ) ) {
+		if( ACCESS_Frame( face->num_locations * 2L ) ) {
 			goto Exit;
 		}
 		{
-			FT_Long*  loc   = face->glyph_locations;
-			FT_Long*  limit = loc + face->num_locations;
+			FT_Long* loc   = face->glyph_locations;
+			FT_Long* limit = loc + face->num_locations;
 
-
-			for ( ; loc < limit; loc++ )
-				*loc = (FT_Long)( (FT_ULong)GET_UShort() * 2 );
+			for( ; loc < limit; loc++ )
+				*loc = ( FT_Long )( ( FT_ULong )GET_UShort() * 2 );
 		}
 		FORGET_Frame();
 	}
@@ -127,7 +116,6 @@ FT_Error  TT_Load_Locations( TT_Face face,
 Exit:
 	return error;
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -147,44 +135,40 @@ Exit:
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
 LOCAL_FUNC
-FT_Error  TT_Load_CVT( TT_Face face,
-					   FT_Stream stream ) {
-	FT_Error error;
+FT_Error TT_Load_CVT( TT_Face face, FT_Stream stream )
+{
+	FT_Error  error;
 	FT_Memory memory = stream->memory;
-	FT_ULong table_len;
-
+	FT_ULong  table_len;
 
 	FT_TRACE2( ( "CVT " ) );
 
 	error = face->goto_table( face, TTAG_cvt, stream, &table_len );
-	if ( error ) {
+	if( error ) {
 		FT_TRACE2( ( "is missing!\n" ) );
 
 		face->cvt_size = 0;
-		face->cvt      = NULL;
-		error          = TT_Err_Ok;
+		face->cvt	   = NULL;
+		error		   = TT_Err_Ok;
 
 		goto Exit;
 	}
 
 	face->cvt_size = table_len / 2;
 
-	if ( ALLOC_ARRAY( face->cvt,
-					  face->cvt_size,
-					  FT_Short ) ) {
+	if( ALLOC_ARRAY( face->cvt, face->cvt_size, FT_Short ) ) {
 		goto Exit;
 	}
 
-	if ( ACCESS_Frame( face->cvt_size * 2L ) ) {
+	if( ACCESS_Frame( face->cvt_size * 2L ) ) {
 		goto Exit;
 	}
 
 	{
-		FT_Short*  cur   = face->cvt;
-		FT_Short*  limit = cur + face->cvt_size;
+		FT_Short* cur	= face->cvt;
+		FT_Short* limit = cur + face->cvt_size;
 
-
-		for ( ; cur <  limit; cur++ )
+		for( ; cur < limit; cur++ )
 			*cur = GET_Short();
 	}
 
@@ -194,7 +178,6 @@ FT_Error  TT_Load_CVT( TT_Face face,
 Exit:
 	return error;
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -214,25 +197,23 @@ Exit:
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
 LOCAL_FUNC
-FT_Error  TT_Load_Programs( TT_Face face,
-							FT_Stream stream ) {
+FT_Error TT_Load_Programs( TT_Face face, FT_Stream stream )
+{
 	FT_Error error;
 	FT_ULong table_len;
-
 
 	FT_TRACE2( ( "Font program " ) );
 
 	/* The font program is optional */
 	error = face->goto_table( face, TTAG_fpgm, stream, &table_len );
-	if ( error ) {
-		face->font_program      = NULL;
+	if( error ) {
+		face->font_program		= NULL;
 		face->font_program_size = 0;
 
 		FT_TRACE2( ( "is missing!\n" ) );
-	} else
-	{
+	} else {
 		face->font_program_size = table_len;
-		if ( EXTRACT_Frame( table_len, face->font_program ) ) {
+		if( EXTRACT_Frame( table_len, face->font_program ) ) {
 			goto Exit;
 		}
 
@@ -242,16 +223,15 @@ FT_Error  TT_Load_Programs( TT_Face face,
 	FT_TRACE2( ( "Prep program " ) );
 
 	error = face->goto_table( face, TTAG_prep, stream, &table_len );
-	if ( error ) {
-		face->cvt_program      = NULL;
+	if( error ) {
+		face->cvt_program	   = NULL;
 		face->cvt_program_size = 0;
-		error                  = TT_Err_Ok;
+		error				   = TT_Err_Ok;
 
 		FT_TRACE2( ( "is missing!\n" ) );
-	} else
-	{
+	} else {
 		face->cvt_program_size = table_len;
-		if ( EXTRACT_Frame( table_len, face->cvt_program ) ) {
+		if( EXTRACT_Frame( table_len, face->cvt_program ) ) {
 			goto Exit;
 		}
 
@@ -261,6 +241,5 @@ FT_Error  TT_Load_Programs( TT_Face face,
 Exit:
 	return error;
 }
-
 
 /* END */

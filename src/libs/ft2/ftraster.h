@@ -15,16 +15,14 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef FTRASTER_H
-#define FTRASTER_H
+	#define FTRASTER_H
 
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
+	#endif
 
-#include "ftimage.h"
-
+	#include "ftimage.h"
 
 /*************************************************************************/
 /*                                                                       */
@@ -33,18 +31,16 @@ extern "C" {
 /*                                                                       */
 /* #define _STANDALONE_ */
 
-#ifndef FT_EXPORT_VAR
-#define FT_EXPORT_VAR( x )  extern x
-#endif
+	#ifndef FT_EXPORT_VAR
+		#define FT_EXPORT_VAR( x ) extern x
+	#endif
 
-FT_EXPORT_VAR( FT_Raster_Funcs )  ft_standard_raster;
+FT_EXPORT_VAR( FT_Raster_Funcs ) ft_standard_raster;
 
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
-
+	#endif
 
 #endif /* FTRASTER_H */
-
 
 /* END */

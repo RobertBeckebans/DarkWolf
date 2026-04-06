@@ -18,15 +18,13 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef AHMODULE_H
-#define AHMODULE_H
+	#define AHMODULE_H
 
-#include "ftmodule.h"
+	#include "ftmodule.h"
 
-FT_EXPORT_VAR( const FT_Module_Class )  autohint_module_class;
+FT_EXPORT_VAR( const FT_Module_Class ) autohint_module_class;
 
 #endif /* AHMODULE_H */
-
 
 /* END */

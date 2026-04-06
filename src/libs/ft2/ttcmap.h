@@ -15,31 +15,25 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef TTCMAP_H
-#define TTCMAP_H
+	#define TTCMAP_H
 
-#include "tttypes.h"
+	#include "tttypes.h"
 
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
-
-
-LOCAL_DEF
-FT_Error  TT_CharMap_Load( TT_Face face,
-						   TT_CMapTable*  cmap,
-						   FT_Stream input );
+	#endif
 
 LOCAL_DEF
-FT_Error  TT_CharMap_Free( TT_Face face,
-						   TT_CMapTable*  cmap );
+FT_Error TT_CharMap_Load( TT_Face face, TT_CMapTable* cmap, FT_Stream input );
 
-#ifdef __cplusplus
+LOCAL_DEF
+FT_Error TT_CharMap_Free( TT_Face face, TT_CMapTable* cmap );
+
+	#ifdef __cplusplus
 }
-#endif
+	#endif
 
 #endif /* TTCMAP_H */
-
 
 /* END */

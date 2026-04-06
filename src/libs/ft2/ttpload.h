@@ -15,37 +15,28 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef TTPLOAD_H
-#define TTPLOAD_H
+	#define TTPLOAD_H
 
-#include "tttypes.h"
+	#include "tttypes.h"
 
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
-
-
-LOCAL_DEF
-FT_Error  TT_Load_Locations( TT_Face face,
-							 FT_Stream stream );
+	#endif
 
 LOCAL_DEF
-FT_Error  TT_Load_CVT( TT_Face face,
-					   FT_Stream stream );
+FT_Error TT_Load_Locations( TT_Face face, FT_Stream stream );
 
 LOCAL_DEF
-FT_Error  TT_Load_Programs( TT_Face face,
-							FT_Stream stream );
+FT_Error TT_Load_CVT( TT_Face face, FT_Stream stream );
 
+LOCAL_DEF
+FT_Error TT_Load_Programs( TT_Face face, FT_Stream stream );
 
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
-
+	#endif
 
 #endif /* TTPLOAD_H */
-
 
 /* END */

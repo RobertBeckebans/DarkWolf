@@ -36,7 +36,6 @@
 /*                                                                       */
 /*************************************************************************/
 
-
 #include "ftconfig.h"
 #include "ftobjs.h"
 #include "ftdebug.h"
@@ -53,33 +52,27 @@
 /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
 /* messages during execution.                                            */
 /*                                                                       */
-#undef  FT_COMPONENT
-#define FT_COMPONENT  trace_init
+#undef FT_COMPONENT
+#define FT_COMPONENT trace_init
 
-#undef  FT_USE_MODULE
-#define FT_USE_MODULE( x )  extern const FT_Module_Class *  x;
+#undef FT_USE_MODULE
+#define FT_USE_MODULE( x ) extern const FT_Module_Class* x;
 
 #ifdef macintosh
 FT_USE_MODULE( fond_driver_class )
 #endif
 #include "ftmodule.h"
 
-#undef  FT_USE_MODULE
-#define FT_USE_MODULE( x )  (const FT_Module_Class*)&x,
+#undef FT_USE_MODULE
+#define FT_USE_MODULE( x ) ( const FT_Module_Class* )&x,
 
-static
-const FT_Module_Class*  ft_default_modules[] =
-{
-	//FT_USE_MODULE(autohint_module_class)
-	FT_USE_MODULE( ft_raster1_renderer_class )
-	FT_USE_MODULE( sfnt_module_class )
-	FT_USE_MODULE( ft_smooth_renderer_class )
-	FT_USE_MODULE( tt_driver_class )
+static const FT_Module_Class* ft_default_modules[] = {
+	// FT_USE_MODULE(autohint_module_class)
+	FT_USE_MODULE( ft_raster1_renderer_class ) FT_USE_MODULE( sfnt_module_class ) FT_USE_MODULE( ft_smooth_renderer_class ) FT_USE_MODULE( tt_driver_class )
 
 #include "ftmodule.h"
-	0
+		0
 };
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -94,27 +87,23 @@ const FT_Module_Class*  ft_default_modules[] =
 /* <InOut>                                                               */
 /*    library :: A handle to a new library object.                       */
 /*                                                                       */
-FT_EXPORT_FUNC( void )  FT_Add_Default_Modules( FT_Library library )
+FT_EXPORT_FUNC( void ) FT_Add_Default_Modules( FT_Library library )
 {
-	FT_Error error;
-	const FT_Module_Class**  cur;
-
+	FT_Error				error;
+	const FT_Module_Class** cur;
 
 	/* test for valid `library' delayed to FT_Add_Module() */
 
 	cur = ft_default_modules;
-	while ( *cur )
-	{
+	while( *cur ) {
 		error = FT_Add_Module( library, *cur );
 		/* notify errors, but don't stop */
-		if ( error ) {
-			FT_ERROR( ( "FT_Add_Default_Module: Cannot install `%s', error = %x\n",
-						( *cur )->module_name, error ) );
+		if( error ) {
+			FT_ERROR( ( "FT_Add_Default_Module: Cannot install `%s', error = %x\n", ( *cur )->module_name, error ) );
 		}
 		cur++;
 	}
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -131,17 +120,16 @@ FT_EXPORT_FUNC( void )  FT_Add_Default_Modules( FT_Library library )
 /* <Return>                                                              */
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
-FT_EXPORT_FUNC( FT_Error )  FT_Init_FreeType( FT_Library *  library )
+FT_EXPORT_FUNC( FT_Error ) FT_Init_FreeType( FT_Library* library )
 {
-	FT_Error error;
+	FT_Error  error;
 	FT_Memory memory;
-
 
 	/* First of all, allocate a new system object -- this function is part */
 	/* of the system-specific component, i.e. `ftsystem.c'.                */
 
 	memory = FT_New_Memory();
-	if ( !memory ) {
+	if( !memory ) {
 		FT_ERROR( ( "FT_Init_FreeType: cannot find memory manager\n" ) );
 		return FT_Err_Unimplemented_Feature;
 	}
@@ -150,12 +138,11 @@ FT_EXPORT_FUNC( FT_Error )  FT_Init_FreeType( FT_Library *  library )
 	/* default drivers.                                        */
 
 	error = FT_New_Library( memory, library );
-	if ( !error ) {
+	if( !error ) {
 		FT_Add_Default_Modules( *library );
 	}
 
 	return error;
 }
-
 
 /* END */

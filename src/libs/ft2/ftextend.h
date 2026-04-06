@@ -15,18 +15,14 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef FTEXTEND_H
-#define FTEXTEND_H
+	#define FTEXTEND_H
 
+	#include "ftobjs.h"
 
-#include "ftobjs.h"
-
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
-
+	#endif
 
 /*************************************************************************/
 /*                                                                       */
@@ -34,7 +30,6 @@ extern "C" {
 /* engine, only at link time.                                            */
 /*                                                                       */
 /*************************************************************************/
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -60,9 +55,7 @@ extern "C" {
 /*    data, as the finalizer will get called later by the function's     */
 /*    caller.                                                            */
 /*                                                                       */
-typedef FT_Error ( *FT_Extension_Initializer )( void*    ext,
-												FT_Face face );
-
+typedef FT_Error ( *FT_Extension_Initializer )( void* ext, FT_Face face );
 
 /*************************************************************************/
 /*                                                                       */
@@ -81,9 +74,7 @@ typedef FT_Error ( *FT_Extension_Initializer )( void*    ext,
 /*   face :: A handle to the source face object the extension is         */
 /*           associated with.                                            */
 /*                                                                       */
-typedef void ( *FT_Extension_Finalizer )( void*    ext,
-										  FT_Face face );
-
+typedef void ( *FT_Extension_Finalizer )( void* ext, FT_Face face );
 
 /*************************************************************************/
 /*                                                                       */
@@ -117,62 +108,48 @@ typedef void ( *FT_Extension_Finalizer )( void*    ext,
 /*                 offset within the face's extension block for the      */
 /*                 current extension's data.                             */
 /*                                                                       */
-typedef struct  FT_Extension_Class_
-{
-	const char*               id;
-	FT_ULong size;
+typedef struct FT_Extension_Class_ {
+	const char*				 id;
+	FT_ULong				 size;
 	FT_Extension_Initializer init;
-	FT_Extension_Finalizer finalize;
-	void*                     interface;
+	FT_Extension_Finalizer	 finalize;
+	void*					 interface;
 
-	FT_ULong offset;
+	FT_ULong				 offset;
 
 } FT_Extension_Class;
 
+FT_EXPORT_DEF( FT_Error ) FT_Register_Extension( FT_Driver driver, FT_Extension_Class* clazz );
 
-FT_EXPORT_DEF( FT_Error )  FT_Register_Extension(
-	FT_Driver driver,
-	FT_Extension_Class *  clazz );
-
-
-#ifdef FT_CONFIG_OPTION_EXTEND_ENGINE
-
+	#ifdef FT_CONFIG_OPTION_EXTEND_ENGINE
 
 /* Initialize the extension component */
 LOCAL_DEF
-FT_Error  FT_Init_Extensions( FT_Library library );
+FT_Error FT_Init_Extensions( FT_Library library );
 
 /* Finalize the extension component */
 LOCAL_DEF
-FT_Error  FT_Done_Extensions( FT_Library library );
+FT_Error FT_Done_Extensions( FT_Library library );
 
 /* Create an extension within a face object.  Called by the */
 /* face object constructor.                                 */
 LOCAL_DEF
-FT_Error  FT_Create_Extensions( FT_Face face );
+FT_Error FT_Create_Extensions( FT_Face face );
 
 /* Destroy all extensions within a face object.  Called by the */
 /* face object destructor.                                     */
 LOCAL_DEF
-FT_Error  FT_Destroy_Extensions( FT_Face face );
+FT_Error FT_Destroy_Extensions( FT_Face face );
 
-
-#endif
-
+	#endif
 
 /* return an extension's data & interface according to its ID */
-FT_EXPORT_DEF( void* )  FT_Get_Extension(
-	FT_Face face,
-	const char*  extension_id,
-	void**       extension_interface );
+FT_EXPORT_DEF( void* ) FT_Get_Extension( FT_Face face, const char* extension_id, void** extension_interface );
 
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
-
+	#endif
 
 #endif /* FTEXTEND_H */
-
 
 /* END */

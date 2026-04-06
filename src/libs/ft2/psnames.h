@@ -16,13 +16,10 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef PSNAMES_H
-#define PSNAMES_H
+	#define PSNAMES_H
 
-
-#include "freetype.h"
-
+	#include "freetype.h"
 
 /*************************************************************************/
 /*                                                                       */
@@ -48,8 +45,7 @@
 /*    This function will not be compiled if the configuration macro      */
 /*    FT_CONFIG_OPTION_ADOBE_GLYPH_LIST is undefined.                    */
 /*                                                                       */
-typedef FT_ULong ( *PS_Unicode_Value_Func )( const char*  glyph_name );
-
+typedef FT_ULong ( *PS_Unicode_Value_Func )( const char* glyph_name );
 
 /*************************************************************************/
 /*                                                                       */
@@ -78,10 +74,7 @@ typedef FT_ULong ( *PS_Unicode_Value_Func )( const char*  glyph_name );
 /*    This function will not be compiled if the configuration macro      */
 /*    FT_CONFIG_OPTION_ADOBE_GLYPH_LIST is undefined.                    */
 /*                                                                       */
-typedef FT_UInt ( *PS_Unicode_Index_Func )( FT_UInt num_glyphs,
-											const char**  glyph_names,
-											FT_ULong unicode );
-
+typedef FT_UInt ( *PS_Unicode_Index_Func )( FT_UInt num_glyphs, const char** glyph_names, FT_ULong unicode );
 
 /*************************************************************************/
 /*                                                                       */
@@ -102,19 +95,15 @@ typedef FT_UInt ( *PS_Unicode_Index_Func )( FT_UInt num_glyphs,
 /*    This function will not be compiled if the configuration macro      */
 /*    FT_CONFIG_OPTION_POSTSCRIPT_NAMES is undefined.                    */
 /*                                                                       */
-typedef const char*  ( *PS_Macintosh_Name_Func )( FT_UInt name_index );
+typedef const char* ( *PS_Macintosh_Name_Func )( FT_UInt name_index );
 
+typedef const char* ( *PS_Adobe_Std_Strings_Func )( FT_UInt string_index );
 
-typedef const char*  ( *PS_Adobe_Std_Strings_Func )( FT_UInt string_index );
-
-
-typedef struct  PS_UniMap_
-{
+typedef struct PS_UniMap_ {
 	FT_UInt unicode;
 	FT_UInt glyph_index;
 
 } PS_UniMap;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -140,22 +129,15 @@ typedef struct  PS_UniMap_
 /*    Use the function PS_Lookup_Unicode() to retrieve the glyph index   */
 /*    corresponding to a given Unicode character code.                   */
 /*                                                                       */
-typedef struct  PS_Unicodes_
-{
-	FT_UInt num_maps;
-	PS_UniMap*  maps;
+typedef struct PS_Unicodes_ {
+	FT_UInt	   num_maps;
+	PS_UniMap* maps;
 
 } PS_Unicodes;
 
+typedef FT_Error ( *PS_Build_Unicodes_Func )( FT_Memory memory, FT_UInt num_glyphs, const char** glyph_names, PS_Unicodes* unicodes );
 
-typedef FT_Error ( *PS_Build_Unicodes_Func )( FT_Memory memory,
-											  FT_UInt num_glyphs,
-											  const char**  glyph_names,
-											  PS_Unicodes*  unicodes );
-
-typedef FT_UInt ( *PS_Lookup_Unicode_Func )( PS_Unicodes*  unicodes,
-											 FT_UInt unicode );
-
+typedef FT_UInt ( *PS_Lookup_Unicode_Func )( PS_Unicodes* unicodes, FT_UInt unicode );
 
 /*************************************************************************/
 /*                                                                       */
@@ -200,21 +182,18 @@ typedef FT_UInt ( *PS_Lookup_Unicode_Func )( PS_Unicodes*  unicodes,
 /*    `macintosh_name' will be set to 0 if the configuration macro       */
 /*    FT_CONFIG_OPTION_POSTSCRIPT_NAMES is undefined.                    */
 /*                                                                       */
-typedef struct  PSNames_Interface_
-{
-	PS_Unicode_Value_Func unicode_value;
-	PS_Build_Unicodes_Func build_unicodes;
-	PS_Lookup_Unicode_Func lookup_unicode;
-	PS_Macintosh_Name_Func macintosh_name;
+typedef struct PSNames_Interface_ {
+	PS_Unicode_Value_Func	  unicode_value;
+	PS_Build_Unicodes_Func	  build_unicodes;
+	PS_Lookup_Unicode_Func	  lookup_unicode;
+	PS_Macintosh_Name_Func	  macintosh_name;
 
 	PS_Adobe_Std_Strings_Func adobe_std_strings;
-	const unsigned short*      adobe_std_encoding;
-	const unsigned short*      adobe_expert_encoding;
+	const unsigned short*	  adobe_std_encoding;
+	const unsigned short*	  adobe_expert_encoding;
 
 } PSNames_Interface;
 
-
 #endif /* PSNAMES_H */
-
 
 /* END */

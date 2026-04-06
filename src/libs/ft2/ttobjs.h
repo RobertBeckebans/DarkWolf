@@ -15,20 +15,16 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef TTOBJS_H
-#define TTOBJS_H
+	#define TTOBJS_H
 
+	#include "ftobjs.h"
+	#include "tttypes.h"
+	#include "tterrors.h"
 
-#include "ftobjs.h"
-#include "tttypes.h"
-#include "tterrors.h"
-
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
-
+	#endif
 
 /*************************************************************************/
 /*                                                                       */
@@ -38,8 +34,7 @@ extern "C" {
 /* <Description>                                                         */
 /*    A handle to a TrueType driver object.                              */
 /*                                                                       */
-typedef struct TT_DriverRec_*  TT_Driver;
-
+typedef struct TT_DriverRec_* TT_Driver;
 
 /*************************************************************************/
 /*                                                                       */
@@ -49,8 +44,7 @@ typedef struct TT_DriverRec_*  TT_Driver;
 /* <Description>                                                         */
 /*    A handle to a TrueType size object.                                */
 /*                                                                       */
-typedef struct TT_SizeRec_*  TT_Size;
-
+typedef struct TT_SizeRec_*	  TT_Size;
 
 /*************************************************************************/
 /*                                                                       */
@@ -64,8 +58,7 @@ typedef struct TT_SizeRec_*  TT_Size;
 /*    This is a direct typedef of FT_GlyphSlot, as there is nothing      */
 /*    specific about the TrueType glyph slot.                            */
 /*                                                                       */
-typedef FT_GlyphSlot TT_GlyphSlot;
-
+typedef FT_GlyphSlot		  TT_GlyphSlot;
 
 /*************************************************************************/
 /*                                                                       */
@@ -75,45 +68,39 @@ typedef FT_GlyphSlot TT_GlyphSlot;
 /* <Description>                                                         */
 /*    The TrueType graphics state used during bytecode interpretation.   */
 /*                                                                       */
-typedef struct  TT_GraphicsState_
-{
-	FT_UShort rp0;
-	FT_UShort rp1;
-	FT_UShort rp2;
+typedef struct TT_GraphicsState_ {
+	FT_UShort	  rp0;
+	FT_UShort	  rp1;
+	FT_UShort	  rp2;
 
 	FT_UnitVector dualVector;
 	FT_UnitVector projVector;
 	FT_UnitVector freeVector;
 
-	FT_Long loop;
-	FT_F26Dot6 minimum_distance;
-	FT_Int round_state;
+	FT_Long		  loop;
+	FT_F26Dot6	  minimum_distance;
+	FT_Int		  round_state;
 
-	FT_Bool auto_flip;
-	FT_F26Dot6 control_value_cutin;
-	FT_F26Dot6 single_width_cutin;
-	FT_F26Dot6 single_width_value;
-	FT_Short delta_base;
-	FT_Short delta_shift;
+	FT_Bool		  auto_flip;
+	FT_F26Dot6	  control_value_cutin;
+	FT_F26Dot6	  single_width_cutin;
+	FT_F26Dot6	  single_width_value;
+	FT_Short	  delta_base;
+	FT_Short	  delta_shift;
 
-	FT_Byte instruct_control;
-	FT_Bool scan_control;
-	FT_Int scan_type;
+	FT_Byte		  instruct_control;
+	FT_Bool		  scan_control;
+	FT_Int		  scan_type;
 
-	FT_UShort gep0;
-	FT_UShort gep1;
-	FT_UShort gep2;
+	FT_UShort	  gep0;
+	FT_UShort	  gep1;
+	FT_UShort	  gep2;
 
 } TT_GraphicsState;
 
+LOCAL_DEF void	   TT_Done_GlyphZone( TT_GlyphZone* zone );
 
-LOCAL_DEF void  TT_Done_GlyphZone( TT_GlyphZone*  zone );
-
-LOCAL_DEF FT_Error TT_New_GlyphZone( FT_Memory memory,
-									 FT_UShort maxPoints,
-									 FT_Short maxContours,
-									 TT_GlyphZone*  zone );
-
+LOCAL_DEF FT_Error TT_New_GlyphZone( FT_Memory memory, FT_UShort maxPoints, FT_Short maxContours, TT_GlyphZone* zone );
 
 /*************************************************************************/
 /*                                                                       */
@@ -123,9 +110,7 @@ LOCAL_DEF FT_Error TT_New_GlyphZone( FT_Memory memory,
 /*                                                                       */
 /*************************************************************************/
 
-
-#define TT_MAX_CODE_RANGES  3
-
+	#define TT_MAX_CODE_RANGES 3
 
 /*************************************************************************/
 /*                                                                       */
@@ -134,8 +119,7 @@ LOCAL_DEF FT_Error TT_New_GlyphZone( FT_Memory memory,
 /*   - the CVT Program                                                   */
 /*   - a glyph's instructions set                                        */
 /*                                                                       */
-typedef enum  TT_CodeRange_Tag_
-{
+typedef enum TT_CodeRange_Tag_ {
 	tt_coderange_none = 0,
 	tt_coderange_font,
 	tt_coderange_cvt,
@@ -143,74 +127,65 @@ typedef enum  TT_CodeRange_Tag_
 
 } TT_CodeRange_Tag;
 
-
-typedef struct  TT_CodeRange_
-{
-	FT_Byte*  base;
+typedef struct TT_CodeRange_ {
+	FT_Byte* base;
 	FT_ULong size;
 
 } TT_CodeRange;
 
 typedef TT_CodeRange TT_CodeRangeTable[TT_MAX_CODE_RANGES];
 
-
 /*************************************************************************/
 /*                                                                       */
 /* Defines a function/instruction definition record.                     */
 /*                                                                       */
-typedef struct  TT_DefRecord_
-{
-	FT_Int range;        /* in which code range is it located? */
-	FT_Long start;       /* where does it start?               */
-	FT_UInt opc;         /* function #, or instruction code    */
-	FT_Bool active;      /* is it active?                      */
+typedef struct TT_DefRecord_ {
+	FT_Int	range;	/* in which code range is it located? */
+	FT_Long start;	/* where does it start?               */
+	FT_UInt opc;	/* function #, or instruction code    */
+	FT_Bool active; /* is it active?                      */
 
 } TT_DefRecord, *TT_DefArray;
-
 
 /*************************************************************************/
 /*                                                                       */
 /* Subglyph transformation record.                                       */
 /*                                                                       */
-typedef struct  TT_Transform_
-{
-	FT_Fixed xx, xy;        /* transformation matrix coefficients */
-	FT_Fixed yx, yy;
-	FT_F26Dot6 ox, oy;      /* offsets        */
+typedef struct TT_Transform_ {
+	FT_Fixed   xx, xy; /* transformation matrix coefficients */
+	FT_Fixed   yx, yy;
+	FT_F26Dot6 ox, oy; /* offsets        */
 
 } TT_Transform;
-
 
 /*************************************************************************/
 /*                                                                       */
 /* Subglyph loading record.  Used to load composite components.          */
 /*                                                                       */
-typedef struct  TT_SubglyphRec_
-{
-	FT_Long index;              /* subglyph index; initialized with -1 */
-	FT_Bool is_scaled;          /* is the subglyph scaled?             */
-	FT_Bool is_hinted;          /* should it be hinted?                */
-	FT_Bool preserve_pps;       /* preserve phantom points?            */
+typedef struct TT_SubglyphRec_ {
+	FT_Long		 index;		   /* subglyph index; initialized with -1 */
+	FT_Bool		 is_scaled;	   /* is the subglyph scaled?             */
+	FT_Bool		 is_hinted;	   /* should it be hinted?                */
+	FT_Bool		 preserve_pps; /* preserve phantom points?            */
 
-	FT_Long file_offset;
+	FT_Long		 file_offset;
 
-	FT_BBox bbox;
-	FT_Pos left_bearing;
-	FT_Pos advance;
+	FT_BBox		 bbox;
+	FT_Pos		 left_bearing;
+	FT_Pos		 advance;
 
 	TT_GlyphZone zone;
 
-	FT_Long arg1;               /* first argument                      */
-	FT_Long arg2;               /* second argument                     */
+	FT_Long		 arg1; /* first argument                      */
+	FT_Long		 arg2; /* second argument                     */
 
-	FT_UShort element_flag;     /* current load element flag           */
+	FT_UShort	 element_flag; /* current load element flag           */
 
-	TT_Transform transform;     /* transformation matrix               */
+	TT_Transform transform; /* transformation matrix               */
 
-	FT_Vector pp1, pp2;         /* phantom points                      */
+	FT_Vector	 pp1, pp2; /* phantom points                      */
 
 } TT_SubGlyphRec, *TT_SubGlyph_Stack;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -273,65 +248,61 @@ typedef struct  TT_SubglyphRec_
 /*                                                                       */
 /*************************************************************************/
 
-
 /*************************************************************************/
 /*                                                                       */
 /* Metrics used by the TrueType size and context objects.                */
 /*                                                                       */
-typedef struct  TT_Size_Metrics_
-{
+typedef struct TT_Size_Metrics_ {
 	/* for non-square pixels */
-	FT_Long x_ratio;
-	FT_Long y_ratio;
+	FT_Long	   x_ratio;
+	FT_Long	   y_ratio;
 
-	FT_UShort ppem;                 /* maximum ppem size              */
-	FT_Long ratio;                  /* current ratio                  */
-	FT_Fixed scale;
+	FT_UShort  ppem;  /* maximum ppem size              */
+	FT_Long	   ratio; /* current ratio                  */
+	FT_Fixed   scale;
 
-	FT_F26Dot6 compensations[4];    /* device-specific compensations  */
+	FT_F26Dot6 compensations[4]; /* device-specific compensations  */
 
-	FT_Bool valid;
+	FT_Bool	   valid;
 
-	FT_Bool rotated;                /* `is the glyph rotated?'-flag   */
-	FT_Bool stretched;              /* `is the glyph stretched?'-flag */
+	FT_Bool	   rotated;	  /* `is the glyph rotated?'-flag   */
+	FT_Bool	   stretched; /* `is the glyph stretched?'-flag */
 
 } TT_Size_Metrics;
-
 
 /*************************************************************************/
 /*                                                                       */
 /* TrueType size class.                                                  */
 /*                                                                       */
-typedef struct  TT_SizeRec_
-{
-	FT_SizeRec root;
+typedef struct TT_SizeRec_ {
+	FT_SizeRec		root;
 
 	TT_Size_Metrics ttmetrics;
 
-#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
+	#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
 
-	FT_UInt num_function_defs;            /* number of function definitions */
-	FT_UInt max_function_defs;
-	TT_DefArray function_defs;            /* table of function definitions  */
+	FT_UInt			  num_function_defs; /* number of function definitions */
+	FT_UInt			  max_function_defs;
+	TT_DefArray		  function_defs; /* table of function definitions  */
 
-	FT_UInt num_instruction_defs;             /* number of ins. definitions */
-	FT_UInt max_instruction_defs;
-	TT_DefArray instruction_defs;             /* table of ins. definitions  */
+	FT_UInt			  num_instruction_defs; /* number of ins. definitions */
+	FT_UInt			  max_instruction_defs;
+	TT_DefArray		  instruction_defs; /* table of ins. definitions  */
 
-	FT_UInt max_func;
-	FT_UInt max_ins;
+	FT_UInt			  max_func;
+	FT_UInt			  max_ins;
 
 	TT_CodeRangeTable codeRangeTable;
 
-	TT_GraphicsState GS;
+	TT_GraphicsState  GS;
 
-	FT_ULong cvt_size;                /* the scaled control value table */
-	FT_Long*           cvt;
+	FT_ULong		  cvt_size; /* the scaled control value table */
+	FT_Long*		  cvt;
 
-	FT_UShort storage_size;          /* The storage area is now part of */
-	FT_Long*           storage;      /* the instance                    */
+	FT_UShort		  storage_size; /* The storage area is now part of */
+	FT_Long*		  storage;		/* the instance                    */
 
-	TT_GlyphZone twilight;           /* The instance's twilight zone    */
+	TT_GlyphZone	  twilight; /* The instance's twilight zone    */
 
 	/* debugging variables */
 
@@ -339,74 +310,63 @@ typedef struct  TT_SizeRec_
 	/* execution context tied to the instance    */
 	/* object rather than asking it on demand.   */
 
-	FT_Bool debug;
-	TT_ExecContext context;
+	FT_Bool			  debug;
+	TT_ExecContext	  context;
 
-#endif /* TT_CONFIG_OPTION_BYTECODE_INTERPRETER */
+	#endif /* TT_CONFIG_OPTION_BYTECODE_INTERPRETER */
 
 } TT_SizeRec;
-
 
 /*************************************************************************/
 /*                                                                       */
 /* TrueType driver class.                                                */
 /*                                                                       */
-typedef struct  TT_DriverRec_
-{
-	FT_DriverRec root;
-	TT_ExecContext context;   /* execution context        */
-	TT_GlyphZone zone;        /* glyph loader points zone */
+typedef struct TT_DriverRec_ {
+	FT_DriverRec   root;
+	TT_ExecContext context; /* execution context        */
+	TT_GlyphZone   zone;	/* glyph loader points zone */
 
-	void*           extension_component;
+	void*		   extension_component;
 
 } TT_DriverRec;
-
 
 /*************************************************************************/
 /*                                                                       */
 /* Face functions                                                        */
 /*                                                                       */
 LOCAL_DEF
-FT_Error  TT_Init_Face( FT_Stream stream,
-						TT_Face face,
-						FT_Int face_index,
-						FT_Int num_params,
-						FT_Parameter*  params );
+FT_Error TT_Init_Face( FT_Stream stream, TT_Face face, FT_Int face_index, FT_Int num_params, FT_Parameter* params );
 
 LOCAL_DEF
-void  TT_Done_Face( TT_Face face );
-
+void TT_Done_Face( TT_Face face );
 
 /*************************************************************************/
 /*                                                                       */
 /* Size functions                                                        */
 /*                                                                       */
 LOCAL_DEF
-FT_Error  TT_Init_Size( TT_Size size );
+FT_Error TT_Init_Size( TT_Size size );
 
 LOCAL_DEF
-void  TT_Done_Size( TT_Size size );
+void TT_Done_Size( TT_Size size );
 
 LOCAL_DEF
-FT_Error  TT_Reset_Size( TT_Size size );
-
+FT_Error TT_Reset_Size( TT_Size size );
 
 /*************************************************************************/
 /*                                                                       */
 /* Driver functions                                                      */
 /*                                                                       */
 LOCAL_DEF
-FT_Error  TT_Init_Driver( TT_Driver driver );
+FT_Error TT_Init_Driver( TT_Driver driver );
 
 LOCAL_DEF
-void  TT_Done_Driver( TT_Driver driver );
+void TT_Done_Driver( TT_Driver driver );
 
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
+	#endif
 
 #endif /* TTOBJS_H */
-
 
 /* END */

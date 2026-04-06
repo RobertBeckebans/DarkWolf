@@ -15,43 +15,32 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #ifndef TTGLOAD_H
-#define TTGLOAD_H
+	#define TTGLOAD_H
 
+	#include "ttobjs.h"
 
-#include "ttobjs.h"
+	#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
+		#include "ttinterp.h"
+	#endif
 
-#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
-#include "ttinterp.h"
-#endif
-
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
-
-
-LOCAL_DEF
-void  TT_Get_Metrics( TT_HoriHeader*  header,
-					  FT_UInt index,
-					  FT_Short*       bearing,
-					  FT_UShort*      advance );
+	#endif
 
 LOCAL_DEF
-void  TT_Init_Glyph_Loading( TT_Face face );
+void TT_Get_Metrics( TT_HoriHeader* header, FT_UInt index, FT_Short* bearing, FT_UShort* advance );
 
 LOCAL_DEF
-FT_Error  TT_Load_Glyph( TT_Size size,
-						 TT_GlyphSlot glyph,
-						 FT_UShort glyph_index,
-						 FT_UInt load_flags );
+void TT_Init_Glyph_Loading( TT_Face face );
 
-#ifdef __cplusplus
+LOCAL_DEF
+FT_Error TT_Load_Glyph( TT_Size size, TT_GlyphSlot glyph, FT_UShort glyph_index, FT_UInt load_flags );
+
+	#ifdef __cplusplus
 }
-#endif
+	#endif
 
 #endif /* TTGLOAD_H */
-
 
 /* END */

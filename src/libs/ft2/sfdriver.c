@@ -15,11 +15,8 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 #include "sfnt.h"
 #include "ftobjs.h"
-
-
 
 #include "sfdriver.h"
 #include "ttload.h"
@@ -28,106 +25,89 @@
 #include "ttcmap.h"
 #include "sfobjs.h"
 
-#include <string.h>     /* for strcmp() */
+#include <string.h> /* for strcmp() */
 
+static void* get_sfnt_table( TT_Face face, FT_Sfnt_Tag tag )
+{
+	void* table;
 
-static
-void*  get_sfnt_table( TT_Face face,
-					   FT_Sfnt_Tag tag ) {
-	void*  table;
+	switch( tag ) {
+		case ft_sfnt_head:
+			table = &face->header;
+			break;
 
+		case ft_sfnt_hhea:
+			table = &face->horizontal;
+			break;
 
-	switch ( tag )
-	{
-	case ft_sfnt_head:
-		table = &face->header;
-		break;
+		case ft_sfnt_vhea:
+			table = face->vertical_info ? &face->vertical : 0;
+			break;
 
-	case ft_sfnt_hhea:
-		table = &face->horizontal;
-		break;
+		case ft_sfnt_os2:
+			table = face->os2.version == 0xFFFF ? 0 : &face->os2;
+			break;
 
-	case ft_sfnt_vhea:
-		table = face->vertical_info ? &face->vertical : 0;
-		break;
+		case ft_sfnt_post:
+			table = &face->postscript;
+			break;
 
-	case ft_sfnt_os2:
-		table = face->os2.version == 0xFFFF ? 0 : &face->os2;
-		break;
+		case ft_sfnt_maxp:
+			table = &face->max_profile;
+			break;
 
-	case ft_sfnt_post:
-		table = &face->postscript;
-		break;
+		case ft_sfnt_pclt:
+			table = face->pclt.Version ? &face->pclt : 0;
+			break;
 
-	case ft_sfnt_maxp:
-		table = &face->max_profile;
-		break;
-
-	case ft_sfnt_pclt:
-		table = face->pclt.Version ? &face->pclt : 0;
-		break;
-
-	default:
-		table = 0;
+		default:
+			table = 0;
 	}
 
 	return table;
 }
 
-
 #ifdef TT_CONFIG_OPTION_POSTSCRIPT_NAMES
 
-
-static
-FT_Error  get_sfnt_glyph_name( TT_Face face,
-							   FT_UInt glyph_index,
-							   FT_Pointer buffer,
-							   FT_UInt buffer_max ) {
-	FT_String*  gname;
-	FT_Error error;
-
+static FT_Error get_sfnt_glyph_name( TT_Face face, FT_UInt glyph_index, FT_Pointer buffer, FT_UInt buffer_max )
+{
+	FT_String* gname;
+	FT_Error   error;
 
 	error = TT_Get_PS_Name( face, glyph_index, &gname );
-	if ( !error && buffer_max > 0 ) {
+	if( !error && buffer_max > 0 ) {
 		FT_UInt len = strlen( gname );
 
-
-		if ( len >= buffer_max ) {
+		if( len >= buffer_max ) {
 			len = buffer_max - 1;
 		}
 
 		MEM_Copy( buffer, gname, len );
-		( (FT_Byte*)buffer )[len] = 0;
+		( ( FT_Byte* )buffer )[len] = 0;
 	}
 
 	return error;
 }
 
-
 #endif /* TT_CONFIG_OPTION_POSTSCRIPT_NAMES */
 
-
-static
-FT_Module_Interface  SFNT_Get_Interface( FT_Module module,
-										 const char*  interface ) {
+static FT_Module_Interface SFNT_Get_Interface( FT_Module module, const char* interface )
+{
 	FT_UNUSED( module );
 
-	if ( strcmp( interface, "get_sfnt" ) == 0 ) {
-		return (FT_Module_Interface)get_sfnt_table;
+	if( strcmp( interface, "get_sfnt" ) == 0 ) {
+		return ( FT_Module_Interface )get_sfnt_table;
 	}
 
 #ifdef TT_CONFIG_OPTION_POSTSCRIPT_NAMES
-	if ( strcmp( interface, "glyph_name" ) == 0 ) {
-		return (FT_Module_Interface)get_sfnt_glyph_name;
+	if( strcmp( interface, "glyph_name" ) == 0 ) {
+		return ( FT_Module_Interface )get_sfnt_glyph_name;
 	}
 #endif
 	return 0;
 }
 
-
-static
-const SFNT_Interface sfnt_interface =
-{
+static const SFNT_Interface sfnt_interface = {
 	TT_Goto_Table,
 
 	SFNT_Init_Face,
@@ -189,23 +169,17 @@ const SFNT_Interface sfnt_interface =
 	TT_CharMap_Free,
 };
 
-
-const
-FT_Module_Class sfnt_module_class =
-{
-	0,  /* not a font driver or renderer */
+const FT_Module_Class sfnt_module_class = { 0, /* not a font driver or renderer */
 	sizeof( FT_ModuleRec ),
 
-	"sfnt",     /* driver name                            */
-	0x10000L,   /* driver version 1.0                     */
-	0x20000L,   /* driver requires FreeType 2.0 or higher */
+	"sfnt",	  /* driver name                            */
+	0x10000L, /* driver version 1.0                     */
+	0x20000L, /* driver requires FreeType 2.0 or higher */
 
-	(const void*)&sfnt_interface,  /* module specific interface */
+	( const void* )&sfnt_interface, /* module specific interface */
 
-	(FT_Module_Constructor)0,
-	(FT_Module_Destructor) 0,
-	(FT_Module_Requester)  SFNT_Get_Interface
-};
-
+	( FT_Module_Constructor )0,
+	( FT_Module_Destructor )0,
+	( FT_Module_Requester )SFNT_Get_Interface };
 
 /* END */

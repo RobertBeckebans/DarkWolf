@@ -15,7 +15,6 @@
 /*                                                                         */
 /***************************************************************************/
 
-
 /*************************************************************************/
 /*                                                                       */
 /*  This file implements functions relative to list processing.  Its     */
@@ -23,32 +22,24 @@
 /*                                                                       */
 /*************************************************************************/
 
-
 #ifndef FTLIST_H
-#define FTLIST_H
+	#define FTLIST_H
 
-#include "freetype.h"
+	#include "freetype.h"
 
-#ifdef __cplusplus
+	#ifdef __cplusplus
 extern "C" {
-#endif
+	#endif
 
+FT_EXPORT_DEF( FT_ListNode ) FT_List_Find( FT_List list, void* data );
 
-FT_EXPORT_DEF( FT_ListNode )  FT_List_Find( FT_List list,
-											void*    data );
+FT_EXPORT_DEF( void ) FT_List_Add( FT_List list, FT_ListNode node );
 
-FT_EXPORT_DEF( void )  FT_List_Add( FT_List list,
-									FT_ListNode node );
+FT_EXPORT_DEF( void ) FT_List_Insert( FT_List list, FT_ListNode node );
 
-FT_EXPORT_DEF( void )  FT_List_Insert( FT_List list,
-									   FT_ListNode node );
+FT_EXPORT_DEF( void ) FT_List_Remove( FT_List list, FT_ListNode node );
 
-FT_EXPORT_DEF( void )  FT_List_Remove( FT_List list,
-									   FT_ListNode node );
-
-FT_EXPORT_DEF( void )  FT_List_Up( FT_List list,
-								   FT_ListNode node );
-
+FT_EXPORT_DEF( void ) FT_List_Up( FT_List list, FT_ListNode node );
 
 /*************************************************************************/
 /*                                                                       */
@@ -65,14 +56,9 @@ FT_EXPORT_DEF( void )  FT_List_Up( FT_List list,
 /*    user :: A typeless pointer passed to FT_List_Iterate().            */
 /*            Can be used to point to the iteration's state.             */
 /*                                                                       */
-typedef FT_Error ( *FT_List_Iterator )( FT_ListNode node,
-										void*        user );
+typedef FT_Error ( *FT_List_Iterator )( FT_ListNode node, void* user );
 
-
-FT_EXPORT_DEF( FT_Error )  FT_List_Iterate( FT_List list,
-											FT_List_Iterator iterator,
-											void*             user );
-
+FT_EXPORT_DEF( FT_Error ) FT_List_Iterate( FT_List list, FT_List_Iterator iterator, void* user );
 
 /*************************************************************************/
 /*                                                                       */
@@ -92,22 +78,14 @@ FT_EXPORT_DEF( FT_Error )  FT_List_Iterate( FT_List list,
 /*    user   :: A typeless pointer passed to FT_List_Iterate().  It can  */
 /*              be used to point to the iteration's state.               */
 /*                                                                       */
-typedef void ( *FT_List_Destructor )( FT_Memory memory,
-									  void*      data,
-									  void*      user );
+typedef void ( *FT_List_Destructor )( FT_Memory memory, void* data, void* user );
 
+FT_EXPORT_DEF( void ) FT_List_Finalize( FT_List list, FT_List_Destructor destroy, FT_Memory memory, void* user );
 
-FT_EXPORT_DEF( void )  FT_List_Finalize( FT_List list,
-										 FT_List_Destructor destroy,
-										 FT_Memory memory,
-										 void*               user );
-
-
-#ifdef __cplusplus
+	#ifdef __cplusplus
 }
-#endif
+	#endif
 
 #endif /* FTLIST_H */
-
 
 /* END */

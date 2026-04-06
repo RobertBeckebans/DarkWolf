@@ -24,10 +24,8 @@
 /*                                                                       */
 /*************************************************************************/
 
-
 #include "ftextend.h"
 #include "ftdebug.h"
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -35,18 +33,15 @@
 /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
 /* messages during execution.                                            */
 /*                                                                       */
-#undef  FT_COMPONENT
-#define FT_COMPONENT  trace_extend
+#undef FT_COMPONENT
+#define FT_COMPONENT trace_extend
 
-
-typedef struct  FT_Extension_Registry_
-{
-	FT_Int num_extensions;
-	FT_Long cur_offset;
+typedef struct FT_Extension_Registry_ {
+	FT_Int			   num_extensions;
+	FT_Long			   cur_offset;
 	FT_Extension_Class classes[FT_MAX_EXTENSIONS];
 
 } FT_Extension_Registry;
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -63,26 +58,25 @@ typedef struct  FT_Extension_Registry_
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
 LOCAL_FUNC
-FT_Error  FT_Init_Extensions( FT_Driver driver ) {
-	FT_Error error;
-	FT_Memory memory;
-	FT_Extension_Registry*  registry;
-
+FT_Error FT_Init_Extensions( FT_Driver driver )
+{
+	FT_Error			   error;
+	FT_Memory			   memory;
+	FT_Extension_Registry* registry;
 
 	memory = driver->root.library->memory;
-	if ( ALLOC( registry, sizeof( *registry ) ) ) {
+	if( ALLOC( registry, sizeof( *registry ) ) ) {
 		return error;
 	}
 
 	registry->num_extensions = 0;
-	registry->cur_offset     = 0;
-	driver->extensions       = registry;
+	registry->cur_offset	 = 0;
+	driver->extensions		 = registry;
 
 	FT_TRACE2( ( "FT_Init_Extensions: success\n" ) );
 
 	return FT_Err_Ok;
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -99,14 +93,13 @@ FT_Error  FT_Init_Extensions( FT_Driver driver ) {
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
 LOCAL_FUNC
-FT_Error  FT_Done_Extensions( FT_Driver driver ) {
+FT_Error FT_Done_Extensions( FT_Driver driver )
+{
 	FT_Memory memory = driver->root.memory;
-
 
 	FREE( driver->extensions );
 	return FT_Err_Ok;
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -123,46 +116,39 @@ FT_Error  FT_Done_Extensions( FT_Driver driver ) {
 /* <Return>                                                              */
 /*    FreeType error code.  0 means success.                             */
 /*                                                                       */
-FT_EXPORT_FUNC( FT_Error )  FT_Register_Extension(
-	FT_Driver driver,
-	FT_Extension_Class *  clazz )
+FT_EXPORT_FUNC( FT_Error ) FT_Register_Extension( FT_Driver driver, FT_Extension_Class* clazz )
 {
-	FT_Extension_Registry*  registry;
+	FT_Extension_Registry* registry;
 
-
-	if ( !driver ) {
+	if( !driver ) {
 		return FT_Err_Invalid_Driver_Handle;
 	}
 
-	if ( !clazz ) {
+	if( !clazz ) {
 		return FT_Err_Invalid_Argument;
 	}
 
-	registry = (FT_Extension_Registry*)driver->extensions;
-	if ( registry ) {
-		FT_Int n   = registry->num_extensions;
-		FT_Extension_Class*  cur = registry->classes + n;
+	registry = ( FT_Extension_Registry* )driver->extensions;
+	if( registry ) {
+		FT_Int				n	= registry->num_extensions;
+		FT_Extension_Class* cur = registry->classes + n;
 
-
-		if ( n >= FT_MAX_EXTENSIONS ) {
+		if( n >= FT_MAX_EXTENSIONS ) {
 			return FT_Err_Too_Many_Extensions;
 		}
 
 		*cur = *clazz;
 
-		cur->offset  = registry->cur_offset;
+		cur->offset = registry->cur_offset;
 
 		registry->num_extensions++;
-		registry->cur_offset +=
-			( cur->size + FT_ALIGNMENT - 1 ) & - FT_ALIGNMENT;
+		registry->cur_offset += ( cur->size + FT_ALIGNMENT - 1 ) & -FT_ALIGNMENT;
 
-		FT_TRACE1( ( "FT_Register_Extension: `%s' successfully registered\n",
-					 cur->id ) );
+		FT_TRACE1( ( "FT_Register_Extension: `%s' successfully registered\n", cur->id ) );
 	}
 
 	return FT_Err_Ok;
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -184,31 +170,26 @@ FT_EXPORT_FUNC( FT_Error )  FT_Register_Extension(
 /* <Return>                                                              */
 /*    A generic pointer to the extension block.                          */
 /*                                                                       */
-FT_EXPORT_FUNC( void* )  FT_Get_Extension(
-	FT_Face face,
-	const char*  extension_id,
-	void**       extension_interface )
+FT_EXPORT_FUNC( void* ) FT_Get_Extension( FT_Face face, const char* extension_id, void** extension_interface )
 {
-	FT_Extension_Registry*  registry;
+	FT_Extension_Registry* registry;
 
-
-	if ( !face || !extension_id || !extension_interface ) {
+	if( !face || !extension_id || !extension_interface ) {
 		return 0;
 	}
 
-	registry = (FT_Extension_Registry*)face->driver->extensions;
-	if ( registry && face->extensions ) {
-		FT_Extension_Class*  cur   = registry->classes;
-		FT_Extension_Class*  limit = cur + registry->num_extensions;
+	registry = ( FT_Extension_Registry* )face->driver->extensions;
+	if( registry && face->extensions ) {
+		FT_Extension_Class* cur	  = registry->classes;
+		FT_Extension_Class* limit = cur + registry->num_extensions;
 
-
-		for ( ; cur < limit; cur++ )
-			if ( strcmp( cur->id, extension_id ) == 0 ) {
+		for( ; cur < limit; cur++ )
+			if( strcmp( cur->id, extension_id ) == 0 ) {
 				*extension_interface = cur->interface;
 
 				FT_TRACE1( ( "FT_Get_Extension: got `%s'\n", extension_id ) );
 
-				return ( void* )( (char*)face->extensions + cur->offset );
+				return ( void* )( ( char* )face->extensions + cur->offset );
 			}
 	}
 
@@ -220,7 +201,6 @@ FT_EXPORT_FUNC( void* )  FT_Get_Extension(
 
 	return 0;
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -240,22 +220,20 @@ FT_EXPORT_FUNC( void* )  FT_Get_Extension(
 /*    Called by the face object destructor.                              */
 /*                                                                       */
 LOCAL_FUNC
-FT_Error  FT_Destroy_Extensions( FT_Face face ) {
-	FT_Extension_Registry*  registry;
-	FT_Memory memory;
+FT_Error FT_Destroy_Extensions( FT_Face face )
+{
+	FT_Extension_Registry* registry;
+	FT_Memory			   memory;
 
+	registry = ( FT_Extension_Registry* )face->driver->extensions;
+	if( registry && face->extensions ) {
+		FT_Extension_Class* cur	  = registry->classes;
+		FT_Extension_Class* limit = cur + registry->num_extensions;
 
-	registry = (FT_Extension_Registry*)face->driver->extensions;
-	if ( registry && face->extensions ) {
-		FT_Extension_Class*  cur   = registry->classes;
-		FT_Extension_Class*  limit = cur + registry->num_extensions;
+		for( ; cur < limit; cur++ ) {
+			char* ext = ( char* )face->extensions + cur->offset;
 
-
-		for ( ; cur < limit; cur++ )
-		{
-			char*  ext = (char*)face->extensions + cur->offset;
-
-			if ( cur->finalize ) {
+			if( cur->finalize ) {
 				cur->finalize( ext, face );
 			}
 		}
@@ -266,7 +244,6 @@ FT_Error  FT_Destroy_Extensions( FT_Face face ) {
 
 	return FT_Err_Ok;
 }
-
 
 /*************************************************************************/
 /*                                                                       */
@@ -287,38 +264,36 @@ FT_Error  FT_Destroy_Extensions( FT_Face face ) {
 /*    Called by the face object constructor.                             */
 /*                                                                       */
 LOCAL_FUNC
-FT_Error  FT_Create_Extensions( FT_Face face ) {
-	FT_Extension_Registry*  registry;
-	FT_Memory memory;
-	FT_Error error;
-
+FT_Error FT_Create_Extensions( FT_Face face )
+{
+	FT_Extension_Registry* registry;
+	FT_Memory			   memory;
+	FT_Error			   error;
 
 	face->extensions = 0;
 
 	/* load extensions registry; exit successfully if none is there */
 
-	registry = (FT_Extension_Registry*)face->driver->extensions;
-	if ( !registry ) {
+	registry = ( FT_Extension_Registry* )face->driver->extensions;
+	if( !registry ) {
 		return FT_Err_Ok;
 	}
 
 	memory = face->driver->root.memory;
-	if ( ALLOC( face->extensions, registry->cur_offset ) ) {
+	if( ALLOC( face->extensions, registry->cur_offset ) ) {
 		return error;
 	}
 
 	{
-		FT_Extension_Class*  cur   = registry->classes;
-		FT_Extension_Class*  limit = cur + registry->num_extensions;
+		FT_Extension_Class* cur	  = registry->classes;
+		FT_Extension_Class* limit = cur + registry->num_extensions;
 
+		for( ; cur < limit; cur++ ) {
+			char* ext = ( char* )face->extensions + cur->offset;
 
-		for ( ; cur < limit; cur++ )
-		{
-			char*  ext = (char*)face->extensions + cur->offset;
-
-			if ( cur->init ) {
+			if( cur->init ) {
 				error = cur->init( ext, face );
-				if ( error ) {
+				if( error ) {
 					break;
 				}
 			}
@@ -327,6 +302,5 @@ FT_Error  FT_Create_Extensions( FT_Face face ) {
 
 	return error;
 }
-
 
 /* END */
