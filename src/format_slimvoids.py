@@ -23,6 +23,28 @@ def simplify_void_parameters(source: str) -> tuple[str, int]:
         print(colored(f"  › simplified {subs} '(void)' parameter list(s)", "cyan"))
     return (simplified, subs)
 
+def remove_redundant_end_comments(source: str) -> tuple[str, int]:
+    """
+    Removes redundant end-of-block comments like:
+        // end for
+        // end loop
+        // end else if
+        // end if
+        // end else
+        // end of function <function name><context>
+    """
+    end_comment_pattern = re.compile(
+        r'[ \t]*//[ \t]*end[ \t]+(?:'
+        r'for|loop|else[ \t]+if|if|else|while|switch'
+        r'|of[ \t]+(?:the[ \t]+)?function\b.*'
+        r')[ \t]*(\r?\n|$)',
+        flags=re.IGNORECASE | re.MULTILINE
+    )
+    cleaned, subs = end_comment_pattern.subn(r'\1', source)
+    if subs:
+        print(colored(f"  › removed {subs} redundant end-of-block comment(s)", "cyan"))
+    return (cleaned, subs)
+
 def simplify_void_parameters_file(file_path: str):
     content = None
     for encoding in ['utf-8', 'latin1', 'windows-1252']:
@@ -34,16 +56,18 @@ def simplify_void_parameters_file(file_path: str):
         except UnicodeDecodeError:
             print(colored(f"Failed to read {file_path} with {encoding} encoding", "red"))
             continue
-    
+
     if content is None:
         print(colored(f"Skipping {file_path}: Unable to decode with any supported encoding", "red"))
         return
-    
-    cleaned_content, count = simplify_void_parameters(content)
+
+    cleaned_content, void_count = simplify_void_parameters(content)
+    cleaned_content, comment_count = remove_redundant_end_comments(cleaned_content)
+    count = void_count + comment_count
     if count > 0:
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(cleaned_content)
-        print(f"Processed {count} comments in {file_path}")
+        print(f"Processed {count} change(s) in {file_path}")
 
 def process_directory(skip_dirs=None, skip_files=None):
     """
@@ -92,16 +116,18 @@ def process_directory(skip_dirs=None, skip_files=None):
                     except UnicodeDecodeError:
                         print(colored(f"Failed to read {file_path} with {encoding} encoding", "red"))
                         continue
-                
+
                 if content is None:
                     print(colored(f"Skipping {file_path}: Unable to decode with any supported encoding", "red"))
                     return
-                
-                cleaned_content, count = simplify_void_parameters(content)
+
+                cleaned_content, void_count = simplify_void_parameters(content)
+                cleaned_content, comment_count = remove_redundant_end_comments(cleaned_content)
+                count = void_count + comment_count
                 if count > 0:
                     with open(file_path, 'w', encoding='utf-8') as file:
                         file.write(cleaned_content)
-                    print(f"Processed {count} comments in {file_path}")
+                    print(f"Processed {count} change(s) in {file_path}")
 
 if __name__ == "__main__":
 

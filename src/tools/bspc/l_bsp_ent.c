@@ -92,7 +92,7 @@ epair_t* ParseEpair( script_t* script )
 	StripTrailing( e->value );
 
 	return e;
-} // end of the function ParseEpair
+}
 
 /*
 ================
@@ -134,7 +134,7 @@ qboolean ParseEntity( script_t* script )
 	} while( 1 );
 
 	return true;
-} // end of the function ParseEntity
+}
 
 void PrintEntity( entity_t* ent )
 {

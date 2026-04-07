@@ -241,5 +241,4 @@ int Sys_MilliSeconds()
 #else
 	return clock() * 1000 / CLOCKS_PER_SEC;
 #endif
-} //end of the function Sys_MilliSeconds
-*/
+}*/

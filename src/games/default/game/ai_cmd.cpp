@@ -926,7 +926,7 @@ void BotMatch_LeaveSubteam( bot_state_t* bs, bot_match_t* match )
 	//
 	if( strlen( bs->subteam ) ) {
 		BotAI_BotInitialChat( bs, "leftteam", bs->subteam, NULL );
-	} // end if
+	}
 	sys->BotEnterChat( bs->cs, bs->client, CHAT_TEAM );
 	strcpy( bs->subteam, "" );
 }
@@ -1126,7 +1126,7 @@ void BotMatch_StopTeamLeaderShip( bot_state_t* bs, bot_match_t* match )
 	// chats for someone else
 	else {
 		client = FindClientByName( teammate );
-	} // end else
+	}
 	if( client >= 0 ) {
 		if( !Q_stricmp( bs->teamleader, ClientName( client, netname, sizeof( netname ) ) ) ) {
 			bs->teamleader[0] = '\0';

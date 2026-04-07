@@ -57,8 +57,8 @@ int			 FindMiptex( char* name )
 	for( i = 0; i < nummiptex; i++ ) {
 		if( !strcmp( name, textureref[i].name ) ) {
 			return i;
-		} // end if
-	} // end for
+		}
+	}
 	if( nummiptex == MAX_MAP_TEXTURES ) {
 		Error( "MAX_MAP_TEXTURES" );
 	}
@@ -72,7 +72,7 @@ int			 FindMiptex( char* name )
 		textureref[i].contents = LittleLong( mt->contents );
 		strcpy( textureref[i].animname, mt->animname );
 		FreeMemory( mt );
-	} // end if
+	}
 	nummiptex++;
 
 	if( textureref[i].animname[0] ) {
@@ -80,7 +80,7 @@ int			 FindMiptex( char* name )
 	}
 
 	return i;
-} // end of the function FindMipTex
+}
 //===========================================================================
 // textureAxisFromPlane
 //
@@ -128,7 +128,7 @@ void TextureAxisFromPlane( plane_t* pln, vec3_t xv, vec3_t yv )
 
 	VectorCopy( baseaxis[bestaxis * 3 + 1], xv );
 	VectorCopy( baseaxis[bestaxis * 3 + 2], yv );
-} // end of the function TextureAxisFromPlane
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -256,4 +256,4 @@ int TexinfoForBrushTexture( plane_t* plane, brush_texture_t* bt, vec3_t origin )
 	}
 
 	return i;
-} // end of the function TexinfoForBrushTexture
+}

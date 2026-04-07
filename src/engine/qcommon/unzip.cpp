@@ -2035,8 +2035,9 @@ extern int unzReadCurrentFile( unzFile file, void* buf, unsigned len )
 
 	pfile_in_zip_read_info->stream.avail_out = ( uInt )len;
 
-	if( len > pfile_in_zip_read_info->rest_read_uncompressed )
+	if( len > pfile_in_zip_read_info->rest_read_uncompressed ) {
 		pfile_in_zip_read_info->stream.avail_out = ( uInt )pfile_in_zip_read_info->rest_read_uncompressed;
+	}
 
 	while( pfile_in_zip_read_info->stream.avail_out > 0 ) {
 		if( ( pfile_in_zip_read_info->stream.avail_in == 0 ) && ( pfile_in_zip_read_info->rest_read_compressed > 0 ) ) {
@@ -2070,8 +2071,9 @@ extern int unzReadCurrentFile( unzFile file, void* buf, unsigned len )
 				uDoCopy = pfile_in_zip_read_info->stream.avail_in;
 			}
 
-			for( i = 0; i < uDoCopy; i++ )
+			for( i = 0; i < uDoCopy; i++ ) {
 				*( pfile_in_zip_read_info->stream.next_out + i ) = *( pfile_in_zip_read_info->stream.next_in + i );
+			}
 
 			//			pfile_in_zip_read_info->crc32 = crc32(pfile_in_zip_read_info->crc32,
 			//								pfile_in_zip_read_info->stream.next_out,

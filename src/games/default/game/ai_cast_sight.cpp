@@ -171,18 +171,16 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 		// if the entity is in water, lava or slime
 		if( sys->PointContents( middle, destnum ) & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) {
 			contents_mask |= ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER );
-		} // end if
-		// if eye is in water, lava or slime
+		} // if eye is in water, lava or slime
 		if( sys->PointContents( eye, srcnum ) & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) {
 			if( !( contents_mask & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) ) {
 				passent = destnum;
 				hitent	= srcnum;
 				VectorCopy( middle, start );
 				VectorCopy( eye, end );
-			} // end if
+			}
 			contents_mask ^= ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER );
-		} // end if
-		// trace from start to end
+		} // trace from start to end
 		sys->Trace( &trace, start, NULL, NULL, end, ENTITYNUM_NONE /*passent*/, contents_mask );
 		// if water was hit
 		if( trace.contents & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) {
@@ -192,9 +190,8 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 				// trace through the water
 				contents_mask &= ~( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER );
 				sys->Trace( &trace, trace.endpos, NULL, NULL, end, passent, contents_mask );
-			} // end if
-		} // end if
-		// if a full trace or the hitent was hit
+			}
+		} // if a full trace or the hitent was hit
 		if( trace.fraction >= 1 || trace.entityNum == hitent ) {
 			return qtrue;
 		}
@@ -209,8 +206,7 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 		} else if( i == 3 ) { // left side
 			VectorMA( eye, -2.0 * ( destmaxs[0] - 0.5 ), right, eye );
 		}
-	} // end for
-
+	}
 	return qfalse;
 }
 

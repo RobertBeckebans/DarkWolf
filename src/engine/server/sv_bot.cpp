@@ -158,7 +158,7 @@ void BotDrawDebugPolygons( void ( *drawPoly )( int color, int numPoints, float* 
 		botlib_export->BotLibVarSet( "bot_testhidepos", bot_testhidepos->string );
 		botlib_export->BotLibVarSet( "bot_testroutevispos", bot_testroutevispos->string );
 		botlib_export->Test( parm0, NULL, svs.clients[0].gentity->r.currentOrigin, svs.clients[0].gentity->r.currentAngles );
-	} // end if
+	}
 	for( i = 0; i < MAX_DEBUGPOLYS; i++ ) {
 		poly = &debugpolygons[i];
 		if( !poly->inuse ) {

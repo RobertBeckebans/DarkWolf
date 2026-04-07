@@ -69,7 +69,7 @@ void QDECL AAS_Error( char* fmt, ... )
 	vsprintf( str, fmt, arglist );
 	va_end( arglist );
 	botimport.Print( PRT_FATAL, str );
-} // end of the function AAS_Error
+}
 
 // Ridah, multiple AAS worlds
 //===========================================================================
@@ -101,19 +101,19 @@ char* AAS_StringFromIndex( char* indexname, char* stringindex[], int numindexes,
 	if( !( *aasworld ).indexessetup ) {
 		botimport.Print( PRT_ERROR, "%s: index %d not setup\n", indexname, index );
 		return "";
-	} // end if
+	}
 	if( index < 0 || index >= numindexes ) {
 		botimport.Print( PRT_ERROR, "%s: index %d out of range\n", indexname, index );
 		return "";
-	} // end if
+	}
 	if( !stringindex[index] ) {
 		if( index ) {
 			botimport.Print( PRT_ERROR, "%s: reference to unused index %d\n", indexname, index );
-		} // end if
+		}
 		return "";
-	} // end if
+	}
 	return stringindex[index];
-} // end of the function AAS_StringFromIndex
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -126,7 +126,7 @@ int AAS_IndexFromString( char* indexname, char* stringindex[], int numindexes, c
 	if( !( *aasworld ).indexessetup ) {
 		botimport.Print( PRT_ERROR, "%s: index not setup \"%s\"\n", indexname, string );
 		return 0;
-	} // end if
+	}
 	for( i = 0; i < numindexes; i++ ) {
 		if( !stringindex[i] ) {
 			continue;
@@ -134,9 +134,9 @@ int AAS_IndexFromString( char* indexname, char* stringindex[], int numindexes, c
 		if( !Q_stricmp( stringindex[i], string ) ) {
 			return i;
 		}
-	} // end for
+	}
 	return 0;
-} // end of the function AAS_IndexFromString
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -147,7 +147,7 @@ char* AAS_ModelFromIndex( int index )
 {
 	//	return AAS_StringFromIndex("ModelFromIndex", &(*aasworld).configstrings[CS_MODELS], MAX_MODELS, index);
 	return 0; // removed so the CS_ defines could be removed from be_aas_def.h
-} // end of the function AAS_ModelFromIndex
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -158,7 +158,7 @@ int AAS_IndexFromModel( char* modelname )
 {
 	//	return AAS_IndexFromString("IndexFromModel", &(*aasworld).configstrings[CS_MODELS], MAX_MODELS, modelname);
 	return 0; // removed so the CS_ defines could be removed from be_aas_def.h
-} // end of the function AAS_IndexFromModel
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -174,10 +174,10 @@ void AAS_UpdateStringIndexes( int numconfigstrings, char* configstrings[] )
 			// if ((*aasworld).configstrings[i]) FreeMemory((*aasworld).configstrings[i]);
 			( *aasworld ).configstrings[i] = ( char* )GetMemory( strlen( configstrings[i] ) + 1 );
 			strcpy( ( *aasworld ).configstrings[i], configstrings[i] );
-		} // end if
-	} // end for
+		}
+	}
 	( *aasworld ).indexessetup = qtrue;
-} // end of the function AAS_UpdateStringIndexes
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -187,7 +187,7 @@ void AAS_UpdateStringIndexes( int numconfigstrings, char* configstrings[] )
 int AAS_Loaded()
 {
 	return ( *aasworld ).loaded;
-} // end of the function AAS_Loaded
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -197,7 +197,7 @@ int AAS_Loaded()
 int AAS_Initialized()
 {
 	return ( *aasworld ).initialized;
-} // end of the function AAS_Initialized
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -218,8 +218,7 @@ void AAS_SetInitialized()
 	// Ridah, build/load the route-table
 	AAS_RT_BuildRouteTable();
 	// done.
-
-} // end of the function AAS_SetInitialized
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -252,16 +251,15 @@ void AAS_ContinueInit( float time )
 		// save the AAS file
 		if( AAS_WriteAASFile( ( *aasworld ).filename ) ) {
 			botimport.Print( PRT_MESSAGE, "%s written succesfully\n", ( *aasworld ).filename );
-		} // end if
-		else {
+		} else {
 			botimport.Print( PRT_ERROR, "couldn't write %s\n", ( *aasworld ).filename );
-		} // end else
-	} // end if
+		}
+	}
 	// initialize the routing
 	AAS_InitRouting();
 	// at this point AAS is initialized
 	AAS_SetInitialized();
-} // end of the function AAS_ContinueInit
+}
 //===========================================================================
 // called at the start of every frame
 //
@@ -290,22 +288,22 @@ int AAS_StartFrame( float time )
 		{
 			AAS_RoutingInfo();
 			LibVarSet("showcacheupdates", "0");
-		} //end if
+		}
 		if (LibVarGetValue("showmemoryusage"))
 		{
 			PrintUsedMemorySize();
 			LibVarSet("showmemoryusage", "0");
-		} //end if
+		}
 		if (LibVarGetValue("memorydump"))
 		{
 			PrintMemoryLabels();
 			LibVarSet("memorydump", "0");
-		} //end if
+		}
 		*/
-	} // end if
+	}
 	( *aasworld ).numframes++;
 	return BLERR_NOERROR;
-} // end of the function AAS_StartFrame
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -315,7 +313,7 @@ int AAS_StartFrame( float time )
 float AAS_Time()
 {
 	return ( *aasworld ).time;
-} // end of the function AAS_Time
+}
 //===========================================================================
 // basedir	= Quake2 console basedir
 // gamedir	= Quake2 console gamedir
@@ -351,7 +349,7 @@ int AAS_LoadFiles( const char* mapname )
 	botimport.Print( PRT_MESSAGE, "loaded %s\n", aasfile );
 	strncpy( ( *aasworld ).filename, aasfile, MAX_PATH );
 	return BLERR_NOERROR;
-} // end of the function AAS_LoadFiles
+}
 //===========================================================================
 // called everytime a map changes
 //
@@ -381,7 +379,7 @@ int AAS_LoadMap( const char* mapname )
 		// if no mapname is provided then the string indexes are updated
 		if( !mapname ) {
 			return 0;
-		} // end if
+		}
 		//
 		( *aasworld ).initialized = qfalse;
 		// NOTE: free the routing caches before loading a new map because
@@ -396,7 +394,7 @@ int AAS_LoadMap( const char* mapname )
 			// return errnum;
 			missingErrNum = errnum;
 			continue;
-		} // end if
+		}
 		//
 		loaded = qtrue;
 		//
@@ -417,7 +415,7 @@ int AAS_LoadMap( const char* mapname )
 
 	// everything went ok
 	return 0;
-} // end of the function AAS_LoadMap
+}
 
 // done.
 
@@ -448,7 +446,7 @@ int AAS_Setup()
 	// LibVarSet("forcereachability", "1");		//force reachability calculation
 	( *aasworld ).numframes = 0;
 	return BLERR_NOERROR;
-} // end of the function AAS_Setup
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -494,4 +492,4 @@ void AAS_Shutdown()
 	//  freed an reallocated, so there's no need to free that memory here
 	// print shutdown
 	botimport.Print( PRT_MESSAGE, "AAS shutdown.\n" );
-} // end of the function AAS_Shutdown
+}

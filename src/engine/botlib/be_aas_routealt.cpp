@@ -98,8 +98,8 @@ void			AAS_AltRoutingFloodCluster_r( int areanum )
 		}
 		//
 		AAS_AltRoutingFloodCluster_r( otherareanum );
-	} // end for
-} // end of the function AAS_AltRoutingFloodCluster_r
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -171,7 +171,7 @@ int AAS_AlternativeRouteGoals( vec3_t start, vec3_t goal, int travelflags, aas_a
 		midrangeareas[i].goaltime  = goaltime;
 		Log_Write( "%d midrange area %d", nummidrangeareas, i );
 		nummidrangeareas++;
-	} // end for
+	}
 	//
 	for( i = 1; i < ( *aasworld ).numareas; i++ ) {
 		if( !midrangeareas[i].valid ) {
@@ -185,7 +185,7 @@ int AAS_AlternativeRouteGoals( vec3_t start, vec3_t goal, int travelflags, aas_a
 		VectorClear( mid );
 		for( j = 0; j < numclusterareas; j++ ) {
 			VectorAdd( mid, ( *aasworld ).areas[clusterareas[j]].center, mid );
-		} // end for
+		}
 		VectorScale( mid, 1.0 / numclusterareas, mid );
 		// get the area closest to the center of the cluster
 		bestdist	= 999999;
@@ -196,8 +196,8 @@ int AAS_AlternativeRouteGoals( vec3_t start, vec3_t goal, int travelflags, aas_a
 			if( dist < bestdist ) {
 				bestdist	= dist;
 				bestareanum = clusterareas[j];
-			} // end if
-		} // end for
+			}
+		}
 		// now we've got an area for an alternative route
 		// FIXME: add alternative goal origin
 		VectorCopy( ( *aasworld ).areas[bestareanum].center, altroutegoals[numaltroutegoals].origin );
@@ -211,21 +211,21 @@ int AAS_AlternativeRouteGoals( vec3_t start, vec3_t goal, int travelflags, aas_a
 		botimport.Print( PRT_MESSAGE, "alternative route goal area %d, numclusterareas = %d\n", bestareanum, numclusterareas );
 		if( color ) {
 			AAS_DrawPermanentCross( ( *aasworld ).areas[bestareanum].center, 10, color );
-		} // end if
-		  // AAS_ShowArea(bestarea, qtrue);
+		}
+			// AAS_ShowArea(bestarea, qtrue);
 	#endif
 		// don't return more than the maximum alternative route goals
 		if( numaltroutegoals >= maxaltroutegoals ) {
 			break;
 		}
-	} // end for
+	}
 	botimport.Print( PRT_MESSAGE, "%d alternative route goals\n", numaltroutegoals );
 	#ifdef DEBUG
 	botimport.Print( PRT_MESSAGE, "alternative route goals in %d msec\n", Sys_MilliSeconds() - startmillisecs );
 	#endif
 	return numaltroutegoals;
 #endif
-} // end of the function AAS_AlternativeRouteGoals
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -244,7 +244,7 @@ void AAS_InitAlternativeRouting()
 	}
 	clusterareas = ( int* )GetMemory( aasworld.numareas * sizeof( int ) );
 #endif
-} // end of the function AAS_InitAlternativeRouting
+}
 //===========================================================================
 //
 // Parameter:				-

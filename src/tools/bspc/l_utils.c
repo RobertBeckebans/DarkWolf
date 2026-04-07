@@ -74,8 +74,7 @@ void Vector2Angles( vec3_t value1, vec3_t angles )
 		} else {
 			pitch = 270;
 		}
-	} // end if
-	else {
+	} else {
 		yaw = ( int )( atan2( value1[1], value1[0] ) * 180 / M_PI );
 		if( yaw < 0 ) {
 			yaw += 360;
@@ -86,12 +85,12 @@ void Vector2Angles( vec3_t value1, vec3_t angles )
 		if( pitch < 0 ) {
 			pitch += 360;
 		}
-	} // end else
+	}
 
 	angles[PITCH] = -pitch;
 	angles[YAW]	  = yaw;
 	angles[ROLL]  = 0;
-} // end of the function Vector2Angles
+}
 #endif // BOTLIB
 //===========================================================================
 //
@@ -106,8 +105,8 @@ void ConvertPath( char* path )
 			*path = PATHSEPERATOR_CHAR;
 		}
 		path++;
-	} // end while
-} // end of the function ConvertPath
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -121,8 +120,8 @@ void AppendPathSeperator( char* path, int length )
 	if( strlen( path ) && length - pathlen > 1 && path[pathlen - 1] != '/' && path[pathlen - 1] != '\\' ) {
 		path[pathlen]	  = PATHSEPERATOR_CHAR;
 		path[pathlen + 1] = '\0';
-	} // end if
-} // end of the function AppenPathSeperator
+	}
+}
 //===========================================================================
 // returns pointer to file handle
 // sets offset to and length of 'filename' in the pak file
@@ -143,12 +142,12 @@ qboolean FindFileInPak( char* pakfile, char* filename, foundfile_t* file )
 	fp = fopen( pakfile, "rb" );
 	if( !fp ) {
 		return false;
-	} // end if
+	}
 	// read pak header, check for valid pak id and seek to the dir entries
 	if( ( fread( &packheader, 1, sizeof( dpackheader_t ), fp ) != sizeof( dpackheader_t ) ) || ( packheader.ident != IDPAKHEADER ) || ( fseek( fp, LittleLong( packheader.dirofs ), SEEK_SET ) ) ) {
 		fclose( fp );
 		return false;
-	} // end if
+	}
 	// number of dir entries in the pak file
 	numdirs	  = LittleLong( packheader.dirlen ) / sizeof( dpackfile_t );
 	packfiles = ( dpackfile_t* )GetMemory( numdirs * sizeof( dpackfile_t ) );
@@ -157,7 +156,7 @@ qboolean FindFileInPak( char* pakfile, char* filename, foundfile_t* file )
 		fclose( fp );
 		FreeMemory( packfiles );
 		return false;
-	} // end if
+	}
 	fclose( fp );
 	//
 	strcpy( path, filename );
@@ -173,11 +172,11 @@ qboolean FindFileInPak( char* pakfile, char* filename, foundfile_t* file )
 			file->length = LittleLong( packfiles[i].filelen );
 			FreeMemory( packfiles );
 			return true;
-		} // end if
-	} // end for
+		}
+	}
 	FreeMemory( packfiles );
 	return false;
-} // end of the function FindFileInPak
+}
 //===========================================================================
 // find a Quake2 file
 // returns full path in 'filename'
@@ -207,11 +206,11 @@ qboolean FindQuakeFile2( char* basedir, char* gamedir, char* filename, foundfile
 		if( basedir && strlen( basedir ) ) {
 			strncpy( filedir, basedir, MAX_PATH );
 			AppendPathSeperator( filedir, MAX_PATH );
-		} // end if
+		}
 		if( strlen( gamedirs[dir] ) ) {
 			strncat( filedir, gamedirs[dir], MAX_PATH - strlen( filedir ) );
 			AppendPathSeperator( filedir, MAX_PATH );
-		} // end if
+		}
 		strncat( filedir, filename, MAX_PATH - strlen( filedir ) );
 		ConvertPath( filedir );
 		Log_Write( "accessing %s", filedir );
@@ -220,18 +219,18 @@ qboolean FindQuakeFile2( char* basedir, char* gamedir, char* filename, foundfile
 			file->length = 0;
 			file->offset = 0;
 			return true;
-		} // end if
+		}
 		// check if the file is in a pak?.pak
 		for( i = 0; i < 10; i++ ) {
 			filedir[0] = 0;
 			if( basedir && strlen( basedir ) ) {
 				strncpy( filedir, basedir, MAX_PATH );
 				AppendPathSeperator( filedir, MAX_PATH );
-			} // end if
+			}
 			if( strlen( gamedirs[dir] ) ) {
 				strncat( filedir, gamedirs[dir], MAX_PATH - strlen( filedir ) );
 				AppendPathSeperator( filedir, MAX_PATH );
-			} // end if
+			}
 			// TTimo: huuuuh .. I suppose this means there needs to be two \0\0 at the end?
 			// sprintf(&filedir[strlen(filedir)], "pak%d.pak\0", i);
 			// doing it more 'clean'
@@ -242,13 +241,13 @@ qboolean FindQuakeFile2( char* basedir, char* gamedir, char* filename, foundfile
 				if( FindFileInPak( filedir, filename, file ) ) {
 					return true;
 				}
-			} // end if
-		} // end for
-	} // end for
+			}
+		}
+	}
 	file->offset = 0;
 	file->length = 0;
 	return false;
-} // end of the function FindQuakeFile2
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -259,10 +258,10 @@ qboolean FindQuakeFile2( char* basedir, char* gamedir, char* filename, foundfile
 qboolean FindQuakeFile( char* filename, foundfile_t* file )
 {
 	return FindQuakeFile2( LibVarGetString( "basedir" ), LibVarGetString( "gamedir" ), filename, file );
-} // end of the function FindQuakeFile
+}
 #else  // BOTLIB
 qboolean FindQuakeFile( char* basedir, char* gamedir, char* filename, foundfile_t* file )
 {
 	return FindQuakeFile2( basedir, gamedir, filename, file );
-} // end of the function FindQuakeFile
+}
 #endif // BOTLIB

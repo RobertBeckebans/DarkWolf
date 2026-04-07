@@ -2103,8 +2103,7 @@ void CheckButtons()
 				//calculate the goal origin
 				VectorMA(origin, -dist, movedir, goalorigin);
 				AAS_DrawPermanentCross(goalorigin, 4, LINECOLOR_BLUE);
-			} //end if
-			else
+			}			else
 			{
 				//add bounding box size to the dist
 				AAS_PresenceTypeBoundingBox(PRESENCE_CROUCH, bboxmins, bboxmaxs);
@@ -2112,8 +2111,7 @@ void CheckButtons()
 				{
 					if (movedir[i] < 0) dist += fabs(movedir[i]) * fabs(bboxmaxs[i]);
 					else dist += fabs(movedir[i]) * fabs(bboxmins[i]);
-				} //end for
-				//calculate the goal origin
+				}				//calculate the goal origin
 				VectorMA(origin, -dist, movedir, goalorigin);
 				//
 				VectorCopy(goalorigin, start);
@@ -2123,8 +2121,7 @@ void CheckButtons()
 				if (!trace.startsolid)
 				{
 					VectorCopy(trace.endpos, goalorigin);
-				} //end if
-				//
+				}				//
 				AAS_DrawPermanentCross(goalorigin, 4, LINECOLOR_YELLOW);
 				//
 				VectorSubtract(mins, origin, mins);
@@ -2134,12 +2131,8 @@ void CheckButtons()
 				AAS_DrawPermanentCross(start, 4, LINECOLOR_BLUE);
 				VectorAdd(maxs, origin, start);
 				AAS_DrawPermanentCross(start, 4, LINECOLOR_BLUE);
-			} //end else
-			if (++numbuttons > 5) return;
-		} //end if
-	} //end for
-} //end of the function CheckButtons
-*/
+			}			if (++numbuttons > 5) return;
+		}	}}*/
 
 /*
 ==================
@@ -2397,8 +2390,7 @@ void BotAIBlocked( bot_state_t* bs, bot_moveresult_t* moveresult, int activate )
 				// shoot
 				sys->EA_Attack( bs->client );
 				return;
-			} // end if
-			else {
+			} else {
 				// add bounding box size to the dist
 				sys->AAS_PresenceTypeBoundingBox( PRESENCE_CROUCH, bboxmins, bboxmaxs );
 				for( i = 0; i < 3; i++ ) {
@@ -2407,8 +2399,7 @@ void BotAIBlocked( bot_state_t* bs, bot_moveresult_t* moveresult, int activate )
 					} else {
 						dist += fabs( movedir[i] ) * fabs( bboxmins[i] );
 					}
-				} // end for
-				// calculate the goal origin
+				} // calculate the goal origin
 				VectorMA( origin, -dist, movedir, goalorigin );
 				//
 				VectorCopy( goalorigin, start );
@@ -2429,7 +2420,7 @@ void BotAIBlocked( bot_state_t* bs, bot_moveresult_t* moveresult, int activate )
 						Com_sprintf( buf, sizeof( buf ), "I have to activate a button at %1.1f %1.1f %1.1f in area %d\n", goalorigin[0], goalorigin[1], goalorigin[2], areas[i] );
 						sys->EA_Say( bs->client, buf );
 						bs->activatemessage_time = sys->AAS_Time() + 5;
-					} // end if
+					}
 #endif // OBSTACLEDEBUG
 	   //
 	   // VectorMA(origin, -dist, movedir, goalorigin);
@@ -2447,8 +2438,7 @@ void BotAIBlocked( bot_state_t* bs, bot_moveresult_t* moveresult, int activate )
 					bs->activategoal.flags	   = 0;
 					bs->activate_time		   = sys->AAS_Time() + 10;
 					AIEnter_Seek_ActivateEntity( bs );
-				} // end if
-				else {
+				} else {
 #ifdef OBSTACLEDEBUG
 					BotAI_Print( PRT_MESSAGE, "button area has no reachabilities\n" );
 #endif // OBSTACLEDEBUG
@@ -2457,61 +2447,58 @@ void BotAIBlocked( bot_state_t* bs, bot_moveresult_t* moveresult, int activate )
 					} else if( bs->ainode == AINode_Seek_LTG ) {
 						bs->ltg_time = 0;
 					}
-				} // end else
-			} // end else
-		} // end if
-		/*
-		if (!strcmp(classname, "trigger_multiple"))
-		{
-		  //create a bot goal towards the trigger
-		  model = AAS_ValueForBSPEpairKey(ent, "model");
-		  modelindex = AAS_IndexFromModel(model);
-		  //if the model is not precached (bad thing but happens) assume model is "*X"
-		  if (!modelindex) modelindex = atoi(model+1);
-		  VectorClear(angles);
-		  AAS_BSPModelMinsMaxsOrigin(modelindex - 1, angles, mins, maxs, NULL);
-		  VectorAdd(mins, maxs, mid);
-		  VectorScale(mid, 0.5, mid);
-		  VectorCopy(mid, start);
-		  start[2] = maxs[2] + 24;
-		  VectorSet(end, start[0], start[1], start[2] - 100);
-		  trace = AAS_TraceClientBBox(start, end, PRESENCE_CROUCH, -1);
-		  if (trace.startsolid) return;
-		  //trace.endpos is now the goal origin
-		  VectorCopy(trace.endpos, goalorigin);
-		  //
-		#ifdef OBSTACLEDEBUG
-		  if (bs->activatemessage_time < AAS_Time())
-		  {
-			  Com_sprintf(buf, sizeof(buf), "I have to activate a trigger at %1.1f %1.1f %1.1f in area %d\n",
-							  goalorigin[0], goalorigin[1], goalorigin[2], AAS_PointAreaNum(goalorigin));
-			  EA_Say(bs->client, buf);
-			  bs->activatemessage_time = AAS_Time() + 5;
-		  } //end if* /
-		#endif //OBSTACLEDEBUG
-		  //
-		  VectorCopy(mid, bs->activategoal.origin);
-		  bs->activategoal.areanum = AAS_PointAreaNum(goalorigin);
-		  VectorSubtract(mins, mid, bs->activategoal.mins);
-		  VectorSubtract(maxs, mid, bs->activategoal.maxs);
-		  bs->activategoal.entitynum = entinfo.number;
-		  bs->activategoal.number = 0;
-		  bs->activategoal.flags = 0;
-		  bs->activate_time = AAS_Time() + 10;
-		  if (!AAS_AreaReachability(bs->activategoal.areanum))
-		  {
-		#ifdef OBSTACLEDEBUG
-			  botimport.Print(PRT_MESSAGE, "trigger area has no reachabilities\n");
-		#endif //OBSTACLEDEBUG
-			  if (bs->ainode == AINode_Seek_NBG) bs->nbg_time = 0;
-			  else if (bs->ainode == AINode_Seek_LTG) bs->ltg_time = 0;
-		  } //end if
-		  else
-		  {
-			  AIEnter_Seek_ActivateEntity(bs);
-		  } //end else
-		  return;
-		} //end if*/
+				}
+			}
+		} /*
+if (!strcmp(classname, "trigger_multiple"))
+{
+//create a bot goal towards the trigger
+model = AAS_ValueForBSPEpairKey(ent, "model");
+modelindex = AAS_IndexFromModel(model);
+//if the model is not precached (bad thing but happens) assume model is "*X"
+if (!modelindex) modelindex = atoi(model+1);
+VectorClear(angles);
+AAS_BSPModelMinsMaxsOrigin(modelindex - 1, angles, mins, maxs, NULL);
+VectorAdd(mins, maxs, mid);
+VectorScale(mid, 0.5, mid);
+VectorCopy(mid, start);
+start[2] = maxs[2] + 24;
+VectorSet(end, start[0], start[1], start[2] - 100);
+trace = AAS_TraceClientBBox(start, end, PRESENCE_CROUCH, -1);
+if (trace.startsolid) return;
+//trace.endpos is now the goal origin
+VectorCopy(trace.endpos, goalorigin);
+//
+#ifdef OBSTACLEDEBUG
+if (bs->activatemessage_time < AAS_Time())
+{
+Com_sprintf(buf, sizeof(buf), "I have to activate a trigger at %1.1f %1.1f %1.1f in area %d\n",
+goalorigin[0], goalorigin[1], goalorigin[2], AAS_PointAreaNum(goalorigin));
+EA_Say(bs->client, buf);
+bs->activatemessage_time = AAS_Time() + 5;
+} //end if* /
+#endif //OBSTACLEDEBUG
+//
+VectorCopy(mid, bs->activategoal.origin);
+bs->activategoal.areanum = AAS_PointAreaNum(goalorigin);
+VectorSubtract(mins, mid, bs->activategoal.mins);
+VectorSubtract(maxs, mid, bs->activategoal.maxs);
+bs->activategoal.entitynum = entinfo.number;
+bs->activategoal.number = 0;
+bs->activategoal.flags = 0;
+bs->activate_time = AAS_Time() + 10;
+if (!AAS_AreaReachability(bs->activategoal.areanum))
+{
+#ifdef OBSTACLEDEBUG
+botimport.Print(PRT_MESSAGE, "trigger area has no reachabilities\n");
+#endif //OBSTACLEDEBUG
+if (bs->ainode == AINode_Seek_NBG) bs->nbg_time = 0;
+else if (bs->ainode == AINode_Seek_LTG) bs->ltg_time = 0;
+}		  else
+{
+AIEnter_Seek_ActivateEntity(bs);
+}		  return;
+} //end if*/
 	}
 	// just some basic dynamic obstacle avoidance code
 	hordir[0] = moveresult->movedir[0];

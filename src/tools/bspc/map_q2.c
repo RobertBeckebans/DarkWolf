@@ -80,8 +80,8 @@ void Q2_CreateMapTexinfo()
 		map_texinfo[i].value = texinfo[i].value;
 		strcpy( map_texinfo[i].texture, texinfo[i].texture );
 		map_texinfo[i].nexttexinfo = 0;
-	} // end for
-} // end of the function Q2_CreateMapTexinfo
+	}
+}
 
 /*
 ===========
@@ -143,8 +143,8 @@ void MakeAreaPortalBrush( mapbrush_t* brush )
 		//
 		s->texinfo	= 0;
 		s->contents = CONTENTS_AREAPORTAL;
-	} // end for
-} // end of the function MakeAreaPortalBrush
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -157,8 +157,8 @@ void DPlanes2MapPlanes()
 
 	for( i = 0; i < numplanes; i++ ) {
 		dplanes2mapplanes[i] = FindFloatPlane( dplanes[i].normal, dplanes[i].dist );
-	} // end for
-} // end of the function DPlanes2MapPlanes
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -178,7 +178,7 @@ void MarkVisibleBrushSides( mapbrush_t* brush )
 			// this side is a valid splitter
 			side->flags |= SFL_VISIBLE;
 			continue;
-		} // end if
+		}
 		// assum this side will not be used as a splitter
 		side->flags &= ~SFL_VISIBLE;
 		// check if the side plane is used by a visible face
@@ -188,10 +188,10 @@ void MarkVisibleBrushSides( mapbrush_t* brush )
 			if( ( planenum & ~1 ) == ( side->planenum & ~1 ) ) {
 				// this side is a valid splitter
 				side->flags |= SFL_VISIBLE;
-			} // end if
-		} // end for
-	} // end for
-} // end of the function MarkVisibleBrushSides
+			}
+		}
+	}
+}
 
 #endif // ME
 
@@ -244,9 +244,9 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 			for( j = 0; j < 3; j++ ) {
 				PS_ExpectAnyToken( script, &token );
 				planepts[i][j] = atof( token.string );
-			} // end for
+			}
 			PS_ExpectTokenString( script, ")" );
-		} // end for
+		}
 
 		//
 		// read the texturedef
@@ -355,14 +355,14 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 		c_squattbrushes++;
 		b->numsides = 0;
 		return;
-	} // end if
+	}
 
 	if( create_aas ) {
 		// create AAS brushes, and add brush bevels
 		AAS_CreateMapBrushes( b, mapent, true );
 		// NOTE: if we return here then duplicate plane errors occur for the non world entities
 		return;
-	} // end if
+	}
 #endif // ME
 
 	// allow detail brushes to be removed
@@ -515,19 +515,18 @@ qboolean Q2_ParseMapEntity( script_t* script )
 	do {
 		if( !PS_ReadToken( script, &token ) ) {
 			Error( "ParseEntity: EOF without closing brace" );
-		} // end if
+		}
 		if( !strcmp( token.string, "}" ) ) {
 			break;
 		}
 		if( !strcmp( token.string, "{" ) ) {
 			Q2_ParseBrush( script, mapent );
-		} // end if
-		else {
+		} else {
 			PS_UnreadLastToken( script );
 			e			   = ParseEpair( script );
 			e->next		   = mapent->epairs;
 			mapent->epairs = e;
-		} // end else
+		}
 	} while( 1 );
 
 	GetVectorForKey( mapent, "origin", mapent->origin );
@@ -603,7 +602,7 @@ void Q2_LoadMapFile( char* filename )
 	if( !script ) {
 		Log_Print( "couldn't open %s\n", filename );
 		return;
-	} // end if
+	}
 	// white spaces and escape characters inside a string are not allowed
 	SetScriptFlags( script, SCFL_NOSTRINGWHITESPACES | SCFL_NOSTRINGESCAPECHARS | SCFL_PRIMITIVE );
 
@@ -620,7 +619,7 @@ void Q2_LoadMapFile( char* filename )
 		}
 		AddPointToBounds( mapbrushes[i].mins, map_mins, map_maxs );
 		AddPointToBounds( mapbrushes[i].maxs, map_mins, map_maxs );
-	} // end for
+	}
 
 	PrintMapInfo();
 
@@ -629,7 +628,7 @@ void Q2_LoadMapFile( char* filename )
 	//	TestExpandBrushes ();
 	//
 	Q2_CreateMapTexinfo();
-} // end of the function Q2_LoadMapFile
+}
 
 #ifdef ME // Begin MAP loading from BSP file
 //===========================================================================
@@ -648,8 +647,8 @@ void Q2_SetLeafBrushesModelNumbers( int leafnum, int modelnum )
 		brushnum					= dleafbrushes[leaf->firstleafbrush + i];
 		brushmodelnumbers[brushnum] = modelnum;
 		dbrushleafnums[brushnum]	= leafnum;
-	} // end for
-} // end of the function Q2_SetLeafBrushesModelNumbers
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -660,7 +659,7 @@ void Q2_InitNodeStack()
 {
 	nodestackptr  = nodestack;
 	nodestacksize = 0;
-} // end of the function Q2_InitNodeStack
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -675,8 +674,8 @@ void Q2_PushNodeStack( int num )
 	//
 	if( nodestackptr >= &nodestack[NODESTACKSIZE] ) {
 		Error( "Q2_PushNodeStack: stack overflow\n" );
-	} // end if
-} // end of the function Q2_PushNodeStack
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -694,7 +693,7 @@ int Q2_PopNodeStack()
 	nodestacksize--;
 	// return the top value from the stack
 	return *nodestackptr;
-} // end of the function Q2_PopNodeStack
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -725,23 +724,22 @@ void Q2_SetBrushModelNumbers( entity_t* mapent )
 				if( dnodes[pn].children[0] == n ) {
 					break;
 				}
-			} // end for
+			}
 			// if the stack wasn't empty (if not processed whole tree)
 			if( pn >= 0 ) {
 				// push the parent node again
 				Q2_PushNodeStack( pn );
 				// we proceed with the second child of the parent node
 				n = dnodes[pn].children[1];
-			} // end if
-		} // end if
-		else {
+			}
+		} else {
 			// push the current node onto the stack
 			Q2_PushNodeStack( n );
 			// walk forward into the tree to the first child
 			n = dnodes[n].children[0];
-		} // end else
+		}
 	} while( pn >= 0 );
-} // end of the function Q2_SetBrushModelNumbers
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -773,7 +771,7 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 
 		if( nummapbrushsides >= MAX_MAPFILE_BRUSHSIDES ) {
 			Error( "MAX_MAPFILE_BRUSHSIDES" );
-		} // end if
+		}
 		// pointer to the map brush side
 		side = &brushsides[nummapbrushsides];
 		// if the BSP brush side is textured
@@ -861,7 +859,7 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 
 		nummapbrushsides++;
 		b->numsides++;
-	} // end for
+	}
 
 	// get the content for the entire brush
 	b->contents = bspbrush->contents;
@@ -871,26 +869,26 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 		c_squattbrushes++;
 		b->numsides = 0;
 		return;
-	} // end if
+	}
 
 	// if we're creating AAS
 	if( create_aas ) {
 		// create the AAS brushes from this brush, don't add brush bevels
 		AAS_CreateMapBrushes( b, mapent, false );
 		return;
-	} // end if
+	}
 
 	// allow detail brushes to be removed
 	if( nodetail && ( b->contents & CONTENTS_DETAIL ) ) {
 		b->numsides = 0;
 		return;
-	} // end if
+	}
 
 	// allow water brushes to be removed
 	if( nowater && ( b->contents & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) ) {
 		b->numsides = 0;
 		return;
-	} // end if
+	}
 
 	// create windings for sides and bounds for brush
 	MakeBrushWindings( b );
@@ -905,7 +903,7 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 		for( i = 0; i < b->numsides; i++ ) {
 			b->original_sides[i].texinfo = TEXINFO_NODE;
 		}
-	} // end for
+	}
 
 	//
 	// origin brushes are removed, but they set
@@ -949,7 +947,7 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 
 	nummapbrushes++;
 	mapent->numbrushes++;
-} // end of the function Q2_BSPBrushToMapBrush
+}
 //===========================================================================
 //===========================================================================
 void Q2_ParseBSPBrushes( entity_t* mapent )
@@ -963,9 +961,9 @@ void Q2_ParseBSPBrushes( entity_t* mapent )
 	for( i = 0; i < numbrushes; i++ ) {
 		if( brushmodelnumbers[i] == mapent->modelnum ) {
 			Q2_BSPBrushToMapBrush( &dbrushes[i], mapent );
-		} // end if
-	} // end for
-} // end of the function Q2_ParseBSPBrushes
+		}
+	}
+}
 //===========================================================================
 //===========================================================================
 qboolean Q2_ParseBSPEntity( int entnum )
@@ -986,10 +984,10 @@ qboolean Q2_ParseBSPEntity( int entnum )
 	if( model && strlen( model ) ) {
 		if( *model != '*' ) {
 			Error( "Q2_ParseBSPEntity: model number without leading *" );
-		} // end if
+		}
 		// get the model number of this entity (skip the leading *)
 		mapent->modelnum = atoi( &model[1] );
-	} // end if
+	}
 
 	GetVectorForKey( mapent, "origin", mapent->origin );
 
@@ -997,13 +995,13 @@ qboolean Q2_ParseBSPEntity( int entnum )
 	// the world entity has no model key
 	if( !strcmp( "worldspawn", ValueForKey( mapent, "classname" ) ) ) {
 		mapent->modelnum = 0;
-	} // end if
+	}
 	// if the map entity has a BSP model (a modelnum of -1 is used for
 	// entities that aren't using a BSP model)
 	if( mapent->modelnum >= 0 ) {
 		// parse the bsp brushes
 		Q2_ParseBSPBrushes( mapent );
-	} // end if
+	}
 	//
 	// the origin of the entity is already taken into account
 	//
@@ -1014,9 +1012,9 @@ qboolean Q2_ParseBSPEntity( int entnum )
 		c_areaportals++;
 		mapent->areaportalnum = c_areaportals;
 		return true;
-	} // end if
+	}
 	return true;
-} // end of the function Q2_ParseBSPEntity
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1049,7 +1047,7 @@ void Q2_LoadMapFromBSP( char* filename, int offset, int length )
 	//
 	for( i = 0; i < num_entities; i++ ) {
 		Q2_ParseBSPEntity( i );
-	} // end for
+	}
 
 	// get the map mins and maxs from the world model
 	ClearBounds( map_mins, map_maxs );
@@ -1059,12 +1057,12 @@ void Q2_LoadMapFromBSP( char* filename, int offset, int length )
 		}
 		AddPointToBounds( mapbrushes[i].mins, map_mins, map_maxs );
 		AddPointToBounds( mapbrushes[i].maxs, map_mins, map_maxs );
-	} // end for
+	}
 
 	PrintMapInfo();
 	//
 	Q2_CreateMapTexinfo();
-} // end of the function Q2_LoadMapFromBSP
+}
 
 void Q2_ResetMapLoading()
 {
@@ -1073,7 +1071,7 @@ void Q2_ResetMapLoading()
 	nodestackptr  = NULL;
 	nodestacksize = 0;
 	memset( brushmodelnumbers, 0, MAX_MAPFILE_BRUSHES * sizeof( int ) );
-} // end of the function Q2_ResetMapLoading
+}
 
 // End MAP loading from BSP file
 #endif // ME
@@ -1131,4 +1129,4 @@ void TestExpandBrushes()
 	fclose( f );
 
 	Error( "can't proceed after expanding brushes" );
-} // end of the function TestExpandBrushes
+}

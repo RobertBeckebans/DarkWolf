@@ -196,7 +196,7 @@ void			 Q3_FreeMaxBSP()
 	}
 	q3_dfogs   = NULL;
 	q3_numFogs = 0;
-} // end of the function Q3_FreeMaxBSP
+}
 
 //===========================================================================
 //
@@ -214,7 +214,7 @@ void Q3_PlaneFromPoints( vec3_t p0, vec3_t p1, vec3_t p2, vec3_t normal, float* 
 	VectorNormalize( normal );
 
 	*dist = DotProduct( p0, normal );
-} // end of the function PlaneFromPoints
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -253,7 +253,7 @@ void Q3_SurfacePlane( q3_dsurface_t* surface, vec3_t normal, float* dist )
 			dot = DotProduct(t1, t2);
 			if (dot > -0.9 && dot < 0.9 &&
 				VectorLength(t1) > 0.1 && VectorLength(t2) > 0.1) break;
-		} //end for
+		}
 		CrossProduct(t1, t2, normal);
 		VectorNormalize(normal);
 	*/
@@ -263,10 +263,10 @@ void Q3_SurfacePlane( q3_dsurface_t* surface, vec3_t normal, float* dist )
 		for( i = 0; i < surface->numVerts; i++ ) {
 			p1 = q3_drawVerts[surface->firstVert + ( ( i ) % surface->numVerts )].xyz;
 			Log_Print( "p%d = %f %f %f\n", i, p1[0], p1[1], p1[2] );
-		} // end for
-	} // end if
+		}
+	}
 	*dist = DotProduct( p0, normal );
-} // end of the function Q3_SurfacePlane
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -292,8 +292,8 @@ void		 Q3_CreatePlanarSurfacePlanes()
 		// Log_Print("normal = %f %f %f, dist = %f\n", q3_surfaceplanes[i].normal[0],
 		//											q3_surfaceplanes[i].normal[1],
 		//											q3_surfaceplanes[i].normal[2], q3_surfaceplanes[i].dist);
-	} // end for
-} // end of the function Q3_CreatePlanarSurfacePlanes
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -310,7 +310,7 @@ void Q3_SurfacePlane(q3_dsurface_t *surface, vec3_t normal, float *dist)
 	Q3_PlaneFromPoints(q3_drawVerts[surface->firstVert].xyz,
 						q3_drawVerts[surface->firstVert+1].xyz,
 						q3_drawVerts[surface->firstVert+2].xyz, normal, dist);
-} //end of the function Q3_SurfacePlane*/
+}
 //===========================================================================
 // returns the amount the face and the winding overlap
 //
@@ -343,14 +343,14 @@ float Q3_FaceOnWinding( q3_dsurface_t* surface, winding_t* winding )
 		dist = DotProduct( normal, v1 );
 		//
 		ChopWindingInPlace( &w, normal, dist, -0.1 ); // CLIP_EPSILON
-	} // end for
+	}
 	if( w ) {
 		area = WindingArea( w );
 		FreeWinding( w );
 		return area;
-	} // end if
+	}
 	return 0;
-} // end of the function Q3_FaceOnWinding
+}
 //===========================================================================
 // creates a winding for the given brush side on the given brush
 //
@@ -382,9 +382,9 @@ winding_t* Q3_BrushSideWinding( q3_dbrush_t* brush, q3_dbrushside_t* baseside )
 		//
 		plane = &q3_dplanes[side->planeNum ^ 1];
 		ChopWindingInPlace( &w, plane->normal, plane->dist, -0.1 ); // CLIP_EPSILON);
-	} // end for
+	}
 	return w;
-} // end of the function Q3_BrushSideWinding
+}
 //===========================================================================
 // fix screwed brush texture references
 //
@@ -437,14 +437,14 @@ void	 Q3_FindVisibleBrushSides()
 			if( !w ) {
 				q3_dbrushsidetextured[brush->firstSide + j] = true;
 				continue;
-			} // end if
+			}
 			else {
 				// RemoveEqualPoints(w, 0.2);
 				if( WindingIsTiny( w ) ) {
 					FreeWinding( w );
 					q3_dbrushsidetextured[brush->firstSide + j] = true;
 					continue;
-				} // end if
+				}
 				else {
 					we = WindingError( w );
 					if( we == WE_NOTENOUGHPOINTS || we == WE_SMALLAREA || we == WE_POINTBOGUSRANGE
@@ -453,13 +453,13 @@ void	 Q3_FindVisibleBrushSides()
 						FreeWinding( w );
 						q3_dbrushsidetextured[brush->firstSide + j] = true;
 						continue;
-					} // end if
-				} // end else
-			} // end else
+					}
+				}
+			}
 			if( WindingArea( w ) < 20 ) {
 				q3_dbrushsidetextured[brush->firstSide + j] = true;
 				continue;
-			} // end if
+			}
 			// find a face for texturing this brush
 			for( k = 0; k < q3_numDrawSurfaces; k++ ) {
 				surface = &q3_drawSurfaces[k];
@@ -482,11 +482,11 @@ void	 Q3_FindVisibleBrushSides()
 					q3_dbrushsidetextured[brush->firstSide + j] = true;
 					// Log_Write("Q3_FaceOnWinding");
 					break;
-				} // end if
-			} // end for
+				}
+			}
 			FreeWinding( w );
-		} // end for
-	} // end for
+		}
+	}
 	qprintf( "\r%6d brush sides\n", numsides );
 	numtextured = 0;
 	for( i = 0; i < q3_numbrushsides; i++ ) {
@@ -496,9 +496,9 @@ void	 Q3_FindVisibleBrushSides()
 		if( q3_dbrushsidetextured[i] ) {
 			numtextured++;
 		}
-	} // end for
+	}
 	Log_Print( "%d brush sides textured out of %d\n", numtextured, q3_numbrushsides );
-} // end of the function Q3_FindVisibleBrushSides
+}
 
 /*
 =============
@@ -515,7 +515,7 @@ void Q3_SwapBlock( int* block, int sizeOfBlock )
 	for( i = 0; i < sizeOfBlock; i++ ) {
 		block[i] = LittleLong( block[i] );
 	}
-} // end of the function Q3_SwapBlock
+}
 
 /*
 =============
@@ -786,10 +786,10 @@ void Q3_ParseEntities()
 	SetScriptFlags( script, SCFL_NOSTRINGWHITESPACES | SCFL_NOSTRINGESCAPECHARS );
 
 	while( ParseEntity( script ) ) {
-	} // end while
+	}
 
 	FreeScript( script );
-} // end of the function Q3_ParseEntities
+}
 
 /*
 ================
@@ -830,4 +830,4 @@ void Q3_UnparseEntities()
 		}
 	}
 	q3_entdatasize = end - buf + 1;
-} // end of the function Q3_UnparseEntities
+}

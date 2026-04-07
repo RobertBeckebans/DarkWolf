@@ -65,19 +65,19 @@ void			 Log_AlwaysOpen( char* filename )
 	if( !filename || !strlen( filename ) ) {
 		botimport.Print( PRT_MESSAGE, "openlog <filename>\n" );
 		return;
-	} // end if
+	}
 	if( logfile.fp ) {
 		botimport.Print( PRT_ERROR, "log file %s is already opened\n", logfile.filename );
 		return;
-	} // end if
+	}
 	logfile.fp = fopen( filename, "wb" );
 	if( !logfile.fp ) {
 		botimport.Print( PRT_ERROR, "can't open the log file %s\n", filename );
 		return;
-	} // end if
+	}
 	strncpy( logfile.filename, filename, MAX_LOGFILENAMESIZE );
 	botimport.Print( PRT_MESSAGE, "Opened log %s\n", logfile.filename );
-} // end of the function Log_Create
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -105,10 +105,10 @@ void Log_Close()
 	if( fclose( logfile.fp ) ) {
 		botimport.Print( PRT_ERROR, "can't close log file %s\n", logfile.filename );
 		return;
-	} // end if
+	}
 	logfile.fp = NULL;
 	botimport.Print( PRT_MESSAGE, "Closed log %s\n", logfile.filename );
-} // end of the function Log_Close
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -120,7 +120,7 @@ void Log_Shutdown()
 	if( logfile.fp ) {
 		Log_Close();
 	}
-} // end of the function Log_Shutdown
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -139,7 +139,7 @@ void QDECL Log_Write( char* fmt, ... )
 	va_end( ap );
 	// fprintf(logfile.fp, "\r\n");
 	fflush( logfile.fp );
-} // end of the function Log_Write
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -166,7 +166,7 @@ void QDECL Log_WriteTimeStamped( char* fmt, ... )
 	fprintf( logfile.fp, "\r\n" );
 	logfile.numwrites++;
 	fflush( logfile.fp );
-} // end of the function Log_Write
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -176,7 +176,7 @@ void QDECL Log_WriteTimeStamped( char* fmt, ... )
 FILE* Log_FilePointer()
 {
 	return logfile.fp;
-} // end of the function Log_FilePointer
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -188,4 +188,4 @@ void Log_Flush()
 	if( logfile.fp ) {
 		fflush( logfile.fp );
 	}
-} // end of the function Log_Flush
+}

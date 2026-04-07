@@ -80,7 +80,7 @@ void		   LinkMemoryBlock( memoryblock_t* block )
 		memory->prev = block;
 	}
 	memory = block;
-} // end of the function LinkMemoryBlock
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -97,7 +97,7 @@ void UnlinkMemoryBlock( memoryblock_t* block )
 	if( block->next ) {
 		block->next->prev = block->prev;
 	}
-} // end of the function UnlinkMemoryBlock
+}
 	//===========================================================================
 	//
 	// Parameter:			-
@@ -128,7 +128,7 @@ void* GetMemory( unsigned long size )
 	totalmemorysize += block->size + sizeof( memoryblock_t );
 	numblocks++;
 	return block->ptr;
-} // end of the function GetMemoryDebug
+}
 	//===========================================================================
 	//
 	// Parameter:			-
@@ -149,7 +149,7 @@ void* GetClearedMemory( unsigned long size )
 	#endif // MEMDEBUG
 	memset( ptr, 0, size );
 	return ptr;
-} // end of the function GetClearedMemory
+}
 	//===========================================================================
 	//
 	// Parameter:			-
@@ -180,7 +180,7 @@ void* GetHunkMemory( unsigned long size )
 	totalmemorysize += block->size + sizeof( memoryblock_t );
 	numblocks++;
 	return block->ptr;
-} // end of the function GetHunkMemoryDebug
+}
 	//===========================================================================
 	//
 	// Parameter:			-
@@ -201,7 +201,7 @@ void* GetClearedHunkMemory( unsigned long size )
 	#endif // MEMDEBUG
 	memset( ptr, 0, size );
 	return ptr;
-} // end of the function GetClearedHunkMemory
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -219,18 +219,18 @@ memoryblock_t* BlockFromPointer( void* ptr, char* str )
 		printf( PRT_FATAL, "%s: NULL pointer\n", str );
 	#endif MEMDEBUG
 		return NULL;
-	} // end if
+	}
 	block = ( memoryblock_t* )( ( char* )ptr - sizeof( memoryblock_t ) );
 	if( block->id != MEM_ID && block->id != HUNK_ID ) {
 		printf( PRT_FATAL, "%s: invalid memory block\n", str );
 		return NULL;
-	} // end if
+	}
 	if( block->ptr != ptr ) {
 		printf( PRT_FATAL, "%s: memory block pointer invalid\n", str );
 		return NULL;
-	} // end if
+	}
 	return block;
-} // end of the function BlockFromPointer
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -252,8 +252,8 @@ void FreeMemory( void* ptr )
 	//
 	if( block->id == MEM_ID ) {
 		free( block );
-	} // end if
-} // end of the function FreeMemory
+	}
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -269,7 +269,7 @@ int MemoryByteSize( void* ptr )
 		return 0;
 	}
 	return block->size;
-} // end of the function MemoryByteSize
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -281,7 +281,7 @@ void PrintUsedMemorySize()
 	printf( PRT_MESSAGE, "total allocated memory: %d KB\n", allocatedmemory >> 10 );
 	printf( PRT_MESSAGE, "total botlib memory: %d KB\n", totalmemorysize >> 10 );
 	printf( PRT_MESSAGE, "total memory blocks: %d\n", numblocks );
-} // end of the function PrintUsedMemorySize
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -300,14 +300,13 @@ void PrintMemoryLabels()
 	#ifdef MEMDEBUG
 		if( block->id == HUNK_ID ) {
 			Log_Write( "%6d, hunk %p, %8d: %24s line %6d: %s\r\n", i, block->ptr, block->size, block->file, block->line, block->label );
-		} // end if
-		else {
+		} else {
 			Log_Write( "%6d,      %p, %8d: %24s line %6d: %s\r\n", i, block->ptr, block->size, block->file, block->line, block->label );
-		} // end else
+		}
 	#endif // MEMDEBUG
 		i++;
-	} // end for
-} // end of the function PrintMemoryLabels
+	}
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -320,10 +319,10 @@ void DumpMemory()
 
 	for( block = memory; block; block = memory ) {
 		FreeMemory( block->ptr );
-	} // end for
+	}
 	totalmemorysize = 0;
 	allocatedmemory = 0;
-} // end of the function DumpMemory
+}
 
 #else
 
@@ -349,7 +348,7 @@ void* GetMemory( unsigned long size )
 	memid  = ( unsigned long int* )ptr;
 	*memid = MEM_ID;
 	return ( unsigned long int* )( ( char* )ptr + sizeof( unsigned long int ) );
-} // end of the function GetMemory
+}
 	//===========================================================================
 	//
 	// Parameter:			-
@@ -370,7 +369,7 @@ void* GetClearedMemory( unsigned long size )
 	#endif // MEMDEBUG
 	memset( ptr, 0, size );
 	return ptr;
-} // end of the function GetClearedMemory
+}
 	//===========================================================================
 	//
 	// Parameter:			-
@@ -393,7 +392,7 @@ void* GetHunkMemory( unsigned long size )
 	memid  = ( unsigned long int* )ptr;
 	*memid = HUNK_ID;
 	return ( unsigned long int* )( ( char* )ptr + sizeof( unsigned long int ) );
-} // end of the function GetHunkMemory
+}
 	//===========================================================================
 	//
 	// Parameter:			-
@@ -414,7 +413,7 @@ void* GetClearedHunkMemory( unsigned long size )
 	#endif // MEMDEBUG
 	memset( ptr, 0, size );
 	return ptr;
-} // end of the function GetClearedHunkMemory
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -429,8 +428,8 @@ void FreeMemory( void* ptr )
 
 	if( *memid == MEM_ID ) {
 		free( memid );
-	} // end if
-} // end of the function FreeMemory
+	}
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -439,7 +438,7 @@ void FreeMemory( void* ptr )
 //===========================================================================
 void PrintUsedMemorySize()
 {
-} // end of the function PrintUsedMemorySize
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -448,6 +447,6 @@ void PrintUsedMemorySize()
 //===========================================================================
 void PrintMemoryLabels()
 {
-} // end of the function PrintMemoryLabels
+}
 
 #endif

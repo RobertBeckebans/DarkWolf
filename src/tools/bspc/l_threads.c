@@ -76,14 +76,14 @@ int GetThreadWork()
 		if( pacifier ) {
 			printf( "%i...", f );
 		}
-	} // end if
+	}
 
 	r = dispatch;
 	dispatch++;
 	ThreadUnlock();
 
 	return r;
-} // end of the function GetThreadWork
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -101,8 +101,8 @@ void ThreadWorkerFunction( int threadnum )
 		}
 		// printf ("thread %i, work %i\n", threadnum, work);
 		workfunction( work );
-	} // end while
-} // end of the function ThreadWorkerFunction
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -116,7 +116,7 @@ void RunThreadsOnIndividual( int workcnt, qboolean showpacifier, void ( *func )(
 	}
 	workfunction = func;
 	RunThreadsOn( workcnt, showpacifier, ThreadWorkerFunction );
-} // end of the function RunThreadsOnIndividual
+}
 
 //===================================================================
 //
@@ -164,9 +164,9 @@ void			 ThreadSetDefault()
 		if( numthreads < 1 || numthreads > 32 ) {
 			numthreads = 1;
 		}
-	} // end if
+	}
 	qprintf( "%i threads\n", numthreads );
-} // end of the function ThreadSetDefault
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -178,13 +178,13 @@ void ThreadLock()
 	if( !threaded ) {
 		Error( "ThreadLock: !threaded" );
 		return;
-	} // end if
+	}
 	EnterCriticalSection( &crit );
 	if( enter ) {
 		Error( "Recursive ThreadLock\n" );
 	}
 	enter = 1;
-} // end of the function ThreadLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -196,13 +196,13 @@ void ThreadUnlock()
 	if( !threaded ) {
 		Error( "ThreadUnlock: !threaded" );
 		return;
-	} // end if
+	}
 	if( !enter ) {
 		Error( "ThreadUnlock without lock\n" );
 	}
 	enter = 0;
 	LeaveCriticalSection( &crit );
-} // end of the function ThreadUnlock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -216,7 +216,7 @@ void ThreadSetupLock()
 	threaded		  = true; // Stupid me... forgot this!!!
 	currentnumthreads = 0;
 	currentthreadid	  = 0;
-} // end of the function ThreadInitLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -227,7 +227,7 @@ void ThreadShutdownLock()
 {
 	DeleteCriticalSection( &crit );
 	threaded = false; // Stupid me... forgot this!!!
-} // end of the function ThreadShutdownLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -237,7 +237,7 @@ void ThreadShutdownLock()
 void ThreadSetupSemaphore()
 {
 	semaphore = CreateSemaphore( NULL, 0, 99999999, "bspc" );
-} // end of the function ThreadSetupSemaphore
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -246,7 +246,7 @@ void ThreadSetupSemaphore()
 //===========================================================================
 void ThreadShutdownSemaphore()
 {
-} // end of the function ThreadShutdownSemaphore
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -256,7 +256,7 @@ void ThreadShutdownSemaphore()
 void ThreadSemaphoreWait()
 {
 	WaitForSingleObject( semaphore, INFINITE );
-} // end of the function ThreadSemaphoreWait
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -266,7 +266,7 @@ void ThreadSemaphoreWait()
 void ThreadSemaphoreIncrease( int count )
 {
 	ReleaseSemaphore( semaphore, count, NULL );
-} // end of the function ThreadSemaphoreIncrease
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -304,8 +304,7 @@ void RunThreadsOn( int workcnt, qboolean showpacifier, void ( *func )( int ) )
 
 	if( numthreads == 1 ) { // use same thread
 		func( 0 );
-	} // end if
-	else {
+	} else {
 		//		printf("starting %d threads\n", numthreads);
 		for( i = 0; i < numthreads; i++ ) {
 			threadhandle[i] = CreateThread( NULL, // LPSECURITY_ATTRIBUTES lpsa,
@@ -315,12 +314,12 @@ void RunThreadsOn( int workcnt, qboolean showpacifier, void ( *func )( int ) )
 				0,								  //   DWORD fdwCreate,
 				&threadid[i] );
 			//			printf("started thread %d\n", i);
-		} // end for
+		}
 
 		for( i = 0; i < numthreads; i++ ) {
 			WaitForSingleObject( threadhandle[i], INFINITE );
 		}
-	} // end else
+	}
 	DeleteCriticalSection( &crit );
 
 	threaded = false;
@@ -328,7 +327,7 @@ void RunThreadsOn( int workcnt, qboolean showpacifier, void ( *func )( int ) )
 	if( pacifier ) {
 		printf( " (%i)\n", end - start );
 	}
-} // end of the function RunThreadsOn
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -346,13 +345,12 @@ void AddThread( void ( *func )( int ) )
 		currentnumthreads++;
 		func( -1 );
 		currentnumthreads--;
-	} // end if
-	else {
+	} else {
 		ThreadLock();
 		if( currentnumthreads >= numthreads ) {
 			ThreadUnlock();
 			return;
-		} // end if
+		}
 		// allocate new thread
 		thread = GetMemory( sizeof( thread_t ) );
 		if( !thread ) {
@@ -385,8 +383,8 @@ void AddThread( void ( *func )( int ) )
 		currentthreadid++;
 		//
 		ThreadUnlock();
-	} // end else
-} // end of the function AddThread
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -421,14 +419,14 @@ void RemoveThread( int threadid )
 			qprintf( "removed thread with id %d\n", threadid );
 	#endif // THREAD_DEBUG
 			break;
-		} // end if
+		}
 		last = thread;
-	} // end if
+	}
 	if( !thread ) {
 		Error( "couldn't find thread with id %d", threadid );
 	}
 	ThreadUnlock();
-} // end of the function RemoveThread
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -447,9 +445,9 @@ void WaitForAllThreadsFinished()
 		WaitForSingleObject( handle, INFINITE );
 
 		ThreadLock();
-	} // end while
+	}
 	ThreadUnlock();
-} // end of the function WaitForAllThreadsFinished
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -459,7 +457,7 @@ void WaitForAllThreadsFinished()
 int GetNumThreads()
 {
 	return currentnumthreads;
-} // end of the function GetNumThreads
+}
 
 #endif
 
@@ -503,9 +501,9 @@ void			ThreadSetDefault()
 {
 	if( numthreads == -1 ) { // not set manually
 		numthreads = 1;
-	} // end if
+	}
 	qprintf( "%i threads\n", numthreads );
-} // end of the function ThreadSetDefault
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -517,15 +515,15 @@ void ThreadLock()
 	if( !threaded ) {
 		Error( "ThreadLock: !threaded" );
 		return;
-	} // end if
+	}
 	if( my_mutex ) {
 		pthread_mutex_lock( my_mutex );
-	} // end if
+	}
 	if( enter ) {
 		Error( "Recursive ThreadLock\n" );
 	}
 	enter = 1;
-} // end of the function ThreadLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -537,15 +535,15 @@ void ThreadUnlock()
 	if( !threaded ) {
 		Error( "ThreadUnlock: !threaded" );
 		return;
-	} // end if
+	}
 	if( !enter ) {
 		Error( "ThreadUnlock without lock\n" );
 	}
 	enter = 0;
 	if( my_mutex ) {
 		pthread_mutex_unlock( my_mutex );
-	} // end if
-} // end of the function ThreadUnlock
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -581,7 +579,7 @@ void ThreadSetupLock()
 	threaded		  = true;
 	currentnumthreads = 0;
 	currentthreadid	  = 0;
-} // end of the function ThreadInitLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -591,7 +589,7 @@ void ThreadSetupLock()
 void ThreadShutdownLock()
 {
 	threaded = false;
-} // end of the function ThreadShutdownLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -662,7 +660,7 @@ void RunThreadsOn( int workcnt, qboolean showpacifier, void ( *func )( int ) )
 	if( pacifier ) {
 		printf( " (%i)\n", end - start );
 	}
-} // end of the function RunThreadsOn
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -680,13 +678,12 @@ void AddThread( void ( *func )( int ) )
 		currentnumthreads++;
 		func( -1 );
 		currentnumthreads--;
-	} // end if
-	else {
+	} else {
 		ThreadLock();
 		if( currentnumthreads >= numthreads ) {
 			ThreadUnlock();
 			return;
-		} // end if
+		}
 		// allocate new thread
 		thread = GetMemory( sizeof( thread_t ) );
 		if( !thread ) {
@@ -716,8 +713,8 @@ void AddThread( void ( *func )( int ) )
 		currentthreadid++;
 		//
 		ThreadUnlock();
-	} // end else
-} // end of the function AddThread
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -752,14 +749,14 @@ void RemoveThread( int threadid )
 			qprintf( "removed thread with id %d\n", threadid );
 	#endif // THREAD_DEBUG
 			break;
-		} // end if
+		}
 		last = thread;
-	} // end if
+	}
 	if( !thread ) {
 		Error( "couldn't find thread with id %d", threadid );
 	}
 	ThreadUnlock();
-} // end of the function RemoveThread
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -781,9 +778,9 @@ void WaitForAllThreadsFinished()
 		}
 
 		ThreadLock();
-	} // end while
+	}
 	ThreadUnlock();
-} // end of the function WaitForAllThreadsFinished
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -793,7 +790,7 @@ void WaitForAllThreadsFinished()
 int GetNumThreads()
 {
 	return currentnumthreads;
-} // end of the function GetNumThreads
+}
 
 #endif
 
@@ -839,9 +836,9 @@ void			ThreadSetDefault()
 {
 	if( numthreads == -1 ) { // not set manually
 		numthreads = 1;
-	} // end if
+	}
 	qprintf( "%i threads\n", numthreads );
-} // end of the function ThreadSetDefault
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -853,13 +850,13 @@ void ThreadLock()
 	if( !threaded ) {
 		Error( "ThreadLock: !threaded" );
 		return;
-	} // end if
+	}
 	pthread_mutex_lock( &my_mutex );
 	if( enter ) {
 		Error( "Recursive ThreadLock\n" );
 	}
 	enter = 1;
-} // end of the function ThreadLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -871,13 +868,13 @@ void ThreadUnlock()
 	if( !threaded ) {
 		Error( "ThreadUnlock: !threaded" );
 		return;
-	} // end if
+	}
 	if( !enter ) {
 		Error( "ThreadUnlock without lock\n" );
 	}
 	enter = 0;
 	pthread_mutex_unlock( &my_mutex );
-} // end of the function ThreadUnlock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -893,7 +890,7 @@ void ThreadSetupLock()
 	threaded		  = true;
 	currentnumthreads = 0;
 	currentthreadid	  = 0;
-} // end of the function ThreadInitLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -903,7 +900,7 @@ void ThreadSetupLock()
 void ThreadShutdownLock()
 {
 	threaded = false;
-} // end of the function ThreadShutdownLock
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -913,7 +910,7 @@ void ThreadShutdownLock()
 void ThreadSetupSemaphore()
 {
 	sem_init( &semaphore, 0, 0 );
-} // end of the function ThreadSetupSemaphore
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -923,7 +920,7 @@ void ThreadSetupSemaphore()
 void ThreadShutdownSemaphore()
 {
 	sem_destroy( &semaphore );
-} // end of the function ThreadShutdownSemaphore
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -933,7 +930,7 @@ void ThreadShutdownSemaphore()
 void ThreadSemaphoreWait()
 {
 	sem_wait( &semaphore );
-} // end of the function ThreadSemaphoreWait
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -946,8 +943,8 @@ void ThreadSemaphoreIncrease( int count )
 
 	for( i = 0; i < count; i++ ) {
 		sem_post( &semaphore );
-	} // end for
-} // end of the function ThreadSemaphoreIncrease
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -998,7 +995,7 @@ void RunThreadsOn( int workcnt, qboolean showpacifier, void ( *func )( int ) )
 	if( pacifier ) {
 		printf( " (%i)\n", end - start );
 	}
-} // end of the function RunThreadsOn
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1016,13 +1013,12 @@ void AddThread( void ( *func )( int ) )
 		currentnumthreads++;
 		func( -1 );
 		currentnumthreads--;
-	} // end if
-	else {
+	} else {
 		ThreadLock();
 		if( currentnumthreads >= numthreads ) {
 			ThreadUnlock();
 			return;
-		} // end if
+		}
 		// allocate new thread
 		thread = GetMemory( sizeof( thread_t ) );
 		if( !thread ) {
@@ -1052,8 +1048,8 @@ void AddThread( void ( *func )( int ) )
 		currentthreadid++;
 		//
 		ThreadUnlock();
-	} // end else
-} // end of the function AddThread
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1088,14 +1084,14 @@ void RemoveThread( int threadid )
 			qprintf( "removed thread with id %d\n", threadid );
 	#endif // THREAD_DEBUG
 			break;
-		} // end if
+		}
 		last = thread;
-	} // end if
+	}
 	if( !thread ) {
 		Error( "couldn't find thread with id %d", threadid );
 	}
 	ThreadUnlock();
-} // end of the function RemoveThread
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1117,9 +1113,9 @@ void WaitForAllThreadsFinished()
 		}
 
 		ThreadLock();
-	} // end while
+	}
 	ThreadUnlock();
-} // end of the function WaitForAllThreadsFinished
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1129,7 +1125,7 @@ void WaitForAllThreadsFinished()
 int GetNumThreads()
 {
 	return currentnumthreads;
-} // end of the function GetNumThreads
+}
 
 #endif // LINUX
 
@@ -1179,7 +1175,7 @@ void	   ThreadSetDefault()
 	printf( "%i threads\n", numthreads );
 	//@@
 	usconfig( CONF_INITUSERS, numthreads );
-} // end of the function ThreadSetDefault
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1189,7 +1185,7 @@ void	   ThreadSetDefault()
 void ThreadLock()
 {
 	spin_lock( &lck );
-} // end of the function ThreadLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1199,7 +1195,7 @@ void ThreadLock()
 void ThreadUnlock()
 {
 	release_lock( &lck );
-} // end of the function ThreadUnlock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1215,7 +1211,7 @@ void ThreadSetupLock()
 	threaded		  = true;
 	currentnumthreads = 0;
 	currentthreadid	  = 0;
-} // end of the function ThreadInitLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1225,7 +1221,7 @@ void ThreadSetupLock()
 void ThreadShutdownLock()
 {
 	threaded = false;
-} // end of the function ThreadShutdownLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1277,7 +1273,7 @@ void RunThreadsOn( int workcnt, qboolean showpacifier, void ( *func )( int ) )
 	if( pacifier ) {
 		printf( " (%i)\n", end - start );
 	}
-} // end of the function RunThreadsOn
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1295,13 +1291,12 @@ void AddThread( void ( *func )( int ) )
 		currentnumthreads++;
 		func( -1 );
 		currentnumthreads--;
-	} // end if
-	else {
+	} else {
 		ThreadLock();
 		if( currentnumthreads >= numthreads ) {
 			ThreadUnlock();
 			return;
-		} // end if
+		}
 		// allocate new thread
 		thread = GetMemory( sizeof( thread_t ) );
 		if( !thread ) {
@@ -1333,8 +1328,8 @@ void AddThread( void ( *func )( int ) )
 		currentthreadid++;
 		//
 		ThreadUnlock();
-	} // end else
-} // end of the function AddThread
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1369,14 +1364,14 @@ void RemoveThread( int threadid )
 			qprintf( "removed thread with id %d\n", threadid );
 	#endif // THREAD_DEBUG
 			break;
-		} // end if
+		}
 		last = thread;
-	} // end if
+	}
 	if( !thread ) {
 		Error( "couldn't find thread with id %d", threadid );
 	}
 	ThreadUnlock();
-} // end of the function RemoveThread
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1392,9 +1387,9 @@ void WaitForAllThreadsFinished()
 		// wait (NULL);
 
 		ThreadLock();
-	} // end while
+	}
 	ThreadUnlock();
-} // end of the function WaitForAllThreadsFinished
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1404,7 +1399,7 @@ void WaitForAllThreadsFinished()
 int GetNumThreads()
 {
 	return currentnumthreads;
-} // end of the function GetNumThreads
+}
 
 #endif //_MIPS_ISA
 
@@ -1428,7 +1423,7 @@ int	 currentnumthreads = 0;
 void ThreadSetDefault()
 {
 	numthreads = 1;
-} // end of the function ThreadSetDefault
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1437,7 +1432,7 @@ void ThreadSetDefault()
 //===========================================================================
 void ThreadLock()
 {
-} // end of the function ThreadLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1446,7 +1441,7 @@ void ThreadLock()
 //===========================================================================
 void ThreadUnlock()
 {
-} // end of the function ThreadUnlock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1456,7 +1451,7 @@ void ThreadUnlock()
 void ThreadSetupLock()
 {
 	Log_Print( "no multi-threading\n" );
-} // end of the function ThreadInitLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1465,7 +1460,7 @@ void ThreadSetupLock()
 //===========================================================================
 void ThreadShutdownLock()
 {
-} // end of the function ThreadShutdownLock
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1474,7 +1469,7 @@ void ThreadShutdownLock()
 //===========================================================================
 void ThreadSetupSemaphore()
 {
-} // end of the function ThreadSetupSemaphore
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -1483,7 +1478,7 @@ void ThreadSetupSemaphore()
 //===========================================================================
 void ThreadShutdownSemaphore()
 {
-} // end of the function ThreadShutdownSemaphore
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1492,7 +1487,7 @@ void ThreadShutdownSemaphore()
 //===========================================================================
 void ThreadSemaphoreWait()
 {
-} // end of the function ThreadSemaphoreWait
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1501,7 +1496,7 @@ void ThreadSemaphoreWait()
 //===========================================================================
 void ThreadSemaphoreIncrease( int count )
 {
-} // end of the function ThreadSemaphoreIncrease
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1529,7 +1524,7 @@ void RunThreadsOn( int workcnt, qboolean showpacifier, void ( *func )( int ) )
 	if( pacifier ) {
 		printf( " (%i)\n", end - start );
 	}
-} // end of the function RunThreadsOn
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1544,7 +1539,7 @@ void AddThread( void ( *func )( int ) )
 	currentnumthreads++;
 	func( -1 );
 	currentnumthreads--;
-} // end of the function AddThread
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1553,7 +1548,7 @@ void AddThread( void ( *func )( int ) )
 //===========================================================================
 void RemoveThread( int threadid )
 {
-} // end of the function RemoveThread
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1562,7 +1557,7 @@ void RemoveThread( int threadid )
 //===========================================================================
 void WaitForAllThreadsFinished()
 {
-} // end of the function WaitForAllThreadsFinished
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -1572,6 +1567,6 @@ void WaitForAllThreadsFinished()
 int GetNumThreads()
 {
 	return currentnumthreads;
-} // end of the function GetNumThreads
+}
 
 #endif // USED

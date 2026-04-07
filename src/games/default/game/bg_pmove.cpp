@@ -3010,7 +3010,7 @@ static void PM_Weapon()
 				if( pm->ps->weapon == WP_DYNAMITE ) {
 					if( pm->cmd.serverTime - pm->ps->classWeaponTime <
 						g_engineerChargeTime.integer ) { // had to use multiplier because chargetime is used elsewhere as bomb diffuse time FIXME not really but NOTE changing bomb diffuse time will
-														 // require changing this time as well (intended function: new charge ready when old one explodes, ie every 30 seconds or so)
+						// require changing this time as well (intended function: new charge ready when old one explodes, ie every 30 seconds or so)
 
 						return;
 					}
@@ -3648,7 +3648,8 @@ static void PM_Weapon()
 					void PM_UpdateViewAngles( playerState_t * ps,
 						usercmd_t * cmd,
 						void( trace )( trace_t * results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask ) )
-					{ //----(SA)	modified
+					{
+						//----(SA)	modified
 						short	temp;
 						int		i;
 						pmove_t tpm;

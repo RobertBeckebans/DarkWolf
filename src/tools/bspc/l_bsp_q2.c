@@ -237,7 +237,7 @@ void Q2_AllocMaxBSP()
 	Log_Print( "allocated " );
 	PrintMemorySize( allocatedbspmem );
 	Log_Print( " of BSP memory\n" );
-} // end of the function Q2_AllocMaxBSP
+}
 
 void Q2_FreeMaxBSP()
 {
@@ -322,7 +322,7 @@ void Q2_FreeMaxBSP()
 	PrintMemorySize( allocatedbspmem );
 	Log_Print( " of BSP memory\n" );
 	allocatedbspmem = 0;
-} // end of the function Q2_FreeMaxBSP
+}
 
 #define WCONVEX_EPSILON 0.5
 
@@ -347,9 +347,9 @@ int InsideWinding( winding_t* w, vec3_t point, int planenum )
 		if( DotProduct( normal, point ) - dist > WCONVEX_EPSILON ) {
 			return false;
 		}
-	} // end for
+	}
 	return true;
-} // end of the function InsideWinding
+}
 
 int InsideFace( dface_t* face, vec3_t point )
 {
@@ -376,9 +376,9 @@ int InsideFace( dface_t* face, vec3_t point )
 		if( DotProduct( normal, point ) - dist > WCONVEX_EPSILON ) {
 			return false;
 		}
-	} // end for
+	}
 	return true;
-} // end of the function InsideFace
+}
 //===========================================================================
 // returns the amount the face and the winding overlap
 //
@@ -402,7 +402,7 @@ float Q2_FaceOnWinding( q2_dface_t* face, winding_t* winding )
 	if( face->side ) {
 		VectorNegate( plane.normal, plane.normal );
 		plane.dist = -plane.dist;
-	} // end if
+	}
 	for( i = 0; i < face->numedges && w; i++ ) {
 		// get the first and second vertex of the edge
 		edgenum = q2_dsurfedges[face->firstedge + i];
@@ -418,14 +418,14 @@ float Q2_FaceOnWinding( q2_dface_t* face, winding_t* winding )
 		dist = DotProduct( normal, v1 );
 		//
 		ChopWindingInPlace( &w, normal, dist, -0.1 ); // CLIP_EPSILON
-	} // end for
+	}
 	if( w ) {
 		area = WindingArea( w );
 		FreeWinding( w );
 		return area;
-	} // end if
+	}
 	return 0;
-} // end of the function Q2_FaceOnWinding
+}
 //===========================================================================
 // creates a winding for the given brush side on the given brush
 //
@@ -457,9 +457,9 @@ winding_t* Q2_BrushSideWinding( dbrush_t* brush, dbrushside_t* baseside )
 		//
 		plane = &dplanes[side->planenum ^ 1];
 		ChopWindingInPlace( &w, plane->normal, plane->dist, -0.1 ); // CLIP_EPSILON);
-	} // end for
+	}
 	return w;
-} // end of the function Q2_BrushSideWinding
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -476,11 +476,11 @@ int Q2_HintSkipBrush( dbrush_t* brush )
 		if( brushside->texinfo > 0 ) {
 			if( texinfo[brushside->texinfo].flags & ( SURF_SKIP | SURF_HINT ) ) {
 				return true;
-			} // end if
-		} // end if
-	} // end for
+			}
+		}
+	}
 	return false;
-} // end of the function Q2_HintSkipBrush
+}
 //===========================================================================
 // fix screwed brush texture references
 //
@@ -514,15 +514,13 @@ void	 Q2_FixTextureReferences()
 			if( !w ) {
 				brushsidetextured[brush->firstside + j] = true;
 				continue;
-			} // end if
-			else {
+			} else {
 				// RemoveEqualPoints(w, 0.2);
 				if( WindingIsTiny( w ) ) {
 					FreeWinding( w );
 					brushsidetextured[brush->firstside + j] = true;
 					continue;
-				} // end if
-				else {
+				} else {
 					we = WindingError( w );
 					if( we == WE_NOTENOUGHPOINTS || we == WE_SMALLAREA || we == WE_POINTBOGUSRANGE
 						//						|| we == WE_NONCONVEX
@@ -530,12 +528,12 @@ void	 Q2_FixTextureReferences()
 						FreeWinding( w );
 						brushsidetextured[brush->firstside + j] = true;
 						continue;
-					} // end if
-				} // end else
-			} // end else
+					}
+				}
+			}
 			if( WindingArea( w ) < 20 ) {
 				brushsidetextured[brush->firstside + j] = true;
-			} // end if
+			}
 			// find a face for texturing this brush
 			for( k = 0; k < numfaces; k++ ) {
 				face = &dfaces[k];
@@ -548,12 +546,12 @@ void	 Q2_FixTextureReferences()
 					brushside->texinfo						= face->texinfo;
 					brushsidetextured[brush->firstside + j] = true;
 					break;
-				} // end if
-			} // end for
+				}
+			}
 			FreeWinding( w );
-		} // end for
-	} // end for
-} // end of the function Q2_FixTextureReferences*/
+		}
+	}
+}
 
 // #endif //ME
 
@@ -808,7 +806,7 @@ void Q2_SwapBSPFile( qboolean todisk )
 		dvis->bitofs[i][0] = LittleLong( dvis->bitofs[i][0] );
 		dvis->bitofs[i][1] = LittleLong( dvis->bitofs[i][1] );
 	}
-} // end of the function Q2_SwapBSPFile
+}
 
 dheader_t* header;
 
@@ -830,7 +828,7 @@ int		   Q2_CopyLump( int lump, void* dest, int size, int maxsize )
 	memcpy( dest, ( byte* )header + ofs, length );
 
 	return length / size;
-} // end of the function Q2_CopyLump
+}
 
 /*
 =============
@@ -888,7 +886,7 @@ void Q2_LoadBSPFile( char* filename, int offset, int length )
 	Q2_SwapBSPFile( false );
 
 	Q2_FixTextureReferences();
-} // end of the function Q2_LoadBSPFile
+}
 
 /*
 =============
@@ -932,7 +930,7 @@ void Q2_LoadBSPFileTexinfo( char* filename )
 	FreeMemory( header ); // everything has been copied out
 
 	Q2_SwapBSPFile( false );
-} // end of the function Q2_LoadBSPFileTexinfo
+}
 
 //============================================================================
 
@@ -948,7 +946,7 @@ void	  Q2_AddLump( int lumpnum, void* data, int len )
 	lump->fileofs = LittleLong( ftell( wadfile ) );
 	lump->filelen = LittleLong( len );
 	SafeWrite( wadfile, data, ( len + 3 ) & ~3 );
-} // end of the function Q2_AddLump
+}
 
 /*
 =============
@@ -994,7 +992,7 @@ void Q2_WriteBSPFile( char* filename )
 	fseek( wadfile, 0, SEEK_SET );
 	SafeWrite( wadfile, header, sizeof( dheader_t ) );
 	fclose( wadfile );
-} // end of the function Q2_WriteBSPFile
+}
 
 //============================================================================
 
@@ -1034,7 +1032,7 @@ void Q2_PrintBSPFileSizes()
 	// ENDNEW
 	printf( "      lightdata    %7i\n", lightdatasize );
 	printf( "      visdata      %7i\n", visdatasize );
-} // end of the function Q2_PrintBSPFileSizes
+}
 
 /*
 ================
@@ -1052,10 +1050,10 @@ void Q2_ParseEntities()
 	SetScriptFlags( script, SCFL_NOSTRINGWHITESPACES | SCFL_NOSTRINGESCAPECHARS );
 
 	while( ParseEntity( script ) ) {
-	} // end while
+	}
 
 	FreeScript( script );
-} // end of the function Q2_ParseEntities
+}
 
 /*
 ================
@@ -1102,4 +1100,4 @@ void Q2_UnparseEntities()
 		}
 	}
 	entdatasize = end - buf + 1;
-} // end of the function Q2_UnparseEntities
+}

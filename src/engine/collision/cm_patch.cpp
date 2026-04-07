@@ -956,7 +956,7 @@ void CM_AddFacetBevels( facet_t* facet )
 					if( !facet->borderInward[facet->numBorders] ) {
 						VectorNegate( newplane, newplane );
 						newplane[3] = -newplane[3];
-					} // end if
+					}
 					ChopWindingInPlace( &w2, newplane, newplane[3], 0.1f );
 					if( !w2 ) {
 						Com_DPrintf( "WARNING: CM_AddFacetBevels... invalid bevel\n" );
@@ -1686,7 +1686,7 @@ void CM_DrawDebugSurface( void ( *drawPoly )( int color, int numPoints, float* p
 				} else {
 					v1[n] = mins[n];
 				}
-			} // end for
+			}
 			VectorNegate( plane, v2 );
 			plane[3] += fabs( DotProduct( v1, v2 ) );
 			//*/
@@ -1721,7 +1721,7 @@ void CM_DrawDebugSurface( void ( *drawPoly )( int color, int numPoints, float* p
 					} else {
 						v1[n] = mins[n];
 					}
-				} // end for
+				}
 				VectorNegate( plane, v2 );
 				plane[3] -= fabs( DotProduct( v1, v2 ) );
 

@@ -2,8 +2,12 @@ main/save
 main/hunkusage.dat
 main/wolfconfig.cfg
 src/build
+src/chats
+src/diags
 memory.log
 *.pk3
 *.zip
 *.exe
 *.dll
+__pycache__/
+*doxy_ai_cache.json

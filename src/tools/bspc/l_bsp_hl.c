@@ -181,7 +181,7 @@ void			HL_AllocMaxBSP()
 	Log_Print( "allocated " );
 	PrintMemorySize( hl_allocatedbspmem );
 	Log_Print( " of BSP memory\n" );
-} // end of the function HL_AllocMaxBSP
+}
 
 void HL_FreeMaxBSP()
 {
@@ -250,7 +250,7 @@ void HL_FreeMaxBSP()
 	PrintMemorySize( hl_allocatedbspmem );
 	Log_Print( " of BSP memory\n" );
 	hl_allocatedbspmem = 0;
-} // end of the function HL_FreeMaxBSP
+}
 // #endif //ME
 
 /*
@@ -487,7 +487,7 @@ void HL_SwapBSPFile( qboolean todisk )
 		hl_dedges[i].v[0] = LittleShort( hl_dedges[i].v[0] );
 		hl_dedges[i].v[1] = LittleShort( hl_dedges[i].v[1] );
 	}
-} // end of the function HL_SwapBSPFile
+}
 
 hl_dheader_t* hl_header;
 
@@ -780,10 +780,10 @@ void HL_ParseEntities()
 	SetScriptFlags( script, SCFL_NOSTRINGWHITESPACES | SCFL_NOSTRINGESCAPECHARS );
 
 	while( ParseEntity( script ) ) {
-	} // end while
+	}
 
 	FreeScript( script );
-} // end of the function HL_ParseEntities
+}
 
 /*
 ================
@@ -824,7 +824,7 @@ void HL_UnparseEntities()
 		}
 	}
 	hl_entdatasize = end - buf + 1;
-} // end of the function HL_UnparseEntities
+}
 
 /*
 void    SetKeyValue (entity_t *ent, char *key, char *value)

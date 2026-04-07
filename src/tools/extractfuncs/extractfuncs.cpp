@@ -66,7 +66,7 @@ int FileLength (FILE *f)
 	fseek (f, pos, SEEK_SET);
 
 	return end;
-} //end of the function FileLength
+}
 
 void Remove(char *buf, int length, char *from, char *to, char *skip)
 {
@@ -81,24 +81,24 @@ void Remove(char *buf, int length, char *from, char *to, char *skip)
 				if (!strncmp(&buf[i], skip, strlen(skip)))
 				{
 					i += strlen(skip);
-				} //end if
-			} //end if
+				}
+			}
 			if ((unsigned) length - i > strlen(to))
 			{
 				if (!strncmp(&buf[i], to, strlen(to)))
 				{
 					length = i + strlen(to);
-				} //end if
-			} //end if
+				}
+			}
 			if (buf[i]) buf[i] = 'a';
-		} //end if
+		}
 		else
 		{
 			if ((unsigned) length - i < strlen(from)) return;
 			if (!strncmp(&buf[i], from, strlen(from))) remove = true;
-		} //end else
-	} //end for
-} //end of the function Remove
+		}
+	}
+}
 
 void main(int argc, char *argv[])
 {
@@ -127,7 +127,7 @@ void main(int argc, char *argv[])
 	fclose(fp);
 
 	free(ptr);
-} //end of the function main
+}
 */
 
 typedef struct replacefunc_s {
@@ -166,7 +166,7 @@ void		   DumpReplaceFunctions()
 	Log_Open( path );
 	for( rf = replacefuncs; rf; rf = rf->next ) {
 		Log_Print( "{\"%s\", (byte *)%s},\n", rf->name, rf->name );
-	} // end for
+	}
 	Log_Print( "{0, 0}\n" );
 	Log_Close();
 
@@ -225,7 +225,7 @@ void		   DumpReplaceFunctions()
 	Log_Open( path );
 	for( rf = replacefuncs; rf; rf = rf->next ) {
 		Log_Print( "extern %s;\n", rf->dec );
-	} // end for
+	}
 	Log_Close();
 
 	// if it's different, rename the file over the real header
@@ -282,8 +282,7 @@ void		   DumpReplaceFunctions()
 	if( updated ) {
 		printf( "Updated the function table, recompile required.\n" );
 	}
-
-} // end of the function DumpReplaceFunctions
+}
 
 replacefunc_t* FindFunctionName( char* funcname )
 {
@@ -293,9 +292,9 @@ replacefunc_t* FindFunctionName( char* funcname )
 		if( !strcmp( f->name, funcname ) ) {
 			return f;
 		}
-	} // end for
+	}
 	return NULL;
-} // end of the function FindFunctionName
+}
 
 int MayScrewUp( char* funcname )
 {
@@ -309,7 +308,7 @@ int MayScrewUp( char* funcname )
 		return false;
 	}
 	return true;
-} // end of the function MayScrewUp
+}
 
 typedef struct tokenList_s {
 	token_t				token;
@@ -381,8 +380,7 @@ void AddFunctionName( char* funcname, char* filename, tokenList_t* head )
 	list	  = head;
 	f->dec[0] = '\0';
 	ConcatDec( list, f->dec, 0 );
-
-} // end of the function AddFunctionName
+}
 
 void AddTokenToList( tokenList_t** head, token_t* token )
 {
@@ -447,13 +445,13 @@ void GetFunctionNamesFromFile( char* filename )
 	if( !source ) {
 		Error( "error opening %s", filename );
 		return;
-	} // end if
+	}
 	//	printf("loaded %s\n", filename);
 	//	if (!PC_ReadToken(source, &lasttoken))
 	//	{
 	//		FreeSource(source);
 	//		return;
-	//	} //end if
+	//	}
 	while( 1 ) {
 		if( !PC_ReadToken( source, &token ) ) {
 			break;
@@ -485,8 +483,7 @@ void GetFunctionNamesFromFile( char* filename )
 							AddTokenToList( &listHead, &token );
 							if( token.string[0] == '(' ) {
 								brace++;
-							} // end if
-							else if( token.string[0] == ')' ) {
+							} else if( token.string[0] == ')' ) {
 								brace--;
 								if( brace <= 0 ) {
 									if( !PC_ReadToken( source, &token ) ) {
@@ -496,26 +493,26 @@ void GetFunctionNamesFromFile( char* filename )
 										indent++;
 										if( !isStatic && MayScrewUp( lasttoken.string ) ) {
 											AddFunctionName( lasttoken.string, filename, listHead );
-										} // end if
-									} // end if
+										}
+									}
 									break;
-								} // end if
-							} // end if
-						} // end while
-					} // end if
+								}
+							}
+						}
+					}
 					break;
 				} // end case
-			} // end if
-		} // end switch
+			}
+		}
 		if( token.type == TT_NAME ) {
 			if( token.string[0] == 's' && !strcmp( token.string, "static" ) ) {
 				isStatic = 1;
 			}
 		}
 		memcpy( &lasttoken, &token, sizeof( token_t ) );
-	} // end while
+	}
 	FreeSource( source );
-} // end of the function GetFunctionNamesFromFile
+}
 
 void WriteWhiteSpace( FILE* fp, script_t* script )
 {
@@ -528,8 +525,8 @@ void WriteWhiteSpace( FILE* fp, script_t* script )
 			fputc( c, fp );
 		}
 		c = PS_NextWhiteSpaceChar( script );
-	} // end while
-} // end of the function WriteWhiteSpace
+	}
+}
 
 void WriteString( FILE* fp, script_t* script )
 {
@@ -539,8 +536,8 @@ void WriteString( FILE* fp, script_t* script )
 	while( ptr < script->script_p ) {
 		fputc( *ptr, fp );
 		ptr++;
-	} // end while
-} // end of the function WriteString
+	}
+}
 
 void ScrewUpFile( char* oldfile, char* newfile )
 {
@@ -572,16 +569,15 @@ void ScrewUpFile( char* oldfile, char* newfile )
 			while( *ptr ) {
 				fputc( *ptr, fp );
 				ptr++;
-			} // end while
-		} // end if
-		else {
+			}
+		} else {
 			WriteString( fp, script );
-		} // end else
-	} // end while
+		}
+	}
 	WriteWhiteSpace( fp, script );
 	FreeMemory( script );
 	fclose( fp );
-} // end of the function ScrewUpFile
+}
 
 int verbose = 0;
 
@@ -595,7 +591,7 @@ void main( int argc, char* argv[] )
 
 	if( argc < 2 ) {
 		Error( "USAGE: screwup <file filter>\n" );
-	} // end if
+	}
 
 	handle = ( HWND )FindFirstFile( argv[1], &filedata );
 	done   = ( handle == INVALID_HANDLE_VALUE );
@@ -603,12 +599,12 @@ void main( int argc, char* argv[] )
 		if( !( filedata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) ) {
 			//
 			GetFunctionNamesFromFile( filedata.cFileName );
-		} // end if
+		}
 		// find the next file
 		done = !FindNextFile( handle, &filedata );
-	} // end while
+	}
 	DumpReplaceFunctions();
-} // end of the function main
+}
 
 #else
 
@@ -629,7 +625,7 @@ int main( int argc, char* argv[] )
 
 	if( argc < 2 ) {
 		Usage();
-	} // end if
+	}
 
 	if( !Q_stricmp( argv[1], "-o" ) ) {
 		if( argc < 5 ) {

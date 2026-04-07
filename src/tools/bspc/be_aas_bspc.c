@@ -77,7 +77,7 @@ void				   AAS_Error( char* fmt, ... )
 	va_end( argptr );
 
 	Error( text );
-} // end of the function AAS_Error
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -87,7 +87,7 @@ void				   AAS_Error( char* fmt, ... )
 int Sys_MilliSeconds()
 {
 	return clock() * 1000 / CLOCKS_PER_SEC;
-} // end of the function Sys_MilliSeconds
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -96,7 +96,7 @@ int Sys_MilliSeconds()
 //===========================================================================
 void AAS_DebugLine( vec3_t start, vec3_t end, int color )
 {
-} // end of the function AAS_DebugLine
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -105,7 +105,7 @@ void AAS_DebugLine( vec3_t start, vec3_t end, int color )
 //===========================================================================
 void AAS_ClearShownDebugLines()
 {
-} // end of the function AAS_ClearShownDebugLines
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -115,7 +115,7 @@ void AAS_ClearShownDebugLines()
 char* BotImport_BSPEntityData()
 {
 	return CM_EntityString();
-} // end of the function AAS_GetEntityData
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -141,7 +141,7 @@ void BotImport_Trace( bsp_trace_t* bsptrace, vec3_t start, vec3_t mins, vec3_t m
 	bsptrace->sidenum		 = 0;
 	bsptrace->startsolid	 = result.startsolid;
 	bsptrace->surface.flags	 = result.surfaceFlags;
-} // end of the function BotImport_Trace
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -151,7 +151,7 @@ void BotImport_Trace( bsp_trace_t* bsptrace, vec3_t start, vec3_t mins, vec3_t m
 int BotImport_PointContents( vec3_t p )
 {
 	return CM_PointContents( p, worldmodel );
-} // end of the function BotImport_PointContents
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -161,7 +161,7 @@ int BotImport_PointContents( vec3_t p )
 void* BotImport_GetMemory( int size )
 {
 	return GetMemory( size );
-} // end of the function BotImport_GetMemory
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -180,7 +180,7 @@ void BotImport_Print( int type, char* fmt, ... )
 		Log_Write( buf );
 	}
 	va_end( argptr );
-} // end of the function BotImport_Print
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -203,8 +203,8 @@ void BotImport_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t outmi
 		for( i = 0; i < 3; i++ ) {
 			mins[i] = ( mins[i] + maxs[i] ) * 0.5 - max;
 			maxs[i] = ( mins[i] + maxs[i] ) * 0.5 + max;
-		} // end for
-	} // end if
+		}
+	}
 	if( outmins ) {
 		VectorCopy( mins, outmins );
 	}
@@ -214,7 +214,7 @@ void BotImport_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t outmi
 	if( origin ) {
 		VectorClear( origin );
 	}
-} // end of the function BotImport_BSPModelMinsMaxsOrigin
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -233,7 +233,7 @@ void Com_DPrintf( char* fmt, ... )
 		Log_Write( buf );
 	}
 	va_end( argptr );
-} // end of the function Com_DPrintf
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -279,7 +279,7 @@ void AAS_InitBotImport()
 	botimport.PointContents			 = BotImport_PointContents;
 	botimport.Print					 = BotImport_Print;
 	botimport.BSPModelMinsMaxsOrigin = BotImport_BSPModelMinsMaxsOrigin;
-} // end of the function AAS_InitBotImport
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -323,7 +323,7 @@ void AAS_CalcReachAndClusters( struct quakefile_s* qf )
 	}
 	// calculate clusters
 	AAS_InitClustering();
-} // end of the function AAS_CalcReachAndClusters
+}
 
 // Ridah
 void AAS_SetWorldPointer( aas_t* newaasworld )

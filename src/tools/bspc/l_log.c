@@ -63,19 +63,19 @@ void	  Log_Open( char* filename )
 	if( !filename || !strlen( filename ) ) {
 		printf( "openlog <filename>\n" );
 		return;
-	} // end if
+	}
 	if( logfile.fp ) {
 		printf( "log file %s is already opened\n", logfile.filename );
 		return;
-	} // end if
+	}
 	logfile.fp = fopen( filename, "wb" );
 	if( !logfile.fp ) {
 		printf( "can't open the log file %s\n", filename );
 		return;
-	} // end if
+	}
 	strncpy( logfile.filename, filename, MAX_LOGFILENAMESIZE );
 	printf( "Opened log %s\n", logfile.filename );
-} // end of the function Log_Create
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -87,14 +87,14 @@ void Log_Close()
 	if( !logfile.fp ) {
 		printf( "no log file to close\n" );
 		return;
-	} // end if
+	}
 	if( fclose( logfile.fp ) ) {
 		printf( "can't close log file %s\n", logfile.filename );
 		return;
-	} // end if
+	}
 	logfile.fp = NULL;
 	printf( "Closed log %s\n", logfile.filename );
-} // end of the function Log_Close
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -106,7 +106,7 @@ void Log_Shutdown()
 	if( logfile.fp ) {
 		Log_Close();
 	}
-} // end of the function Log_Shutdown
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -123,10 +123,10 @@ void Log_UnifyEndOfLine( char* buf )
 				memmove( &buf[i + 1], &buf[i], strlen( &buf[i] ) + 1 );
 				buf[i] = '\r';
 				i++;
-			} // end if
-		} // end if
-	} // end for
-} // end of the function Log_UnifyEndOfLine
+			}
+		}
+	}
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -148,14 +148,14 @@ void Log_Print( char* fmt, ... )
 #else
 		printf( "%s", buf );
 #endif // WINBSPS
-	} // end if
+	}
 
 	if( logfile.fp ) {
 		Log_UnifyEndOfLine( buf );
 		fprintf( logfile.fp, "%s", buf );
 		fflush( logfile.fp );
-	} // end if
-} // end of the function Log_Print
+	}
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -176,7 +176,7 @@ void Log_Write( char* fmt, ... )
 	Log_UnifyEndOfLine( buf );
 	fprintf( logfile.fp, "%s", buf );
 	fflush( logfile.fp );
-} // end of the function Log_Write
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -202,7 +202,7 @@ void Log_WriteTimeStamped( char* fmt, ... )
 	va_end( ap );
 	logfile.numwrites++;
 	fflush( logfile.fp );
-} // end of the function Log_Write
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -212,7 +212,7 @@ void Log_WriteTimeStamped( char* fmt, ... )
 FILE* Log_FileStruct()
 {
 	return logfile.fp;
-} // end of the function Log_FileStruct
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -224,4 +224,4 @@ void Log_Flush()
 	if( logfile.fp ) {
 		fflush( logfile.fp );
 	}
-} // end of the function Log_Flush
+}

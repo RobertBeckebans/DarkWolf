@@ -129,9 +129,9 @@ void	PrintContents( int contents )
 	for( i = 0; contentnames[i].value; i++ ) {
 		if( contents & contentnames[i].value ) {
 			botimport.Print( PRT_MESSAGE, "%s\n", contentnames[i].name );
-		} // end if
-	} // end for
-} // end of the function PrintContents
+		}
+	}
+}
 
 #endif // BSP_DEBUG
 //===========================================================================
@@ -146,7 +146,7 @@ bsp_trace_t AAS_Trace( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int p
 	bsp_trace_t bsptrace;
 	botimport.Trace( &bsptrace, start, mins, maxs, end, passent, contentmask );
 	return bsptrace;
-} // end of the function AAS_Trace
+}
 //===========================================================================
 // returns the contents at the given point
 //
@@ -157,7 +157,7 @@ bsp_trace_t AAS_Trace( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int p
 int AAS_PointContents( vec3_t point )
 {
 	return botimport.PointContents( point );
-} // end of the function AAS_PointContents
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -172,9 +172,9 @@ qboolean AAS_EntityCollision( int entnum, vec3_t start, vec3_t boxmins, vec3_t b
 	if( enttrace.fraction < trace->fraction ) {
 		memcpy( trace, &enttrace, sizeof( bsp_trace_t ) );
 		return qtrue;
-	} // end if
+	}
 	return qfalse;
-} // end of the function AAS_EntityCollision
+}
 //===========================================================================
 // returns true if in Potentially Hearable Set
 //
@@ -185,7 +185,7 @@ qboolean AAS_EntityCollision( int entnum, vec3_t start, vec3_t boxmins, vec3_t b
 qboolean AAS_inPVS( vec3_t p1, vec3_t p2 )
 {
 	return botimport.inPVS( p1, p2 );
-} // end of the function AAS_InPVS
+}
 //===========================================================================
 // returns true if in Potentially Visible Set
 //
@@ -196,7 +196,7 @@ qboolean AAS_inPVS( vec3_t p1, vec3_t p2 )
 qboolean AAS_inPHS( vec3_t p1, vec3_t p2 )
 {
 	return qtrue;
-} // end of the function AAS_inPHS
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -206,7 +206,7 @@ qboolean AAS_inPHS( vec3_t p1, vec3_t p2 )
 void AAS_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t mins, vec3_t maxs, vec3_t origin )
 {
 	botimport.BSPModelMinsMaxsOrigin( modelnum, angles, mins, maxs, origin );
-} // end of the function AAS_BSPModelMinsMaxs
+}
 //===========================================================================
 // unlinks the entity from all leaves
 //
@@ -216,7 +216,7 @@ void AAS_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t mins, vec3_
 //===========================================================================
 void AAS_UnlinkFromBSPLeaves( bsp_link_t* leaves )
 {
-} // end of the function AAS_UnlinkFromBSPLeaves
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -226,7 +226,7 @@ void AAS_UnlinkFromBSPLeaves( bsp_link_t* leaves )
 bsp_link_t* AAS_BSPLinkEntity( vec3_t absmins, vec3_t absmaxs, int entnum, int modelnum )
 {
 	return NULL;
-} // end of the function AAS_BSPLinkEntity
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -236,7 +236,7 @@ bsp_link_t* AAS_BSPLinkEntity( vec3_t absmins, vec3_t absmaxs, int entnum, int m
 int AAS_BoxEntities( vec3_t absmins, vec3_t absmaxs, int* list, int maxcount )
 {
 	return 0;
-} // end of the function AAS_BoxEntities
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -250,7 +250,7 @@ int AAS_NextBSPEntity( int ent )
 		return ent;
 	}
 	return 0;
-} // end of the function AAS_NextBSPEntity
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -262,9 +262,9 @@ int AAS_BSPEntityInRange( int ent )
 	if( ent <= 0 || ent >= bspworld.numentities ) {
 		botimport.Print( PRT_MESSAGE, "bsp entity out of range\n" );
 		return qfalse;
-	} // end if
+	}
 	return qtrue;
-} // end of the function AAS_BSPEntityInRange
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -284,10 +284,10 @@ int AAS_ValueForBSPEpairKey( int ent, char* key, char* value, int size )
 			strncpy( value, epair->value, size - 1 );
 			value[size - 1] = '\0';
 			return qtrue;
-		} // end if
-	} // end for
+		}
+	}
 	return qfalse;
-} // end of the function AAS_FindBSPEpair
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -310,7 +310,7 @@ int AAS_VectorForBSPEpairKey( int ent, char* key, vec3_t v )
 	v[1] = v2;
 	v[2] = v3;
 	return qtrue;
-} // end of the function AAS_VectorForBSPEpairKey
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -327,7 +327,7 @@ int AAS_FloatForBSPEpairKey( int ent, char* key, float* value )
 	}
 	*value = atof( buf );
 	return qtrue;
-} // end of the function AAS_FloatForBSPEpairKey
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -344,7 +344,7 @@ int AAS_IntForBSPEpairKey( int ent, char* key, int* value )
 	}
 	*value = atoi( buf );
 	return qtrue;
-} // end of the function AAS_IntForBSPEpairKey
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -369,14 +369,14 @@ void AAS_FreeBSPEntities()
 				if (epair->key) FreeMemory(epair->key);
 				if (epair->value) FreeMemory(epair->value);
 				FreeMemory(epair);
-			} //end for
-		} //end for
+			}
+		}
 	*/
 	if( bspworld.ebuffer ) {
 		FreeMemory( bspworld.ebuffer );
 	}
 	bspworld.numentities = 0;
-} // end of the function AAS_FreeBSPEntities
+}
 //===========================================================================
 //
 // Parameter:			-
@@ -408,11 +408,11 @@ void AAS_ParseBSPEntities()
 			AAS_FreeBSPEntities();
 			FreeScript( script );
 			return;
-		} // end if
+		}
 		if( bspworld.numentities >= MAX_BSPENTITIES ) {
 			botimport.Print( PRT_MESSAGE, "too many entities in BSP file\n" );
 			break;
-		} // end if
+		}
 		while( PS_ReadToken( script, &token ) ) {
 			if( !strcmp( token.string, "}" ) ) {
 				break;
@@ -423,24 +423,24 @@ void AAS_ParseBSPEntities()
 				AAS_FreeBSPEntities();
 				FreeScript( script );
 				return;
-			} // end if
+			}
 			StripDoubleQuotes( token.string );
 			bufsize += strlen( token.string ) + 1;
 			if( !PS_ExpectTokenType( script, TT_STRING, 0, &token ) ) {
 				AAS_FreeBSPEntities();
 				FreeScript( script );
 				return;
-			} // end if
+			}
 			StripDoubleQuotes( token.string );
 			bufsize += strlen( token.string ) + 1;
-		} // end while
+		}
 		if( strcmp( token.string, "}" ) ) {
 			ScriptError( script, "missing }\n" );
 			AAS_FreeBSPEntities();
 			FreeScript( script );
 			return;
-		} // end if
-	} // end while
+		}
+	}
 	FreeScript( script );
 
 	buffer			 = ( byte* )GetClearedHunkMemory( bufsize );
@@ -475,15 +475,15 @@ void AAS_ParseBSPEntities()
 				AAS_FreeBSPEntities();
 				FreeScript( script );
 				return;
-			} // end if
+			}
 			StripDoubleQuotes( token.string );
 			epair->value = ( char* )buftrav;
 			buftrav += ( strlen( token.string ) + 1 );
 			strcpy( epair->value, token.string );
-		} // end while
-	} // end while
+		}
+	}
 	FreeScript( script );
-} // end of the function AAS_ParseBSPEntities
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -493,7 +493,7 @@ void AAS_ParseBSPEntities()
 int AAS_BSPTraceLight( vec3_t start, vec3_t end, vec3_t endpos, int* red, int* green, int* blue )
 {
 	return 0;
-} // end of the function AAS_BSPTraceLight
+}
 //===========================================================================
 //
 // Parameter:				-
@@ -512,7 +512,7 @@ void AAS_DumpBSPData()
 	//
 	bspworld.loaded = qfalse;
 	memset( &bspworld, 0, sizeof( bspworld ) );
-} // end of the function AAS_DumpBSPData
+}
 //===========================================================================
 // load an bsp file
 //
@@ -529,4 +529,4 @@ int AAS_LoadBSPFile()
 	AAS_ParseBSPEntities();
 	bspworld.loaded = qtrue;
 	return BLERR_NOERROR;
-} // end of the function AAS_LoadBSPFile
+}
