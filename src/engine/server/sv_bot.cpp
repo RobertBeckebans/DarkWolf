@@ -63,6 +63,7 @@ int						SV_BotAllocateClient()
 		if( i < 1 ) {
 			continue;
 		}
+
 		// done.
 		if( cl->state == CS_FREE ) {
 			break;
@@ -95,9 +96,11 @@ void SV_BotFreeClient( int clientNum )
 	if( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 		Com_Error( ERR_DROP, "SV_BotFreeClient: bad clientNum: %i", clientNum );
 	}
+
 	cl			= &svs.clients[clientNum];
 	cl->state	= CS_FREE;
 	cl->name[0] = 0;
+
 	if( cl->gentity ) {
 		cl->gentity->r.svFlags &= ~SVF_BOT;
 	}
@@ -118,52 +121,66 @@ void BotDrawDebugPolygons( void ( *drawPoly )( int color, int numPoints, float* 
 	if( !bot_enable ) {
 		return;
 	}
+
 	// bot debugging
 	if( !bot_debug ) {
 		bot_debug = Cvar_Get( "bot_debug", "0", 0 );
 	}
+
 	// show reachabilities
 	if( !bot_reachability ) {
 		bot_reachability = Cvar_Get( "bot_reachability", "0", 0 );
 	}
+
 	// show ground faces only
 	if( !bot_groundonly ) {
 		bot_groundonly = Cvar_Get( "bot_groundonly", "1", 0 );
 	}
+
 	// get the hightlight area
 	if( !bot_highlightarea ) {
 		bot_highlightarea = Cvar_Get( "bot_highlightarea", "0", 0 );
 	}
+
 	//
 	if( !bot_testhidepos ) {
 		bot_testhidepos = Cvar_Get( "bot_testhidepos", "0", 0 );
 	}
+
 	//
 	if( !bot_testroutevispos ) {
 		bot_testroutevispos = Cvar_Get( "bot_testroutevispos", "0", 0 );
 	}
+
 	//
 	if( bot_debug->integer ) {
 		parm0 = 0;
+
 		if( svs.clients[0].lastUsercmd.buttons & BUTTON_ATTACK ) {
 			parm0 |= 1;
 		}
+
 		if( bot_reachability->integer ) {
 			parm0 |= 2;
 		}
+
 		if( bot_groundonly->integer ) {
 			parm0 |= 4;
 		}
+
 		botlib_export->BotLibVarSet( "bot_highlightarea", bot_highlightarea->string );
 		botlib_export->BotLibVarSet( "bot_testhidepos", bot_testhidepos->string );
 		botlib_export->BotLibVarSet( "bot_testroutevispos", bot_testroutevispos->string );
 		botlib_export->Test( parm0, NULL, svs.clients[0].gentity->r.currentOrigin, svs.clients[0].gentity->r.currentAngles );
 	}
+
 	for( i = 0; i < MAX_DEBUGPOLYS; i++ ) {
 		poly = &debugpolygons[i];
+
 		if( !poly->inuse ) {
 			continue;
 		}
+
 		drawPoly( poly->color, poly->numPoints, ( float* )poly->points );
 		// Com_Printf("poly %i, numpoints = %d\n", i, poly->numPoints);
 	}
@@ -188,22 +205,27 @@ void QDECL BotImport_Print( int type, char* fmt, ... )
 			Com_Printf( "%s", str );
 			break;
 		}
+
 		case PRT_WARNING: {
 			Com_Printf( S_COLOR_YELLOW "Warning: %s", str );
 			break;
 		}
+
 		case PRT_ERROR: {
 			Com_Printf( S_COLOR_RED "Error: %s", str );
 			break;
 		}
+
 		case PRT_FATAL: {
 			Com_Printf( S_COLOR_RED "Fatal: %s", str );
 			break;
 		}
+
 		case PRT_EXIT: {
 			Com_Error( ERR_DROP, S_COLOR_RED "Exit: %s", str );
 			break;
 		}
+
 		default: {
 			Com_Printf( "unknown print type\n" );
 			break;
@@ -309,22 +331,27 @@ void BotImport_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t outmi
 
 	h = CM_InlineModel( modelnum );
 	CM_ModelBounds( h, mins, maxs );
+
 	// if the model is rotated
 	if( ( angles[0] || angles[1] || angles[2] ) ) {
 		// expand for rotation
 
 		max = RadiusFromBounds( mins, maxs );
+
 		for( i = 0; i < 3; i++ ) {
 			mins[i] = -max;
 			maxs[i] = max;
 		}
 	}
+
 	if( outmins ) {
 		VectorCopy( mins, outmins );
 	}
+
 	if( outmaxs ) {
 		VectorCopy( maxs, outmaxs );
 	}
+
 	if( origin ) {
 		VectorClear( origin );
 	}
@@ -360,6 +387,7 @@ void* BotImport_HunkAlloc( int size )
 	if( Hunk_CheckMark() ) {
 		Com_Error( ERR_DROP, "SV_Bot_HunkAlloc: Alloc with marks already set\n" );
 	}
+
 	return Hunk_Alloc( size, h_high );
 }
 
@@ -378,9 +406,11 @@ int BotImport_DebugPolygonCreate( int color, int numPoints, vec3_t* points )
 			break;
 		}
 	}
+
 	if( i >= MAX_DEBUGPOLYS ) {
 		return 0;
 	}
+
 	poly			= &debugpolygons[i];
 	poly->inuse		= qtrue;
 	poly->color		= color;
@@ -457,8 +487,10 @@ void BotImport_DebugLineShow( int line, vec3_t start, vec3_t end, int color )
 	VectorSubtract( end, start, dir );
 	VectorNormalize( dir );
 	dot = DotProduct( dir, up );
+
 	if( dot > 0.99 || dot < -0.99 ) {
 		VectorSet( cross, 1, 0, 0 );
+
 	} else {
 		CrossProduct( dir, up, cross );
 	}
@@ -493,6 +525,7 @@ void SV_BotFrame( int time )
 	if( !bot_enable ) {
 		return;
 	}
+
 	// NOTE: maybe the game is already shutdown
 	if( !gvm ) {
 		return;
@@ -580,6 +613,7 @@ qboolean BotImport_AICast_CheckAttackAtPos( int entnum, int enemy, vec3_t pos, q
 {
 	return gvm->AICastCheckAttackAtPos( entnum, enemy, pos, ducking, allowHitWorld );
 }
+
 // done.
 
 /*
@@ -592,9 +626,11 @@ void SV_BotInitBotLib()
 	botlib_import_t botlib_import;
 
 #if COPY_PROTECT
+
 	if( !Cvar_VariableValue( "fs_restrict" ) && !Sys_CheckCD() ) {
 		Com_Error( ERR_NEED_CD, "Game CD not in drive" );
 	}
+
 #else
 	Com_Printf( "Bypassing CD checks\n" );
 #endif
@@ -691,13 +727,16 @@ int EntityInPVS( int client, int entityNum )
 
 	cl = &svs.clients[client];
 	frame = &cl->frames[cl->netchan.outgoingSequence & PACKET_MASK];
+
 	for ( i = 0; i < frame->num_entities; i++ ) {
 		if ( svs.snapshotEntities[( frame->first_entity + i ) % svs.numSnapshotEntities].number == entityNum ) {
 			return qtrue;
 		}
 	}
+
 	return qfalse;
 }
+
 #endif
 
 /*
@@ -712,8 +751,10 @@ int SV_BotGetSnapshotEntity( int client, int sequence )
 
 	cl	  = &svs.clients[client];
 	frame = &cl->frames[cl->netchan.outgoingSequence & PACKET_MASK];
+
 	if( sequence < 0 || sequence >= frame->num_entities ) {
 		return -1;
 	}
+
 	return svs.snapshotEntities[( frame->first_entity + sequence ) % svs.numSnapshotEntities].number;
 }

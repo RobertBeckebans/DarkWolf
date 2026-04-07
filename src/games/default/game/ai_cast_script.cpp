@@ -266,6 +266,7 @@ qboolean				   AICast_EventMatch_StringEqual( cast_script_event_t* event, char* 
 {
 	if( !event->params || !event->params[0] || ( eventParm && !Q_strcasecmp( event->params, eventParm ) ) ) {
 		return qtrue;
+
 	} else {
 		return qfalse;
 	}
@@ -292,6 +293,7 @@ qboolean AICast_EventMatch_IntInRange( cast_script_event_t* event, char* eventPa
 
 	if( eventParm && eInt > int1 && eInt <= int2 ) {
 		return qtrue;
+
 	} else {
 		return qfalse;
 	}
@@ -332,6 +334,7 @@ cast_script_stack_action_t* AICast_ActionForString( cast_state_t* cs, char* stri
 				level.numSecrets++;
 				G_SendMissionStats();
 			}
+
 			return &scriptActions[i];
 		}
 	}
@@ -356,11 +359,14 @@ void AICast_ScriptLoad()
 	level.scriptAI = NULL;
 
 	sys->Cvar_VariableStringBuffer( "ai_scriptName", filename, sizeof( filename ) );
+
 	if( strlen( filename ) > 0 ) {
 		sys->Cvar_Register( &mapname, "ai_scriptName", "", CVAR_ROM );
+
 	} else {
 		sys->Cvar_Register( &mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM );
 	}
+
 	Q_strncpyz( filename, "maps/", sizeof( filename ) );
 	Q_strcat( filename, sizeof( filename ), mapname.string );
 	Q_strcat( filename, sizeof( filename ), ".ai" );
@@ -413,6 +419,7 @@ void AICast_ScriptParse( cast_state_t* cs )
 	}
 
 	ent = &g_entities[cs->entityNum];
+
 	if( !ent->aiName ) {
 		return;
 	}
@@ -436,6 +443,7 @@ void AICast_ScriptParse( cast_state_t* cs )
 			if( !wantName ) {
 				G_Error( "AICast_ScriptParse(), Error (line %d): '}' expected, end of script found.\n", COM_GetCurrentParseLine() );
 			}
+
 			break;
 		}
 
@@ -444,30 +452,39 @@ void AICast_ScriptParse( cast_state_t* cs )
 			if( inScript ) {
 				break;
 			}
+
 			if( wantName ) {
 				G_Error( "AICast_ScriptParse(), Error (line %d): '}' found, but not expected.\n", COM_GetCurrentParseLine() );
 			}
+
 			wantName = qtrue;
+
 		} else if( token[0] == '{' ) {
 			if( wantName ) {
 				G_Error( "AICast_ScriptParse(), Error (line %d): '{' found, NAME expected.\n", COM_GetCurrentParseLine() );
 			}
+
 		} else if( wantName ) {
 			if( !Q_strcasecmp( ent->aiName, token ) ) {
 				inScript	  = qtrue;
 				numEventItems = 0;
 			}
+
 			wantName = qfalse;
+
 		} else if( inScript ) {
 			if( !Q_strcasecmp( token, "attributes" ) ) {
 				// read in all the attributes
 				AICast_CheckLevelAttributes( cs, ent, &pScript );
 				continue;
 			}
+
 			eventNum = AICast_EventForString( token );
+
 			if( eventNum < 0 ) {
 				G_Error( "AICast_ScriptParse(), Error (line %d): unknown event: %s.\n", COM_GetCurrentParseLine(), token );
 			}
+
 			if( numEventItems >= MAX_SCRIPT_EVENTS ) {
 				G_Error( "AICast_ScriptParse(), Error (line %d): MAX_SCRIPT_EVENTS reached (%d)\n", COM_GetCurrentParseLine(), MAX_SCRIPT_EVENTS );
 			}
@@ -498,6 +515,7 @@ void AICast_ScriptParse( cast_state_t* cs )
 				if( strlen( params ) ) { // add a space between each param
 					Q_strcat( params, sizeof( params ), " " );
 				}
+
 				Q_strcat( params, sizeof( params ), token );
 			}
 
@@ -513,6 +531,7 @@ void AICast_ScriptParse( cast_state_t* cs )
 				}
 
 				action = AICast_ActionForString( cs, token );
+
 				if( !action ) {
 					G_Error( "AICast_ScriptParse(), Error (line %d): unknown action: %s.\n", COM_GetCurrentParseLine(), token );
 				}
@@ -521,6 +540,7 @@ void AICast_ScriptParse( cast_state_t* cs )
 
 				memset( params, 0, sizeof( params ) );
 				token = COM_ParseExt( &pScript, qfalse );
+
 				for( i = 0; token[0]; i++ ) {
 					if( strlen( params ) ) { // add a space between each param
 						Q_strcat( params, sizeof( params ), " " );
@@ -545,6 +565,7 @@ void AICast_ScriptParse( cast_state_t* cs )
 							//							if(weap)
 							RegisterItem( weap ); // don't be nice, just do it.  if it can't find it, you'll bomb out to the error menu
 						}
+
 						//----(SA)	end
 					}
 
@@ -574,13 +595,16 @@ void AICast_ScriptParse( cast_state_t* cs )
 			}
 
 			numEventItems++;
+
 		} else { // skip this character completely
 			// TTimo: gcc: suggest () around assignment used as truth value
 			while( ( token = COM_Parse( &pScript ) ) ) {
 				if( !token[0] ) {
 					G_Error( "AICast_ScriptParse(), Error (line %d): '}' expected, end of script found.\n", COM_GetCurrentParseLine() );
+
 				} else if( token[0] == '{' ) {
 					bracketLevel++;
+
 				} else if( token[0] == '}' ) {
 					if( !--bracketLevel ) {
 						break;
@@ -769,14 +793,17 @@ qboolean AICast_ScriptRun( cast_state_t* cs, qboolean force )
 				stack->items[cs->castScriptStatus.castScriptStackHead].action->actionString,
 				( stack->items[cs->castScriptStatus.castScriptStackHead].params ? stack->items[cs->castScriptStatus.castScriptStackHead].params : "" ) );
 		}
+
 		//
 		if( !stack->items[cs->castScriptStatus.castScriptStackHead].action->actionFunc( cs, stack->items[cs->castScriptStatus.castScriptStackHead].params ) ) {
 			// check that we are still running the same script that we were when we call the action
 			if( cs->castScriptStatus.castScriptEventIndex >= 0 && stack == &cs->castScriptEvents[cs->castScriptStatus.castScriptEventIndex].stack ) {
 				cs->castScriptStatus.scriptFlags &= ~SFL_FIRST_CALL;
 			}
+
 			return qfalse;
 		}
+
 		// move to the next action in the script
 		cs->castScriptStatus.castScriptStackHead++;
 		// record the time that this new item became active

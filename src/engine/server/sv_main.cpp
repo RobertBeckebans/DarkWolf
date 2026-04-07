@@ -84,15 +84,19 @@ char*		   SV_ExpandNewlines( char* in )
 	int			l;
 
 	l = 0;
+
 	while( *in && l < sizeof( string ) - 3 ) {
 		if( *in == '\n' ) {
 			string[l++] = '\\';
 			string[l++] = 'n';
+
 		} else {
 			string[l++] = *in;
 		}
+
 		in++;
 	}
+
 	string[l] = 0;
 
 	return string;
@@ -112,12 +116,14 @@ int SV_ReplacePendingServerCommands( client_t* client, const char* cmd )
 
 	for( i = client->reliableSent + 1; i <= client->reliableSequence; i++ ) {
 		index = i & ( MAX_RELIABLE_COMMANDS - 1 );
+
 		//
 		//if ( !Q_strncmp(cmd, client->reliableCommands[ index ], strlen("cs")) ) {
 		if( !Q_strncmp( cmd, SV_GetReliableCommand( client, index ), strlen( "cs" ) ) ) {
 			sscanf( cmd, "cs %i", &csnum1 );
 			//sscanf(client->reliableCommands[ index ], "cs %i", &csnum2);
 			sscanf( SV_GetReliableCommand( client, index ), "cs %i", &csnum2 );
+
 			if( csnum1 == csnum2 ) {
 				//Q_strncpyz( client->reliableCommands[ index ], cmd, sizeof( client->reliableCommands[ index ] ) );
 
@@ -130,8 +136,10 @@ int SV_ReplacePendingServerCommands( client_t* client, const char* cmd )
 			}
 		}
 	}
+
 	return qfalse;
 }
+
 #endif
 
 /*
@@ -147,20 +155,24 @@ void SV_AddServerCommand( client_t* client, const char* cmd )
 	int index, i;
 
 	client->reliableSequence++;
+
 	// if we would be losing an old command that hasn't been acknowledged,
 	// we must drop the connection
 	// we check == instead of >= so a broadcast print added by SV_DropClient()
 	// doesn't cause a recursive drop client
 	if( client->reliableSequence - client->reliableAcknowledge == MAX_RELIABLE_COMMANDS + 1 ) {
 		Com_Printf( "===== pending server commands =====\n" );
+
 		for( i = client->reliableAcknowledge + 1; i <= client->reliableSequence; i++ ) {
 			// Com_Printf( "cmd %5d: %s\n", i, client->reliableCommands[ i & (MAX_RELIABLE_COMMANDS-1) ] );
 			Com_Printf( "cmd %5d: %s\n", i, SV_GetReliableCommand( client, i & ( MAX_RELIABLE_COMMANDS - 1 ) ) );
 		}
+
 		Com_Printf( "cmd %5d: %s\n", i, cmd );
 		SV_DropClient( client, "Server command overflow" );
 		return;
 	}
+
 	index = client->reliableSequence & ( MAX_RELIABLE_COMMANDS - 1 );
 	// Q_strncpyz( client->reliableCommands[ index ], cmd, sizeof( client->reliableCommands[ index ] ) );
 	SV_AddReliableCommand( client, index, cmd );
@@ -201,10 +213,12 @@ void QDECL SV_SendServerCommand( client_t* cl, const char* fmt, ... )
 		if( client->state < CS_PRIMED ) {
 			continue;
 		}
+
 		// Ridah, don't need to send messages to AI
 		if( client->gentity && client->gentity->r.svFlags & SVF_CASTAI ) {
 			continue;
 		}
+
 		// done.
 		SV_AddServerCommand( client, ( char* )message );
 	}
@@ -245,6 +259,7 @@ void SV_MasterHeartbeat()
 	if( svs.time < svs.nextHeartbeatTime ) {
 		return;
 	}
+
 	svs.nextHeartbeatTime = svs.time + HEARTBEAT_MSEC;
 
 	// send to group masters
@@ -260,6 +275,7 @@ void SV_MasterHeartbeat()
 			sv_master[i]->modified = qfalse;
 
 			Com_Printf( "Resolving %s\n", sv_master[i]->string );
+
 			if( !NET_StringToAdr( sv_master[i]->string, &adr[i] ) ) {
 				// if the address failed to resolve, clear it
 				// so we don't take repeated dns hits
@@ -268,9 +284,11 @@ void SV_MasterHeartbeat()
 				sv_master[i]->modified = qfalse;
 				continue;
 			}
+
 			if( !strstr( ":", sv_master[i]->string ) ) {
 				adr[i].port = BigShort( PORT_MASTER );
 			}
+
 			Com_Printf( "%s resolved to %i.%i.%i.%i:%i\n", sv_master[i]->string, adr[i].ip[0], adr[i].ip[1], adr[i].ip[2], adr[i].ip[3], BigShort( adr[i].port ) );
 		}
 
@@ -354,13 +372,16 @@ void SVC_Status( netadr_t from )
 
 	for( i = 0; i < sv_maxclients->integer; i++ ) {
 		cl = &svs.clients[i];
+
 		if( cl->state >= CS_CONNECTED ) {
 			ps = SV_GameClientNum( i );
 			Com_sprintf( player, sizeof( player ), "%i %i \"%s\"\n", ps->persistant[PERS_SCORE], cl->ping, cl->name );
 			playerLength = strlen( player );
+
 			if( statusLength + playerLength >= sizeof( status ) ) {
 				break; // can't hold any more
 			}
+
 			strcpy( status + statusLength, player );
 			statusLength += playerLength;
 		}
@@ -390,6 +411,7 @@ void SVC_Info( netadr_t from )
 
 	// don't count privateclients
 	count = 0;
+
 	for( i = sv_privateClients->integer; i < sv_maxclients->integer; i++ ) {
 		if( svs.clients[i].state >= CS_CONNECTED ) {
 			count++;
@@ -413,13 +435,17 @@ void SVC_Info( netadr_t from )
 	if( sv_minPing->integer ) {
 		Info_SetValueForKey( infostring, "minPing", va( "%i", sv_minPing->integer ) );
 	}
+
 	if( sv_maxPing->integer ) {
 		Info_SetValueForKey( infostring, "maxPing", va( "%i", sv_maxPing->integer ) );
 	}
+
 	gamedir = Cvar_VariableString( "fs_game" );
+
 	if( *gamedir ) {
 		Info_SetValueForKey( infostring, "game", gamedir );
 	}
+
 	Info_SetValueForKey( infostring, "sv_allowAnonymous", va( "%i", sv_allowAnonymous->integer ) );
 
 	// Rafael gameskill
@@ -460,6 +486,7 @@ void SVC_RemoteCommand( netadr_t from, msg_t* msg )
 	if( !strlen( sv_rconPassword->string ) || strcmp( Cmd_Argv( 1 ), sv_rconPassword->string ) ) {
 		valid = qfalse;
 		Com_DPrintf( "Bad rcon from %s:\n%s\n", NET_AdrToString( from ), Cmd_Argv( 2 ) );
+
 	} else {
 		valid = qtrue;
 		Com_DPrintf( "Rcon from %s:\n%s\n", NET_AdrToString( from ), Cmd_Argv( 2 ) );
@@ -471,8 +498,10 @@ void SVC_RemoteCommand( netadr_t from, msg_t* msg )
 
 	if( !strlen( sv_rconPassword->string ) ) {
 		Com_Printf( "No rconpassword set.\n" );
+
 	} else if( !valid ) {
 		Com_Printf( "Bad rconpassword.\n" );
+
 	} else {
 		remaining[0] = 0;
 
@@ -514,16 +543,22 @@ void SV_ConnectionlessPacket( netadr_t from, msg_t* msg )
 
 	if( !Q_stricmp( c, "getstatus" ) ) {
 		SVC_Status( from );
+
 	} else if( !Q_stricmp( c, "getinfo" ) ) {
 		SVC_Info( from );
+
 	} else if( !Q_stricmp( c, "getchallenge" ) ) {
 		SV_GetChallenge( from );
+
 	} else if( !Q_stricmp( c, "connect" ) ) {
 		SV_DirectConnect( from );
+
 	} else if( !Q_stricmp( c, "ipAuthorize" ) ) {
 		SV_AuthorizeIpPacket( from );
+
 	} else if( !Q_stricmp( c, "rcon" ) ) {
 		SVC_RemoteCommand( from, msg );
+
 	} else if( !Q_stricmp( c, "disconnect" ) ) {
 		// if a client starts up a local server, we may see some spurious
 		// server disconnect messages when their new server sees our final
@@ -563,9 +598,11 @@ void SV_PacketEvent( netadr_t from, msg_t* msg )
 		if( cl->state == CS_FREE ) {
 			continue;
 		}
+
 		if( !NET_CompareBaseAdr( from, cl->netchan.remoteAddress ) ) {
 			continue;
 		}
+
 		// it is possible to have multiple clients from a single IP
 		// address, so they are differentiated by the qport variable
 		if( cl->netchan.qport != qport ) {
@@ -590,6 +627,7 @@ void SV_PacketEvent( netadr_t from, msg_t* msg )
 				SV_ExecuteClientMessage( cl, msg );
 			}
 		}
+
 		return;
 	}
 
@@ -615,14 +653,17 @@ void SV_CalcPings()
 
 	for( i = 0; i < sv_maxclients->integer; i++ ) {
 		cl = &svs.clients[i];
+
 		if( cl->state != CS_ACTIVE ) {
 			cl->ping = 999;
 			continue;
 		}
+
 		if( !cl->gentity ) {
 			cl->ping = 999;
 			continue;
 		}
+
 		if( cl->gentity->r.svFlags & SVF_BOT ) {
 			cl->ping = 0;
 			continue;
@@ -630,18 +671,23 @@ void SV_CalcPings()
 
 		total = 0;
 		count = 0;
+
 		for( j = 0; j < PACKET_BACKUP; j++ ) {
 			if( cl->frames[j].messageAcked <= 0 ) {
 				continue;
 			}
+
 			delta = cl->frames[j].messageAcked - cl->frames[j].messageSent;
 			count++;
 			total += delta;
 		}
+
 		if( !count ) {
 			cl->ping = 999;
+
 		} else {
 			cl->ping = total / count;
+
 			if( cl->ping > 999 ) {
 				cl->ping = 999;
 			}
@@ -687,6 +733,7 @@ void SV_CheckTimeouts()
 			cl->state = CS_FREE; // can now be reused
 			continue;
 		}
+
 		// Ridah, AI's don't time out
 		if( cl->gentity && !( cl->gentity->r.svFlags & SVF_CASTAI ) ) {
 			if( cl->state >= CS_CONNECTED && cl->lastPacketTime < droppoint ) {
@@ -696,6 +743,7 @@ void SV_CheckTimeouts()
 					SV_DropClient( cl, "timed out" );
 					cl->state = CS_FREE; // don't bother with zombie state
 				}
+
 			} else {
 				cl->timeoutCount = 0;
 			}
@@ -720,6 +768,7 @@ qboolean SV_CheckPaused()
 
 	// only pause if there is just a single client connected
 	count = 0;
+
 	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
 		if( cl->state >= CS_CONNECTED && cl->netchan.remoteAddress.type != NA_BOT ) {
 			count++;
@@ -769,6 +818,7 @@ void SV_Frame( int msec )
 	if( sv_fps->integer < 1 ) {
 		Cvar_Set( "sv_fps", "10" );
 	}
+
 	frameMsec = 1000 / sv_fps->integer;
 
 	sv.timeResidual += msec;
@@ -793,6 +843,7 @@ void SV_Frame( int msec )
 		Cbuf_AddText( "vstr nextmap\n" );
 		return;
 	}
+
 	// this can happen considerably earlier when lots of clients play and the map doesn't change
 	if( svs.nextSnapshotEntities >= 0x7FFFFFFE - svs.numSnapshotEntities ) {
 		SV_Shutdown( "Restarting server due to numSnapshotEntities wrapping" );
@@ -811,6 +862,7 @@ void SV_Frame( int msec )
 		SV_SetConfigstring( CS_SERVERINFO, Cvar_InfoString( CVAR_SERVERINFO ) );
 		cvar_modifiedFlags &= ~CVAR_SERVERINFO;
 	}
+
 	if( cvar_modifiedFlags & CVAR_SYSTEMINFO ) {
 		SV_SetConfigstring( CS_SYSTEMINFO, Cvar_InfoString_Big( CVAR_SYSTEMINFO ) );
 		cvar_modifiedFlags &= ~CVAR_SYSTEMINFO;
@@ -818,6 +870,7 @@ void SV_Frame( int msec )
 
 	if( com_speeds->integer ) {
 		startTime = Sys_Milliseconds();
+
 	} else {
 		startTime = 0; // quite a compiler warning
 	}

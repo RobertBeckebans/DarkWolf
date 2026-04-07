@@ -98,9 +98,11 @@ int Q2_BrushContents( mapbrush_t* b )
 	s		 = &b->original_sides[0];
 	contents = s->contents;
 	trans	 = texinfo[s->texinfo].flags;
+
 	for( i = 1; i < b->numsides; i++, s++ ) {
 		s = &b->original_sides[i];
 		trans |= texinfo[s->texinfo].flags;
+
 		if( s->contents != contents ) {
 			Log_Print( "Entity %i, Brush %i: mixed face contents\n", b->entitynum, b->brushnum );
 			Log_Print( "texture name = %s\n", texinfo[s->texinfo].texture );
@@ -112,6 +114,7 @@ int Q2_BrushContents( mapbrush_t* b )
 	// and change solid to window
 	if( trans & ( SURF_TRANS33 | SURF_TRANS66 ) ) {
 		contents |= CONTENTS_Q2TRANSLUCENT;
+
 		if( contents & CONTENTS_SOLID ) {
 			contents &= ~CONTENTS_SOLID;
 			contents |= CONTENTS_WINDOW;
@@ -145,6 +148,7 @@ void MakeAreaPortalBrush( mapbrush_t* brush )
 		s->contents = CONTENTS_AREAPORTAL;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -159,6 +163,7 @@ void DPlanes2MapPlanes()
 		dplanes2mapplanes[i] = FindFloatPlane( dplanes[i].normal, dplanes[i].dist );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -170,21 +175,26 @@ void MarkVisibleBrushSides( mapbrush_t* brush )
 	int		 n, i, planenum;
 	side_t*	 side;
 	dface_t* face;
+
 	//
 	for( n = 0; n < brush->numsides; n++ ) {
 		side = brush->original_sides + n;
+
 		// if this side is a bevel or the leaf number of the brush is unknown
 		if( ( side->flags & SFL_BEVEL ) || brush->leafnum < 0 ) {
 			// this side is a valid splitter
 			side->flags |= SFL_VISIBLE;
 			continue;
 		}
+
 		// assum this side will not be used as a splitter
 		side->flags &= ~SFL_VISIBLE;
+
 		// check if the side plane is used by a visible face
 		for( i = 0; i < numfaces; i++ ) {
 			face	 = &dfaces[i];
 			planenum = dplanes2mapplanes[face->planenum];
+
 			if( ( planenum & ~1 ) == ( side->planenum & ~1 ) ) {
 				// this side is a valid splitter
 				side->flags |= SFL_VISIBLE;
@@ -225,6 +235,7 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 		if( !PS_ReadToken( script, &token ) ) {
 			break;
 		}
+
 		if( !strcmp( token.string, "}" ) ) {
 			break;
 		}
@@ -234,6 +245,7 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 		if( nummapbrushsides >= MAX_MAPFILE_BRUSHSIDES ) {
 			Error( "MAX_MAPFILE_BRUSHSIDES" );
 		}
+
 		side = &brushsides[nummapbrushsides];
 
 		// read the three point plane definition
@@ -241,10 +253,12 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 			if( i != 0 ) {
 				PS_ExpectTokenString( script, "(" );
 			}
+
 			for( j = 0; j < 3; j++ ) {
 				PS_ExpectAnyToken( script, &token );
 				planepts[i][j] = atof( token.string );
 			}
+
 			PS_ExpectTokenString( script, ")" );
 		}
 
@@ -285,12 +299,15 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 		if( side->surf & ( SURF_TRANS33 | SURF_TRANS66 ) ) {
 			side->contents |= CONTENTS_DETAIL;
 		}
+
 		if( side->contents & ( CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP ) ) {
 			side->contents |= CONTENTS_DETAIL;
 		}
+
 		if( fulldetail ) {
 			side->contents &= ~CONTENTS_DETAIL;
 		}
+
 		if( !( side->contents & ( ( LAST_VISIBLE_CONTENTS - 1 ) | CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP | CONTENTS_MIST ) ) ) {
 			side->contents |= CONTENTS_SOLID;
 		}
@@ -309,6 +326,7 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 	   //  find the plane number
 	   //
 		planenum = PlaneFromPoints( planepts[0], planepts[1], planepts[2] );
+
 		if( planenum == -1 ) {
 			Log_Print( "Entity %i, Brush %i: plane with no normal\n", b->entitynum, b->brushnum );
 			continue;
@@ -319,18 +337,22 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 		//
 		for( k = 0; k < b->numsides; k++ ) {
 			s2 = b->original_sides + k;
+
 			if( s2->planenum == planenum ) {
 				Log_Print( "Entity %i, Brush %i: duplicate plane\n", b->entitynum, b->brushnum );
 				break;
 			}
+
 			if( s2->planenum == ( planenum ^ 1 ) ) {
 				Log_Print( "Entity %i, Brush %i: mirrored plane\n", b->entitynum, b->brushnum );
 				break;
 			}
 		}
+
 		if( k != b->numsides ) {
 			continue; // duplicated
 		}
+
 		//
 		// keep this side
 		//
@@ -351,6 +373,7 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 	b->contents = Q2_BrushContents( b );
 
 #ifdef ME
+
 	if( BrushExists( b ) ) {
 		c_squattbrushes++;
 		b->numsides = 0;
@@ -363,6 +386,7 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 		// NOTE: if we return here then duplicate plane errors occur for the non world entities
 		return;
 	}
+
 #endif // ME
 
 	// allow detail brushes to be removed
@@ -384,6 +408,7 @@ void Q2_ParseBrush( script_t* script, entity_t* mapent )
 	// used as bsp splitters
 	if( b->contents & ( CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP ) ) {
 		c_clipbrushes++;
+
 		for( i = 0; i < b->numsides; i++ ) {
 			b->original_sides[i].texinfo = TEXINFO_NODE;
 		}
@@ -452,9 +477,11 @@ void Q2_MoveBrushesToWorld( entity_t* mapent )
 	memcpy( temp, mapbrushes + mapent->firstbrush, newbrushes * sizeof( mapbrush_t ) );
 
 #if 0 // let them keep their original brush numbers
+
 	for( i = 0 ; i < newbrushes ; i++ ) {
 		temp[i].entitynum = 0;
 	}
+
 #endif
 
 	// make space to move the brushes (overlapped copy)
@@ -465,9 +492,11 @@ void Q2_MoveBrushesToWorld( entity_t* mapent )
 
 	// fix up indexes
 	entities[0].numbrushes += newbrushes;
+
 	for( i = 1; i < num_entities; i++ ) {
 		entities[i].firstbrush += newbrushes;
 	}
+
 	FreeMemory( temp );
 
 	mapent->numbrushes = 0;
@@ -516,11 +545,14 @@ qboolean Q2_ParseMapEntity( script_t* script )
 		if( !PS_ReadToken( script, &token ) ) {
 			Error( "ParseEntity: EOF without closing brace" );
 		}
+
 		if( !strcmp( token.string, "}" ) ) {
 			break;
 		}
+
 		if( !strcmp( token.string, "{" ) ) {
 			Q2_ParseBrush( script, mapent );
+
 		} else {
 			PS_UnreadLastToken( script );
 			e			   = ParseEpair( script );
@@ -537,12 +569,14 @@ qboolean Q2_ParseMapEntity( script_t* script )
 	if( mapent->origin[0] || mapent->origin[1] || mapent->origin[2] ) {
 		for( i = 0; i < mapent->numbrushes; i++ ) {
 			b = &mapbrushes[mapent->firstbrush + i];
+
 			for( j = 0; j < b->numsides; j++ ) {
 				s			= &b->original_sides[j];
 				newdist		= mapplanes[s->planenum].dist - DotProduct( mapplanes[s->planenum].normal, mapent->origin );
 				s->planenum = FindFloatPlane( mapplanes[s->planenum].normal, newdist );
 				s->texinfo	= TexinfoForBrushTexture( &mapplanes[s->planenum], &side_brushtextures[s - brushsides], mapent->origin );
 			}
+
 			MakeBrushWindings( b );
 		}
 	}
@@ -599,10 +633,12 @@ void Q2_LoadMapFile( char* filename )
 #endif // ME
 
 	script = LoadScriptFile( filename );
+
 	if( !script ) {
 		Log_Print( "couldn't open %s\n", filename );
 		return;
 	}
+
 	// white spaces and escape characters inside a string are not allowed
 	SetScriptFlags( script, SCFL_NOSTRINGWHITESPACES | SCFL_NOSTRINGESCAPECHARS | SCFL_PRIMITIVE );
 
@@ -613,10 +649,12 @@ void Q2_LoadMapFile( char* filename )
 	}
 
 	ClearBounds( map_mins, map_maxs );
+
 	for( i = 0; i < entities[0].numbrushes; i++ ) {
 		if( mapbrushes[i].mins[0] > 4096 ) {
 			continue; // no valid points
 		}
+
 		AddPointToBounds( mapbrushes[i].mins, map_mins, map_maxs );
 		AddPointToBounds( mapbrushes[i].maxs, map_mins, map_maxs );
 	}
@@ -643,12 +681,14 @@ void Q2_SetLeafBrushesModelNumbers( int leafnum, int modelnum )
 	dleaf_t* leaf;
 
 	leaf = &dleafs[leafnum];
+
 	for( i = 0; i < leaf->numleafbrushes; i++ ) {
 		brushnum					= dleafbrushes[leaf->firstleafbrush + i];
 		brushmodelnumbers[brushnum] = modelnum;
 		dbrushleafnums[brushnum]	= leafnum;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -660,6 +700,7 @@ void Q2_InitNodeStack()
 	nodestackptr  = nodestack;
 	nodestacksize = 0;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -671,11 +712,13 @@ void Q2_PushNodeStack( int num )
 	*nodestackptr = num;
 	nodestackptr++;
 	nodestacksize++;
+
 	//
 	if( nodestackptr >= &nodestack[NODESTACKSIZE] ) {
 		Error( "Q2_PushNodeStack: stack overflow\n" );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -688,12 +731,14 @@ int Q2_PopNodeStack()
 	if( nodestackptr <= nodestack ) {
 		return -1;
 	}
+
 	// decrease stack pointer
 	nodestackptr--;
 	nodestacksize--;
 	// return the top value from the stack
 	return *nodestackptr;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -718,6 +763,7 @@ void Q2_SetBrushModelNumbers( entity_t* mapent )
 			leafnum = ( -n ) - 1;
 			// set the brush numbers
 			Q2_SetLeafBrushesModelNumbers( leafnum, mapent->modelnum );
+
 			// walk back into the tree to find a second child to continue with
 			for( pn = Q2_PopNodeStack(); pn >= 0; n = pn, pn = Q2_PopNodeStack() ) {
 				// if we took the first child at the parent node
@@ -725,6 +771,7 @@ void Q2_SetBrushModelNumbers( entity_t* mapent )
 					break;
 				}
 			}
+
 			// if the stack wasn't empty (if not processed whole tree)
 			if( pn >= 0 ) {
 				// push the parent node again
@@ -732,6 +779,7 @@ void Q2_SetBrushModelNumbers( entity_t* mapent )
 				// we proceed with the second child of the parent node
 				n = dnodes[pn].children[1];
 			}
+
 		} else {
 			// push the current node onto the stack
 			Q2_PushNodeStack( n );
@@ -740,6 +788,7 @@ void Q2_SetBrushModelNumbers( entity_t* mapent )
 		}
 	} while( pn >= 0 );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -772,19 +821,25 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 		if( nummapbrushsides >= MAX_MAPFILE_BRUSHSIDES ) {
 			Error( "MAX_MAPFILE_BRUSHSIDES" );
 		}
+
 		// pointer to the map brush side
 		side = &brushsides[nummapbrushsides];
+
 		// if the BSP brush side is textured
 		if( brushsidetextured[bspbrush->firstside + n] ) {
 			side->flags |= SFL_TEXTURED;
+
 		} else {
 			side->flags &= ~SFL_TEXTURED;
 		}
+
 		// ME: can get side contents and surf directly from BSP file
 		side->contents = bspbrush->contents;
+
 		// if the texinfo is TEXINFO_NODE
 		if( bspbrushside->texinfo < 0 ) {
 			side->surf = 0;
+
 		} else {
 			side->surf = texinfo[bspbrushside->texinfo].flags;
 		}
@@ -793,12 +848,15 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 		if( side->surf & ( SURF_TRANS33 | SURF_TRANS66 ) ) {
 			side->contents |= CONTENTS_DETAIL;
 		}
+
 		if( side->contents & ( CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP ) ) {
 			side->contents |= CONTENTS_DETAIL;
 		}
+
 		if( fulldetail ) {
 			side->contents &= ~CONTENTS_DETAIL;
 		}
+
 		if( !( side->contents & ( ( LAST_VISIBLE_CONTENTS - 1 ) | CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP | CONTENTS_MIST ) ) ) {
 			side->contents |= CONTENTS_SOLID;
 		}
@@ -812,6 +870,7 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 		// ME: get a plane for this side
 		bspplane = &dplanes[bspbrushside->planenum];
 		planenum = FindFloatPlane( bspplane->normal, bspplane->dist );
+
 		//
 		// see if the plane has been used already
 		//
@@ -828,14 +887,17 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 				Log_Print( "Entity %i, Brush %i: duplicate plane\n", b->entitynum, b->brushnum );
 				break;
 			}
+
 			if( s2->planenum == ( planenum ^ 1 ) ) {
 				Log_Print( "Entity %i, Brush %i: mirrored plane\n", b->entitynum, b->brushnum );
 				break;
 			}
 		}
+
 		if( k != b->numsides ) {
 			continue; // duplicated
 		}
+
 		//
 		// keep this side
 		//
@@ -843,10 +905,12 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 		side = b->original_sides + b->numsides;
 		// ME: store the plane number
 		side->planenum = planenum;
+
 		// ME: texinfo is already stored when bsp is loaded
 		// NOTE: check for TEXINFO_NODE, otherwise crash in Q2_BrushContents
 		if( bspbrushside->texinfo < 0 ) {
 			side->texinfo = 0;
+
 		} else {
 			side->texinfo = bspbrushside->texinfo;
 		}
@@ -900,6 +964,7 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 	// used as bsp splitters
 	if( b->contents & ( CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP ) ) {
 		c_clipbrushes++;
+
 		for( i = 0; i < b->numsides; i++ ) {
 			b->original_sides[i].texinfo = TEXINFO_NODE;
 		}
@@ -948,6 +1013,7 @@ void Q2_BSPBrushToMapBrush( dbrush_t* bspbrush, entity_t* mapent )
 	nummapbrushes++;
 	mapent->numbrushes++;
 }
+
 //===========================================================================
 //===========================================================================
 void Q2_ParseBSPBrushes( entity_t* mapent )
@@ -957,6 +1023,7 @@ void Q2_ParseBSPBrushes( entity_t* mapent )
 	// give all the brushes that belong to this entity the number of the
 	// BSP model used by this entity
 	Q2_SetBrushModelNumbers( mapent );
+
 	// now parse all the brushes with the correct mapent->modelnum
 	for( i = 0; i < numbrushes; i++ ) {
 		if( brushmodelnumbers[i] == mapent->modelnum ) {
@@ -964,6 +1031,7 @@ void Q2_ParseBSPBrushes( entity_t* mapent )
 		}
 	}
 }
+
 //===========================================================================
 //===========================================================================
 qboolean Q2_ParseBSPEntity( int entnum )
@@ -981,10 +1049,12 @@ qboolean Q2_ParseBSPEntity( int entnum )
 	mapent->modelnum   = -1; //-1 = no model
 
 	model = ValueForKey( mapent, "model" );
+
 	if( model && strlen( model ) ) {
 		if( *model != '*' ) {
 			Error( "Q2_ParseBSPEntity: model number without leading *" );
 		}
+
 		// get the model number of this entity (skip the leading *)
 		mapent->modelnum = atoi( &model[1] );
 	}
@@ -996,12 +1066,14 @@ qboolean Q2_ParseBSPEntity( int entnum )
 	if( !strcmp( "worldspawn", ValueForKey( mapent, "classname" ) ) ) {
 		mapent->modelnum = 0;
 	}
+
 	// if the map entity has a BSP model (a modelnum of -1 is used for
 	// entities that aren't using a BSP model)
 	if( mapent->modelnum >= 0 ) {
 		// parse the bsp brushes
 		Q2_ParseBSPBrushes( mapent );
 	}
+
 	//
 	// the origin of the entity is already taken into account
 	//
@@ -1013,8 +1085,10 @@ qboolean Q2_ParseBSPEntity( int entnum )
 		mapent->areaportalnum = c_areaportals;
 		return true;
 	}
+
 	return true;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -1044,6 +1118,7 @@ void Q2_LoadMapFromBSP( char* filename, int offset, int length )
 	num_entities	 = 0;
 
 	Q2_ParseEntities();
+
 	//
 	for( i = 0; i < num_entities; i++ ) {
 		Q2_ParseBSPEntity( i );
@@ -1051,10 +1126,12 @@ void Q2_LoadMapFromBSP( char* filename, int offset, int length )
 
 	// get the map mins and maxs from the world model
 	ClearBounds( map_mins, map_maxs );
+
 	for( i = 0; i < entities[0].numbrushes; i++ ) {
 		if( mapbrushes[i].mins[0] > 4096 ) {
 			continue; // no valid points
 		}
+
 		AddPointToBounds( mapbrushes[i].mins, map_mins, map_maxs );
 		AddPointToBounds( mapbrushes[i].maxs, map_mins, map_maxs );
 	}
@@ -1097,6 +1174,7 @@ void TestExpandBrushes()
 
 	Log_Print( "writing %s\n", name );
 	f = fopen( name, "wb" );
+
 	if( !f ) {
 		Error( "Can't write %s\n", name );
 	}
@@ -1106,9 +1184,11 @@ void TestExpandBrushes()
 	for( bn = 0; bn < nummapbrushes; bn++ ) {
 		brush = &mapbrushes[bn];
 		fprintf( f, "{\n" );
+
 		for( i = 0; i < brush->numsides; i++ ) {
 			s	 = brush->original_sides + i;
 			dist = mapplanes[s->planenum].dist;
+
 			for( j = 0; j < 3; j++ ) {
 				dist += fabs( 16 * mapplanes[s->planenum].normal[j] );
 			}
@@ -1122,8 +1202,10 @@ void TestExpandBrushes()
 			fprintf( f, "%s 0 0 0 1 1\n", texinfo[s->texinfo].texture );
 			FreeWinding( w );
 		}
+
 		fprintf( f, "}\n" );
 	}
+
 	fprintf( f, "}\n" );
 
 	fclose( f );

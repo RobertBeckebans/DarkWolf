@@ -70,24 +70,30 @@ void SCR_AdjustFrom640( float* x, float* y, float* w, float* h )
 	float yscale;
 
 #if 0
+
 	// adjust for wide screens
 	if( cls.glconfig.vidWidth * 480 > cls.glconfig.vidHeight * 640 ) {
 		*x += 0.5 * ( cls.glconfig.vidWidth - ( cls.glconfig.vidHeight * 640 / 480 ) );
 	}
+
 #endif
 
 	// scale for screen sizes
 	xscale = cls.glconfig.vidWidth / 640.0;
 	yscale = cls.glconfig.vidHeight / 480.0;
+
 	if( x ) {
 		*x *= xscale;
 	}
+
 	if( y ) {
 		*y *= yscale;
 	}
+
 	if( w ) {
 		*w *= xscale;
 	}
+
 	if( h ) {
 		*h *= yscale;
 	}
@@ -211,11 +217,13 @@ void SCR_DrawStringExt( int x, int y, float size, const char* string, float* set
 	re.SetColor( color );
 	s  = string;
 	xx = x;
+
 	while( *s ) {
 		if( Q_IsColorString( s ) ) {
 			s += 2;
 			continue;
 		}
+
 		SCR_DrawChar( xx + 2, y + 2, size, *s );
 		xx += size;
 		s++;
@@ -225,6 +233,7 @@ void SCR_DrawStringExt( int x, int y, float size, const char* string, float* set
 	s  = string;
 	xx = x;
 	re.SetColor( setColor );
+
 	while( *s ) {
 		if( Q_IsColorString( s ) ) {
 			if( !forceColor ) {
@@ -232,13 +241,16 @@ void SCR_DrawStringExt( int x, int y, float size, const char* string, float* set
 				color[3] = setColor[3];
 				re.SetColor( color );
 			}
+
 			s += 2;
 			continue;
 		}
+
 		SCR_DrawChar( xx, y, size, *s );
 		xx += size;
 		s++;
 	}
+
 	re.SetColor( NULL );
 }
 
@@ -276,6 +288,7 @@ void SCR_DrawSmallStringExt( int x, int y, const char* string, float* setColor, 
 	s  = string;
 	xx = x;
 	re.SetColor( setColor );
+
 	while( *s ) {
 		if( Q_IsColorString( s ) ) {
 			if( !forceColor ) {
@@ -283,13 +296,16 @@ void SCR_DrawSmallStringExt( int x, int y, const char* string, float* setColor, 
 				color[3] = setColor[3];
 				re.SetColor( color );
 			}
+
 			s += 2;
 			continue;
 		}
+
 		SCR_DrawSmallChar( xx, y, *s );
 		xx += SMALLCHAR_WIDTH;
 		s++;
 	}
+
 	re.SetColor( NULL );
 }
 
@@ -304,6 +320,7 @@ static int SCR_Strlen( const char* str )
 	while( *s ) {
 		if( Q_IsColorString( s ) ) {
 			s += 2;
+
 		} else {
 			count++;
 			s++;
@@ -401,6 +418,7 @@ void SCR_DrawDebugGraph()
 		if( v < 0 ) {
 			v += cl_graphheight->integer * ( 1 + ( int )( -v / cl_graphheight->integer ) );
 		}
+
 		h = ( int )v % cl_graphheight->integer;
 		re.DrawStretchPic( x + w - 1 - a, y - h, 1, h, 0, 0, 0, 0, cls.whiteShader );
 	}
@@ -459,14 +477,17 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame )
 			default:
 				Com_Error( ERR_FATAL, "SCR_DrawScreenField: bad cls.state" );
 				break;
+
 			case CA_CINEMATIC:
 				SCR_DrawCinematic();
 				break;
+
 			case CA_DISCONNECTED:
 				// force menu up
 				S_StopAllSounds();
 				uivm->SetActiveMenu( UIMENU_MAIN );
 				break;
+
 			case CA_CONNECTING:
 			case CA_CHALLENGING:
 			case CA_CONNECTED:
@@ -475,6 +496,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame )
 				uivm->Refresh( cls.realtime );
 				uivm->DrawConnectScreen( qfalse );
 				break;
+
 			//			// Ridah, if the cgame is valid, fall through to there
 			//			if (!cls.cgameStarted || !com_sv_running->integer) {
 			//				// connecting clients will only show the connection dialog
@@ -492,6 +514,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame )
 				uivm->Refresh( cls.realtime );
 				uivm->DrawConnectScreen( qtrue );
 				break;
+
 			case CA_ACTIVE:
 				CL_CGameRendering( stereoFrame );
 				SCR_DrawDemoRecording();
@@ -532,18 +555,21 @@ void SCR_UpdateScreen()
 	if( ++recursive > 2 ) {
 		Com_Error( ERR_FATAL, "SCR_UpdateScreen: recursively called" );
 	}
+
 	recursive = 1;
 
 	// if running in stereo, we need to draw the frame twice
 	if( cls.glconfig.stereoEnabled ) {
 		SCR_DrawScreenField( STEREO_LEFT );
 		SCR_DrawScreenField( STEREO_RIGHT );
+
 	} else {
 		SCR_DrawScreenField( STEREO_CENTER );
 	}
 
 	if( com_speeds->integer ) {
 		re.EndFrame( &time_frontend, &time_backend );
+
 	} else {
 		re.EndFrame( NULL, NULL );
 	}

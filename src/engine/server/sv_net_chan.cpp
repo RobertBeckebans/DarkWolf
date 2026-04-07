@@ -69,16 +69,20 @@ static void SV_Netchan_Encode( client_t* client, msg_t* msg )
 	index  = 0;
 	// xor the client challenge with the netchan sequence number
 	key = client->challenge ^ client->netchan.outgoingSequence;
+
 	for( i = SV_ENCODE_START; i < msg->cursize; i++ ) {
 		// modify the key with the last received and with this message acknowledged client command
 		if( !string[index] ) {
 			index = 0;
 		}
+
 		if( string[index] > 127 || string[index] == '%' ) {
 			key ^= '.' << ( i & 1 );
+
 		} else {
 			key ^= string[index] << ( i & 1 );
 		}
+
 		index++;
 		// encode the data with this key
 		*( msg->data + i ) = *( msg->data + i ) ^ key;
@@ -120,21 +124,26 @@ static void SV_Netchan_Decode( client_t* client, msg_t* msg )
 	index  = 0;
 	//
 	key = client->challenge ^ serverId ^ messageAcknowledge;
+
 	for( i = msg->readcount + SV_DECODE_START; i < msg->cursize; i++ ) {
 		// modify the key with the last sent and acknowledged server command
 		if( !string[index] ) {
 			index = 0;
 		}
+
 		if( string[index] > 127 || string[index] == '%' ) {
 			key ^= '.' << ( i & 1 );
+
 		} else {
 			key ^= string[index] << ( i & 1 );
 		}
+
 		index++;
 		// decode the data with this key
 		*( msg->data + i ) = *( msg->data + i ) ^ key;
 	}
 }
+
 #endif
 
 /*
@@ -178,9 +187,11 @@ qboolean SV_Netchan_Process( client_t* client, msg_t* msg )
 	int ret;
 	//	int i;
 	ret = Netchan_Process( &client->netchan, msg );
+
 	if( !ret ) {
 		return qfalse;
 	}
+
 #if DO_NET_ENCODE
 	SV_Netchan_Decode( client, msg );
 #endif

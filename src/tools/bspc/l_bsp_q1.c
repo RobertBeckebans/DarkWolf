@@ -223,6 +223,7 @@ void Q1_FreeMaxBSP()
 	Log_Print( " of BSP memory\n" );
 	q1_allocatedbspmem = 0;
 }
+
 // #endif //ME
 
 /*
@@ -273,6 +274,7 @@ void Q1_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 3; j++ ) {
 			q1_dplanes[i].normal[j] = LittleFloat( q1_dplanes[i].normal[j] );
 		}
+
 		q1_dplanes[i].dist = LittleFloat( q1_dplanes[i].dist );
 		q1_dplanes[i].type = LittleLong( q1_dplanes[i].type );
 	}
@@ -284,6 +286,7 @@ void Q1_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 8; j++ ) {
 			q1_texinfo[i].vecs[0][j] = LittleFloat( q1_texinfo[i].vecs[0][j] );
 		}
+
 		q1_texinfo[i].miptex = LittleLong( q1_texinfo[i].miptex );
 		q1_texinfo[i].flags	 = LittleLong( q1_texinfo[i].flags );
 	}
@@ -305,10 +308,12 @@ void Q1_SwapBSPFile( qboolean todisk )
 	//
 	for( i = 0; i < q1_numnodes; i++ ) {
 		q1_dnodes[i].planenum = LittleLong( q1_dnodes[i].planenum );
+
 		for( j = 0; j < 3; j++ ) {
 			q1_dnodes[i].mins[j] = LittleShort( q1_dnodes[i].mins[j] );
 			q1_dnodes[i].maxs[j] = LittleShort( q1_dnodes[i].maxs[j] );
 		}
+
 		q1_dnodes[i].children[0] = LittleShort( q1_dnodes[i].children[0] );
 		q1_dnodes[i].children[1] = LittleShort( q1_dnodes[i].children[1] );
 		q1_dnodes[i].firstface	 = LittleShort( q1_dnodes[i].firstface );
@@ -320,6 +325,7 @@ void Q1_SwapBSPFile( qboolean todisk )
 	//
 	for( i = 0; i < q1_numleafs; i++ ) {
 		q1_dleafs[i].contents = LittleLong( q1_dleafs[i].contents );
+
 		for( j = 0; j < 3; j++ ) {
 			q1_dleafs[i].mins[j] = LittleShort( q1_dleafs[i].mins[j] );
 			q1_dleafs[i].maxs[j] = LittleShort( q1_dleafs[i].maxs[j] );
@@ -344,12 +350,16 @@ void Q1_SwapBSPFile( qboolean todisk )
 	//
 	if( q1_texdatasize ) {
 		mtl = ( q1_dmiptexlump_t* )q1_dtexdata;
+
 		if( todisk ) {
 			c = mtl->nummiptex;
+
 		} else {
 			c = LittleLong( mtl->nummiptex );
 		}
+
 		mtl->nummiptex = LittleLong( mtl->nummiptex );
+
 		for( i = 0; i < c; i++ ) {
 			mtl->dataofs[i] = LittleLong( mtl->dataofs[i] );
 		}
@@ -522,11 +532,14 @@ void Q1_PrintBSPFileSizes()
 	printf( "%5i marksurfaces %6i\n", q1_nummarksurfaces, ( int )( q1_nummarksurfaces * sizeof( q1_dmarksurfaces[0] ) ) );
 	printf( "%5i surfedges    %6i\n", q1_numsurfedges, ( int )( q1_numsurfedges * sizeof( q1_dmarksurfaces[0] ) ) );
 	printf( "%5i edges        %6i\n", q1_numedges, ( int )( q1_numedges * sizeof( q1_dedge_t ) ) );
+
 	if( !q1_texdatasize ) {
 		printf( "    0 textures          0\n" );
+
 	} else {
 		printf( "%5i textures     %6i\n", ( ( q1_dmiptexlump_t* )q1_dtexdata )->nummiptex, q1_texdatasize );
 	}
+
 	printf( "      lightdata    %6i\n", q1_lightdatasize );
 	printf( "      visdata      %6i\n", q1_visdatasize );
 	printf( "      entdata      %6i\n", q1_entdatasize );
@@ -573,9 +586,11 @@ void Q1_UnparseEntities()
 
 	for( i = 0; i < num_entities; i++ ) {
 		ep = entities[i].epairs;
+
 		if( !ep ) {
 			continue; // ent got removed
 		}
+
 		strcat( end, "{\n" );
 		end += 2;
 
@@ -584,6 +599,7 @@ void Q1_UnparseEntities()
 			strcat( end, line );
 			end += strlen( line );
 		}
+
 		strcat( end, "}\n" );
 		end += 2;
 
@@ -591,5 +607,6 @@ void Q1_UnparseEntities()
 			Error( "Entity text too long" );
 		}
 	}
+
 	q1_entdatasize = end - buf + 1;
 }

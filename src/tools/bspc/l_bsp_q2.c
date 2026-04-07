@@ -343,11 +343,13 @@ int InsideWinding( winding_t* w, vec3_t point, int planenum )
 		CrossProduct( plane->normal, edgevec, normal );
 		VectorNormalize( normal );
 		dist = DotProduct( normal, v1 );
+
 		//
 		if( DotProduct( normal, point ) - dist > WCONVEX_EPSILON ) {
 			return false;
 		}
 	}
+
 	return true;
 }
 
@@ -372,13 +374,16 @@ int InsideFace( dface_t* face, vec3_t point )
 		CrossProduct( plane->normal, edgevec, normal );
 		VectorNormalize( normal );
 		dist = DotProduct( normal, v1 );
+
 		//
 		if( DotProduct( normal, point ) - dist > WCONVEX_EPSILON ) {
 			return false;
 		}
 	}
+
 	return true;
 }
+
 //===========================================================================
 // returns the amount the face and the winding overlap
 //
@@ -398,11 +403,13 @@ float Q2_FaceOnWinding( q2_dface_t* face, winding_t* winding )
 	//
 	w = CopyWinding( winding );
 	memcpy( &plane, &q2_dplanes[face->planenum], sizeof( q2_dplane_t ) );
+
 	// check on which side of the plane the face is
 	if( face->side ) {
 		VectorNegate( plane.normal, plane.normal );
 		plane.dist = -plane.dist;
 	}
+
 	for( i = 0; i < face->numedges && w; i++ ) {
 		// get the first and second vertex of the edge
 		edgenum = q2_dsurfedges[face->firstedge + i];
@@ -419,13 +426,16 @@ float Q2_FaceOnWinding( q2_dface_t* face, winding_t* winding )
 		//
 		ChopWindingInPlace( &w, normal, dist, -0.1 ); // CLIP_EPSILON
 	}
+
 	if( w ) {
 		area = WindingArea( w );
 		FreeWinding( w );
 		return area;
 	}
+
 	return 0;
 }
+
 //===========================================================================
 // creates a winding for the given brush side on the given brush
 //
@@ -443,23 +453,30 @@ winding_t* Q2_BrushSideWinding( dbrush_t* brush, dbrushside_t* baseside )
 	// create a winding for the brush side with the given planenumber
 	baseplane = &dplanes[baseside->planenum];
 	w		  = BaseWindingForPlane( baseplane->normal, baseplane->dist );
+
 	for( i = 0; i < brush->numsides && w; i++ ) {
 		side = &dbrushsides[brush->firstside + i];
+
 		// don't chop with the base plane
 		if( side->planenum == baseside->planenum ) {
 			continue;
 		}
+
 		// also don't use planes that are almost equal
 		plane = &dplanes[side->planenum];
+
 		if( DotProduct( baseplane->normal, plane->normal ) > 0.999 && fabs( baseplane->dist - plane->dist ) < 0.01 ) {
 			continue;
 		}
+
 		//
 		plane = &dplanes[side->planenum ^ 1];
 		ChopWindingInPlace( &w, plane->normal, plane->dist, -0.1 ); // CLIP_EPSILON);
 	}
+
 	return w;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -473,14 +490,17 @@ int Q2_HintSkipBrush( dbrush_t* brush )
 
 	for( j = 0; j < brush->numsides; j++ ) {
 		brushside = &dbrushsides[brush->firstside + j];
+
 		if( brushside->texinfo > 0 ) {
 			if( texinfo[brushside->texinfo].flags & ( SURF_SKIP | SURF_HINT ) ) {
 				return true;
 			}
 		}
 	}
+
 	return false;
 }
+
 //===========================================================================
 // fix screwed brush texture references
 //
@@ -499,29 +519,36 @@ void	 Q2_FixTextureReferences()
 	winding_t*	  w;
 
 	memset( brushsidetextured, false, MAX_MAP_BRUSHSIDES );
+
 	// go over all the brushes
 	for( i = 0; i < numbrushes; i++ ) {
 		brush = &dbrushes[i];
+
 		// hint brushes are not textured
 		if( Q2_HintSkipBrush( brush ) ) {
 			continue;
 		}
+
 		// go over all the sides of the brush
 		for( j = 0; j < brush->numsides; j++ ) {
 			brushside = &dbrushsides[brush->firstside + j];
 			//
 			w = Q2_BrushSideWinding( brush, brushside );
+
 			if( !w ) {
 				brushsidetextured[brush->firstside + j] = true;
 				continue;
+
 			} else {
 				// RemoveEqualPoints(w, 0.2);
 				if( WindingIsTiny( w ) ) {
 					FreeWinding( w );
 					brushsidetextured[brush->firstside + j] = true;
 					continue;
+
 				} else {
 					we = WindingError( w );
+
 					if( we == WE_NOTENOUGHPOINTS || we == WE_SMALLAREA || we == WE_POINTBOGUSRANGE
 						//						|| we == WE_NONCONVEX
 					) {
@@ -531,16 +558,20 @@ void	 Q2_FixTextureReferences()
 					}
 				}
 			}
+
 			if( WindingArea( w ) < 20 ) {
 				brushsidetextured[brush->firstside + j] = true;
 			}
+
 			// find a face for texturing this brush
 			for( k = 0; k < numfaces; k++ ) {
 				face = &dfaces[k];
+
 				// if the face is in the same plane as the brush side
 				if( ( face->planenum & ~1 ) != ( brushside->planenum & ~1 ) ) {
 					continue;
 				}
+
 				// if the face is partly or totally on the brush side
 				if( Q2_FaceOnWinding( face, w ) ) {
 					brushside->texinfo						= face->texinfo;
@@ -548,6 +579,7 @@ void	 Q2_FixTextureReferences()
 					break;
 				}
 			}
+
 			FreeWinding( w );
 		}
 	}
@@ -574,17 +606,21 @@ int Q2_CompressVis( byte* vis, byte* dest )
 
 	for( j = 0; j < visrow; j++ ) {
 		*dest_p++ = vis[j];
+
 		if( vis[j] ) {
 			continue;
 		}
 
 		rep = 1;
+
 		for( j++; j < visrow; j++ )
 			if( vis[j] || rep == 255 ) {
 				break;
+
 			} else {
 				rep++;
 			}
+
 		*dest_p++ = rep;
 		j--;
 	}
@@ -614,10 +650,13 @@ void Q2_DecompressVis( byte* in, byte* decompressed )
 		}
 
 		c = in[1];
+
 		if( !c ) {
 			Error( "DecompressVis: 0 repeat" );
 		}
+
 		in += 2;
+
 		while( c ) {
 			*out++ = 0;
 			c--;
@@ -670,6 +709,7 @@ void Q2_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 3; j++ ) {
 			dplanes[i].normal[j] = LittleFloat( dplanes[i].normal[j] );
 		}
+
 		dplanes[i].dist = LittleFloat( dplanes[i].dist );
 		dplanes[i].type = LittleLong( dplanes[i].type );
 	}
@@ -681,6 +721,7 @@ void Q2_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 8; j++ ) {
 			texinfo[i].vecs[0][j] = LittleFloat( texinfo[i].vecs[0][j] );
 		}
+
 		texinfo[i].flags	   = LittleLong( texinfo[i].flags );
 		texinfo[i].value	   = LittleLong( texinfo[i].value );
 		texinfo[i].nexttexinfo = LittleLong( texinfo[i].nexttexinfo );
@@ -703,10 +744,12 @@ void Q2_SwapBSPFile( qboolean todisk )
 	//
 	for( i = 0; i < numnodes; i++ ) {
 		dnodes[i].planenum = LittleLong( dnodes[i].planenum );
+
 		for( j = 0; j < 3; j++ ) {
 			dnodes[i].mins[j] = LittleShort( dnodes[i].mins[j] );
 			dnodes[i].maxs[j] = LittleShort( dnodes[i].maxs[j] );
 		}
+
 		dnodes[i].children[0] = LittleLong( dnodes[i].children[0] );
 		dnodes[i].children[1] = LittleLong( dnodes[i].children[1] );
 		dnodes[i].firstface	  = LittleShort( dnodes[i].firstface );
@@ -720,6 +763,7 @@ void Q2_SwapBSPFile( qboolean todisk )
 		dleafs[i].contents = LittleLong( dleafs[i].contents );
 		dleafs[i].cluster  = LittleShort( dleafs[i].cluster );
 		dleafs[i].area	   = LittleShort( dleafs[i].area );
+
 		for( j = 0; j < 3; j++ ) {
 			dleafs[i].mins[j] = LittleShort( dleafs[i].mins[j] );
 			dleafs[i].maxs[j] = LittleShort( dleafs[i].maxs[j] );
@@ -798,10 +842,13 @@ void Q2_SwapBSPFile( qboolean todisk )
 	//
 	if( todisk ) {
 		j = dvis->numclusters;
+
 	} else {
 		j = LittleLong( dvis->numclusters );
 	}
+
 	dvis->numclusters = LittleLong( dvis->numclusters );
+
 	for( i = 0; i < j; i++ ) {
 		dvis->bitofs[i][0] = LittleLong( dvis->bitofs[i][0] );
 		dvis->bitofs[i][1] = LittleLong( dvis->bitofs[i][1] );
@@ -852,6 +899,7 @@ void Q2_LoadBSPFile( char* filename, int offset, int length )
 	if( header->ident != IDBSPHEADER ) {
 		Error( "%s is not a IBSP file", filename );
 	}
+
 	if( header->version != BSPVERSION ) {
 		Error( "%s is version %i, not %i", filename, header->version, BSPVERSION );
 	}
@@ -914,6 +962,7 @@ void Q2_LoadBSPFileTexinfo( char* filename )
 	if( header->ident != IDBSPHEADER ) {
 		Error( "%s is not a IBSP file", filename );
 	}
+
 	if( header->version != BSPVERSION ) {
 		Error( "%s is version %i, not %i", filename, header->version, BSPVERSION );
 	}
@@ -1076,9 +1125,11 @@ void Q2_UnparseEntities()
 
 	for( i = 0; i < num_entities; i++ ) {
 		ep = entities[i].epairs;
+
 		if( !ep ) {
 			continue; // ent got removed
 		}
+
 		strcat( end, "{\n" );
 		end += 2;
 
@@ -1092,6 +1143,7 @@ void Q2_UnparseEntities()
 			strcat( end, line );
 			end += strlen( line );
 		}
+
 		strcat( end, "}\n" );
 		end += 2;
 
@@ -1099,5 +1151,6 @@ void Q2_UnparseEntities()
 			Error( "Entity text too long" );
 		}
 	}
+
 	entdatasize = end - buf + 1;
 }

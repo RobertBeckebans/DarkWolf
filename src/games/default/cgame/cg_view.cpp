@@ -83,6 +83,7 @@ void	   CG_TestModel_f()
 	vec3_t angles;
 
 	memset( &cg.testModelEntity, 0, sizeof( cg.testModelEntity ) );
+
 	if( sys->Argc() < 2 ) {
 		return;
 	}
@@ -95,6 +96,7 @@ void	   CG_TestModel_f()
 		cg.testModelEntity.frame	= 1;
 		cg.testModelEntity.oldframe = 0;
 	}
+
 	if( !cg.testModelEntity.hModel ) {
 		CG_Printf( "Can't register model\n" );
 		return;
@@ -133,9 +135,11 @@ void CG_TestModelNextFrame_f()
 void CG_TestModelPrevFrame_f()
 {
 	cg.testModelEntity.frame--;
+
 	if( cg.testModelEntity.frame < 0 ) {
 		cg.testModelEntity.frame = 0;
 	}
+
 	CG_Printf( "frame %i\n", cg.testModelEntity.frame );
 }
 
@@ -148,9 +152,11 @@ void CG_TestModelNextSkin_f()
 void CG_TestModelPrevSkin_f()
 {
 	cg.testModelEntity.skinNum--;
+
 	if( cg.testModelEntity.skinNum < 0 ) {
 		cg.testModelEntity.skinNum = 0;
 	}
+
 	CG_Printf( "skin %i\n", cg.testModelEntity.skinNum );
 }
 
@@ -160,6 +166,7 @@ static void CG_AddTestModel()
 
 	// re-register the model, because the level may have changed
 	cg.testModelEntity.hModel = sys->R_RegisterModel( cg.testModelName );
+
 	if( !cg.testModelEntity.hModel ) {
 		CG_Printf( "Can't register model\n" );
 		return;
@@ -217,19 +224,23 @@ static void CG_CalcVrect()
 		cg.refdef.height = h;
 		return;
 	}
+
 	// -NERVE - SMF
 
 	// the intermission should allways be full screen
 	if( cg.snap->ps.pm_type == PM_INTERMISSION ) {
 		xsize = ysize = 100;
+
 	} else {
 		// bound normal viewsize
 		if( cg_viewsize.integer < 30 ) {
 			sys->Cvar_Set( "cg_viewsize", "30" );
 			xsize = ysize = 30;
+
 		} else if( cg_viewsize.integer > 100 ) {
 			sys->Cvar_Set( "cg_viewsize", "100" );
 			xsize = ysize = 100;
+
 		} else {
 			xsize = ysize = cg_viewsize.integer;
 		}
@@ -258,6 +269,7 @@ static void CG_CalcVrect()
 		//			ysize = lbheight + (lbdiff * letterbox_frac);
 		//		}
 	}
+
 	//----(SA)	end
 
 	cg.refdef.width = cgs.glconfig.vidWidth * xsize / 100;
@@ -304,6 +316,7 @@ static void CG_OffsetThirdPersonView()
 	if( focusAngles[PITCH] > 45 ) {
 		focusAngles[PITCH] = 45; // don't go too far overhead
 	}
+
 	AngleVectors( focusAngles, forward, NULL, NULL );
 
 	VectorMA( cg.refdef.vieworg, FOCUS_DISTANCE, forward, focusPoint );
@@ -341,9 +354,11 @@ static void CG_OffsetThirdPersonView()
 	// select pitch to look at focus point from vieword
 	VectorSubtract( focusPoint, cg.refdef.vieworg, focusPoint );
 	focusDist = sqrt( focusPoint[0] * focusPoint[0] + focusPoint[1] * focusPoint[1] );
+
 	if( focusDist < 1 ) {
 		focusDist = 1; // should never happen
 	}
+
 	cg.refdefViewAngles[PITCH] = -180 / M_PI * atan2( focusPoint[2], focusDist );
 	cg.refdefViewAngles[YAW] -= cg_thirdPersonAngle.value;
 }
@@ -355,10 +370,12 @@ static void CG_StepOffset()
 
 	// smooth out stair climbing
 	timeDelta = cg.time - cg.stepTime;
+
 	// Ridah
 	if( timeDelta < 0 ) {
 		cg.stepTime = cg.time;
 	}
+
 	if( timeDelta < STEP_TIME ) {
 		cg.refdef.vieworg[2] -= cg.stepChange * ( STEP_TIME - timeDelta ) / STEP_TIME;
 	}
@@ -384,9 +401,11 @@ void CG_KickAngles()
 	// this code is frametime-dependant, so split it up into small chunks
 	// cg.kickAngles[PITCH] = 0;
 	cg.recoilPitchAngle = 0;
+
 	for( t = cg.frametime; t > 0; t -= STEP ) {
 		if( t > STEP ) {
 			frametime = STEP;
+
 		} else {
 			frametime = t;
 		}
@@ -399,24 +418,31 @@ void CG_KickAngles()
 				// apply centering forces to kickAvel
 				if( cg.kickAngles[i] && frametime ) {
 					idealCenterSpeed = -( 2.0 * ( cg.kickAngles[i] > 0 ) - 1.0 ) * centerSpeed[i];
+
 					if( idealCenterSpeed ) {
 						cg.kickAVel[i] += idealCenterSpeed * ft;
 					}
 				}
+
 				// add the kickAVel to the kickAngles
 				kickChange = cg.kickAVel[i] * ft;
+
 				if( cg.kickAngles[i] && ( cg.kickAngles[i] < 0 ) != ( kickChange < 0 ) ) { // slower when returning to center
 					kickChange *= 0.06;
 				}
+
 				// check for crossing back over the center point
 				if( !cg.kickAngles[i] || ( ( cg.kickAngles[i] + kickChange ) < 0 ) == ( cg.kickAngles[i] < 0 ) ) {
 					cg.kickAngles[i] += kickChange;
+
 					if( !cg.kickAngles[i] && frametime ) {
 						cg.kickAVel[i] = 0;
+
 					} else if( fabs( cg.kickAngles[i] ) > maxKickAngles[i] ) {
 						cg.kickAngles[i] = maxKickAngles[i] * ( ( 2 * ( cg.kickAngles[i] > 0 ) ) - 1 );
 						cg.kickAVel[i]	 = 0; // force Avel to return us to center rather than keep going outside range
 					}
+
 				} else { // about to cross, so just zero it out
 					cg.kickAngles[i] = 0;
 					cg.kickAVel[i]	 = 0;
@@ -430,26 +456,32 @@ void CG_KickAngles()
 			if( fabs( cg.recoilPitch ) > recoilMaxSpeed ) {
 				if( cg.recoilPitch > 0 ) {
 					cg.recoilPitch = recoilMaxSpeed;
+
 				} else {
 					cg.recoilPitch = -recoilMaxSpeed;
 				}
 			}
+
 			// apply centering forces to kickAvel
 			if( frametime ) {
 				idealCenterSpeed = -( 2.0 * ( cg.recoilPitch > 0 ) - 1.0 ) * recoilCenterSpeed * ft;
+
 				if( idealCenterSpeed ) {
 					if( fabs( idealCenterSpeed ) < fabs( cg.recoilPitch ) ) {
 						cg.recoilPitch += idealCenterSpeed;
+
 					} else { // back zero out
 						cg.recoilPitch = 0;
 					}
 				}
 			}
 		}
+
 		if( fabs( cg.recoilPitch ) > recoilIgnoreCutoff ) {
 			cg.recoilPitchAngle += cg.recoilPitch * ft;
 		}
 	}
+
 	// encode the kick angles into a 24bit number, for sending to the client exe
 	//----(SA)	commented out since it doesn't appear to be used, and it spams the console when in "developer 1"
 	//	sys->Cvar_Set( "cg_recoilPitch", va("%f", cg.recoilPitchAngle) );
@@ -494,6 +526,7 @@ void CG_Concussive( centity_t* cent )
 		// recoil[YAW] = crandom()*yawRandom;
 		if( rand() % 100 > 50 ) {
 			recoil[YAW] = -yawRandom;
+
 		} else {
 			recoil[YAW] = yawRandom;
 		}
@@ -584,12 +617,15 @@ static void CG_OffsetFirstPersonView()
 	// add angles based on damage kick
 	if( cg.damageTime ) {
 		ratio = cg.time - cg.damageTime;
+
 		if( ratio < DAMAGE_DEFLECT_TIME ) {
 			ratio /= DAMAGE_DEFLECT_TIME;
 			angles[PITCH] += ratio * cg.v_dmg_pitch;
 			angles[ROLL] += ratio * cg.v_dmg_roll;
+
 		} else {
 			ratio = 1.0 - ( ratio - DAMAGE_DEFLECT_TIME ) / DAMAGE_RETURN_TIME;
+
 			if( ratio > 0 ) {
 				angles[PITCH] += ratio * cg.v_dmg_pitch;
 				angles[ROLL] += ratio * cg.v_dmg_roll;
@@ -600,9 +636,11 @@ static void CG_OffsetFirstPersonView()
 	// add pitch based on fall kick
 #if 0
 	ratio = ( cg.time - cg.landTime ) / FALL_TIME;
+
 	if( ratio < 0 ) {
 		ratio = 0;
 	}
+
 	angles[PITCH] += ratio * cg.fall_value;
 #endif
 
@@ -621,17 +659,22 @@ static void CG_OffsetFirstPersonView()
 	speed = cg.xyspeed > 200 ? cg.xyspeed : 200;
 
 	delta = cg.bobfracsin * cg_bobpitch.value * speed;
+
 	if( cg.predictedPlayerState.pm_flags & PMF_DUCKED ) {
 		delta *= 3; // crouching
 	}
+
 	angles[PITCH] += delta;
 	delta = cg.bobfracsin * cg_bobroll.value * speed;
+
 	if( cg.predictedPlayerState.pm_flags & PMF_DUCKED ) {
 		delta *= 3; // crouching accentuates roll
 	}
+
 	if( cg.bobcycle & 1 ) {
 		delta = -delta;
 	}
+
 	angles[ROLL] += delta;
 
 	//===================================
@@ -641,15 +684,18 @@ static void CG_OffsetFirstPersonView()
 
 	// smooth out duck height changes
 	timeDelta = cg.time - cg.duckTime;
+
 	if( timeDelta < 0 ) { // Ridah
 		cg.duckTime = cg.time - DUCK_TIME;
 	}
+
 	if( timeDelta < DUCK_TIME ) {
 		cg.refdef.vieworg[2] -= cg.duckChange * ( DUCK_TIME - timeDelta ) / DUCK_TIME;
 	}
 
 	// add bob height
 	bob = cg.bobfracsin * cg.xyspeed * cg_bobup.value;
+
 	if( bob > 6 ) {
 		bob = 6;
 	}
@@ -658,12 +704,15 @@ static void CG_OffsetFirstPersonView()
 
 	// add fall height
 	delta = cg.time - cg.landTime;
+
 	if( delta < 0 ) { // Ridah
 		cg.landTime = cg.time - ( LAND_DEFLECT_TIME + LAND_RETURN_TIME );
 	}
+
 	if( delta < LAND_DEFLECT_TIME ) {
 		f = delta / LAND_DEFLECT_TIME;
 		cg.refdef.vieworg[2] += cg.landChange * f;
+
 	} else if( delta < LAND_DEFLECT_TIME + LAND_RETURN_TIME ) {
 		delta -= LAND_DEFLECT_TIME;
 		f = 1.0 - ( delta / LAND_RETURN_TIME );
@@ -699,6 +748,7 @@ static void CG_OffsetFirstPersonView()
 		VectorMA( cg.refdef.vieworg, 3, forward, cg.refdef.vieworg );
 		VectorMA( cg.refdef.vieworg, NECK_LENGTH, up, cg.refdef.vieworg );
 	}
+
 #endif
 }
 
@@ -723,9 +773,11 @@ float zoomTable[ZOOM_MAX_ZOOMS][2] = {
 void CG_AdjustZoomVal( float val, int type )
 {
 	cg.zoomval += val;
+
 	if( cg.zoomval > zoomTable[type][ZOOM_OUT] ) {
 		cg.zoomval = zoomTable[type][ZOOM_OUT];
 	}
+
 	if( cg.zoomval < zoomTable[type][ZOOM_IN] ) {
 		cg.zoomval = zoomTable[type][ZOOM_IN];
 	}
@@ -735,10 +787,13 @@ void CG_ZoomIn_f()
 {
 	if( cg_entities[cg.snap->ps.clientNum].currentState.weapon == WP_SNIPERRIFLE ) {
 		CG_AdjustZoomVal( -( cg_zoomStepSniper.value ), ZOOM_SNIPER );
+
 	} else if( cg_entities[cg.snap->ps.clientNum].currentState.weapon == WP_SNOOPERSCOPE ) {
 		CG_AdjustZoomVal( -( cg_zoomStepSnooper.value ), ZOOM_SNOOPER );
+
 	} else if( cg_entities[cg.snap->ps.clientNum].currentState.weapon == WP_FG42SCOPE ) {
 		CG_AdjustZoomVal( -( cg_zoomStepSnooper.value ), ZOOM_FG42SCOPE );
+
 	} else if( cg.zoomedBinoc ) {
 		CG_AdjustZoomVal( -( cg_zoomStepBinoc.value ), ZOOM_BINOC );
 	}
@@ -748,10 +803,13 @@ void CG_ZoomOut_f()
 {
 	if( cg_entities[cg.snap->ps.clientNum].currentState.weapon == WP_SNIPERRIFLE ) {
 		CG_AdjustZoomVal( cg_zoomStepSniper.value, ZOOM_SNIPER );
+
 	} else if( cg_entities[cg.snap->ps.clientNum].currentState.weapon == WP_SNOOPERSCOPE ) {
 		CG_AdjustZoomVal( cg_zoomStepSnooper.value, ZOOM_SNOOPER );
+
 	} else if( cg_entities[cg.snap->ps.clientNum].currentState.weapon == WP_FG42SCOPE ) {
 		CG_AdjustZoomVal( cg_zoomStepSnooper.value, ZOOM_FG42SCOPE );
+
 	} else if( cg.zoomedBinoc ) {
 		CG_AdjustZoomVal( cg_zoomStepBinoc.value, ZOOM_BINOC );
 	}
@@ -768,23 +826,29 @@ void CG_Zoom()
 		if( cg.zoomedBinoc ) {
 			return;
 		}
+
 		cg.zoomedBinoc = qtrue;
 		cg.zoomTime	   = cg.time;
 		cg.zoomval	   = cg_zoomDefaultBinoc.value;
+
 	} else {
 		if( !cg.zoomedBinoc ) {
 			return;
 		}
+
 		cg.zoomedBinoc = qfalse;
 		cg.zoomTime	   = cg.time;
 
 		// check for scope wepon in use, and switch to if necessary
 		if( cg.predictedPlayerState.weapon == WP_SNOOPERSCOPE ) {
 			cg.zoomval = cg_zoomDefaultSnooper.value;
+
 		} else if( cg.predictedPlayerState.weapon == WP_SNIPERRIFLE ) {
 			cg.zoomval = cg_zoomDefaultSniper.value;
+
 		} else if( cg.predictedPlayerState.weapon == WP_FG42SCOPE ) {
 			cg.zoomval = cg_zoomDefaultFG.value;
+
 		} else {
 			cg.zoomval = 0;
 		}
@@ -822,6 +886,7 @@ static int CG_CalcFov()
 		cg.zoomedBinoc = qfalse;
 		cg.zoomTime	   = 0;
 		cg.zoomval	   = 0;
+
 	} else {
 		dead = qfalse;
 	}
@@ -829,15 +894,19 @@ static int CG_CalcFov()
 	if( cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
 		// if in intermission, use a fixed value
 		base_fov_x = 90;
+
 	} else {
 		// user selectable
 		if( cgs.dmflags & DF_FIXED_FOV ) {
 			// dmflag to prevent wide fov for all clients
 			base_fov_x = 90;
+
 		} else {
 			base_fov_x = cg_fov.value;
+
 			if( base_fov_x < 1 ) {
 				base_fov_x = 1;
+
 			} else if( base_fov_x > 160 ) {
 				base_fov_x = 160;
 			}
@@ -849,9 +918,11 @@ static int CG_CalcFov()
 
 			if( zoomFov < 1 ) {
 				zoomFov = 1;
+
 			} else if( zoomFov > 160 ) {
 				zoomFov = 160;
 			}
+
 		} else {
 			zoomFov = lastfov;
 		}
@@ -859,17 +930,23 @@ static int CG_CalcFov()
 		// do smooth transitions for the binocs
 		if( cg.zoomedBinoc ) { // binoc zooming in
 			f = ( cg.time - cg.zoomTime ) / ( float )ZOOM_TIME;
+
 			if( f > 1.0 ) {
 				base_fov_x = zoomFov;
+
 			} else {
 				base_fov_x = base_fov_x + f * ( zoomFov - base_fov_x );
 			}
+
 			lastfov = base_fov_x;
+
 		} else if( cg.zoomval ) { // zoomed by sniper/snooper
 			base_fov_x = cg.zoomval;
 			lastfov	   = base_fov_x;
+
 		} else { // binoc zooming out
 			f = ( cg.time - cg.zoomTime ) / ( float )ZOOM_TIME;
+
 			if( f <= 1.0 ) {
 				base_fov_x = zoomFov + f * ( base_fov_x - zoomFov );
 			}
@@ -882,10 +959,12 @@ static int CG_CalcFov()
 			base_fov_x = cg_zoomDefaultSniper.value;
 		}
 	}
+
 	// dhm - end
 
 	if( !dead && ( cg.weaponSelect == WP_SNOOPERSCOPE ) ) {
 		cg.refdef.rdflags |= RDF_SNOOPERVIEW;
+
 	} else {
 		cg.refdef.rdflags &= ~RDF_SNOOPERVIEW;
 	}
@@ -901,6 +980,7 @@ static int CG_CalcFov()
 	if( cg.refdef.width <= 0 ) {
 		cg.refdef.width = 640;
 	}
+
 	if( cg.refdef.height <= 0 ) {
 		cg.refdef.height = 480;
 	}
@@ -915,6 +995,7 @@ static int CG_CalcFov()
 	if( aspect > ( 4.0f / 3.0f ) ) {
 		x	  = ( float )cg.refdef.height / tan( fov_y / 360.0f * M_PI );
 		fov_x = atan2( ( float )cg.refdef.width, x ) * 360.0f / M_PI;
+
 	} else {
 		// keep original behavior for 4:3 and narrower
 		fov_x = base_fov_x;
@@ -924,6 +1005,7 @@ static int CG_CalcFov()
 
 	// warp if underwater
 	contents = CG_PointContents( cg.refdef.vieworg, -1 );
+
 	if( contents & ( CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) {
 		phase = cg.time / 1000.0f * WAVE_FREQUENCY * M_PI * 2.0f;
 		v	  = WAVE_AMPLITUDE * sin( phase );
@@ -931,14 +1013,17 @@ static int CG_CalcFov()
 		fov_y -= v;
 		inwater = qtrue;
 		cg.refdef.rdflags |= RDF_UNDERWATER;
+
 	} else {
 		cg.refdef.rdflags &= ~RDF_UNDERWATER;
 		inwater = qfalse;
 	}
 
 	contents = CG_PointContents( cg.refdef.vieworg, -1 );
+
 	if( contents & ( CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) {
 		cg.refdef.rdflags |= RDF_UNDERWATER;
+
 	} else {
 		cg.refdef.rdflags &= ~RDF_UNDERWATER;
 	}
@@ -952,13 +1037,17 @@ static int CG_CalcFov()
 		if( cg.zoomval ) {
 			if( cg.snap->ps.weapon == WP_SNOOPERSCOPE ) {
 				cg.zoomSensitivity = 0.3f * ( cg.zoomval / 90.0f ); // NERVE - SMF - changed to get less sensitive as you zoom in
+
 			} else {
 				cg.zoomSensitivity = 0.6f * ( cg.zoomval / 90.0f ); // NERVE - SMF - changed to get less sensitive as you zoom in
 			}
+
 		} else {
 			cg.zoomSensitivity = 1;
 		}
+
 		// -NERVE - SMF
+
 	} else {
 		cg.zoomSensitivity = cg.refdef.fov_y / 75.0f;
 	}
@@ -1009,6 +1098,7 @@ static void CG_DamageBlendBlob()
 
 		maxTime = vd->damageDuration;
 		t		= cg.time - vd->damageTime;
+
 		if( t <= 0 || t >= maxTime ) {
 			vd->damageValue = 0;
 			continue;
@@ -1147,8 +1237,10 @@ static int CG_CalcViewValues()
 
 		t = cg.time - cg.predictedErrorTime;
 		f = ( cg_errorDecay.value - t ) / cg_errorDecay.value;
+
 		if( f > 0 && f < 1 ) {
 			VectorMA( cg.refdef.vieworg, f, cg.predictedError, cg.refdef.vieworg );
+
 		} else {
 			cg.predictedErrorTime = 0;
 		}
@@ -1172,11 +1264,13 @@ static int CG_CalcViewValues()
 			cg.refdefViewAngles[1] += crandom();
 		}
 	}
+
 	// done.
 
 	if( cg.renderingThirdPerson ) {
 		// back away from character
 		CG_OffsetThirdPersonView();
+
 	} else {
 		// offset for local bobbing and kicks
 		CG_OffsetFirstPersonView();
@@ -1186,6 +1280,7 @@ static int CG_CalcViewValues()
 			vec3_t fwd;
 			AngleVectors( cg.refdefViewAngles, fwd, NULL, NULL );
 			VectorMA( cg_entities[ps->viewlocked_entNum].currentState.pos.trBase, 16, fwd, cg.refdef.vieworg );
+
 		} else if( ps->viewlocked ) {
 			vec3_t fwd;
 			float  oldZ;
@@ -1195,6 +1290,7 @@ static int CG_CalcViewValues()
 			VectorMA( cg_entities[ps->viewlocked_entNum].currentState.pos.trBase, -34, fwd, cg.refdef.vieworg );
 			cg.refdef.vieworg[2] = oldZ;
 		}
+
 		// done.
 	}
 
@@ -1222,12 +1318,15 @@ static void CG_PowerupTimerSounds()
 	// powerup timers going away
 	for( i = 0; i < MAX_POWERUPS; i++ ) {
 		t = cg.snap->ps.powerups[i];
+
 		if( t <= cg.time ) {
 			continue;
 		}
+
 		if( t - cg.time >= POWERUP_BLINKS * POWERUP_BLINK_TIME ) {
 			continue;
 		}
+
 		if( ( t - cg.time ) / POWERUP_BLINK_TIME != ( t - cg.oldTime ) / POWERUP_BLINK_TIME ) {
 			sys->S_StartSound( NULL, cg.snap->ps.clientNum, CHAN_ITEM, cgs.media.wearOffSound );
 		}
@@ -1270,27 +1369,35 @@ void CG_DrawSkyBoxPortal()
 
 	if( cg_skybox.integer ) {
 		token = COM_ParseExt( &cstr, qfalse );
+
 		if( !token || !token[0] ) {
 			CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring\n" );
 		}
+
 		cg.refdef.vieworg[0] = atof( token );
 
 		token = COM_ParseExt( &cstr, qfalse );
+
 		if( !token || !token[0] ) {
 			CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring\n" );
 		}
+
 		cg.refdef.vieworg[1] = atof( token );
 
 		token = COM_ParseExt( &cstr, qfalse );
+
 		if( !token || !token[0] ) {
 			CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring\n" );
 		}
+
 		cg.refdef.vieworg[2] = atof( token );
 
 		token = COM_ParseExt( &cstr, qfalse );
+
 		if( !token || !token[0] ) {
 			CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring\n" );
 		}
+
 		fov_x = atoi( token );
 
 		if( !fov_x ) {
@@ -1299,8 +1406,10 @@ void CG_DrawSkyBoxPortal()
 
 		// setup fog the first time, ignore this part of the configstring after that
 		token = COM_ParseExt( &cstr, qfalse );
+
 		if( !token || !token[0] ) {
 			CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring.  No fog state\n" );
+
 		} else {
 			vec4_t fogColor;
 			int	   fogStart, fogEnd;
@@ -1309,33 +1418,43 @@ void CG_DrawSkyBoxPortal()
 				//			if(!foginited) {
 				if( 1 ) {
 					token = COM_ParseExt( &cstr, qfalse );
+
 					if( !token || !token[0] ) {
 						CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring.  No fog[0]\n" );
 					}
+
 					fogColor[0] = atof( token );
 
 					token = COM_ParseExt( &cstr, qfalse );
+
 					if( !token || !token[0] ) {
 						CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring.  No fog[1]\n" );
 					}
+
 					fogColor[1] = atof( token );
 
 					token = COM_ParseExt( &cstr, qfalse );
+
 					if( !token || !token[0] ) {
 						CG_Error( "CG_DrawSkyBoxPortal: error parsing skybox configstring.  No fog[2]\n" );
 					}
+
 					fogColor[2] = atof( token );
 
 					token = COM_ParseExt( &cstr, qfalse );
+
 					if( !token || !token[0] ) {
 						fogStart = 0;
+
 					} else {
 						fogStart = atoi( token );
 					}
 
 					token = COM_ParseExt( &cstr, qfalse );
+
 					if( !token || !token[0] ) {
 						fogEnd = 0;
+
 					} else {
 						fogEnd = atoi( token );
 					}
@@ -1343,6 +1462,7 @@ void CG_DrawSkyBoxPortal()
 					sys->R_SetFog( FOG_PORTALVIEW, fogStart, fogEnd, fogColor[0], fogColor[1], fogColor[2], 1.1 );
 					foginited = qtrue;
 				}
+
 			} else {
 				if( !foginited ) {
 					sys->R_SetFog( FOG_PORTALVIEW, 0, 0, 0, 0, 0, 0 ); // init to null
@@ -1356,15 +1476,19 @@ void CG_DrawSkyBoxPortal()
 		if( cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
 			// if in intermission, use a fixed value
 			fov_x = 90;
+
 		} else {
 			// user selectable
 			if( cgs.dmflags & DF_FIXED_FOV ) {
 				// dmflag to prevent wide fov for all clients
 				fov_x = 90;
+
 			} else {
 				fov_x = cg_fov.value;
+
 				if( fov_x < 1 ) {
 					fov_x = 1;
+
 				} else if( fov_x > 160 ) {
 					fov_x = 160;
 				}
@@ -1376,9 +1500,11 @@ void CG_DrawSkyBoxPortal()
 
 				if( zoomFov < 1 ) {
 					zoomFov = 1;
+
 				} else if( zoomFov > 160 ) {
 					zoomFov = 160;
 				}
+
 			} else {
 				zoomFov = lastfov;
 			}
@@ -1386,19 +1512,26 @@ void CG_DrawSkyBoxPortal()
 			// do smooth transitions for the binocs
 			if( cg.zoomedBinoc ) { // binoc zooming in
 				f = ( cg.time - cg.zoomTime ) / ( float )ZOOM_TIME;
+
 				if( f > 1.0 ) {
 					fov_x = zoomFov;
+
 				} else {
 					fov_x = fov_x + f * ( zoomFov - fov_x );
 				}
+
 				lastfov = fov_x;
+
 			} else if( cg.zoomval ) { // zoomed by sniper/snooper
 				fov_x	= cg.zoomval;
 				lastfov = fov_x;
+
 			} else { // binoc zooming out
 				f = ( cg.time - cg.zoomTime ) / ( float )ZOOM_TIME;
+
 				if( f > 1.0 ) {
 					fov_x = fov_x;
+
 				} else {
 					fov_x = zoomFov + f * ( fov_x - zoomFov );
 				}
@@ -1407,6 +1540,7 @@ void CG_DrawSkyBoxPortal()
 
 		if( cg.weaponSelect == WP_SNOOPERSCOPE ) {
 			cg.refdef.rdflags |= RDF_SNOOPERVIEW;
+
 		} else {
 			cg.refdef.rdflags &= ~RDF_SNOOPERVIEW;
 		}
@@ -1529,14 +1663,17 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	if( cg.weaponSelect == WP_FG42SCOPE || cg.weaponSelect == WP_SNOOPERSCOPE || cg.weaponSelect == WP_SNIPERRIFLE ) {
 		float spd;
 		spd = VectorLength( cg.snap->ps.velocity );
+
 		if( spd > 180.0f ) {
 			switch( cg.weaponSelect ) {
 				case WP_FG42SCOPE:
 					CG_FinishWeaponChange( cg.weaponSelect, WP_FG42 );
 					break;
+
 				case WP_SNOOPERSCOPE:
 					CG_FinishWeaponChange( cg.weaponSelect, WP_GARAND );
 					break;
+
 				case WP_SNIPERRIFLE:
 					CG_FinishWeaponChange( cg.weaponSelect, WP_MAUSER );
 					break;
@@ -1621,6 +1758,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		CG_AddFlameChunks();
 		CG_AddTrails(); // this must come last, so the trails dropped this frame get drawn
 	}
+
 	// done.
 
 	DEBUGTIME
@@ -1629,6 +1767,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	if( cg.testModelEntity.hModel ) {
 		CG_AddTestModel();
 	}
+
 	cg.refdef.time = cg.time;
 	memcpy( cg.refdef.areamask, cg.snap->areamask, sizeof( cg.refdef.areamask ) );
 
@@ -1640,9 +1779,11 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// make sure the lagometerSample and frame timing isn't done twice when in stereo
 	if( stereoView != STEREO_RIGHT ) {
 		cg.frametime = cg.time - cg.oldTime;
+
 		if( cg.frametime < 0 ) {
 			cg.frametime = 0;
 		}
+
 		cg.oldTime = cg.time;
 		CG_AddLagometerFrameInfo();
 	}

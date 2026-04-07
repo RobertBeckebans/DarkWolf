@@ -59,6 +59,7 @@ void		 EA_Say( int client, char* str )
 {
 	botimport.BotClientCommand( client, va( "say %s", str ) );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -69,6 +70,7 @@ void EA_SayTeam( int client, char* str )
 {
 	botimport.BotClientCommand( client, va( "say_team %s", str ) );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -79,6 +81,7 @@ void EA_UseItem( int client, char* it )
 {
 	botimport.BotClientCommand( client, va( "use %s", it ) );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -89,6 +92,7 @@ void EA_DropItem( int client, char* it )
 {
 	botimport.BotClientCommand( client, va( "drop %s", it ) );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -99,6 +103,7 @@ void EA_UseInv( int client, char* inv )
 {
 	botimport.BotClientCommand( client, va( "invuse %s", inv ) );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -109,6 +114,7 @@ void EA_DropInv( int client, char* inv )
 {
 	botimport.BotClientCommand( client, va( "invdrop %s", inv ) );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -123,6 +129,7 @@ void EA_Gesture( int client )
 
 	bi->actionflags |= ACTION_GESTURE;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -133,6 +140,7 @@ void EA_Command( int client, char* command )
 {
 	botimport.BotClientCommand( client, command );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -147,6 +155,7 @@ void EA_SelectWeapon( int client, int weapon )
 
 	bi->weapon = weapon;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -161,6 +170,7 @@ void EA_Attack( int client )
 
 	bi->actionflags |= ACTION_ATTACK;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -175,6 +185,7 @@ void EA_Reload( int client )
 
 	bi->actionflags |= ACTION_RELOAD;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -189,6 +200,7 @@ void EA_Talk( int client )
 
 	bi->actionflags |= ACTION_TALK;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -203,6 +215,7 @@ void EA_Use( int client )
 
 	bi->actionflags |= ACTION_USE;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -217,6 +230,7 @@ void EA_Respawn( int client )
 
 	bi->actionflags |= ACTION_RESPAWN;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -231,10 +245,12 @@ void EA_Jump( int client )
 
 	if( bi->actionflags & ACTION_JUMPEDLASTFRAME ) {
 		bi->actionflags &= ~ACTION_JUMP;
+
 	} else {
 		bi->actionflags |= ACTION_JUMP;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -249,10 +265,12 @@ void EA_DelayedJump( int client )
 
 	if( bi->actionflags & ACTION_JUMPEDLASTFRAME ) {
 		bi->actionflags &= ~ACTION_DELAYEDJUMP;
+
 	} else {
 		bi->actionflags |= ACTION_DELAYEDJUMP;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -267,6 +285,7 @@ void EA_Crouch( int client )
 
 	bi->actionflags |= ACTION_CROUCH;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -281,6 +300,7 @@ void EA_Walk( int client )
 
 	bi->actionflags |= ACTION_WALK;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -295,6 +315,7 @@ void EA_MoveUp( int client )
 
 	bi->actionflags |= ACTION_MOVEUP;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -309,6 +330,7 @@ void EA_MoveDown( int client )
 
 	bi->actionflags |= ACTION_MOVEDOWN;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -323,6 +345,7 @@ void EA_MoveForward( int client )
 
 	bi->actionflags |= ACTION_MOVEFORWARD;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -337,6 +360,7 @@ void EA_MoveBack( int client )
 
 	bi->actionflags |= ACTION_MOVEBACK;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -351,6 +375,7 @@ void EA_MoveLeft( int client )
 
 	bi->actionflags |= ACTION_MOVELEFT;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -365,6 +390,7 @@ void EA_MoveRight( int client )
 
 	bi->actionflags |= ACTION_MOVERIGHT;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -378,14 +404,18 @@ void EA_Move( int client, vec3_t dir, float speed )
 	bi = &botinputs[client];
 
 	VectorCopy( dir, bi->dir );
+
 	// cap speed
 	if( speed > MAX_USERMOVE ) {
 		speed = MAX_USERMOVE;
+
 	} else if( speed < -MAX_USERMOVE ) {
 		speed = -MAX_USERMOVE;
 	}
+
 	bi->speed = speed;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -400,6 +430,7 @@ void EA_View( int client, vec3_t viewangles )
 
 	VectorCopy( viewangles, bi->viewangles );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -427,6 +458,7 @@ void EA_EndRegular( int client, float thinktime )
 		if (jumped) bi->actionflags |= ACTION_JUMPEDLASTFRAME;
 	*/
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -454,6 +486,7 @@ void EA_GetInput( int client, float thinktime, bot_input_t* input )
 	if (jumped) bi->actionflags |= ACTION_JUMPEDLASTFRAME;
 	*/
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -473,6 +506,7 @@ void EA_ResetInput( int client, bot_input_t* init )
 	bi->speed		= 0;
 	jumped			= bi->actionflags & ACTION_JUMP;
 	bi->actionflags = 0;
+
 	if( jumped ) {
 		bi->actionflags |= ACTION_JUMPEDLASTFRAME;
 	}
@@ -481,6 +515,7 @@ void EA_ResetInput( int client, bot_input_t* init )
 		memcpy( bi, init, sizeof( bot_input_t ) );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -493,6 +528,7 @@ int EA_Setup()
 	botinputs = ( bot_input_t* )GetClearedHunkMemory( botlibglobals.maxclients * sizeof( bot_input_t ) );
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:			-

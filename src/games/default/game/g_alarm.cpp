@@ -97,6 +97,7 @@ void alarmbox_updateparts( gentity_t* ent, qboolean matestoo )
 
 			if( !( ent->active ) ) { // destroyed, so just turn teammates off
 				mate->s.frame = 0;
+
 			} else {
 				mate->s.frame = ent->s.frame;
 			}
@@ -111,9 +112,11 @@ void alarmbox_updateparts( gentity_t* ent, qboolean matestoo )
 	}
 
 	t = NULL;
+
 	while( ( t = G_Find( t, FOFS( targetname ), ent->target ) ) != NULL ) {
 		if( t == ent ) {
 			G_Printf( "WARNING: Entity used itself.\n" );
+
 		} else {
 			// give the dlight the sound
 			if( !Q_stricmp( t->classname, "dlight" ) ) {
@@ -124,12 +127,14 @@ void alarmbox_updateparts( gentity_t* ent, qboolean matestoo )
 					if( !( t->r.linked ) ) {
 						t->use( t, ent, 0 );
 					}
+
 				} else {
 					if( t->r.linked ) {
 						t->use( t, ent, 0 );
 					}
 				}
 			}
+
 			// alarmbox can tell script_trigger about activation
 			// (but don't trigger if dying, only activation)
 			else if( !Q_stricmp( t->classname, "target_script_trigger" ) ) {
@@ -154,14 +159,17 @@ void alarmbox_use( gentity_t* ent, gentity_t* other, gentity_t* foo )
 
 	if( ent->s.frame ) {
 		ent->s.frame = 0;
+
 	} else {
 		ent->s.frame = 1;
 	}
 
 	alarmbox_updateparts( ent, qtrue );
+
 	if( other->client ) {
 		G_AddEvent( ent, EV_GENERAL_SOUND, ent->soundPos3 );
 	}
+
 	//	G_Printf("touched alarmbox\n");
 }
 
@@ -183,9 +191,11 @@ void alarmbox_die( gentity_t* ent, gentity_t* inflictor, gentity_t* attacker, in
 	// fire 'death' targets
 	if( ent->targetdeath ) {
 		t = NULL;
+
 		while( ( t = G_Find( t, FOFS( targetname ), ent->targetdeath ) ) != NULL ) {
 			if( t == ent ) {
 				G_Printf( "WARNING: Entity used itself.\n" );
+
 			} else {
 				// fire target
 				t->use( t, ent, attacker );
@@ -261,6 +271,7 @@ void SP_alarm_box( gentity_t* ent )
 
 	if( ent->spawnflags & 1 ) {
 		ent->s.frame = 1;
+
 	} else {
 		ent->s.frame = 0;
 	}

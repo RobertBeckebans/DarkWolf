@@ -85,6 +85,7 @@ int AAS_KeepEdge( aas_edge_t* edge )
 {
 	return 1;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -97,15 +98,18 @@ int AAS_OptimizeEdge( optimized_t* optimized, int edgenum )
 	aas_edge_t *edge, *optedge;
 
 	edge = &( *aasworld ).edges[abs( edgenum )];
+
 	if( !AAS_KeepEdge( edge ) ) {
 		return 0;
 	}
 
 	optedgenum = optimized->edgeoptimizeindex[abs( edgenum )];
+
 	if( optedgenum ) {
 		// keep the edge reversed sign
 		if( edgenum > 0 ) {
 			return optedgenum;
+
 		} else {
 			return -optedgenum;
 		}
@@ -116,6 +120,7 @@ int AAS_OptimizeEdge( optimized_t* optimized, int edgenum )
 	for( i = 0; i < 2; i++ ) {
 		if( optimized->vertexoptimizeindex[edge->v[i]] ) {
 			optedge->v[i] = optimized->vertexoptimizeindex[edge->v[i]];
+
 		} else {
 			VectorCopy( ( *aasworld ).vertexes[edge->v[i]], optimized->vertexes[optimized->numvertexes] );
 			optedge->v[i]							   = optimized->numvertexes;
@@ -123,16 +128,20 @@ int AAS_OptimizeEdge( optimized_t* optimized, int edgenum )
 			optimized->numvertexes++;
 		}
 	}
+
 	optimized->edgeoptimizeindex[abs( edgenum )] = optimized->numedges;
 	optedgenum									 = optimized->numedges;
 	optimized->numedges++;
+
 	// keep the edge reversed sign
 	if( edgenum > 0 ) {
 		return optedgenum;
+
 	} else {
 		return -optedgenum;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -143,10 +152,12 @@ int AAS_KeepFace( aas_face_t* face )
 {
 	if( !( face->faceflags & FACE_LADDER ) ) {
 		return 0;
+
 	} else {
 		return 1;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -159,15 +170,18 @@ int AAS_OptimizeFace( optimized_t* optimized, int facenum )
 	aas_face_t *face, *optface;
 
 	face = &( *aasworld ).faces[abs( facenum )];
+
 	if( !AAS_KeepFace( face ) ) {
 		return 0;
 	}
 
 	optfacenum = optimized->faceoptimizeindex[abs( facenum )];
+
 	if( optfacenum ) {
 		// keep the face side sign
 		if( facenum > 0 ) {
 			return optfacenum;
+
 		} else {
 			return -optfacenum;
 		}
@@ -178,25 +192,31 @@ int AAS_OptimizeFace( optimized_t* optimized, int facenum )
 
 	optface->numedges  = 0;
 	optface->firstedge = optimized->edgeindexsize;
+
 	for( i = 0; i < face->numedges; i++ ) {
 		edgenum	   = ( *aasworld ).edgeindex[face->firstedge + i];
 		optedgenum = AAS_OptimizeEdge( optimized, edgenum );
+
 		if( optedgenum ) {
 			optimized->edgeindex[optface->firstedge + optface->numedges] = optedgenum;
 			optface->numedges++;
 			optimized->edgeindexsize++;
 		}
 	}
+
 	optimized->faceoptimizeindex[abs( facenum )] = optimized->numfaces;
 	optfacenum									 = optimized->numfaces;
 	optimized->numfaces++;
+
 	// keep the face side sign
 	if( facenum > 0 ) {
 		return optfacenum;
+
 	} else {
 		return -optfacenum;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -214,9 +234,11 @@ void AAS_OptimizeArea( optimized_t* optimized, int areanum )
 
 	optarea->numfaces  = 0;
 	optarea->firstface = optimized->faceindexsize;
+
 	for( i = 0; i < area->numfaces; i++ ) {
 		facenum	   = ( *aasworld ).faceindex[area->firstface + i];
 		optfacenum = AAS_OptimizeFace( optimized, facenum );
+
 		if( optfacenum ) {
 			optimized->faceindex[optarea->firstface + optarea->numfaces] = optfacenum;
 			optarea->numfaces++;
@@ -224,6 +246,7 @@ void AAS_OptimizeArea( optimized_t* optimized, int areanum )
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -249,6 +272,7 @@ void AAS_OptimizeAlloc( optimized_t* optimized )
 	optimized->edgeoptimizeindex   = ( int* )GetClearedMemory( ( *aasworld ).numedges * sizeof( int ) );
 	optimized->faceoptimizeindex   = ( int* )GetClearedMemory( ( *aasworld ).numfaces * sizeof( int ) );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -261,36 +285,47 @@ void AAS_OptimizeStore( optimized_t* optimized )
 	if( ( *aasworld ).vertexes ) {
 		FreeMemory( ( *aasworld ).vertexes );
 	}
+
 	( *aasworld ).vertexes	  = optimized->vertexes;
 	( *aasworld ).numvertexes = optimized->numvertexes;
+
 	// store the optimized edges
 	if( ( *aasworld ).edges ) {
 		FreeMemory( ( *aasworld ).edges );
 	}
+
 	( *aasworld ).edges	   = optimized->edges;
 	( *aasworld ).numedges = optimized->numedges;
+
 	// store the optimized edge index
 	if( ( *aasworld ).edgeindex ) {
 		FreeMemory( ( *aasworld ).edgeindex );
 	}
+
 	( *aasworld ).edgeindex		= optimized->edgeindex;
 	( *aasworld ).edgeindexsize = optimized->edgeindexsize;
+
 	// store the optimized faces
 	if( ( *aasworld ).faces ) {
 		FreeMemory( ( *aasworld ).faces );
 	}
+
 	( *aasworld ).faces	   = optimized->faces;
 	( *aasworld ).numfaces = optimized->numfaces;
+
 	// store the optimized face index
 	if( ( *aasworld ).faceindex ) {
 		FreeMemory( ( *aasworld ).faceindex );
 	}
+
 	( *aasworld ).faceindex		= optimized->faceindex;
 	( *aasworld ).faceindexsize = optimized->faceindexsize;
+
 	// store the optimized areas
 	if( ( *aasworld ).areas ) {
 		FreeMemory( ( *aasworld ).areas );
 	}
+
 	( *aasworld ).areas	   = optimized->areas;
 	( *aasworld ).numareas = optimized->numareas;
 	// free optimize indexes
@@ -298,6 +333,7 @@ void AAS_OptimizeStore( optimized_t* optimized )
 	FreeMemory( optimized->edgeoptimizeindex );
 	FreeMemory( optimized->faceoptimizeindex );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -310,9 +346,11 @@ void AAS_Optimize()
 	optimized_t optimized;
 
 	AAS_OptimizeAlloc( &optimized );
+
 	for( i = 1; i < ( *aasworld ).numareas; i++ ) {
 		AAS_OptimizeArea( &optimized, i );
 	}
+
 	// reset the reachability face pointers
 	for( i = 0; i < ( *aasworld ).reachabilitysize; i++ ) {
 		// NOTE: for TRAVEL_ELEVATOR the facenum is the model number of
@@ -320,26 +358,33 @@ void AAS_Optimize()
 		if( ( *aasworld ).reachability[i].traveltype == TRAVEL_ELEVATOR ) {
 			continue;
 		}
+
 		// NOTE: for TRAVEL_JUMPPAD the facenum is the Z velocity and the edgenum is the hor velocity
 		if( ( *aasworld ).reachability[i].traveltype == TRAVEL_JUMPPAD ) {
 			continue;
 		}
+
 		// NOTE: for TRAVEL_FUNCBOB the facenum and edgenum contain other coded information
 		if( ( *aasworld ).reachability[i].traveltype == TRAVEL_FUNCBOB ) {
 			continue;
 		}
+
 		//
 		sign								  = ( *aasworld ).reachability[i].facenum;
 		( *aasworld ).reachability[i].facenum = optimized.faceoptimizeindex[abs( ( *aasworld ).reachability[i].facenum )];
+
 		if( sign < 0 ) {
 			( *aasworld ).reachability[i].facenum = -( *aasworld ).reachability[i].facenum;
 		}
+
 		sign								  = ( *aasworld ).reachability[i].edgenum;
 		( *aasworld ).reachability[i].edgenum = optimized.edgeoptimizeindex[abs( ( *aasworld ).reachability[i].edgenum )];
+
 		if( sign < 0 ) {
 			( *aasworld ).reachability[i].edgenum = -( *aasworld ).reachability[i].edgenum;
 		}
 	}
+
 	// store the optimized AAS data into (*aasworld)
 	AAS_OptimizeStore( &optimized );
 	// print some nice stuff :)

@@ -78,9 +78,11 @@ float UI_ClampCvar( float min, float max, float value )
 	if( value < min ) {
 		return min;
 	}
+
 	if( value > max ) {
 		return max;
 	}
+
 	return value;
 }
 
@@ -145,6 +147,7 @@ void UI_SetBestScores( postGameInfo_t* newInfo, qboolean postGame )
 	sys->Cvar_Set( "ui_scoreShutoutBonus", va( "%i", newInfo->shutoutBonus ) );
 	sys->Cvar_Set( "ui_scoreTime", va( "%02i:%02i", newInfo->time / 60, newInfo->time % 60 ) );
 	sys->Cvar_Set( "ui_scoreCaptures", va( "%i", newInfo->captures ) );
+
 	if( postGame ) {
 		sys->Cvar_Set( "ui_scoreAccuracy2", va( "%i%%", newInfo->accuracy ) );
 		sys->Cvar_Set( "ui_scoreImpressives2", va( "%i", newInfo->impressives ) );
@@ -163,6 +166,7 @@ void UI_SetBestScores( postGameInfo_t* newInfo, qboolean postGame )
 		sys->Cvar_Set( "ui_scoreCaptures2", va( "%i", newInfo->captures ) );
 	}
 }
+
 #endif // #ifdef MISSIONPACK
 
 void UI_LoadBestScores( const char* map, int game )
@@ -173,22 +177,28 @@ void UI_LoadBestScores( const char* map, int game )
 	postGameInfo_t newInfo;
 	memset( &newInfo, 0, sizeof( postGameInfo_t ) );
 	Com_sprintf( fileName, MAX_QPATH, "games/%s_%i.game", map, game );
+
 	if( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
 		int size = 0;
 		sys->FS_Read( &size, sizeof( int ), f );
+
 		if( size == sizeof( postGameInfo_t ) ) {
 			sys->FS_Read( &newInfo, sizeof( postGameInfo_t ), f );
 		}
+
 		sys->FS_FCloseFile( f );
 	}
+
 	UI_SetBestScores( &newInfo, qfalse );
 
 	Com_sprintf( fileName, MAX_QPATH, "demos/%s_%d.dm_%d", map, game, ( int )sys->Cvar_VariableValue( "protocol" ) );
 	uiInfo.demoAvailable = qfalse;
+
 	if( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
 		uiInfo.demoAvailable = qtrue;
 		sys->FS_FCloseFile( f );
 	}
+
 #endif // #ifdef MISSIONPACK
 }
 
@@ -213,13 +223,16 @@ void UI_ClearScores()
 
 	if( count > 0 ) {
 		gameFile = gameList;
+
 		for( i = 0; i < count; i++ ) {
 			len = strlen( gameFile );
+
 			if( sys->FS_FOpenFile( va( "games/%s", gameFile ), &f, FS_WRITE ) >= 0 ) {
 				sys->FS_Write( &size, sizeof( int ), f );
 				sys->FS_Write( &newInfo, size, f );
 				sys->FS_FCloseFile( f );
 			}
+
 			gameFile += len + 1;
 		}
 	}
@@ -258,13 +271,16 @@ static void UI_CalcPostGameStats()
 	Com_sprintf( fileName, MAX_QPATH, "games/%s_%i.game", map, game );
 	// see if we have one already
 	memset( &oldInfo, 0, sizeof( postGameInfo_t ) );
+
 	if( sys->FS_FOpenFile( fileName, &f, FS_READ ) >= 0 ) {
 		// if so load it
 		size = 0;
 		sys->FS_Read( &size, sizeof( int ), f );
+
 		if( size == sizeof( postGameInfo_t ) ) {
 			sys->FS_Read( &oldInfo, sizeof( postGameInfo_t ), f );
 		}
+
 		sys->FS_FCloseFile( f );
 	}
 
@@ -283,22 +299,27 @@ static void UI_CalcPostGameStats()
 
 	newInfo.time = ( time - sys->Cvar_VariableValue( "ui_matchStartTime" ) ) / 1000;
 	adjustedTime = uiInfo.mapList[ui_currentMap.integer].timeToBeat[game];
+
 	if( newInfo.time < adjustedTime ) {
 		newInfo.timeBonus = ( adjustedTime - newInfo.time ) * 10;
+
 	} else {
 		newInfo.timeBonus = 0;
 	}
 
 	if( newInfo.redScore > newInfo.blueScore && newInfo.blueScore <= 0 ) {
 		newInfo.shutoutBonus = 100;
+
 	} else {
 		newInfo.shutoutBonus = 0;
 	}
 
 	newInfo.skillBonus = sys->Cvar_VariableValue( "g_spSkill" );
+
 	if( newInfo.skillBonus <= 0 ) {
 		newInfo.skillBonus = 1;
 	}
+
 	newInfo.score = newInfo.baseScore + newInfo.shutoutBonus + newInfo.timeBonus;
 	newInfo.score *= newInfo.skillBonus;
 
@@ -308,6 +329,7 @@ static void UI_CalcPostGameStats()
 	if( newHigh ) {
 		// if so write out the new one
 		uiInfo.newHighScoreTime = uiInfo.uiDC.realTime + 20000;
+
 		if( sys->FS_FOpenFile( fileName, &f, FS_WRITE ) >= 0 ) {
 			size = sizeof( postGameInfo_t );
 			sys->FS_Write( &size, sizeof( int ), f );
@@ -459,6 +481,7 @@ void UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader )
 		w  = -w;
 		s0 = 1;
 		s1 = 0;
+
 	} else {
 		s0 = 0;
 		s1 = 1;
@@ -468,6 +491,7 @@ void UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader )
 		h  = -h;
 		t0 = 1;
 		t1 = 0;
+
 	} else {
 		t0 = 0;
 		t1 = 1;
@@ -507,6 +531,7 @@ void UI_DrawTopBottom( float x, float y, float w, float h )
 	sys->R_DrawStretchPic( x, y, w, 1, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 	sys->R_DrawStretchPic( x, y + h - 1, w, 1, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 }
+
 /*
 ================
 UI_DrawRect

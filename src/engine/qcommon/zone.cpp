@@ -140,9 +140,11 @@ Z_AvailableZoneMemory
 int Z_AvailableZoneMemory( memzone_t* zone )
 {
 	size_t avail = zone->size - zone->used;
+
 	if( avail > ( size_t )INT_MAX ) {
 		return INT_MAX;
 	}
+
 	return ( int )avail;
 }
 
@@ -171,12 +173,15 @@ void Z_Free( void* ptr )
 	}
 
 	block = ( memblock_t* )( ( byte* )ptr - sizeof( memblock_t ) );
+
 	if( block->id != ZONEID ) {
 		Com_Error( ERR_FATAL, "Z_Free: freed a pointer without ZONEID" );
 	}
+
 	if( block->tag == 0 ) {
 		Com_Error( ERR_FATAL, "Z_Free: freed a freed pointer" );
 	}
+
 	// if static memory
 	if( block->tag == TAG_STATIC ) {
 		return;
@@ -189,6 +194,7 @@ void Z_Free( void* ptr )
 
 	if( block->tag == TAG_SMALL ) {
 		zone = smallzone;
+
 	} else {
 		zone = mainzone;
 	}
@@ -201,25 +207,30 @@ void Z_Free( void* ptr )
 	block->tag = 0; // mark as free
 
 	other = block->prev;
+
 	if( !other->tag ) {
 		// merge with previous free block
 		other->size += block->size;
 		other->next		  = block->next;
 		other->next->prev = other;
+
 		if( block == zone->rover ) {
 			zone->rover = other;
 		}
+
 		block = other;
 	}
 
 	zone->rover = block;
 
 	other = block->next;
+
 	if( !other->tag ) {
 		// merge the next free block onto the end
 		block->size += other->size;
 		block->next		  = other->next;
 		block->next->prev = block;
+
 		if( other == zone->rover ) {
 			zone->rover = block;
 		}
@@ -238,6 +249,7 @@ void Z_FreeTags( int tag )
 
 	if( tag == TAG_SMALL ) {
 		zone = smallzone;
+
 	} else {
 		zone = mainzone;
 	}
@@ -247,12 +259,14 @@ void Z_FreeTags( int tag )
 	// use the rover as our pointer, because
 	// Z_Free automatically adjusts it
 	zone->rover = zone->blocklist.next;
+
 	do {
 		if( zone->rover->tag == tag ) {
 			count++;
 			Z_Free( ( void* )( zone->rover + 1 ) );
 			continue;
 		}
+
 		zone->rover = zone->rover->next;
 	} while( zone->rover != &zone->blocklist );
 }
@@ -279,6 +293,7 @@ void* Z_TagMalloc( int size, int tag )
 
 	if( tag == TAG_SMALL ) {
 		zone = smallzone;
+
 	} else {
 		zone = mainzone;
 	}
@@ -308,6 +323,7 @@ void* Z_TagMalloc( int size, int tag )
 
 		if( rover->tag ) {
 			base = rover = rover->next;
+
 		} else {
 			rover = rover->next;
 		}
@@ -317,6 +333,7 @@ void* Z_TagMalloc( int size, int tag )
 	// found a block big enough
 	//
 	extra = base->size - totalSize;
+
 	if( extra > MINFRAGMENT ) {
 		// there will be a free fragment after the allocated block
 		newb			 = ( memblock_t* )( ( byte* )base + totalSize );
@@ -379,11 +396,13 @@ void* S_MallocDebug( int size, char* label, char* file, int line )
 {
 	return Z_TagMallocDebug( size, TAG_SMALL, label, file, line );
 }
+
 #else
 void* S_Malloc( int size )
 {
 	return Z_TagMalloc( size, TAG_SMALL );
 }
+
 #endif
 
 /*
@@ -399,12 +418,15 @@ void Z_CheckHeap()
 		if( block->next == &mainzone->blocklist ) {
 			break; // all blocks have been hit
 		}
+
 		if( ( byte* )block + block->size != ( byte* )block->next ) {
 			Com_Error( ERR_FATAL, "Z_CheckHeap: block size does not touch the next block\n" );
 		}
+
 		if( block->next->prev != block ) {
 			Com_Error( ERR_FATAL, "Z_CheckHeap: next block doesn't have proper back link\n" );
 		}
+
 		if( !block->tag && !block->next->tag ) {
 			Com_Error( ERR_FATAL, "Z_CheckHeap: two consecutive free blocks\n" );
 		}
@@ -442,13 +464,16 @@ void Z_LogZoneHeap( memzone_t* zone, char* name )
 #ifdef ZONE_DEBUG
 			ptr = ( ( char* )block ) + sizeof( memblock_t );
 			j	= 0;
+
 			for( i = 0; i < 20 && ( size_t )i < block->d.allocSize; i++ ) {
 				if( ptr[i] >= 32 && ptr[i] < 127 ) {
 					dump[j++] = ptr[i];
+
 				} else {
 					dump[j++] = '_';
 				}
 			}
+
 			dump[j] = '\0';
 
 			Com_sprintf( buf, sizeof( buf ), "size = %8llu: %s, line: %d (%s) [%s]\r\n", ( unsigned long long )block->d.allocSize, block->d.file, block->d.line, block->d.label, dump );
@@ -518,6 +543,7 @@ char*		CopyString( const char* in )
 
 	if( !in[0] ) {
 		return ( ( char* )&emptystring ) + sizeof( memblock_t );
+
 	} else if( !in[1] ) {
 		if( in[0] >= '0' && in[0] <= '9' ) {
 			return ( ( char* )&numberstring[in[0] - '0'] ) + sizeof( memblock_t );
@@ -551,11 +577,14 @@ void Com_Meminfo_f()
 		if( Cmd_Argc() != 1 ) {
 			Com_Printf( "block:%p    size:%7llu    tag:%3i\n", ( void* )block, ( unsigned long long )block->size, block->tag );
 		}
+
 		if( block->tag ) {
 			zoneBytes += ( size_t )block->size;
 			zoneBlocks++;
+
 			if( block->tag == TAG_BOTLIB ) {
 				botlibBytes += ( size_t )block->size;
+
 			} else if( block->tag == TAG_RENDERER ) {
 				rendererBytes += ( size_t )block->size;
 			}
@@ -564,12 +593,15 @@ void Com_Meminfo_f()
 		if( block->next == &mainzone->blocklist ) {
 			break;
 		}
+
 		if( ( byte* )block + block->size != ( byte* )block->next ) {
 			Com_Printf( "ERROR: block size does not touch the next block\n" );
 		}
+
 		if( block->next->prev != block ) {
 			Com_Printf( "ERROR: next block doesn't have proper back link\n" );
 		}
+
 		if( !block->tag && !block->next->tag ) {
 			Com_Printf( "ERROR: two consecutive free blocks\n" );
 		}
@@ -577,6 +609,7 @@ void Com_Meminfo_f()
 
 	smallZoneBytes	= 0;
 	smallZoneBlocks = 0;
+
 	for( block = smallzone->blocklist.next;; block = block->next ) {
 		if( block->tag ) {
 			smallZoneBytes += ( size_t )block->size;
@@ -593,27 +626,34 @@ void Com_Meminfo_f()
 	Com_Printf( "\n" );
 	Com_Printf( "%8llu low mark\n", ( unsigned long long )hunk_low.mark );
 	Com_Printf( "%8llu low permanent\n", ( unsigned long long )hunk_low.permanent );
+
 	if( hunk_low.temp != hunk_low.permanent ) {
 		Com_Printf( "%8llu low temp\n", ( unsigned long long )hunk_low.temp );
 	}
+
 	Com_Printf( "%8llu low tempHighwater\n", ( unsigned long long )hunk_low.tempHighwater );
 	Com_Printf( "\n" );
 	Com_Printf( "%8llu high mark\n", ( unsigned long long )hunk_high.mark );
 	Com_Printf( "%8llu high permanent\n", ( unsigned long long )hunk_high.permanent );
+
 	if( hunk_high.temp != hunk_high.permanent ) {
 		Com_Printf( "%8llu high temp\n", ( unsigned long long )hunk_high.temp );
 	}
+
 	Com_Printf( "%8llu high tempHighwater\n", ( unsigned long long )hunk_high.tempHighwater );
 	Com_Printf( "\n" );
 	Com_Printf( "%8llu total hunk in use\n", ( unsigned long long )( hunk_low.permanent + hunk_high.permanent ) );
 
 	unused = 0;
+
 	if( hunk_low.tempHighwater > hunk_low.permanent ) {
 		unused += hunk_low.tempHighwater - hunk_low.permanent;
 	}
+
 	if( hunk_high.tempHighwater > hunk_high.permanent ) {
 		unused += hunk_high.tempHighwater - hunk_high.permanent;
 	}
+
 	Com_Printf( "%8llu unused highwater\n", ( unsigned long long )unused );
 	Com_Printf( "\n" );
 	Com_Printf( "%8llu bytes in %llu zone blocks\n", ( unsigned long long )zoneBytes, ( unsigned long long )zoneBlocks );
@@ -643,12 +683,14 @@ void Com_TouchMemory()
 	sum	  = 0;
 
 	j = hunk_low.permanent >> 2;
+
 	for( i = 0; i < j; i += 64 ) {
 		sum += ( ( int* )s_hunkData )[i];
 	}
 
 	i = ( s_hunkTotal - hunk_high.permanent ) >> 2;
 	j = s_hunkTotal >> 2;
+
 	for( ; i < j; i += 64 ) {
 		sum += ( ( int* )s_hunkData )[i];
 	}
@@ -656,10 +698,12 @@ void Com_TouchMemory()
 	for( block = mainzone->blocklist.next;; block = block->next ) {
 		if( block->tag ) {
 			j = ( ( size_t )block->size ) >> 2;
+
 			for( i = 0; i < j; i += 64 ) {
 				sum += ( ( int* )block )[i];
 			}
 		}
+
 		if( block->next == &mainzone->blocklist ) {
 			break;
 		}
@@ -679,9 +723,11 @@ void Com_InitSmallZoneMemory()
 	s_smallZoneTotal = 512u * 1024u;
 
 	smallzone = ( memzone_t* )calloc( s_smallZoneTotal, 1 );
+
 	if( !smallzone ) {
 		Com_Error( ERR_FATAL, "Small zone data failed to allocate %1.1f megs", ( float )s_smallZoneTotal / ( 1024.0f * 1024.0f ) );
 	}
+
 	Z_ClearZone( smallzone, ( int )s_smallZoneTotal );
 }
 
@@ -698,14 +744,17 @@ void Com_InitZoneMemory()
 
 	if( cv->integer < 20 ) {
 		s_zoneTotal = 1024u * 1024u * 16u;
+
 	} else {
 		s_zoneTotal = ( size_t )cv->integer * 1024u * 1024u;
 	}
 
 	mainzone = ( memzone_t* )calloc( s_zoneTotal, 1 );
+
 	if( !mainzone ) {
 		Com_Error( ERR_FATAL, "Zone data failed to allocate %llu megs", ( unsigned long long )( s_zoneTotal / ( 1024u * 1024u ) ) );
 	}
+
 	Z_ClearZone( mainzone, ( int )s_zoneTotal );
 }
 
@@ -777,13 +826,16 @@ void Hunk_SmallLog()
 		}
 
 		locsize = block->size;
+
 		for( block2 = block->next; block2; block2 = block2->next ) {
 			if( block->line != block2->line ) {
 				continue;
 			}
+
 			if( Q_stricmp( block->file, block2->file ) ) {
 				continue;
 			}
+
 			size += block2->size;
 			locsize += block2->size;
 			block2->printed = qtrue;
@@ -825,6 +877,7 @@ void Com_InitHunkMemory()
 	if( com_dedicated && com_dedicated->integer ) {
 		nMinAlloc = MIN_DEDICATED_COMHUNKMEGS;
 		pMsg	  = "Minimum com_hunkMegs for a dedicated server is %i, allocating %llu megs.\n";
+
 	} else {
 		nMinAlloc = MIN_COMHUNKMEGS;
 		pMsg	  = "Minimum com_hunkMegs is %i, allocating %llu megs.\n";
@@ -833,11 +886,13 @@ void Com_InitHunkMemory()
 	if( cv->integer < nMinAlloc ) {
 		s_hunkTotal = ( size_t )nMinAlloc * 1024u * 1024u;
 		Com_Printf( pMsg, nMinAlloc, ( unsigned long long )( s_hunkTotal / ( 1024u * 1024u ) ) );
+
 	} else {
 		s_hunkTotal = ( size_t )cv->integer * 1024u * 1024u;
 	}
 
 	s_hunkRaw = ( byte* )calloc( s_hunkTotal + 31u, 1 );
+
 	if( !s_hunkRaw ) {
 		Com_Error( ERR_FATAL, "Hunk data failed to allocate %llu megs", ( unsigned long long )( s_hunkTotal / ( 1024u * 1024u ) ) );
 	}
@@ -874,6 +929,7 @@ int Hunk_MemoryRemaining()
 	if( remaining > ( size_t )INT_MAX ) {
 		return INT_MAX;
 	}
+
 	return ( int )remaining;
 }
 
@@ -909,6 +965,7 @@ qboolean Hunk_CheckMark()
 	if( hunk_low.mark || hunk_high.mark ) {
 		return qtrue;
 	}
+
 	return qfalse;
 }
 
@@ -990,9 +1047,11 @@ void* Hunk_Alloc( int size, ha_pref preference )
 
 	if( preference == h_dontcare || hunk_temp->temp != hunk_temp->permanent ) {
 		Hunk_SwapBanks();
+
 	} else {
 		if( preference == h_low && hunk_permanent != &hunk_low ) {
 			Hunk_SwapBanks();
+
 		} else if( preference == h_high && hunk_permanent != &hunk_high ) {
 			Hunk_SwapBanks();
 		}
@@ -1017,6 +1076,7 @@ void* Hunk_Alloc( int size, ha_pref preference )
 	if( hunk_permanent == &hunk_low ) {
 		buf = ( void* )( s_hunkData + hunk_permanent->permanent );
 		hunk_permanent->permanent += allocSize;
+
 	} else {
 		hunk_permanent->permanent += allocSize;
 		buf = ( void* )( s_hunkData + s_hunkTotal - hunk_permanent->permanent );
@@ -1039,6 +1099,7 @@ void* Hunk_Alloc( int size, ha_pref preference )
 		hunkblocks	 = block;
 		buf			 = ( ( byte* )buf ) + sizeof( hunkblock_t );
 	}
+
 #endif
 
 	return buf;
@@ -1070,6 +1131,7 @@ void* Hunk_AllocateTempMemory( int size )
 	if( hunk_temp == &hunk_low ) {
 		buf = ( void* )( s_hunkData + hunk_temp->temp );
 		hunk_temp->temp += allocSize;
+
 	} else {
 		hunk_temp->temp += allocSize;
 		buf = ( void* )( s_hunkData + s_hunkTotal - hunk_temp->temp );
@@ -1103,6 +1165,7 @@ void Hunk_FreeTempMemory( void* buf )
 	}
 
 	hdr = ( ( hunkHeader_t* )buf ) - 1;
+
 	if( hdr->magic != HUNK_MAGIC ) {
 		Com_Error( ERR_FATAL, "Hunk_FreeTempMemory: bad magic" );
 	}
@@ -1112,12 +1175,15 @@ void Hunk_FreeTempMemory( void* buf )
 	if( hunk_temp == &hunk_low ) {
 		if( ( byte* )hdr == ( s_hunkData + hunk_temp->temp - hdr->size ) ) {
 			hunk_temp->temp -= hdr->size;
+
 		} else {
 			Com_Printf( "Hunk_FreeTempMemory: not the final block\n" );
 		}
+
 	} else {
 		if( ( byte* )hdr == ( s_hunkData + s_hunkTotal - hunk_temp->temp ) ) {
 			hunk_temp->temp -= hdr->size;
+
 		} else {
 			Com_Printf( "Hunk_FreeTempMemory: not the final block\n" );
 		}

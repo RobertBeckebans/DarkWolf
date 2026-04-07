@@ -297,11 +297,13 @@ float Sin_FaceOnWinding( sin_dface_t* face, winding_t* winding )
 	//
 	w = CopyWinding( winding );
 	memcpy( &plane, &sin_dplanes[face->planenum], sizeof( sin_dplane_t ) );
+
 	// check on which side of the plane the face is
 	if( face->side ) {
 		VectorNegate( plane.normal, plane.normal );
 		plane.dist = -plane.dist;
 	}
+
 	for( i = 0; i < face->numedges && w; i++ ) {
 		// get the first and second vertex of the edge
 		edgenum = sin_dsurfedges[face->firstedge + i];
@@ -318,13 +320,16 @@ float Sin_FaceOnWinding( sin_dface_t* face, winding_t* winding )
 		//
 		ChopWindingInPlace( &w, normal, dist, 0.9 ); // CLIP_EPSILON
 	}
+
 	if( w ) {
 		area = WindingArea( w );
 		FreeWinding( w );
 		return area;
 	}
+
 	return 0;
 }
+
 //===========================================================================
 // creates a winding for the given brush side on the given brush
 //
@@ -342,23 +347,30 @@ winding_t* Sin_BrushSideWinding( sin_dbrush_t* brush, sin_dbrushside_t* baseside
 	// create a winding for the brush side with the given planenumber
 	baseplane = &sin_dplanes[baseside->planenum];
 	w		  = BaseWindingForPlane( baseplane->normal, baseplane->dist );
+
 	for( i = 0; i < brush->numsides && w; i++ ) {
 		side = &sin_dbrushsides[brush->firstside + i];
+
 		// don't chop with the base plane
 		if( side->planenum == baseside->planenum ) {
 			continue;
 		}
+
 		// also don't use planes that are almost equal
 		plane = &sin_dplanes[side->planenum];
+
 		if( DotProduct( baseplane->normal, plane->normal ) > 0.999 && fabs( baseplane->dist - plane->dist ) < 0.01 ) {
 			continue;
 		}
+
 		//
 		plane = &sin_dplanes[side->planenum ^ 1];
 		ChopWindingInPlace( &w, plane->normal, plane->dist, 0 ); // CLIP_EPSILON);
 	}
+
 	return w;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -372,14 +384,17 @@ int Sin_HintSkipBrush( sin_dbrush_t* brush )
 
 	for( j = 0; j < brush->numsides; j++ ) {
 		brushside = &sin_dbrushsides[brush->firstside + j];
+
 		if( brushside->texinfo > 0 ) {
 			if( sin_texinfo[brushside->texinfo].flags & ( SURF_SKIP | SURF_HINT ) ) {
 				return true;
 			}
 		}
 	}
+
 	return false;
 }
+
 //===========================================================================
 // fix screwed brush texture references
 //
@@ -398,29 +413,36 @@ void	 Sin_FixTextureReferences()
 	winding_t*		  w;
 
 	memset( sin_dbrushsidetextured, false, SIN_MAX_MAP_BRUSHSIDES );
+
 	// go over all the brushes
 	for( i = 0; i < sin_numbrushes; i++ ) {
 		brush = &sin_dbrushes[i];
+
 		// hint brushes are not textured
 		if( Sin_HintSkipBrush( brush ) ) {
 			continue;
 		}
+
 		// go over all the sides of the brush
 		for( j = 0; j < brush->numsides; j++ ) {
 			brushside = &sin_dbrushsides[brush->firstside + j];
 			//
 			w = Sin_BrushSideWinding( brush, brushside );
+
 			if( !w ) {
 				sin_dbrushsidetextured[brush->firstside + j] = true;
 				continue;
+
 			} else {
 				// RemoveEqualPoints(w, 0.2);
 				if( WindingIsTiny( w ) ) {
 					FreeWinding( w );
 					sin_dbrushsidetextured[brush->firstside + j] = true;
 					continue;
+
 				} else {
 					we = WindingError( w );
+
 					if( we == WE_NOTENOUGHPOINTS || we == WE_SMALLAREA || we == WE_POINTBOGUSRANGE
 						//						|| we == WE_NONCONVEX
 					) {
@@ -430,16 +452,20 @@ void	 Sin_FixTextureReferences()
 					}
 				}
 			}
+
 			if( WindingArea( w ) < 20 ) {
 				sin_dbrushsidetextured[brush->firstside + j] = true;
 			}
+
 			// find a face for texturing this brush
 			for( k = 0; k < sin_numfaces; k++ ) {
 				face = &sin_dfaces[k];
+
 				// if the face is in the same plane as the brush side
 				if( ( face->planenum & ~1 ) != ( brushside->planenum & ~1 ) ) {
 					continue;
 				}
+
 				// if the face is partly or totally on the brush side
 				if( Sin_FaceOnWinding( face, w ) ) {
 					brushside->texinfo							 = face->texinfo;
@@ -447,6 +473,7 @@ void	 Sin_FixTextureReferences()
 					break;
 				}
 			}
+
 			FreeWinding( w );
 		}
 	}
@@ -471,17 +498,21 @@ int Sin_CompressVis( byte* vis, byte* dest )
 
 	for( j = 0; j < visrow; j++ ) {
 		*dest_p++ = vis[j];
+
 		if( vis[j] ) {
 			continue;
 		}
 
 		rep = 1;
+
 		for( j++; j < visrow; j++ )
 			if( vis[j] || rep == 255 ) {
 				break;
+
 			} else {
 				rep++;
 			}
+
 		*dest_p++ = rep;
 		j--;
 	}
@@ -511,10 +542,13 @@ void Sin_DecompressVis( byte* in, byte* decompressed )
 		}
 
 		c = in[1];
+
 		if( !c ) {
 			Error( "DecompressVis: 0 repeat" );
 		}
+
 		in += 2;
+
 		while( c ) {
 			*out++ = 0;
 			c--;
@@ -567,6 +601,7 @@ void Sin_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 3; j++ ) {
 			sin_dplanes[i].normal[j] = LittleFloat( sin_dplanes[i].normal[j] );
 		}
+
 		sin_dplanes[i].dist = LittleFloat( sin_dplanes[i].dist );
 		sin_dplanes[i].type = LittleLong( sin_dplanes[i].type );
 	}
@@ -578,6 +613,7 @@ void Sin_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 8; j++ ) {
 			sin_texinfo[i].vecs[0][j] = LittleFloat( sin_texinfo[i].vecs[0][j] );
 		}
+
 #ifdef SIN
 		sin_texinfo[i].trans_mag	= LittleFloat( sin_texinfo[i].trans_mag );
 		sin_texinfo[i].trans_angle	= LittleLong( sin_texinfo[i].trans_angle );
@@ -595,6 +631,7 @@ void Sin_SwapBSPFile( qboolean todisk )
 	}
 
 #ifdef SIN
+
 	//
 	// lightinfos
 	//
@@ -602,11 +639,13 @@ void Sin_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 3; j++ ) {
 			sin_lightinfo[i].color[j] = LittleFloat( sin_lightinfo[i].color[j] );
 		}
+
 		sin_lightinfo[i].value		 = LittleLong( sin_lightinfo[i].value );
 		sin_lightinfo[i].direct		 = LittleFloat( sin_lightinfo[i].direct );
 		sin_lightinfo[i].directangle = LittleFloat( sin_lightinfo[i].directangle );
 		sin_lightinfo[i].directstyle = LittleFloat( sin_lightinfo[i].directstyle );
 	}
+
 #endif
 
 	//
@@ -631,10 +670,12 @@ void Sin_SwapBSPFile( qboolean todisk )
 	//
 	for( i = 0; i < sin_numnodes; i++ ) {
 		sin_dnodes[i].planenum = LittleLong( sin_dnodes[i].planenum );
+
 		for( j = 0; j < 3; j++ ) {
 			sin_dnodes[i].mins[j] = LittleShort( sin_dnodes[i].mins[j] );
 			sin_dnodes[i].maxs[j] = LittleShort( sin_dnodes[i].maxs[j] );
 		}
+
 		sin_dnodes[i].children[0] = LittleLong( sin_dnodes[i].children[0] );
 		sin_dnodes[i].children[1] = LittleLong( sin_dnodes[i].children[1] );
 #ifdef SIN
@@ -653,10 +694,12 @@ void Sin_SwapBSPFile( qboolean todisk )
 		sin_dleafs[i].contents = LittleLong( sin_dleafs[i].contents );
 		sin_dleafs[i].cluster  = LittleShort( sin_dleafs[i].cluster );
 		sin_dleafs[i].area	   = LittleShort( sin_dleafs[i].area );
+
 		for( j = 0; j < 3; j++ ) {
 			sin_dleafs[i].mins[j] = LittleShort( sin_dleafs[i].mins[j] );
 			sin_dleafs[i].maxs[j] = LittleShort( sin_dleafs[i].maxs[j] );
 		}
+
 #ifdef SIN
 		sin_dleafs[i].firstleafface	 = LittleUnsignedShort( sin_dleafs[i].firstleafface );
 		sin_dleafs[i].numleaffaces	 = LittleUnsignedShort( sin_dleafs[i].numleaffaces );
@@ -749,10 +792,13 @@ void Sin_SwapBSPFile( qboolean todisk )
 	//
 	if( todisk ) {
 		j = sin_dvis->numclusters;
+
 	} else {
 		j = LittleLong( sin_dvis->numclusters );
 	}
+
 	sin_dvis->numclusters = LittleLong( sin_dvis->numclusters );
+
 	for( i = 0; i < j; i++ ) {
 		sin_dvis->bitofs[i][0] = LittleLong( sin_dvis->bitofs[i][0] );
 		sin_dvis->bitofs[i][1] = LittleLong( sin_dvis->bitofs[i][1] );
@@ -780,6 +826,7 @@ int Sin_CopyLump( int lump, void* dest, int size, int maxsize )
 
 	return length / size;
 }
+
 #else
 int Sin_CopyLump( int lump, void* dest, int size )
 {
@@ -796,6 +843,7 @@ int Sin_CopyLump( int lump, void* dest, int size )
 
 	return length / size;
 }
+
 #endif
 
 /*
@@ -820,6 +868,7 @@ void Sin_LoadBSPFile( char* filename, int offset, int length )
 	if( header->ident != SIN_BSPHEADER && header->ident != SINGAME_BSPHEADER ) {
 		Error( "%s is not a IBSP file", filename );
 	}
+
 	if( header->version != SIN_BSPVERSION && header->version != SINGAME_BSPVERSION ) {
 		Error( "%s is version %i, not %i", filename, header->version, SIN_BSPVERSION );
 	}
@@ -905,6 +954,7 @@ void Sin_LoadBSPFileTexinfo( char* filename )
 	if( header->ident != SIN_BSPHEADER && header->ident != SINGAME_BSPHEADER ) {
 		Error( "%s is not a IBSP file", filename );
 	}
+
 	if( header->version != SIN_BSPVERSION && header->version != SINGAME_BSPVERSION ) {
 		Error( "%s is version %i, not %i", filename, header->version, SIN_BSPVERSION );
 	}
@@ -946,6 +996,7 @@ void Sin_AddLump( int lumpnum, void* data, int len, int size, int maxsize )
 	lump->filelen = LittleLong( totallength );
 	SafeWrite( wadfile, data, ( totallength + 3 ) & ~3 );
 }
+
 #else
 void Sin_AddLump( int lumpnum, void* data, int len )
 {
@@ -957,6 +1008,7 @@ void Sin_AddLump( int lumpnum, void* data, int len )
 	lump->filelen = LittleLong( len );
 	SafeWrite( wadfile, data, ( len + 3 ) & ~3 );
 }
+
 #endif
 /*
 =============
@@ -1074,9 +1126,11 @@ void Sin_UnparseEntities()
 
 	for( i = 0; i < num_entities; i++ ) {
 		ep = entities[i].epairs;
+
 		if( !ep ) {
 			continue; // ent got removed
 		}
+
 		strcat( end, "{\n" );
 		end += 2;
 
@@ -1090,6 +1144,7 @@ void Sin_UnparseEntities()
 			strcat( end, line );
 			end += strlen( line );
 		}
+
 		strcat( end, "}\n" );
 		end += 2;
 
@@ -1097,6 +1152,7 @@ void Sin_UnparseEntities()
 			Error( "Entity text too long" );
 		}
 	}
+
 	sin_entdatasize = end - buf + 1;
 }
 
@@ -1111,8 +1167,10 @@ void FreeValueKeys( entity_t* ent )
 		FreeMemory( ep->key );
 		FreeMemory( ep );
 	}
+
 	ent->epairs = NULL;
 }
+
 #endif
 
 /*

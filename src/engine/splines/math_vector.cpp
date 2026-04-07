@@ -52,8 +52,10 @@ float  idVec3::toYaw()
 
 	if( ( y == 0 ) && ( x == 0 ) ) {
 		yaw = 0;
+
 	} else {
 		yaw = atan2( y, x ) * 180 / M_PI;
+
 		if( yaw < 0 ) {
 			yaw += 360;
 		}
@@ -70,12 +72,15 @@ float idVec3::toPitch()
 	if( ( x == 0 ) && ( y == 0 ) ) {
 		if( z > 0 ) {
 			pitch = 90;
+
 		} else {
 			pitch = 270;
 		}
+
 	} else {
 		forward = ( float )idSqrt( x * x + y * y );
 		pitch	= atan2( z, forward ) * 180 / M_PI;
+
 		if( pitch < 0 ) {
 			pitch += 360;
 		}
@@ -119,11 +124,13 @@ idVec3 LerpVector( idVec3& w1, idVec3& w2, const float t )
 	float omega, cosom, sinom, scale0, scale1;
 
 	cosom = w1 * w2;
+
 	if( ( 1.0 - cosom ) > LERP_DELTA ) {
 		omega  = acos( cosom );
 		sinom  = sin( omega );
 		scale0 = sin( ( 1.0 - t ) * omega ) / sinom;
 		scale1 = sin( t * omega ) / sinom;
+
 	} else {
 		scale0 = 1.0 - t;
 		scale1 = t;

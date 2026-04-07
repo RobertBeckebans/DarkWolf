@@ -93,11 +93,14 @@ static qboolean	  StringToFilter( char* s, ipFilter_t* f )
 		}
 
 		j = 0;
+
 		while( *s >= '0' && *s <= '9' ) {
 			num[j++] = *s++;
 		}
+
 		num[j] = 0;
 		b[i]   = atoi( num );
+
 		if( b[i] != 0 ) {
 			m[i] = 255;
 		}
@@ -105,6 +108,7 @@ static qboolean	  StringToFilter( char* s, ipFilter_t* f )
 		if( !*s ) {
 			break;
 		}
+
 		s++;
 	}
 
@@ -126,6 +130,7 @@ static void UpdateIPBans()
 	char iplist[MAX_INFO_STRING];
 
 	*iplist = 0;
+
 	for( i = 0; i < numIPFilters; i++ ) {
 		if( ipFilters[i].compare == 0xffffffff ) {
 			continue;
@@ -152,15 +157,19 @@ qboolean G_FilterPacket( char* from )
 
 	i = 0;
 	p = from;
+
 	while( *p && i < 4 ) {
 		m[i] = 0;
+
 		while( *p >= '0' && *p <= '9' ) {
 			m[i] = m[i] * 10 + ( *p - '0' );
 			p++;
 		}
+
 		if( !*p || *p == ':' ) {
 			break;
 		}
+
 		i++, p++;
 	}
 
@@ -187,11 +196,13 @@ static void AddIP( char* str )
 		if( ipFilters[i].compare == 0xffffffff ) {
 			break;
 		} // free spot
+
 	if( i == numIPFilters ) {
 		if( numIPFilters == MAX_IPFILTERS ) {
 			G_Printf( "IP filter list is full\n" );
 			return;
 		}
+
 		numIPFilters++;
 	}
 
@@ -216,15 +227,19 @@ void G_ProcessIPBans()
 
 	for( t = s = g_banIPs.string; *t; /* */ ) {
 		s = strchr( s, ' ' );
+
 		if( !s ) {
 			break;
 		}
+
 		while( *s == ' ' ) {
 			*s++ = 0;
 		}
+
 		if( *t ) {
 			AddIP( t );
 		}
+
 		t = s;
 	}
 }
@@ -294,63 +309,83 @@ void Svcmd_EntityList_f()
 	gentity_t* check;
 
 	check = g_entities + 1;
+
 	for( e = 1; e < level.num_entities; e++, check++ ) {
 		if( !check->inuse ) {
 			continue;
 		}
+
 		G_Printf( "%3i:", e );
+
 		switch( check->s.eType ) {
 			case ET_GENERAL:
 				G_Printf( "ET_GENERAL          " );
 				break;
+
 			case ET_PLAYER:
 				G_Printf( "ET_PLAYER           " );
 				break;
+
 			case ET_ITEM:
 				G_Printf( "ET_ITEM             " );
 				break;
+
 			case ET_MISSILE:
 				G_Printf( "ET_MISSILE          " );
 				break;
+
 			case ET_MOVER:
 				G_Printf( "ET_MOVER            " );
 				break;
+
 			case ET_BEAM:
 				G_Printf( "ET_BEAM             " );
 				break;
+
 			case ET_PORTAL:
 				G_Printf( "ET_PORTAL           " );
 				break;
+
 			case ET_SPEAKER:
 				G_Printf( "ET_SPEAKER          " );
 				break;
+
 			case ET_PUSH_TRIGGER:
 				G_Printf( "ET_PUSH_TRIGGER     " );
 				break;
+
 			case ET_TELEPORT_TRIGGER:
 				G_Printf( "ET_TELEPORT_TRIGGER " );
 				break;
+
 			case ET_INVISIBLE:
 				G_Printf( "ET_INVISIBLE        " );
 				break;
+
 			case ET_GRAPPLE:
 				G_Printf( "ET_GRAPPLE          " );
 				break;
+
 			case ET_EXPLOSIVE:
 				G_Printf( "ET_EXPLOSIVE        " );
 				break;
+
 			case ET_TESLA_EF:
 				G_Printf( "ET_TESLA_EF         " );
 				break;
+
 			case ET_SPOTLIGHT_EF:
 				G_Printf( "ET_SPOTLIGHT_EF     " );
 				break;
+
 			case ET_EFFECT3:
 				G_Printf( "ET_EFFECT3          " );
 				break;
+
 			case ET_ALARMBOX:
 				G_Printf( "ET_ALARMBOX          " );
 				break;
+
 			default:
 				G_Printf( "%3i                 ", check->s.eType );
 				break;
@@ -359,6 +394,7 @@ void Svcmd_EntityList_f()
 		if( check->classname ) {
 			G_Printf( "%s", check->classname );
 		}
+
 		G_Printf( "\n" );
 	}
 }
@@ -372,25 +408,30 @@ gclient_t* ClientForString( const char* s )
 	// numeric values are just slot numbers
 	if( s[0] >= '0' && s[0] <= '9' ) {
 		idnum = atoi( s );
+
 		if( idnum < 0 || idnum >= level.maxclients ) {
 			Com_Printf( "Bad client slot: %i\n", idnum );
 			return NULL;
 		}
 
 		cl = &level.clients[idnum];
+
 		if( cl->pers.connected == CON_DISCONNECTED ) {
 			G_Printf( "Client %i is not connected\n", idnum );
 			return NULL;
 		}
+
 		return cl;
 	}
 
 	// check for a name match
 	for( i = 0; i < level.maxclients; i++ ) {
 		cl = &level.clients[i];
+
 		if( cl->pers.connected == CON_DISCONNECTED ) {
 			continue;
 		}
+
 		if( !Q_stricmp( cl->pers.netname, s ) ) {
 			return cl;
 		}
@@ -416,6 +457,7 @@ void Svcmd_ForceTeam_f()
 	// find the player
 	sys->Argv( 1, str, sizeof( str ) );
 	cl = ClientForString( str );
+
 	if( !cl ) {
 		return;
 	}
@@ -445,16 +487,19 @@ qboolean ConsoleCommand()
 		if( g_reloading.integer ) {
 			return qtrue;
 		}
+
 		if( saveGamePending ) {
 			return qtrue;
 		}
 
 		sys->Argv( 1, cmd, sizeof( cmd ) );
+
 		if( strlen( cmd ) > 0 ) {
 			// strip the extension if provided
 			if( strrchr( cmd, '.' ) ) {
 				cmd[strrchr( cmd, '.' ) - cmd] = '\0';
 			}
+
 			if( !Q_stricmp( cmd, "current" ) ) { // beginning of map
 				Com_Printf( "sorry, '%s' is a reserved savegame name.  please use another name.\n", cmd );
 				return qtrue;
@@ -462,6 +507,7 @@ qboolean ConsoleCommand()
 
 			if( G_SaveGame( cmd ) ) {
 				sys->SendServerCommand( -1, "cp gamesaved" ); // deletedgame
+
 			} else {
 				G_Printf( "Unable to save game.\n" );
 			}
@@ -472,6 +518,7 @@ qboolean ConsoleCommand()
 
 		return qtrue;
 	}
+
 	// done.
 
 	if( Q_stricmp( cmd, "entitylist" ) == 0 ) {
@@ -522,6 +569,7 @@ qboolean ConsoleCommand()
 			sys->SendServerCommand( -1, va( "print \"server: %s\"", ConcatArgs( 1 ) ) );
 			return qtrue;
 		}
+
 		// everything else will also be printed as a say command
 		sys->SendServerCommand( -1, va( "print \"server: %s\"", ConcatArgs( 0 ) ) );
 		return qtrue;

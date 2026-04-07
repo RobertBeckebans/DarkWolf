@@ -47,9 +47,11 @@ int OtherTeam( int team )
 {
 	if( team == TEAM_RED ) {
 		return TEAM_BLUE;
+
 	} else if( team == TEAM_BLUE ) {
 		return TEAM_RED;
 	}
+
 	return team;
 }
 
@@ -57,11 +59,14 @@ const char* TeamName( int team )
 {
 	if( team == TEAM_RED ) {
 		return "RED";
+
 	} else if( team == TEAM_BLUE ) {
 		return "BLUE";
+
 	} else if( team == TEAM_SPECTATOR ) {
 		return "SPECTATOR";
 	}
+
 	return "FREE";
 }
 
@@ -69,11 +74,14 @@ const char* OtherTeamName( int team )
 {
 	if( team == TEAM_RED ) {
 		return "BLUE";
+
 	} else if( team == TEAM_BLUE ) {
 		return "RED";
+
 	} else if( team == TEAM_SPECTATOR ) {
 		return "SPECTATOR";
 	}
+
 	return "FREE";
 }
 
@@ -81,11 +89,14 @@ const char* TeamColorString( int team )
 {
 	if( team == TEAM_RED ) {
 		return S_COLOR_RED;
+
 	} else if( team == TEAM_BLUE ) {
 		return S_COLOR_BLUE;
+
 	} else if( team == TEAM_SPECTATOR ) {
 		return S_COLOR_YELLOW;
 	}
+
 	return S_COLOR_WHITE;
 }
 
@@ -97,9 +108,11 @@ void QDECL PrintMsg( gentity_t* ent, const char* fmt, ... )
 	char*	p;
 
 	va_start( argptr, fmt );
+
 	if( vsprintf( msg, fmt, argptr ) > sizeof( msg ) ) {
 		G_Error( "PrintMsg overrun" );
 	}
+
 	va_end( argptr );
 
 	// double quotes are bad
@@ -159,13 +172,16 @@ void Team_FragBonuses( gentity_t* targ, gentity_t* inflictor, gentity_t* attacke
 
 	team	  = targ->client->sess.sessionTeam;
 	otherteam = OtherTeam( targ->client->sess.sessionTeam );
+
 	if( otherteam < 0 ) {
 		return; // whoever died isn't on a team
 	}
+
 	// same team, if the flag at base, check to he has the enemy flag
 	if( team == TEAM_RED ) {
 		flag_pw		  = PW_REDFLAG;
 		enemy_flag_pw = PW_BLUEFLAG;
+
 	} else {
 		flag_pw		  = PW_BLUEFLAG;
 		enemy_flag_pw = PW_REDFLAG;
@@ -182,10 +198,12 @@ void Team_FragBonuses( gentity_t* targ, gentity_t* inflictor, gentity_t* attacke
 		// field on the other team
 		for( i = 0; i < g_maxclients.integer; i++ ) {
 			ent = g_entities + i;
+
 			if( ent->inuse && ent->client->sess.sessionTeam == otherteam ) {
 				ent->client->pers.teamState.lasthurtcarrier = 0;
 			}
 		}
+
 		return;
 	}
 
@@ -209,14 +227,17 @@ void Team_FragBonuses( gentity_t* targ, gentity_t* inflictor, gentity_t* attacke
 		case TEAM_RED:
 			c = "team_CTF_redflag";
 			break;
+
 		case TEAM_BLUE:
 			c = "team_CTF_blueflag";
 			break;
+
 		default:
 			return;
 	}
 
 	flag = NULL;
+
 	while( ( flag = G_Find( flag, FOFS( classname ), c ) ) != NULL ) {
 		if( !( flag->flags & FL_DROPPED_ITEM ) ) {
 			break;
@@ -226,12 +247,15 @@ void Team_FragBonuses( gentity_t* targ, gentity_t* inflictor, gentity_t* attacke
 	if( !flag ) {
 		return; // can't find attacker's flag
 	}
+
 	// find attacker's team's flag carrier
 	for( i = 0; i < g_maxclients.integer; i++ ) {
 		carrier = g_entities + i;
+
 		if( carrier->inuse && carrier->client->ps.powerups[flag_pw] ) {
 			break;
 		}
+
 		carrier = NULL;
 	}
 
@@ -246,11 +270,14 @@ void Team_FragBonuses( gentity_t* targ, gentity_t* inflictor, gentity_t* attacke
 		// we defended the base flag
 		AddScore( attacker, CTF_FLAG_DEFENSE_BONUS );
 		attacker->client->pers.teamState.basedefense++;
+
 		if( !flag->r.contents ) {
 			PrintMsg( NULL, "%s" S_COLOR_WHITE " defends the %s base.\n", attacker->client->pers.netname, TeamName( attacker->client->sess.sessionTeam ) );
+
 		} else {
 			PrintMsg( NULL, "%s" S_COLOR_WHITE " defends the %s flag.\n", attacker->client->pers.netname, TeamName( attacker->client->sess.sessionTeam ) );
 		}
+
 		return;
 	}
 
@@ -285,6 +312,7 @@ void Team_CheckHurtCarrier( gentity_t* targ, gentity_t* attacker )
 
 	if( targ->client->sess.sessionTeam == TEAM_RED ) {
 		flag_pw = PW_BLUEFLAG;
+
 	} else {
 		flag_pw = PW_REDFLAG;
 	}
@@ -303,17 +331,21 @@ gentity_t* Team_ResetFlag( int team )
 		case TEAM_RED:
 			c = "team_CTF_redflag";
 			break;
+
 		case TEAM_BLUE:
 			c = "team_CTF_blueflag";
 			break;
+
 		default:
 			return NULL;
 	}
 
 	ent = NULL;
+
 	while( ( ent = G_Find( ent, FOFS( classname ), c ) ) != NULL ) {
 		if( ent->flags & FL_DROPPED_ITEM ) {
 			G_FreeEntity( ent );
+
 		} else {
 			rent = ent;
 			RespawnItem( ent );
@@ -354,6 +386,7 @@ void Team_FreeEntity( gentity_t* ent )
 {
 	if( ent->item->giTag == PW_REDFLAG ) {
 		Team_ReturnFlag( TEAM_RED );
+
 	} else if( ent->item->giTag == PW_BLUEFLAG ) {
 		Team_ReturnFlag( TEAM_BLUE );
 	}
@@ -372,9 +405,11 @@ void Team_DroppedFlagThink( gentity_t* ent )
 {
 	if( ent->item->giTag == PW_REDFLAG ) {
 		Team_ReturnFlagSound( Team_ResetFlag( TEAM_RED ), TEAM_RED );
+
 	} else if( ent->item->giTag == PW_BLUEFLAG ) {
 		Team_ReturnFlagSound( Team_ResetFlag( TEAM_BLUE ), TEAM_BLUE );
 	}
+
 	// Reset Flag will delete this entity
 }
 
@@ -389,6 +424,7 @@ int Team_TouchOurFlag( gentity_t* ent, gentity_t* other, int team )
 	if( cl->sess.sessionTeam == TEAM_RED ) {
 		our_flag   = PW_REDFLAG;
 		enemy_flag = PW_BLUEFLAG;
+
 	} else {
 		our_flag   = PW_BLUEFLAG;
 		enemy_flag = PW_REDFLAG;
@@ -410,6 +446,7 @@ int Team_TouchOurFlag( gentity_t* ent, gentity_t* other, int team )
 	if( !cl->ps.powerups[enemy_flag] ) {
 		return 0; // We don't have the flag
 	}
+
 	PrintMsg( NULL, "%s" S_COLOR_WHITE " captured the %s flag!\n", cl->pers.netname, TeamName( OtherTeam( team ) ) );
 
 	cl->ps.powerups[enemy_flag] = 0;
@@ -432,22 +469,26 @@ int Team_TouchOurFlag( gentity_t* ent, gentity_t* other, int team )
 	// Ok, let's do the player loop, hand out the bonuses
 	for( i = 0; i < g_maxclients.integer; i++ ) {
 		player = &g_entities[i];
+
 		if( !player->inuse ) {
 			continue;
 		}
 
 		if( player->client->sess.sessionTeam != cl->sess.sessionTeam ) {
 			player->client->pers.teamState.lasthurtcarrier = -5;
+
 		} else if( player->client->sess.sessionTeam == cl->sess.sessionTeam ) {
 			if( player != other ) {
 				AddScore( player, CTF_CAPTURE_BONUS );
 			}
+
 			// award extra points for capture assists
 			if( player->client->pers.teamState.lastreturnedflag + CTF_RETURN_FLAG_ASSIST_TIMEOUT > level.time ) {
 				PrintMsg( NULL, "%s" S_COLOR_WHITE " gets an assist for returning the %s flag!\n", player->client->pers.netname, TeamName( team ) );
 				AddScore( player, CTF_RETURN_FLAG_ASSIST_BONUS );
 				other->client->pers.teamState.assists++;
 			}
+
 			if( player->client->pers.teamState.lastfraggedcarrier + CTF_FRAG_CARRIER_ASSIST_TIMEOUT > level.time ) {
 				PrintMsg( NULL, "%s" S_COLOR_WHITE " gets an assist for fragging the %s flag carrier!\n", player->client->pers.netname, TeamName( OtherTeam( team ) ) );
 				AddScore( player, CTF_FRAG_CARRIER_ASSIST_BONUS );
@@ -455,6 +496,7 @@ int Team_TouchOurFlag( gentity_t* ent, gentity_t* other, int team )
 			}
 		}
 	}
+
 	Team_ResetFlags();
 
 	CalculateRanks();
@@ -472,9 +514,11 @@ int Team_TouchEnemyFlag( gentity_t* ent, gentity_t* other, int team )
 
 	if( team == TEAM_RED ) {
 		cl->ps.powerups[PW_REDFLAG] = INT_MAX; // flags never expire
+
 	} else {
 		cl->ps.powerups[PW_BLUEFLAG] = INT_MAX; // flags never expire
 	}
+
 	cl->pers.teamState.flagsince = level.time;
 
 	return -1; // Do not respawn this automatically, but do delete it if it was FL_DROPPED
@@ -488,8 +532,10 @@ int Pickup_Team( gentity_t* ent, gentity_t* other )
 	// figure out what team this flag is
 	if( strcmp( ent->classname, "team_CTF_redflag" ) == 0 ) {
 		team = TEAM_RED;
+
 	} else if( strcmp( ent->classname, "team_CTF_blueflag" ) == 0 ) {
 		team = TEAM_BLUE;
+
 	} else {
 		PrintMsg( other, "Don't know what team the flag is on.\n" );
 		return 0;
@@ -499,6 +545,7 @@ int Pickup_Team( gentity_t* ent, gentity_t* other )
 	if( g_gametype.integer == GT_WOLF ) {
 		other->s.otherEntityNum2 = ent->s.modelindex2;
 	}
+
 	// jpw
 
 	return ( ( team == cl->sess.sessionTeam ) ? Team_TouchOurFlag : Team_TouchEnemyFlag )( ent, other, team );
@@ -562,10 +609,13 @@ qboolean Team_GetLocationMsg( gentity_t* ent, char* loc, int loclen )
 		if( best->count < 0 ) {
 			best->count = 0;
 		}
+
 		if( best->count > 7 ) {
 			best->count = 7;
 		}
+
 		Com_sprintf( loc, loclen, "%c%c%s" S_COLOR_WHITE, Q_COLOR_ESCAPE, best->count + '0', best->message );
+
 	} else {
 		Com_sprintf( loc, loclen, "%s", best->message );
 	}
@@ -595,6 +645,7 @@ int FindFarthestObjectiveIndex( vec3_t source )
 	for( i = 0; i < level.numspawntargets; i++ ) {
 		VectorSubtract( level.spawntargets[i], source, tmp );
 		tdist = VectorLength( tmp );
+
 		if( tdist > dist ) {
 			dist = tdist;
 			j	 = i;
@@ -611,6 +662,7 @@ int FindFarthestObjectiveIndex( vec3_t source )
 
 	return j;
 }
+
 // jpw
 
 /*
@@ -641,20 +693,26 @@ gentity_t* SelectRandomTeamSpawnPoint( int teamstate, team_t team )
 
 		if( team == TEAM_RED ) {
 			classname = "team_CTF_redplayer";
+
 		} else if( team == TEAM_BLUE ) {
 			classname = "team_CTF_blueplayer";
+
 		} else {
 			return NULL;
 		}
+
 	} else {
 		if( team == TEAM_RED ) {
 			classname = "team_CTF_redspawn";
+
 		} else if( team == TEAM_BLUE ) {
 			classname = "team_CTF_bluespawn";
+
 		} else {
 			return NULL;
 		}
 	}
+
 	count = 0;
 
 	spot = NULL;
@@ -663,14 +721,17 @@ gentity_t* SelectRandomTeamSpawnPoint( int teamstate, team_t team )
 		if( SpotWouldTelefrag( spot ) ) {
 			continue;
 		}
+
 		// JPW NERVE
 		if( g_gametype.integer == GT_WOLF ) {
 			if( !( spot->spawnflags & 2 ) && !initialSpawn ) {
 				continue;
 			}
 		}
+
 		// jpw
 		spots[count] = spot;
+
 		if( ++count == MAX_TEAM_SPAWN_POINTS ) {
 			break;
 		}
@@ -684,16 +745,19 @@ gentity_t* SelectRandomTeamSpawnPoint( int teamstate, team_t team )
 	if( ( g_gametype.integer != GT_WOLF ) || ( !level.numspawntargets ) || initialSpawn ) { // no spawn targets or not wolf MP, do it the old way
 		selection = rand() % count;
 		return spots[selection];
+
 	} else {
 		// FIXME: temporarily select target as farthest point from first team spawnpoint
 		// we'll want to replace this with the target coords pulled from the UI target selection
 		j = 0;
+
 		for( j = 0; j < count; j++ ) {
 			if( spots[j]->spawnflags & 1 ) { // only use spawnpoint if it's a permanent one
 				i = FindFarthestObjectiveIndex( spots[j]->s.origin );
 				j = count;
 			}
 		}
+
 		VectorCopy( level.spawntargets[i], farthest );
 		// end FIXME
 
@@ -701,16 +765,20 @@ gentity_t* SelectRandomTeamSpawnPoint( int teamstate, team_t team )
 		VectorSubtract( farthest, spots[0]->s.origin, target );
 		shortest = VectorLength( target );
 		closest	 = 0;
+
 		for( i = 0; i < count; i++ ) {
 			VectorSubtract( farthest, spots[i]->s.origin, target );
 			tmp = VectorLength( target );
+
 			if( ( spots[i]->spawnflags & 2 ) && ( tmp < shortest ) ) {
 				shortest = tmp;
 				closest	 = i;
 			}
 		}
+
 		return spots[closest];
 	}
+
 	// jpw
 }
 
@@ -764,21 +832,26 @@ void TeamplayInfoMessage( gentity_t* ent )
 
 	for( i = 0, cnt = 0; i < level.numConnectedClients && cnt < TEAM_MAXOVERLAY; i++ ) {
 		player = g_entities + level.sortedClients[i];
+
 		if( player->inuse && player->client->sess.sessionTeam == ent->client->sess.sessionTeam ) {
 			h = player->client->ps.stats[STAT_HEALTH];
 			a = player->client->ps.stats[STAT_ARMOR];
+
 			if( h < 0 ) {
 				h = 0;
 			}
+
 			if( a < 0 ) {
 				a = 0;
 			}
 
 			Com_sprintf( entry, sizeof( entry ), " %i %i %i %i %i %i", level.sortedClients[i], player->client->pers.teamState.location, h, a, player->client->ps.weapon, player->s.powerups );
 			j = strlen( entry );
+
 			if( stringlength + j > sizeof( string ) ) {
 				break;
 			}
+
 			strcpy( string + stringlength, entry );
 			stringlength += j;
 			cnt++;
@@ -798,10 +871,13 @@ void CheckTeamStatus()
 
 		for( i = 0; i < g_maxclients.integer; i++ ) {
 			ent = g_entities + i;
+
 			if( ent->inuse && ( ent->client->sess.sessionTeam == TEAM_RED || ent->client->sess.sessionTeam == TEAM_BLUE ) ) {
 				loc = Team_GetLocation( ent );
+
 				if( loc ) {
 					ent->client->pers.teamState.location = loc->health;
+
 				} else {
 					ent->client->pers.teamState.location = 0;
 				}
@@ -810,6 +886,7 @@ void CheckTeamStatus()
 
 		for( i = 0; i < g_maxclients.integer; i++ ) {
 			ent = g_entities + i;
+
 			if( ent->inuse && ( ent->client->sess.sessionTeam == TEAM_RED || ent->client->sess.sessionTeam == TEAM_BLUE ) ) {
 				TeamplayInfoMessage( ent );
 			}
@@ -854,10 +931,12 @@ void SP_team_CTF_redspawn( gentity_t* ent )
 	vec3_t dir;
 
 	ent->enemy = G_PickTarget( ent->target );
+
 	if( ent->enemy ) {
 		VectorSubtract( ent->enemy->s.origin, ent->s.origin, dir );
 		vectoangles( dir, ent->s.angles );
 	}
+
 	// jpw
 }
 
@@ -882,10 +961,12 @@ void SP_team_CTF_bluespawn( gentity_t* ent )
 	vec3_t dir;
 
 	ent->enemy = G_PickTarget( ent->target );
+
 	if( ent->enemy ) {
 		VectorSubtract( ent->enemy->s.origin, ent->s.origin, dir );
 		vectoangles( dir, ent->s.angles );
 	}
+
 	// jpw
 }
 
@@ -914,6 +995,7 @@ void SP_team_WOLF_objective( gentity_t* ent )
 
 	if( numobjectives == MAX_MULTI_SPAWNTARGETS ) {
 		G_Error( "SP_team_WOLF_objective: exceeded MAX_MULTI_SPAWNTARGETS (%d)\n", MAX_MULTI_SPAWNTARGETS );
+
 	} else { // Set config strings
 		cs_obj += numobjectives;
 		sys->GetConfigstring( cs_obj, cs, sizeof( cs ) );
@@ -934,6 +1016,7 @@ void SP_team_WOLF_objective( gentity_t* ent )
 	VectorCopy( level.spawntargets[numobjectives - 1], test );
 	G_Printf( "OBJECTIVE %d: %s (total %s) x=%f %f %f\n", numobjectives, objectivename, numspawntargets, test[0], test[1], test[2] );
 }
+
 // jpw
 
 // DHM - Nerve :: Capture and Hold Checkpoint flag
@@ -958,22 +1041,29 @@ void checkpoint_think( gentity_t* self )
 	switch( self->s.frame ) {
 		case WCP_ANIM_NOFLAG:
 			break;
+
 		case WCP_ANIM_RAISE_NAZI:
 			self->s.frame = WCP_ANIM_NAZI_RAISED;
 			break;
+
 		case WCP_ANIM_RAISE_AMERICAN:
 			self->s.frame = WCP_ANIM_AMERICAN_RAISED;
 			break;
+
 		case WCP_ANIM_NAZI_RAISED:
 			break;
+
 		case WCP_ANIM_AMERICAN_RAISED:
 			break;
+
 		case WCP_ANIM_NAZI_TO_AMERICAN:
 			self->s.frame = WCP_ANIM_AMERICAN_RAISED;
 			break;
+
 		case WCP_ANIM_AMERICAN_TO_NAZI:
 			self->s.frame = WCP_ANIM_NAZI_RAISED;
 			break;
+
 		default:
 			break;
 	}
@@ -995,16 +1085,21 @@ void checkpoint_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 	if( self->count == TEAM_RED ) {
 		if( self->s.frame == WCP_ANIM_NOFLAG ) {
 			self->s.frame = WCP_ANIM_RAISE_NAZI;
+
 		} else if( self->s.frame == WCP_ANIM_AMERICAN_RAISED ) {
 			self->s.frame = WCP_ANIM_AMERICAN_TO_NAZI;
+
 		} else {
 			self->s.frame = WCP_ANIM_NAZI_RAISED;
 		}
+
 	} else {
 		if( self->s.frame == WCP_ANIM_NOFLAG ) {
 			self->s.frame = WCP_ANIM_RAISE_AMERICAN;
+
 		} else if( self->s.frame == WCP_ANIM_NAZI_RAISED ) {
 			self->s.frame = WCP_ANIM_NAZI_TO_AMERICAN;
+
 		} else {
 			self->s.frame = WCP_ANIM_AMERICAN_RAISED;
 		}
@@ -1013,6 +1108,7 @@ void checkpoint_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 	// Run script trigger
 	if( self->count == TEAM_RED ) {
 		G_Script_ScriptEvent( self, "trigger", "axis_capture" );
+
 	} else {
 		G_Script_ScriptEvent( self, "trigger", "allied_capture" );
 	}
@@ -1043,16 +1139,21 @@ void checkpoint_spawntouch( gentity_t* self, gentity_t* other, trace_t* trace )
 	if( self->count == TEAM_RED ) {
 		if( self->s.frame == WCP_ANIM_NOFLAG ) {
 			self->s.frame = WCP_ANIM_RAISE_NAZI;
+
 		} else if( self->s.frame == WCP_ANIM_AMERICAN_RAISED ) {
 			self->s.frame = WCP_ANIM_AMERICAN_TO_NAZI;
+
 		} else {
 			self->s.frame = WCP_ANIM_NAZI_RAISED;
 		}
+
 	} else {
 		if( self->s.frame == WCP_ANIM_NOFLAG ) {
 			self->s.frame = WCP_ANIM_RAISE_AMERICAN;
+
 		} else if( self->s.frame == WCP_ANIM_NAZI_RAISED ) {
 			self->s.frame = WCP_ANIM_NAZI_TO_AMERICAN;
+
 		} else {
 			self->s.frame = WCP_ANIM_AMERICAN_RAISED;
 		}
@@ -1072,18 +1173,23 @@ void checkpoint_spawntouch( gentity_t* self, gentity_t* other, trace_t* trace )
 		//		G_Printf("targetname=%s\n",self->target);
 		while( 1 ) {
 			ent = G_Find( ent, FOFS( targetname ), self->target );
+
 			if( !ent ) {
 				break;
 			}
+
 			if( self->count == TEAM_RED ) {
 				if( !strcmp( ent->classname, "team_CTF_redspawn" ) ) {
 					ent->spawnflags |= 2;
+
 				} else {
 					ent->spawnflags &= ~2;
 				}
+
 			} else {
 				if( !strcmp( ent->classname, "team_CTF_bluespawn" ) ) {
 					ent->spawnflags |= 2;
+
 				} else {
 					ent->spawnflags &= ~2;
 				}
@@ -1091,6 +1197,7 @@ void checkpoint_spawntouch( gentity_t* self, gentity_t* other, trace_t* trace )
 		}
 	}
 }
+
 // jpw
 
 /*QUAKED team_WOLF_checkpoint (.6 .9 .6) (-16 -16 0) (16 16 128) spawnpoint
@@ -1117,6 +1224,7 @@ void SP_team_WOLF_checkpoint( gentity_t* ent )
 	// Model is user assignable, but it will always try and use the animations for flagpole.md3
 	if( ent->model ) {
 		ent->s.modelindex = G_ModelIndex( ent->model );
+
 	} else {
 		ent->s.modelindex = G_ModelIndex( "models/multiplayer/flagpole/flagpole.md3" );
 	}
@@ -1148,9 +1256,11 @@ void SP_team_WOLF_checkpoint( gentity_t* ent )
 	// JPW NERVE
 	if( ent->spawnflags & 1 ) {
 		ent->touch = checkpoint_spawntouch;
+
 	} else {
 		ent->touch = checkpoint_touch;
 	}
+
 	// jpw
 	ent->use = checkpoint_use; // allow 'capture' from trigger
 

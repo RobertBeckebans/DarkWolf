@@ -187,9 +187,11 @@ void CG_FlameAdjustSpeed( flameChunk_t* f, float change )
 	}
 
 	f->velSpeed += change;
+
 	if( f->velSpeed < FLAME_MIN_SPEED ) {
 		f->velSpeed = FLAME_MIN_SPEED;
 	}
+
 	/*
 		f->sizeMax = FLAME_START_MAX_SIZE + ((1.0 - (f->velSpeed / FLAME_START_SPEED)) * (FLAME_MAX_SIZE - FLAME_START_MAX_SIZE));
 
@@ -239,6 +241,7 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 	if( flags & 2 ) { // silent
 		centInfo->silent = qtrue;
 	}
+
 	//----(SA)	end
 
 	// only do one ignition flame for zombie
@@ -257,9 +260,11 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 	if( cent->currentState.number != cg.snap->ps.clientNum || cg_thirdPerson.integer ) {
 		if( flags & 1 ) { // use 'angles'
 			AngleVectors( angles, parentFwd, NULL, NULL );
+
 		} else {
 			AngleVectors( cent->currentState.angles, parentFwd, NULL, NULL );
 		}
+
 	} else {
 		AngleVectors( angles, parentFwd, NULL, NULL );
 	}
@@ -284,19 +289,23 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 		of		  = centInfo->lastFlameChunk;
 		timeInc	  = 1000.0 * ( firing ? 1.0 : 0.5 ) * ( FLAME_CHUNK_DIST /**(1.0+crandom()*0.1)*/ / ( FLAME_START_SPEED * speedScale ) );
 		ft		  = ( ( double )of->timeStart );
+
 		// never spawn too many chunk in one call (framerate preservation)
 		if( ( ( ( double )cg.time - ft ) / timeInc ) > MAX_CHUNKS_PER_CALL ) {
 			timeInc = ( ( double )cg.time - ft ) / MAX_CHUNKS_PER_CALL;
 		}
+
 		ft += timeInc;
 		t		 = ( int )ft;
 		fracInc	 = timeInc / ( double )( cg.time - of->timeStart );
 		backLerp = 1.0 - fracInc;
+
 		while( t <= cg.time ) {
 			// spawn a new chunk
 			CG_FlameLerpVec( lastOrg, thisOrg, backLerp, org );
 
 			CG_Trace( &trace, org, flameChunkMins, flameChunkMaxs, org, cent->currentState.number, MASK_SHOT );
+
 			if( trace.startsolid && trace.entityNum >= cgs.maxclients ) {
 				centInfo->lastFlameChunk = NULL;
 				return; // don't spawn inside a wall
@@ -325,10 +334,12 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 			//	f->sizeMax = 20;
 			// } else {
 			f->sizeRand = 0;
+
 			//}
 			if( f->sizeMax > FLAME_MAX_SIZE ) {
 				f->sizeMax = FLAME_MAX_SIZE;
 			}
+
 			f->sizeRate = GET_FLAME_BLUE_SIZE_SPEED( f->sizeMax * speedScale * ( 1.0 + ( 0.5 * ( float )!firing ) ) );
 			f->sizeTime = t;
 			VectorCopy( org, f->baseOrg );
@@ -349,30 +360,37 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 			f->ownerCent	= cent->currentState.number;
 			f->rollAngle	= crandom() * 179;
 			f->ignitionOnly = !firing;
+
 			if( !firing ) {
 				f->gravity	= -150;
 				f->blueLife = FLAME_BLUE_LIFE * 0.5;
 				//				f->blueLife = (int)(0.3*(1.0/speedScale)*(float)FLAME_BLUE_LIFE);
+
 			} else {
 				f->gravity	= 0;
 				f->blueLife = FLAME_BLUE_LIFE;
 			}
+
 			f->lastFriction		= cg.time;
 			f->lastFrictionTake = cg.time;
 			VectorCopy( parentFwd, f->parentFwd );
 
 			ft += timeInc;
+
 			// always spawn a chunk right on the current time
 			if( ( int )ft > cg.time && t < cg.time ) {
 				ft		 = ( double )cg.time;
 				t		 = cg.time;
 				backLerp = 0;
+
 			} else {
 				t = ( int )floor( ft );
 				backLerp -= fracInc;
 			}
+
 			centInfo->lastFlameChunk = of = f;
 		}
+
 	} else {
 		centInfo->lastFiring = firing;
 		t					 = cg.time;
@@ -385,6 +403,7 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 		//}
 
 		CG_Trace( &trace, org, flameChunkMins, flameChunkMaxs, org, cent->currentState.number, MASK_SHOT );
+
 		if( trace.startsolid && trace.entityNum >= cgs.maxclients ) {
 			centInfo->lastFlameChunk = NULL;
 			return; // don't spawn inside a wall
@@ -407,9 +426,11 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 		// f->timeEnd = cg.time + FLAME_LIFETIME * (1.0/speedScale);
 		f->sizeStart = f->size = FLAME_START_SIZE * speedScale;
 		f->sizeMax			   = FLAME_START_MAX_SIZE * ( 0.3 + 0.7 * speedScale );
+
 		if( f->sizeMax > FLAME_MAX_SIZE ) {
 			f->sizeMax = FLAME_MAX_SIZE;
 		}
+
 		// if (cent->currentState.aiChar == AICHAR_ZOMBIE) {
 		//	f->sizeRand = crandom() * FLAME_START_MAX_SIZE_RAND;
 		//	f->sizeMax = 20;
@@ -427,13 +448,16 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 		f->rollAngle	= crandom() * 179;
 		f->ignitionOnly = !firing;
 		f->speedScale	= speedScale;
+
 		if( !firing ) {
 			f->gravity	= -100;
 			f->blueLife = ( int )( 0.3 * ( 1.0 / speedScale ) * ( float )FLAME_BLUE_LIFE );
+
 		} else {
 			f->gravity	= 0;
 			f->blueLife = FLAME_BLUE_LIFE;
 		}
+
 		f->lastFriction		= cg.time;
 		f->lastFrictionTake = cg.time;
 		VectorCopy( parentFwd, f->parentFwd );
@@ -446,11 +470,13 @@ void CG_FireFlameChunks( centity_t* cent, vec3_t origin, vec3_t angles, float sp
 		float frametime, dot;
 
 		f = centInfo->lastFlameChunk;
+
 		while( f ) {
 			if( f->lastFriction < cg.time - 50 ) {
 				frametime		= ( float )( cg.time - f->lastFriction ) / 1000.0;
 				f->lastFriction = cg.time;
 				dot				= DotProduct( parentFwd, f->parentFwd );
+
 				if( dot >= 0.99 ) {
 					dot -= 0.99;
 					dot *= ( 1.0 / ( 1.0 - 0.99 ) );
@@ -488,12 +514,14 @@ void CG_ClearFlameChunks()
 
 		if( i > 0 ) {
 			flameChunks[i].prevGlobal = &flameChunks[i - 1];
+
 		} else {
 			flameChunks[i].prevGlobal = NULL;
 		}
 
 		flameChunks[i].inuse = qfalse;
 	}
+
 	flameChunks[MAX_FLAME_CHUNKS - 1].nextGlobal = NULL;
 
 	initFlameChunks		= qtrue;
@@ -521,14 +549,17 @@ flameChunk_t* CG_SpawnFlameChunk( flameChunk_t* headFlameChunk )
 	// select the first free trail, and remove it from the list
 	f				= freeFlameChunks;
 	freeFlameChunks = f->nextGlobal;
+
 	if( freeFlameChunks ) {
 		freeFlameChunks->prevGlobal = NULL;
 	}
 
 	f->nextGlobal = activeFlameChunks;
+
 	if( activeFlameChunks ) {
 		activeFlameChunks->prevGlobal = f;
 	}
+
 	activeFlameChunks = f;
 	f->prevGlobal	  = NULL;
 	f->inuse		  = qtrue;
@@ -539,24 +570,30 @@ flameChunk_t* CG_SpawnFlameChunk( flameChunk_t* headFlameChunk )
 		// remove the headJunc from the list of heads
 		if( headFlameChunk == headFlameChunks ) {
 			headFlameChunks = headFlameChunks->nextHead;
+
 			if( headFlameChunks ) {
 				headFlameChunks->prevHead = NULL;
 			}
+
 		} else {
 			if( headFlameChunk->nextHead ) {
 				headFlameChunk->nextHead->prevHead = headFlameChunk->prevHead;
 			}
+
 			if( headFlameChunk->prevHead ) {
 				headFlameChunk->prevHead->nextHead = headFlameChunk->nextHead;
 			}
 		}
+
 		headFlameChunk->prevHead = NULL;
 		headFlameChunk->nextHead = NULL;
 	}
+
 	// make us the headTrail
 	if( headFlameChunks ) {
 		headFlameChunks->prevHead = f;
 	}
+
 	f->nextHead		= headFlameChunks;
 	f->prevHead		= NULL;
 	headFlameChunks = f;
@@ -592,12 +629,15 @@ void CG_FreeFlameChunk( flameChunk_t* f )
 	// make it non-active
 	f->inuse = qfalse;
 	f->dead	 = qfalse;
+
 	if( f->nextGlobal ) {
 		f->nextGlobal->prevGlobal = f->prevGlobal;
 	}
+
 	if( f->prevGlobal ) {
 		f->prevGlobal->nextGlobal = f->nextGlobal;
 	}
+
 	if( f == activeFlameChunks ) {
 		activeFlameChunks = f->nextGlobal;
 	}
@@ -606,21 +646,26 @@ void CG_FreeFlameChunk( flameChunk_t* f )
 	if( f == headFlameChunks ) {
 		headFlameChunks = f->nextHead;
 	}
+
 	if( f->nextHead ) {
 		f->nextHead->prevHead = f->prevHead;
 	}
+
 	if( f->prevHead ) {
 		f->prevHead->nextHead = f->nextHead;
 	}
+
 	f->nextHead = NULL;
 	f->prevHead = NULL;
 
 	// stick it in the free list
 	f->prevGlobal = NULL;
 	f->nextGlobal = freeFlameChunks;
+
 	if( freeFlameChunks ) {
 		freeFlameChunks->prevGlobal = f;
 	}
+
 	freeFlameChunks = f;
 
 	numFlameChunksInuse--;
@@ -678,15 +723,18 @@ void CG_AdjustFlameSize( flameChunk_t* f, int t )
 		// f->sizeMax = FLAME_START_MAX_SIZE + ((1.0 - (f->velSpeed / FLAME_START_SPEED)) * (FLAME_MAX_SIZE - FLAME_START_MAX_SIZE));
 		if( ( t - f->timeStart ) < f->blueLife ) {
 			f->sizeRate = GET_FLAME_BLUE_SIZE_SPEED( FLAME_START_MAX_SIZE ); // use a constant so the blue flame doesn't distort
+
 		} else {
 			f->sizeRate = GET_FLAME_SIZE_SPEED( f->sizeMax );
 		}
 
 		f->size += f->sizeRate * ( float )( t - f->sizeTime );
+
 		if( f->size > f->sizeMax ) {
 			f->size = f->sizeMax;
 		}
 	}
+
 	f->sizeTime = t;
 }
 
@@ -709,6 +757,7 @@ void CG_MoveFlameChunk( flameChunk_t* f, int t )
 		CG_FlameAdjustSpeed( f, /*(0.3+0.7*f->speedScale) **/ -( ( float )( t - f->lastFrictionTake ) / 1000.0 ) * FLAME_FRICTION_PER_SEC );
 		f->lastFrictionTake = t;
 	}
+
 	/*
 		// adjust size
 		if (f->size < f->sizeMax) {
@@ -727,6 +776,7 @@ void CG_MoveFlameChunk( flameChunk_t* f, int t )
 
 	jiggleCount = 0;
 	VectorCopy( f->baseOrg, sOrg );
+
 	while( f->velSpeed > 1 && ( ( t - f->baseOrgTime ) > 20 ) ) {
 		CG_FlameCalcOrg( f, t, newOrigin );
 
@@ -744,6 +794,7 @@ void CG_MoveFlameChunk( flameChunk_t* f, int t )
 			// if it's young, let it go through solids briefly
 			if( f->lifeFrac < 0.4 ) {
 				trace.fraction = 1.0;
+
 			} else {
 				f->velSpeed = 0;
 				break;
@@ -762,6 +813,7 @@ void CG_MoveFlameChunk( flameChunk_t* f, int t )
 			// check for hitting client
 			if( ( f->ownerCent != cg.snap->ps.clientNum ) && !( cg.snap->ps.eFlags & EF_DEAD ) && VectorDistance( newOrigin, cg.snap->ps.origin ) < 32 ) {
 				VectorNegate( f->velDir, trace.plane.normal );
+
 			} else {
 				break;
 			}
@@ -773,9 +825,11 @@ void CG_MoveFlameChunk( flameChunk_t* f, int t )
 		VectorNormalize( f->velDir );
 		// subtract some speed
 		f->velSpeed *= 0.5 * ( 0.25 + 0.75 * ( ( dot + 1.0 ) * 0.5 ) );
+
 		if( f->velSpeed > 20 ) {
 			f->velSpeed = 20;
 		}
+
 		// adjust size
 		// f->sizeMax = FLAME_START_MAX_SIZE + ((/*1.0 -*/ (f->velSpeed / FLAME_START_SPEED)) * (FLAME_MAX_SIZE - FLAME_START_MAX_SIZE));
 		// f->sizeRate = GET_FLAME_SIZE_SPEED(f->sizeMax);
@@ -832,6 +886,7 @@ void	   CG_FlameDamage( int owner, vec3_t org, float radius )
 			return;
 		}
 	}
+
 	lastTime = cg.time;
 	VectorCopy( org, lastPos );
 
@@ -844,6 +899,7 @@ void	   CG_FlameDamage( int owner, vec3_t org, float radius )
 	if( ( centFlameInfo[cg.snap->ps.clientNum].lastDmgCheck < cg.time - 100 ) && ( Distance( org, cg.snap->ps.origin ) < radius * ( cg.snap->ps.clientNum == owner ? 0.1 : 1.0 ) ) ) {
 		// trace to make sure it's not going through geometry
 		CG_Trace( &tr, org, NULL, NULL, cg.snap->ps.origin, -1, MASK_SHOT );
+
 		//
 		if( tr.fraction == 1.0 || tr.entityNum == cg.snap->ps.clientNum ) {
 			centFlameInfo[cg.snap->ps.clientNum].lastDmgCheck = cg.time;
@@ -863,6 +919,7 @@ void	   CG_FlameDamage( int owner, vec3_t org, float radius )
 				( Distance( org, cent->lerpOrigin ) < radius ) ) {
 				// trace to make sure it's not going through geometry
 				CG_Trace( &tr, org, NULL, NULL, cent->lerpOrigin, -1, MASK_SHOT );
+
 				//
 				if( tr.fraction == 1.0 || tr.entityNum == cent->currentState.number ) {
 					centFlameInfo[i].lastDmgCheck = cg.time;
@@ -891,10 +948,13 @@ void CG_AddFlameSpriteToScene( flameChunk_t* f, float lifeFrac, float alpha )
 	if( alpha < 0 ) {
 		return; // we dont want to see this
 	}
+
 	radius = ( f->size / 2.0 );
+
 	if( radius < 6 ) {
 		radius = 6;
 	}
+
 	rST[0]	  = radius * 1.0;
 	rST[1]	  = radius * 1.0 / 1.481;
 	alphaChar = ( unsigned char )( 255.0 * alpha );
@@ -915,6 +975,7 @@ void CG_AddFlameSpriteToScene( flameChunk_t* f, float lifeFrac, float alpha )
 	// make sure its infront of us
 	VectorSubtract( sProj, cg.refdef.vieworg, vec );
 	sdist = VectorNormalize( vec );
+
 	if( !sdist || DotProduct( vec, cg.refdef.viewaxis[0] ) < 0 ) {
 		return;
 	}
@@ -934,10 +995,12 @@ void CG_AddFlameSpriteToScene( flameChunk_t* f, float lifeFrac, float alpha )
 
 		// OPTIMIZATION: clamp to 90 degree rotations
 		rollAngleClamped = 0;
+
 		if( rotatingFlames ) {
 			vectoangles( cg.refdef.viewaxis[0], rotate_ang );
 			rotate_ang[ROLL] += ( rollAngleClamped = ( ( int )( f->rollAngle ) / 90 ) * 90 );
 			AngleVectors( rotate_ang, NULL, rright, rup );
+
 		} else {
 			VectorCopy( vright, rright );
 			VectorCopy( vup, rup );
@@ -952,84 +1015,109 @@ void CG_AddFlameSpriteToScene( flameChunk_t* f, float lifeFrac, float alpha )
 		if( fabs( rdist[0] ) > radius || fabs( rdist[1] ) > radius ) {
 			return; // completely off-screen
 		}
+
 		// now set the bounds for clipping
 		fovRadius[0] = tan( DEG2RAD( ( rollAngleClamped % 2 == 0 ? cg.refdef.fov_x : cg.refdef.fov_x ) * 0.52 ) ) * sdist;
 		fovRadius[1] = tan( DEG2RAD( ( rollAngleClamped % 2 == 0 ? cg.refdef.fov_x : cg.refdef.fov_x ) * 0.52 ) ) * sdist;
 
 		// BOTTOM LEFT
 		x = ( -radius + rdist[0] );
+
 		if( x < -fovRadius[0] ) { // clip
 			VectorMA( f->org, -radius + ( -fovRadius[0] - x ), rright, point );
 			verts[0].st[0] = 0.0 + ( -fovRadius[0] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( f->org, -radius, rright, point );
 			verts[0].st[0] = 0.0;
 		}
+
 		x = ( -radius + rdist[1] );
+
 		if( x < -fovRadius[1] ) {
 			VectorMA( point, -radius + ( -fovRadius[1] - x ), rup, point );
 			verts[0].st[1] = 0.0 + ( -fovRadius[1] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( point, -radius, rup, point );
 			verts[0].st[1] = 0.0;
 		}
+
 		VectorCopy( point, verts[0].xyz );
 
 		// TOP LEFT
 		x = ( -radius + rdist[0] );
+
 		if( x < -fovRadius[0] ) { // clip
 			VectorMA( f->org, -radius + ( -fovRadius[0] - x ), rright, point );
 			verts[1].st[0] = 0.0 + ( -fovRadius[0] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( f->org, -radius, rright, point );
 			verts[1].st[0] = 0.0;
 		}
+
 		x = ( radius + rdist[1] );
+
 		if( x > fovRadius[1] ) {
 			VectorMA( point, radius + ( fovRadius[1] - x ), rup, point );
 			verts[1].st[1] = 1.0 + ( fovRadius[1] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( point, radius, rup, point );
 			verts[1].st[1] = 1.0;
 		}
+
 		VectorCopy( point, verts[1].xyz );
 
 		// TOP RIGHT
 		x = ( radius + rdist[0] );
+
 		if( x > fovRadius[0] ) {
 			VectorMA( f->org, radius + ( fovRadius[0] - x ), rright, point );
 			verts[2].st[0] = 1.0 + ( fovRadius[0] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( f->org, radius, rright, point );
 			verts[2].st[0] = 1.0;
 		}
+
 		x = ( radius + rdist[1] );
+
 		if( x > fovRadius[1] ) {
 			VectorMA( point, radius + ( fovRadius[1] - x ), rup, point );
 			verts[2].st[1] = 1.0 + ( fovRadius[1] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( point, radius, rup, point );
 			verts[2].st[1] = 1.0;
 		}
+
 		VectorCopy( point, verts[2].xyz );
 
 		// BOTTOM RIGHT
 		x = ( radius + rdist[0] );
+
 		if( x > fovRadius[0] ) {
 			VectorMA( f->org, radius + ( fovRadius[0] - x ), rright, point );
 			verts[3].st[0] = 1.0 + ( fovRadius[0] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( f->org, radius, rright, point );
 			verts[3].st[0] = 1.0;
 		}
+
 		x = ( -radius + rdist[1] );
+
 		if( x < -fovRadius[1] ) {
 			VectorMA( point, -radius + ( -fovRadius[1] - x ), rup, point );
 			verts[3].st[1] = 0.0 + ( -fovRadius[1] - x ) / ( radius * 2 );
+
 		} else {
 			VectorMA( point, -radius, rup, point );
 			verts[3].st[1] = 0.0;
 		}
+
 		VectorCopy( point, verts[3].xyz );
 
 	} else { // set default values for no clipping
@@ -1038,6 +1126,7 @@ void CG_AddFlameSpriteToScene( flameChunk_t* f, float lifeFrac, float alpha )
 			vectoangles( cg.refdef.viewaxis[0], rotate_ang );
 			rotate_ang[ROLL] += f->rollAngle;
 			AngleVectors( rotate_ang, NULL, rright, rup );
+
 		} else {
 			VectorCopy( vright, rright );
 			VectorCopy( vup, rup );
@@ -1066,8 +1155,10 @@ void CG_AddFlameSpriteToScene( flameChunk_t* f, float lifeFrac, float alpha )
 	}
 
 	frameNum = ( int )floor( lifeFrac * NUM_FLAME_SPRITES );
+
 	if( frameNum < 0 ) {
 		frameNum = 0;
+
 	} else if( frameNum > NUM_FLAME_SPRITES - 1 ) {
 		frameNum = NUM_FLAME_SPRITES - 1;
 	}
@@ -1124,6 +1215,7 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 		&& ( centFlameInfo[fHead->ownerCent].lastFlameChunk == fHead ) ) {
 		headTimeStart = fHead->timeStart;
 		firing		  = qtrue;
+
 	} else {
 		// isClientFlame = qfalse;
 		headTimeStart = cg.time;
@@ -1143,6 +1235,7 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 	VectorClear( lastDrawPos );
 
 	f = fHead;
+
 	while( f ) {
 		if( f->nextFlameChunk && f->nextFlameChunk->dead ) {
 			// kill it
@@ -1157,14 +1250,17 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 
 		// update the "blow" sound volume (louder as we sway it)
 		vdist = Distance( cg.refdef.vieworg, f->org ); // NOTE: this needs to be here or the flameSound code further below won't work
+
 		if( lastBlowChunk && ( centFlameStatus[f->ownerCent].blowVolume < 1.0 ) && ( ( bdot = DotProduct( lastBlowChunk->startVelDir, f->startVelDir ) ) < 1.0 ) ) {
 			if( vdist < FLAME_SOUND_RANGE ) {
 				centFlameStatus[f->ownerCent].blowVolume += 500.0 * ( 1.0 - bdot ) * ( 1.0 - ( vdist / FLAME_SOUND_RANGE ) );
+
 				if( centFlameStatus[f->ownerCent].blowVolume > 1.0 ) {
 					centFlameStatus[f->ownerCent].blowVolume = 1.0;
 				}
 			}
 		}
+
 		lastBlowChunk = f;
 
 		VectorMA( lightOrg, f->size / 20.0, f->org, lightOrg );
@@ -1217,14 +1313,17 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 						}
 			*/
 			// is it in the blue ignition section of the flame?
+
 		} else if( isClientFlame && f->blueLife > ( lived / 2.0 ) ) {
 			skip = qfalse;
 
 			// if this is backwards from the last chunk, then skip it
 			if( /*!f->ignitionOnly &&*/ fNext && f != fHead && lastBlueChunk ) {
 				VectorSubtract( f->org, lastBlueChunk->org, v );
+
 				if( VectorNormalize( v ) < f->size / 2 ) {
 					skip = qtrue;
+
 				} else if( DotProduct( v, f->velDir ) < 0 ) {
 					skip = qtrue;
 				}
@@ -1233,6 +1332,7 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 			// stream sound
 			if( !f->ignitionOnly && ( cg_entities[f->ownerCent].currentState.number >= MAX_CLIENTS || cg_entities[f->ownerCent].currentState.weapon == WP_FLAMETHROWER ) ) {
 				centFlameStatus[f->ownerCent].streamVolume += 0.05;
+
 				if( centFlameStatus[f->ownerCent].streamVolume > 1.0 ) {
 					centFlameStatus[f->ownerCent].streamVolume = 1.0;
 				}
@@ -1282,15 +1382,20 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 
 					if( !f->nextFlameChunk ) {
 						alpha = 0;
+
 					} else if( lived / 1.3 < bscale * FLAME_BLUE_FADEIN_TIME( f->blueLife ) ) {
 						alpha = FLAME_BLUE_MAX_ALPHA * ( ( lived / 1.3 ) / ( bscale * FLAME_BLUE_FADEIN_TIME( f->blueLife ) ) );
+
 					} else if( lived / 1.3 < ( f->blueLife - FLAME_BLUE_FADEOUT_TIME( f->blueLife ) ) ) {
 						alpha = FLAME_BLUE_MAX_ALPHA;
+
 					} else {
 						alpha = FLAME_BLUE_MAX_ALPHA * ( 1.0 - ( ( lived / 1.3 - ( f->blueLife - FLAME_BLUE_FADEOUT_TIME( f->blueLife ) ) ) / ( FLAME_BLUE_FADEOUT_TIME( f->blueLife ) ) ) );
 					}
+
 					if( alpha <= 0.0 ) {
 						alpha = 0.0;
+
 						if( lastFuelAlpha <= 0.0 ) {
 							fskip = qtrue;
 						}
@@ -1340,10 +1445,12 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 					if( !droppedTrail ) {
 						CG_MergeFlameChunks( f, fNext );
 						fNext = f->nextFlameChunk; // it may have changed
+
 					} else {
 						skip = qtrue;
 						break;
 					}
+
 				} else {
 					break;
 				}
@@ -1352,6 +1459,7 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 			lifeFrac = ( lived - FLAME_SPRITE_START_BLUE_SCALE * f->blueLife ) / ( FLAME_LIFETIME - FLAME_SPRITE_START_BLUE_SCALE * f->blueLife );
 
 			alpha = ( 1.0 - lifeFrac ) * 1.4;
+
 			if( alpha > 1.0 ) {
 				alpha = 1.0;
 			}
@@ -1362,6 +1470,7 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 				VectorSubtract( f->org, lastDrawPos, v2 );
 				fDist = VectorNormalize( v2 );
 				vDist = VectorNormalize( v1 );
+
 				if( ( vDist / f->size ) * fDist * ( 0.1 + 0.9 * ( 1.0 - fabs( DotProduct( v1, v2 ) ) ) ) < ( 2.0 * ( f->size / 30.0 < 1.0 ? f->size / 30.0 : 1.0 ) ) ) {
 					skip = qtrue;
 				}
@@ -1372,25 +1481,32 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 				CG_AddFlameSpriteToScene( f, lifeFrac, alpha );
 				VectorCopy( f->org, lastDrawPos );
 			}
+
 			// update the sizeRate
 			f->sizeRate = GET_FLAME_SIZE_SPEED( f->sizeMax );
 
 #ifdef FLAMETHROW_LIGHTS
+
 			// drop a light?
 			if( /*f->size > FLAME_START_MAX_SIZE/1.5 &&*/ ( !lastLightFlameChunk || Distance( lastLightPos, f->org ) > lastLightSize * 0.4 ) ) {
 				lightSize = f->size * 10;
+
 				if( lightSize > 250 ) {
 					lightSize = 250;
 				}
+
 				lightAlpha = 1.0; // lightSize / 600;
+
 				if( lightSize < 200 ) {
 					lightSize = 200;
 				}
+
 				sys->R_AddLightToScene( f->org, lightSize, 1.0 * lightAlpha, 0.7 * lightAlpha, 0.3 * lightAlpha, 0 );
 				VectorCopy( f->org, lastLightPos );
 				lastLightFlameChunk = f;
 				lastLightSize		= lightSize;
 			}
+
 #endif
 		}
 
@@ -1404,19 +1520,25 @@ void CG_AddFlameToScene( flameChunk_t* fHead )
 	if( lightSize > 500 ) {
 		lightSize = 500;
 	}
+
 	lightSize *= 1.0 + 0.2 * ( sin( 1.0 * cg.time / 50.0 ) * cos( 1.0 * cg.time / 43.0 ) );
 	// set the alpha
 	alpha = lightSize / 500.0;
+
 	if( alpha > 1.0 ) {
 		alpha = 1.0;
 	}
+
 	VectorScale( lightOrg, 1.0 / lightFlameCount, lightOrg );
+
 	// if it's only a nozzle, make it blue
 	if( fHead->ignitionOnly ) {
 		if( lightSize > 80 ) {
 			lightSize = 80;
 		}
+
 		sys->R_AddLightToScene( lightOrg, 90 + lightSize, 0, 0, alpha * 0.5, 0 );
+
 	} else if( isClientFlame || ( fHead->ownerCent == cg.snap->ps.clientNum ) ) {
 		// sys->R_AddLightToScene( lightOrg, 90 + lightSize, 1.000000*alpha, 0.603922*alpha, 0.207843*alpha, 2/*isClientFlame * (fHead->ownerCent == cg.snap->ps.clientNum)*/  );
 	}
@@ -1437,6 +1559,7 @@ void CG_GenerateShaders( char* filename, char* shaderName, char* dir, int numFra
 	int			 i;
 
 	sys->FS_FOpenFile( filename, &f, FS_WRITE );
+
 	for( i = 0; i < numFrames; i++ ) {
 		lastNumber = i;
 		b		   = lastNumber / 100;
@@ -1463,6 +1586,7 @@ void CG_GenerateShaders( char* filename, char* shaderName, char* dir, int numFra
 				srcBlend,
 				dstBlend,
 				extras );
+
 		} else {
 			Com_sprintf( str,
 				sizeof( str ),
@@ -1478,8 +1602,10 @@ void CG_GenerateShaders( char* filename, char* shaderName, char* dir, int numFra
 				dstBlend,
 				extras );
 		}
+
 		sys->FS_Write( str, strlen( str ), f );
 	}
+
 	sys->FS_FCloseFile( f );
 }
 
@@ -1519,10 +1645,12 @@ void CG_InitFlameChunks()
 		Com_sprintf( filename, MAX_QPATH, "flamethrowerFire%i", i + 1 );
 		flameShaders[i] = sys->R_RegisterShader( filename );
 	}
+
 	for( i = 0; i < NUM_NOZZLE_SPRITES; i++ ) {
 		Com_sprintf( filename, MAX_QPATH, "nozzleFlame%i", i + 1 );
 		nozzleShaders[i] = sys->R_RegisterShader( filename );
 	}
+
 	initFlameShaders = qfalse;
 }
 
@@ -1547,17 +1675,21 @@ void CG_AddFlameChunks()
 
 	// age them
 	f = activeFlameChunks;
+
 	while( f ) {
 		if( !f->dead ) {
 			if( cg.time > f->timeEnd ) {
 				f->dead = qtrue;
+
 			} else if( f->ignitionOnly && ( f->blueLife < ( cg.time - f->timeStart ) ) ) {
 				f->dead = qtrue;
+
 			} else {
 				// adjust by a fraction if crossing the blueLife threshold
 				if( ( f->sizeTime - f->timeStart < f->blueLife ) != ( cg.time - f->timeStart < f->blueLife ) ) {
 					CG_AdjustFlameSize( f, f->timeStart + f->blueLife );
 				}
+
 				//
 				CG_AdjustFlameSize( f, cg.time );
 				// if (cg.time - f->baseOrgTime >= moveStep)
@@ -1566,22 +1698,28 @@ void CG_AddFlameChunks()
 				f->lifeFrac = ( float )( f->baseOrgTime - f->timeStart ) / ( float )( f->timeEnd - f->timeStart );
 			}
 		}
+
 		f = f->nextGlobal;
 	}
 
 	// draw each of the headFlameChunk's
 	f = headFlameChunks;
+
 	while( f ) {
 		fNext = f->nextHead; // in case it gets removed
+
 		if( f->dead ) {
 			if( centFlameInfo[f->ownerCent].lastFlameChunk == f ) {
 				centFlameInfo[f->ownerCent].lastFlameChunk	= NULL;
 				centFlameInfo[f->ownerCent].lastClientFrame = 0;
 			}
+
 			CG_FreeFlameChunk( f );
+
 		} else if( !f->ignitionOnly || ( centFlameInfo[f->ownerCent].lastFlameChunk == f ) ) { // don't draw the ignition flame after we start firing
 			CG_AddFlameToScene( f );
 		}
+
 		f = fNext;
 	}
 }
@@ -1601,6 +1739,7 @@ void CG_UpdateFlamethrowerSounds()
 
 	// draw each of the headFlameChunk's
 	f = headFlameChunks;
+
 	while( f ) {
 		if( centFlameInfo[f->ownerCent].silent ) {
 			f = f->nextHead;
@@ -1612,6 +1751,7 @@ void CG_UpdateFlamethrowerSounds()
 			// blow/ignition sound
 			if( centFlameStatus[f->ownerCent].blowVolume * 255.0 > MIN_BLOW_VOLUME ) {
 				sys->S_AddLoopingSound( f->ownerCent, f->org, vec3_origin, cgs.media.flameBlowSound, ( int )( 255.0 * centFlameStatus[f->ownerCent].blowVolume ) );
+
 			} else {
 				sys->S_AddLoopingSound( f->ownerCent, f->org, vec3_origin, cgs.media.flameBlowSound, MIN_BLOW_VOLUME );
 			}
@@ -1619,6 +1759,7 @@ void CG_UpdateFlamethrowerSounds()
 			if( centFlameStatus[f->ownerCent].streamVolume ) {
 				if( cg_entities[f->ownerCent].currentState.aiChar != AICHAR_ZOMBIE ) {
 					sys->S_AddLoopingSound( f->ownerCent, f->org, vec3_origin, cgs.media.flameStreamSound, ( int )( 255.0 /**centFlameStatus[f->ownerCent].streamVolume*/ ) );
+
 				} else {
 					sys->S_AddLoopingSound( f->ownerCent, f->org, vec3_origin, cgs.media.flameCrackSound, ( int )( 255.0 * centFlameStatus[f->ownerCent].streamVolume ) );
 				}
@@ -1648,6 +1789,7 @@ void CG_UpdateFlamethrowerSounds()
 			if( ( cg.snap->ps.pm_flags & PMF_LIMBO ) || ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) ) { // JPW NERVE
 				return; // JPW NERVE don't do flame damage to guys in limbo or spectator, they drop out of the game
 			}
+
 			CG_ClientDamage( i, centFlameInfo[i].lastDmgEnemy, CLDMG_FLAMETHROWER );
 			centFlameInfo[i].lastDmgUpdate = cg.time;
 		}

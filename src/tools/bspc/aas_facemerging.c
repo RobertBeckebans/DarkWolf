@@ -51,17 +51,22 @@ int AAS_TryMergeFaces( tmp_face_t* face1, tmp_face_t* face2 )
 	winding_t* neww;
 
 #ifdef DEBUG
+
 	if( !face1->winding ) {
 		Error( "face1 %d without winding", face1->num );
 	}
+
 	if( !face2->winding ) {
 		Error( "face2 %d without winding", face2->num );
 	}
+
 #endif // DEBUG
+
 	//
 	if( face1->faceflags != face2->faceflags ) {
 		return false;
 	}
+
 	// NOTE: if the front or back area is zero this doesn't mean there's
 	// a real area. It means there's solid at that side of the face
 	// if both faces have the same front area
@@ -73,29 +78,37 @@ int AAS_TryMergeFaces( tmp_face_t* face1, tmp_face_t* face2 )
 				// if they have both a front and a back area (no solid on either side)
 				if( face1->frontarea && face1->backarea ) {
 					neww = MergeWindings( face1->winding, face2->winding, mapplanes[face1->planenum].normal );
+
 				} else {
 					// this function is to be found in l_poly.c
 					neww = TryMergeWinding( face1->winding, face2->winding, mapplanes[face1->planenum].normal );
 				}
+
 				if( neww ) {
 					FreeWinding( face1->winding );
 					face1->winding = neww;
+
 					if( face2->frontarea ) {
 						AAS_RemoveFaceFromArea( face2, face2->frontarea );
 					}
+
 					if( face2->backarea ) {
 						AAS_RemoveFaceFromArea( face2, face2->backarea );
 					}
+
 					AAS_FreeTmpFace( face2 );
 					return true;
 				}
+
 			} else if( ( face1->planenum & ~1 ) == ( face2->planenum & ~1 ) ) {
 				Log_Write( "face %d and %d, same front and back area but flipped planes\r\n", face1->num, face2->num );
 			}
 		}
 	}
+
 	return false;
 }
+
 /*
 int AAS_TryMergeFaces(tmp_face_t *face1, tmp_face_t *face2)
 {

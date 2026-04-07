@@ -61,9 +61,11 @@ static void		 CG_DrawLoadingIcons()
 
 	for( n = 0; n < loadingItemIconCount; n++ ) {
 		y = 400;
+
 		if( n >= 13 ) {
 			y += 40;
 		}
+
 		x = 16 + n % 13 * 48;
 		CG_DrawPic( x, y, 32, 32, loadingItemIcons[n] );
 	}
@@ -82,6 +84,7 @@ void CG_LoadingString( const char* s )
 	if( s && s[0] != 0 ) {
 		CG_Printf( va( "LOADING... %s\n", s ) ); //----(SA)	added so you can see from the console what's going on
 	}
+
 	sys->UpdateScreen();
 }
 
@@ -132,8 +135,10 @@ void CG_LoadingClient( int clientNum )
 
 	Q_strncpyz( model, Info_ValueForKey( info, "model" ), sizeof( model ) );
 	skin = Q_strrchr( model, '/' );
+
 	if( skin ) {
 		*skin++ = '\0';
+
 	} else {
 		skin = "default";
 	}
@@ -215,6 +220,7 @@ void CG_DrawStats( char* stats )
 
 	Q_strncpyz( string, stats, sizeof( string ) );
 	str = string;
+
 	// convert commas to spaces
 	for( i = 0; str[i]; i++ ) {
 		if( str[i] == ',' ) {
@@ -230,8 +236,10 @@ void CG_DrawStats( char* stats )
 
 		if( statsItems[i].numVars ) {
 			varIndex = v;
+
 			for( j = 0; j < statsItems[i].numVars; j++ ) {
 				token = COM_Parse( &str );
+
 				if( !token || !token[0] ) {
 					CG_Error( "error parsing mission stats\n" );
 					return;
@@ -245,12 +253,15 @@ void CG_DrawStats( char* stats )
 				case 1:
 					formatStr = va( statsItems[i].format, vars[varIndex] );
 					break;
+
 				case 2:
 					formatStr = va( statsItems[i].format, vars[varIndex], vars[varIndex + 1] );
 					break;
+
 				case 3:
 					formatStr = va( statsItems[i].format, vars[varIndex], vars[varIndex + 1], vars[varIndex + 2] );
 					break;
+
 				case 4:
 					formatStr = va( statsItems[i].format, vars[varIndex], vars[varIndex + 1], vars[varIndex + 2], vars[varIndex + 3] );
 					break;
@@ -324,6 +335,7 @@ void CG_DrawExitStats()
 
 	// text boxes
 	color2[0] = color2[1] = color2[2] = 0.4f;
+
 	for( i = 0; i < 5; i++ ) {
 		CG_FilledBar( 170, 154 + ( 28 * i ), 300, 20, color2, NULL, NULL, 1.0f, 0 );
 	}
@@ -343,11 +355,13 @@ void CG_DrawExitStats()
 	CG_Text_Paint( 270, 120, 2, 0.313f, color2, va( "%s", CG_translateString( "end_title" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
 
 	color2[0] = color2[1] = color2[2] = 1;
+
 	if( cg.cursorHintIcon == HINT_NOEXIT ) {
 		// "exit not available"
 		//		CG_Text_Paint(250, 320, 2, 0.3f, color2, va("%s", CG_translateString("end_noexit")), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE);
 		//----(SA)	scale change per MK
 		CG_Text_Paint( 260, 320, 2, 0.225f, color2, va( "%s", CG_translateString( "end_noexit" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
+
 	} else {
 		// "forward to proceed"
 		//		CG_Text_Paint(230, 320, 2, 0.3f, color2, va("%s", CG_translateString("end_exit")), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE);
@@ -356,11 +370,13 @@ void CG_DrawExitStats()
 	}
 
 	mstats = ( char* )str + 2; // add offset for 's='
+
 	for( i = 0; mstats[i]; i++ ) {
 		if( mstats[i] == ',' ) {
 			mstats[i] = ' ';
 		}
 	}
+
 	for( i = 0, y = 0, v = 0; statsItems[i].label; i++ ) {
 		y += statsItems[i].YOfs;
 
@@ -370,8 +386,10 @@ void CG_DrawExitStats()
 
 		if( statsItems[i].numVars ) {
 			varIndex = v;
+
 			for( j = 0; j < statsItems[i].numVars; j++ ) {
 				token = COM_Parse( &mstats );
+
 				if( !token || !token[0] ) {
 					CG_Error( "error parsing mission stats\n" );
 					return;
@@ -385,12 +403,15 @@ void CG_DrawExitStats()
 				case 1:
 					formatStr = va( statsItems[i].format, vars[varIndex] );
 					break;
+
 				case 2:
 					formatStr = va( statsItems[i].format, vars[varIndex], vars[varIndex + 1] );
 					break;
+
 				case 3:
 					formatStr = va( statsItems[i].format, vars[varIndex], vars[varIndex + 1], vars[varIndex + 2] );
 					break;
+
 				case 4:
 					formatStr = va( statsItems[i].format, vars[varIndex], vars[varIndex + 1], vars[varIndex + 2], vars[varIndex + 3] );
 					break;
@@ -419,6 +440,7 @@ void CG_DrawExitStats()
 		//		CG_Text_Paint(statsItems[i].labelX, y, 2, 0.3, statsItems[i].labelColor, va("%s:", CG_translateString(statsItems[i].label)), 0, 0, statsItems[i].labelFlags);
 		CG_Text_Paint( statsItems[i].labelX, y, 2, 0.3, color2, va( "%s:", CG_translateString( statsItems[i].label ) ), 0, 0, statsItems[i].labelFlags );
 	}
+
 	token = COM_Parse( &mstats );
 
 	// end (parse it)
@@ -460,9 +482,11 @@ void CG_DrawInformation()
 	}
 
 	ms = sys->Milliseconds();
+
 	if( ( lastDraw <= ms ) && ( lastDraw > ms - 100 ) ) {
 		return;
 	}
+
 	lastDraw = ms;
 
 	callCount++;
@@ -507,10 +531,13 @@ void CG_DrawInformation()
 
 		if( expectedHunk > 0 ) {
 			percentDone = ( float )( cg_hunkUsed.integer + cg_soundAdjust.integer ) / ( float )( expectedHunk );
+
 			if( percentDone > 0.97 ) { // never actually show 100%, since we are not in the game yet
 				percentDone = 0.97;
 			}
+
 			CG_HorizontalPercentBar( xy[0] + 10, xy[1] + wh[1] - 10, wh[0] - 20, 10, percentDone );
+
 		} else {
 			UI_DrawProportionalString( 320, xy[1] + wh[1] - 10, "please wait", UI_CENTER | UI_EXSMALLFONT | UI_DROPSHADOW, color );
 		}
@@ -529,6 +556,7 @@ void CG_DrawInformation()
 			// show the percent complete bar
 			if( expectedHunk > 0 ) {
 				percentDone = ( float )( cg_hunkUsed.integer + cg_soundAdjust.integer ) / ( float )( expectedHunk );
+
 				if( percentDone > 0.97 ) {
 					percentDone = 0.97;
 				}
@@ -543,6 +571,7 @@ void CG_DrawInformation()
 		callCount--;
 		return;
 	}
+
 	// done.
 
 	// draw the icons of thiings as they are loaded
@@ -552,6 +581,7 @@ void CG_DrawInformation()
 	// screen to write into
 	if( cg.infoScreenText[0] ) {
 		UI_DrawProportionalString( 320, 128, va( "Loading... %s", cg.infoScreenText ), UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
+
 	} else {
 		UI_DrawProportionalString( 320, 128, "Awaiting snapshot...", UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 	}
@@ -562,6 +592,7 @@ void CG_DrawInformation()
 
 	// don't print server lines if playing a local game
 	sys->Cvar_VariableStringBuffer( "sv_running", buf, sizeof( buf ) );
+
 	if( !atoi( buf ) ) {
 		// server hostname
 		s = Info_ValueForKey( info, "sv_hostname" );
@@ -570,6 +601,7 @@ void CG_DrawInformation()
 
 		// server-specific message of the day
 		s = CG_ConfigString( CS_MOTD );
+
 		if( s[0] ) {
 			UI_DrawProportionalString( 320, y, s, UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 			y += PROP_HEIGHT;
@@ -581,6 +613,7 @@ void CG_DrawInformation()
 
 	// map-specific message (long map name)
 	s = CG_ConfigString( CS_MESSAGE );
+
 	if( s[0] ) {
 		UI_DrawProportionalString( 320, y, s, UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 		y += PROP_HEIGHT;
@@ -588,6 +621,7 @@ void CG_DrawInformation()
 
 	// cheats warning
 	s = Info_ValueForKey( sysInfo, "sv_cheats" );
+
 	if( s[0] == '1' ) {
 		UI_DrawProportionalString( 320, y, "CHEATS ARE ENABLED", UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 		y += PROP_HEIGHT;
@@ -598,31 +632,39 @@ void CG_DrawInformation()
 		case GT_FFA:
 			s = "Free For All";
 			break;
+
 		case GT_SINGLE_PLAYER:
 			s = "Single Player";
 			break;
+
 		case GT_TOURNAMENT:
 			s = "Tournament";
 			break;
+
 		case GT_TEAM:
 			s = "Team Deathmatch";
 			break;
+
 		case GT_CTF:
 			s = "Capture The Flag";
 			break;
+
 		// JPW NERVE
 		case GT_WOLF:
 			s = "Wolfenstein Multiplayer";
 			break;
+
 		// jpw
 		default:
 			s = "Unknown Gametype";
 			break;
 	}
+
 	UI_DrawProportionalString( 320, y, s, UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 	y += PROP_HEIGHT;
 
 	value = atoi( Info_ValueForKey( info, "timelimit" ) );
+
 	if( value ) {
 		UI_DrawProportionalString( 320, y, va( "timelimit %i", value ), UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 		y += PROP_HEIGHT;
@@ -630,6 +672,7 @@ void CG_DrawInformation()
 
 	if( cgs.gametype != GT_CTF && cgs.gametype != GT_SINGLE_PLAYER ) {
 		value = atoi( Info_ValueForKey( info, "fraglimit" ) );
+
 		if( value ) {
 			UI_DrawProportionalString( 320, y, va( "fraglimit %i", value ), UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 			y += PROP_HEIGHT;
@@ -638,6 +681,7 @@ void CG_DrawInformation()
 
 	if( cgs.gametype == GT_CTF ) {
 		value = atoi( Info_ValueForKey( info, "capturelimit" ) );
+
 		if( value ) {
 			UI_DrawProportionalString( 320, y, va( "capturelimit %i", value ), UI_CENTER | UI_SMALLFONT | UI_DROPSHADOW, colorWhite );
 			y += PROP_HEIGHT;

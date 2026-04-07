@@ -706,6 +706,7 @@ qboolean G_CallSpawn( gentity_t* ent )
 			if( item->giType == IT_TEAM && ( g_gametype.integer != GT_CTF && g_gametype.integer != GT_WOLF ) ) {
 				return qfalse;
 			}
+
 			G_SpawnItem( ent, item );
 			return qtrue;
 		}
@@ -726,6 +727,7 @@ qboolean G_CallSpawn( gentity_t* ent )
 			return qtrue;
 		}
 	}
+
 	G_Printf( "%s doesn't have a spawn function\n", ent->classname );
 	return qfalse;
 }
@@ -753,11 +755,14 @@ char* G_NewString( const char* string )
 	for( i = 0; i < l; i++ ) {
 		if( string[i] == '\\' && i < l - 1 ) {
 			i++;
+
 			if( string[i] == 'n' ) {
 				*new_p++ = '\n';
+
 			} else {
 				*new_p++ = '\\';
 			}
+
 		} else {
 			*new_p++ = string[i];
 		}
@@ -790,28 +795,34 @@ void G_ParseField( const char* key, const char* value, gentity_t* ent )
 				case F_LSTRING:
 					*( char** )( b + f->ofs ) = G_NewString( value );
 					break;
+
 				case F_VECTOR:
 					sscanf( value, "%f %f %f", &vec[0], &vec[1], &vec[2] );
 					( ( float* )( b + f->ofs ) )[0] = vec[0];
 					( ( float* )( b + f->ofs ) )[1] = vec[1];
 					( ( float* )( b + f->ofs ) )[2] = vec[2];
 					break;
+
 				case F_INT:
 					*( int* )( b + f->ofs ) = atoi( value );
 					break;
+
 				case F_FLOAT:
 					*( float* )( b + f->ofs ) = atof( value );
 					break;
+
 				case F_ANGLEHACK:
 					v								= atof( value );
 					( ( float* )( b + f->ofs ) )[0] = 0;
 					( ( float* )( b + f->ofs ) )[1] = v;
 					( ( float* )( b + f->ofs ) )[2] = 0;
 					break;
+
 				default:
 				case F_IGNORE:
 					break;
 			}
+
 			return;
 		}
 	}
@@ -840,19 +851,24 @@ void G_SpawnGEntityFromSpawnVars()
 	// check for "notteam" / "notfree" flags
 	if( g_gametype.integer == GT_SINGLE_PLAYER ) {
 		G_SpawnInt( "notsingle", "0", &i );
+
 		if( i ) {
 			G_FreeEntity( ent );
 			return;
 		}
 	}
+
 	if( g_gametype.integer >= GT_TEAM ) {
 		G_SpawnInt( "notteam", "0", &i );
+
 		if( i ) {
 			G_FreeEntity( ent );
 			return;
 		}
+
 	} else {
 		G_SpawnInt( "notfree", "0", &i );
+
 		if( i ) {
 			G_FreeEntity( ent );
 			return;
@@ -880,6 +896,7 @@ char* G_AddSpawnVarToken( const char* string )
 	char* dest;
 
 	l = strlen( string );
+
 	if( level.numSpawnVarChars + l + 1 > MAX_SPAWN_VARS_CHARS ) {
 		G_Error( "G_AddSpawnVarToken: MAX_SPAWN_VARS" );
 	}
@@ -915,6 +932,7 @@ qboolean G_ParseSpawnVars()
 		// end of spawn string
 		return qfalse;
 	}
+
 	if( com_token[0] != '{' ) {
 		G_Error( "G_ParseSpawnVars: found %s when expecting {", com_token );
 	}
@@ -938,9 +956,11 @@ qboolean G_ParseSpawnVars()
 		if( com_token[0] == '}' ) {
 			G_Error( "G_ParseSpawnVars: closing brace without data" );
 		}
+
 		if( level.numSpawnVars == MAX_SPAWN_VARS ) {
 			G_Error( "G_ParseSpawnVars: MAX_SPAWN_VARS" );
 		}
+
 		level.spawnVars[level.numSpawnVars][0] = G_AddSpawnVarToken( keyname );
 		level.spawnVars[level.numSpawnVars][1] = G_AddSpawnVarToken( com_token );
 		level.numSpawnVars++;
@@ -965,6 +985,7 @@ void SP_worldspawn()
 	gitem_t* item; // JPW NERVE
 
 	G_SpawnString( "classname", "", &s );
+
 	if( Q_stricmp( s, "worldspawn" ) ) {
 		G_Error( "SP_worldspawn: The first entity isn't 'worldspawn'" );
 	}
@@ -992,6 +1013,7 @@ void SP_worldspawn()
 
 	// see if we want a warmup time
 	sys->SetConfigstring( CS_WARMUP, "" );
+
 	if( g_restarted.integer ) {
 		sys->Cvar_Set( "g_restarted", "0" );
 		level.warmupTime = 0;
@@ -1012,6 +1034,7 @@ void SP_worldspawn()
 		item			  = BG_FindItem( "MP40" );
 		item->giAmmoIndex = WP_MP40;
 	}
+
 	// jpw
 }
 
@@ -1034,6 +1057,7 @@ void G_SpawnEntitiesFromString()
 	if( !G_ParseSpawnVars() ) {
 		G_Error( "SpawnEntities: no entities" );
 	}
+
 	SP_worldspawn();
 
 	// parse ents

@@ -43,6 +43,7 @@ void CG_TargetCommand_f()
 	char test[4];
 
 	targetNum = CG_CrosshairPlayer();
+
 	if( !targetNum ) {
 		return;
 	}
@@ -101,6 +102,7 @@ static void CG_ScoresDown_f()
 			cg.showScores = qtrue;
 			cg.numScores  = 0;
 		}
+
 	} else {
 		// show the cached contents even if they just pressed if it
 		// is within two seconds
@@ -130,6 +132,7 @@ static void		  CG_LoadHud_f()
 
 	sys->Cvar_VariableStringBuffer( "cg_hudFiles", buff, sizeof( buff ) );
 	hudSet = buff;
+
 	if( hudSet[0] == '\0' ) {
 		hudSet = "ui/hud.txt";
 	}
@@ -202,6 +205,7 @@ static void CG_TellTarget_f()
 	char message[128];
 
 	clientNum = CG_CrosshairPlayer();
+
 	if( clientNum == -1 ) {
 		return;
 	}
@@ -218,6 +222,7 @@ static void CG_TellAttacker_f()
 	char message[128];
 
 	clientNum = CG_LastAttacker();
+
 	if( clientNum == -1 ) {
 		return;
 	}
@@ -246,6 +251,7 @@ qboolean cameraInuse[MAX_CAMERAS];
 int		 CG_LoadCamera( const char* name )
 {
 	int i;
+
 	for( i = 1; i < MAX_CAMERAS; i++ ) { // start at '1' since '0' is always taken by the cutscene camera
 		if( !cameraInuse[i] ) {
 			if( sys->LoadCamera( i, name ) ) {
@@ -254,6 +260,7 @@ int		 CG_LoadCamera( const char* name )
 			}
 		}
 	}
+
 	return -1;
 }
 
@@ -279,12 +286,15 @@ void CG_StartCamera( const char* name, qboolean startBlack )
 
 	if( sys->LoadCamera( CAM_PRIMARY, va( "cameras/%s", lname ) ) ) {
 		cg.cameraMode = qtrue; // camera on in cgame
+
 		if( startBlack ) {
 			CG_Fade( 0, 0, 0, 255, cg.time, 0 ); // go black
 		}
+
 		sys->Cvar_Set( "cg_letterbox", "1" );	  // go letterbox
 		sys->SendClientCommand( "startCamera" );  // camera on in game
 		sys->StartCamera( CAM_PRIMARY, cg.time ); // camera on in client
+
 	} else {
 		//----(SA)	removed check for cams in main dir
 		cg.cameraMode = qfalse;					// camera off in cgame
@@ -387,6 +397,7 @@ static void CG_QuickMessage_f()
 	if( cgs.gametype != GT_WOLF ) {
 		return;
 	}
+
 	sys->UI_Popup( "UIMENU_WM_QUICKMESSAGE" );
 }
 
@@ -395,6 +406,7 @@ static void CG_OpenLimbo_f()
 	if( cgs.gametype != GT_WOLF ) {
 		return;
 	}
+
 	sys->UI_Popup( "UIMENU_WM_LIMBO" );
 }
 
@@ -403,6 +415,7 @@ static void CG_CloseLimbo_f()
 	if( cgs.gametype != GT_WOLF ) {
 		return;
 	}
+
 	sys->UI_ClosePopup( "UIMENU_WM_LIMBO" );
 }
 
@@ -420,6 +433,7 @@ static void CG_LimboMessage_f()
 
 	CG_CenterPrint( va( "You will spawn as a %s \n%s with a %s.", teamStr, classStr, weapStr ), SCREEN_HEIGHT - ( SCREEN_HEIGHT * 0.25 ), SMALLCHAR_WIDTH );
 }
+
 // -NERVE - SMF
 
 typedef struct {

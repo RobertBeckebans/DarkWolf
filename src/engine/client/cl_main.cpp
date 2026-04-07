@@ -169,6 +169,7 @@ void CL_AddReliableCommand( const char* cmd )
 	if( clc.reliableSequence - clc.reliableAcknowledge > MAX_RELIABLE_COMMANDS ) {
 		Com_Error( ERR_DROP, "Client command overflow" );
 	}
+
 	clc.reliableSequence++;
 	index = clc.reliableSequence & ( MAX_RELIABLE_COMMANDS - 1 );
 	Q_strncpyz( clc.reliableCommands[index], cmd, sizeof( clc.reliableCommands[index] ) );
@@ -186,9 +187,11 @@ void CL_ChangeReliableCommand()
 	r	  = clc.reliableSequence - ( random() * 5 );
 	index = clc.reliableSequence & ( MAX_RELIABLE_COMMANDS - 1 );
 	l	  = strlen( clc.reliableCommands[index] );
+
 	if( l >= MAX_STRING_CHARS - 1 ) {
 		l = MAX_STRING_CHARS - 2;
 	}
+
 	clc.reliableCommands[index][l]	   = '\n';
 	clc.reliableCommands[index][l + 1] = '\0';
 }
@@ -320,6 +323,7 @@ void		CL_Record_f()
 		s = Cmd_Argv( 1 );
 		Q_strncpyz( demoName, s, sizeof( demoName ) );
 		Com_sprintf( name, sizeof( name ), "demos/%s.dm_%d", demoName, PROTOCOL_VERSION );
+
 	} else {
 		int number;
 
@@ -329,6 +333,7 @@ void		CL_Record_f()
 			Com_sprintf( name, sizeof( name ), "demos/%s.dm_%d", demoName, PROTOCOL_VERSION );
 
 			len = FS_ReadFile( name, NULL );
+
 			if( len <= 0 ) {
 				break; // file doesn't exist
 			}
@@ -342,14 +347,17 @@ void		CL_Record_f()
 		_ftype	  = 'WlfB';
 		_fcreator = 'WlfS';
 	}
+
 #endif
 
 	Com_Printf( "recording to %s.\n", name );
 	clc.demofile = FS_FOpenFileWrite( name );
+
 	if( !clc.demofile ) {
 		Com_Printf( "ERROR: couldn't open.\n" );
 		return;
 	}
+
 	clc.demorecording = qtrue;
 	Q_strncpyz( clc.demoName, demoName, sizeof( clc.demoName ) );
 
@@ -371,6 +379,7 @@ void		CL_Record_f()
 		if( !cl.gameState.stringOffsets[i] ) {
 			continue;
 		}
+
 		s = cl.gameState.stringData + cl.gameState.stringOffsets[i];
 		MSG_WriteByte( &buf, svc_configstring );
 		MSG_WriteShort( &buf, i );
@@ -379,11 +388,14 @@ void		CL_Record_f()
 
 	// baselines
 	memset( &nullstate, 0, sizeof( nullstate ) );
+
 	for( i = 0; i < MAX_GENTITIES; i++ ) {
 		ent = &cl.entityBaselines[i];
+
 		if( !ent->number ) {
 			continue;
 		}
+
 		MSG_WriteByte( &buf, svc_baseline );
 		MSG_WriteDeltaEntity( &buf, &nullstate, ent, qtrue );
 	}
@@ -430,6 +442,7 @@ void CL_DemoCompleted()
 		int time;
 
 		time = Sys_Milliseconds() - clc.timeDemoStart;
+
 		if( time > 0 ) {
 			Com_Printf( "%i frames, %3.1f seconds: %3.1f fps\n", clc.timeDemoFrames, time / 1000.0, clc.timeDemoFrames * 1000.0 / time );
 		}
@@ -458,10 +471,12 @@ void CL_ReadDemoMessage()
 
 	// get the sequence number
 	r = FS_Read( &s, 4, clc.demofile );
+
 	if( r != 4 ) {
 		CL_DemoCompleted();
 		return;
 	}
+
 	clc.serverMessageSequence = LittleLong( s );
 
 	// init the message
@@ -469,19 +484,25 @@ void CL_ReadDemoMessage()
 
 	// get the length
 	r = FS_Read( &buf.cursize, 4, clc.demofile );
+
 	if( r != 4 ) {
 		CL_DemoCompleted();
 		return;
 	}
+
 	buf.cursize = LittleLong( buf.cursize );
+
 	if( buf.cursize == -1 ) {
 		CL_DemoCompleted();
 		return;
 	}
+
 	if( buf.cursize > buf.maxsize ) {
 		Com_Error( ERR_DROP, "CL_ReadDemoMessage: demoMsglen > MAX_MSGLEN" );
 	}
+
 	r = FS_Read( buf.data, buf.cursize, clc.demofile );
+
 	if( r != buf.cursize ) {
 		Com_Printf( "Demo file was truncated.\n" );
 		CL_DemoCompleted();
@@ -521,17 +542,21 @@ void CL_PlayDemo_f()
 	// open the demo file
 	arg = Cmd_Argv( 1 );
 	Com_sprintf( extension, sizeof( extension ), ".dm_%d", PROTOCOL_VERSION );
+
 	if( !Q_stricmp( arg + strlen( arg ) - strlen( extension ), extension ) ) {
 		Com_sprintf( name, sizeof( name ), "demos/%s", arg );
+
 	} else {
 		Com_sprintf( name, sizeof( name ), "demos/%s.dm_%d", arg, PROTOCOL_VERSION );
 	}
 
 	FS_FOpenFileRead( name, &clc.demofile, qtrue );
+
 	if( !clc.demofile ) {
 		Com_Error( ERR_DROP, "couldn't open %s", name );
 		return;
 	}
+
 	Q_strncpyz( clc.demoName, Cmd_Argv( 1 ), sizeof( clc.demoName ) );
 
 	Con_Close();
@@ -544,6 +569,7 @@ void CL_PlayDemo_f()
 	while( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED ) {
 		CL_ReadDemoMessage();
 	}
+
 	// don't get the first snapshot this frame, to prevent the long
 	// time from the gamestate load from messing causing a time skip
 	clc.firstDemoFrameSkipped = qfalse;
@@ -578,6 +604,7 @@ void CL_NextDemo()
 	Q_strncpyz( v, Cvar_VariableString( "nextdemo" ), sizeof( v ) );
 	v[MAX_STRING_CHARS - 1] = 0;
 	Com_DPrintf( "CL_NextDemo: %s\n", v );
+
 	if( !v[0] ) {
 		return;
 	}
@@ -635,6 +662,7 @@ void CL_FlushMemory()
 		Hunk_Clear();
 		//		// clear collision map data
 		//		CM_ClearMap();
+
 	} else {
 		// clear all the client data on the hunk
 		Hunk_ClearToMark();
@@ -672,6 +700,7 @@ void CL_MapLoading()
 		memset( &cl.gameState, 0, sizeof( cl.gameState ) );
 		clc.lastPacketSentTime = -9999;
 		SCR_UpdateScreen();
+
 	} else {
 		// clear nextmap so the cinematic shutdown doesn't execute it
 		Cvar_Set( "nextmap", "" );
@@ -732,6 +761,7 @@ void CL_Disconnect( qboolean showMainMenu )
 		FS_FCloseFile( clc.download );
 		clc.download = 0;
 	}
+
 	*clc.downloadTempName = *clc.downloadName = 0;
 	Cvar_Set( "cl_downloadName", "" );
 
@@ -800,6 +830,7 @@ void CL_ForwardCommandToServer( const char* string )
 
 	if( Cmd_Argc() > 1 ) {
 		CL_AddReliableCommand( string );
+
 	} else {
 		CL_AddReliableCommand( cmd );
 	}
@@ -818,11 +849,14 @@ void CL_RequestMotd()
 	if( !cl_motd->integer ) {
 		return;
 	}
+
 	Com_Printf( "Resolving %s\n", UPDATE_SERVER_NAME );
+
 	if( !NET_StringToAdr( UPDATE_SERVER_NAME, &cls.updateServer ) ) {
 		Com_Printf( "Couldn't resolve address\n" );
 		return;
 	}
+
 	cls.updateServer.port = BigShort( PORT_UPDATE );
 	Com_Printf(
 		"%s resolved to %i.%i.%i.%i:%i\n", UPDATE_SERVER_NAME, cls.updateServer.ip[0], cls.updateServer.ip[1], cls.updateServer.ip[2], cls.updateServer.ip[3], BigShort( cls.updateServer.port ) );
@@ -883,6 +917,7 @@ void CL_RequestAuthorization()
 
 	if( !cls.authorizeServer.port ) {
 		Com_Printf( "Resolving %s\n", AUTHORIZE_SERVER_NAME );
+
 		if( !NET_StringToAdr( AUTHORIZE_SERVER_NAME, &cls.authorizeServer ) ) {
 			Com_Printf( "Couldn't resolve address\n" );
 			return;
@@ -897,25 +932,30 @@ void CL_RequestAuthorization()
 			cls.authorizeServer.ip[3],
 			BigShort( cls.authorizeServer.port ) );
 	}
+
 	if( cls.authorizeServer.type == NA_BAD ) {
 		return;
 	}
 
 	if( Cvar_VariableValue( "fs_restrict" ) ) {
 		Q_strncpyz( nums, "demo", sizeof( nums ) );
+
 	} else {
 		// only grab the alphanumeric values from the cdkey, to avoid any dashes or spaces
 		j = 0;
 		l = strlen( cl_cdkey );
+
 		if( l > 32 ) {
 			l = 32;
 		}
+
 		for( i = 0; i < l; i++ ) {
 			if( ( cl_cdkey[i] >= '0' && cl_cdkey[i] <= '9' ) || ( cl_cdkey[i] >= 'a' && cl_cdkey[i] <= 'z' ) || ( cl_cdkey[i] >= 'A' && cl_cdkey[i] <= 'Z' ) ) {
 				nums[j] = cl_cdkey[i];
 				j++;
 			}
 		}
+
 		nums[j] = 0;
 	}
 
@@ -973,11 +1013,13 @@ void CL_Setenv_f()
 		}
 
 		Q_putenv( buffer );
+
 	} else if( argc == 2 ) {
 		char* env = getenv( Cmd_Argv( 1 ) );
 
 		if( env ) {
 			Com_Printf( "%s=%s\n", Cmd_Argv( 1 ), env );
+
 		} else {
 			Com_Printf( "%s undefined\n", Cmd_Argv( 1 ), env );
 		}
@@ -995,6 +1037,7 @@ void CL_Disconnect_f()
 	// RF, make sure loading variables are turned off
 	Cvar_Set( "savegame_loading", "0" );
 	Cvar_Set( "g_reloading", "0" );
+
 	if( cls.state != CA_DISCONNECTED && cls.state != CA_CINEMATIC ) {
 		Com_Error( ERR_DISCONNECT, "Disconnected from server" );
 	}
@@ -1012,6 +1055,7 @@ void CL_Reconnect_f()
 		Com_Printf( "Can't reconnect to localhost.\n" );
 		return;
 	}
+
 	Cbuf_AddText( va( "connect %s\n", cls.servername ) );
 }
 
@@ -1062,9 +1106,11 @@ void CL_Connect_f()
 		cls.state = CA_DISCONNECTED;
 		return;
 	}
+
 	if( clc.serverAddress.port == 0 ) {
 		clc.serverAddress.port = BigShort( PORT_SERVER );
 	}
+
 	Com_Printf(
 		"%s resolved to %i.%i.%i.%i:%i\n", cls.servername, clc.serverAddress.ip[0], clc.serverAddress.ip[1], clc.serverAddress.ip[2], clc.serverAddress.ip[3], BigShort( clc.serverAddress.port ) );
 
@@ -1072,6 +1118,7 @@ void CL_Connect_f()
 	// with the cd key
 	if( NET_IsLocalAddress( clc.serverAddress ) ) {
 		cls.state = CA_CHALLENGING;
+
 	} else {
 		cls.state = CA_CONNECTING;
 	}
@@ -1122,6 +1169,7 @@ void CL_Rcon_f()
 
 	if( cls.state >= CA_CONNECTED ) {
 		to = clc.netchan.remoteAddress;
+
 	} else {
 		if( !strlen( rconAddress->string ) ) {
 			Com_Printf( "You must either be connected,\n"
@@ -1130,7 +1178,9 @@ void CL_Rcon_f()
 
 			return;
 		}
+
 		NET_StringToAdr( rconAddress->string, &to );
+
 		if( to.port == 0 ) {
 			to.port = BigShort( PORT_SERVER );
 		}
@@ -1157,9 +1207,11 @@ void CL_SendPureChecksums()
 	// "Yf"
 	Com_sprintf( cMsg, sizeof( cMsg ), "Yf " );
 	Q_strcat( cMsg, sizeof( cMsg ), pChecksums );
+
 	for( i = 0; i < 2; i++ ) {
 		cMsg[i] += 10;
 	}
+
 	CL_AddReliableCommand( cMsg );
 }
 
@@ -1219,6 +1271,7 @@ void CL_Vid_Restart_f()
 	if( !com_sv_running->integer ) {
 		// clear the whole hunk
 		Hunk_Clear();
+
 	} else {
 		// clear all the client data on the hunk
 		Hunk_ClearToMark();
@@ -1241,6 +1294,7 @@ void CL_Vid_Restart_f()
 	// start music if there was any
 
 	Cvar_Register( &musicCvar, "s_currentMusic", "", CVAR_ROM );
+
 	if( strlen( musicCvar.string ) ) {
 		S_StartBackgroundTrack( musicCvar.string, musicCvar.string, 1000 );
 	}
@@ -1303,9 +1357,11 @@ void CL_Configstrings_f()
 
 	for( i = 0; i < MAX_CONFIGSTRINGS; i++ ) {
 		ofs = cl.gameState.stringOffsets[i];
+
 		if( !ofs ) {
 			continue;
 		}
+
 		Com_Printf( "%4i: %s\n", i, cl.gameState.stringData + ofs );
 	}
 }
@@ -1437,6 +1493,7 @@ void CL_NextDownload()
 		if( *s == '@' ) {
 			s++;
 		}
+
 		remoteName = s;
 
 		if( ( s = strchr( s, '@' ) ) == NULL ) {
@@ -1446,11 +1503,14 @@ void CL_NextDownload()
 
 		*s++	  = 0;
 		localName = s;
+
 		if( ( s = strchr( s, '@' ) ) != NULL ) {
 			*s++ = 0;
+
 		} else {
 			s = localName + strlen( localName ); // point at the nul byte
 		}
+
 		CL_BeginDownload( localName, remoteName );
 
 		clc.downloadRestart = qtrue;
@@ -1517,10 +1577,12 @@ void CL_CheckForResend()
 
 	switch( cls.state ) {
 		case CA_CONNECTING:
+
 			// requesting a challenge
 			if( !Sys_IsLANAddress( clc.serverAddress ) ) {
 				CL_RequestAuthorization();
 			}
+
 			NET_OutOfBandPrint( NS_CLIENT, clc.serverAddress, "getchallenge" );
 			break;
 
@@ -1595,6 +1657,7 @@ void CL_MotdPacket( netadr_t from )
 
 	// check challenge
 	challenge = Info_ValueForKey( info, "challenge" );
+
 	if( strcmp( challenge, cls.updateChallenge ) ) {
 		return;
 	}
@@ -1662,6 +1725,7 @@ void CL_ServersResponsePacket( netadr_t from, msg_t* msg )
 	numservers = 0;
 	buffptr	   = msg->data;
 	buffend	   = buffptr + msg->cursize;
+
 	while( buffptr + 1 < buffend ) {
 		// advance to initial token
 		do {
@@ -1695,6 +1759,7 @@ void CL_ServersResponsePacket( netadr_t from, msg_t* msg )
 			addresses[numservers].port );
 
 		numservers++;
+
 		if( numservers >= MAX_SERVERSPERPACKET ) {
 			break;
 		}
@@ -1708,6 +1773,7 @@ void CL_ServersResponsePacket( netadr_t from, msg_t* msg )
 	if( cls.masterNum == 0 ) {
 		count = cls.numglobalservers;
 		max	  = MAX_GLOBAL_SERVERS;
+
 	} else {
 		count = cls.nummplayerservers;
 		max	  = MAX_OTHER_SERVERS;
@@ -1742,6 +1808,7 @@ void CL_ServersResponsePacket( netadr_t from, msg_t* msg )
 	if( cls.masterNum == 0 ) {
 		cls.numglobalservers = count;
 		total				 = count + cls.numGlobalServerAddresses;
+
 	} else {
 		cls.nummplayerservers = count;
 		total				  = count;
@@ -1777,6 +1844,7 @@ void CL_ConnectionlessPacket( netadr_t from, msg_t* msg )
 	if( !Q_stricmp( c, "challengeResponse" ) ) {
 		if( cls.state != CA_CONNECTING ) {
 			Com_Printf( "Unwanted challenge response received.  Ignored.\n" );
+
 		} else {
 			// start sending challenge repsonse instead of challenge request packets
 			clc.challenge		   = atoi( Cmd_Argv( 1 ) );
@@ -1788,6 +1856,7 @@ void CL_ConnectionlessPacket( netadr_t from, msg_t* msg )
 			// a server proxy to hand off connections to multiple servers
 			clc.serverAddress = from;
 		}
+
 		return;
 	}
 
@@ -1797,15 +1866,18 @@ void CL_ConnectionlessPacket( netadr_t from, msg_t* msg )
 			Com_Printf( "Dup connect received.  Ignored.\n" );
 			return;
 		}
+
 		if( cls.state != CA_CHALLENGING ) {
 			Com_Printf( "connectResponse packet while not connecting.  Ignored.\n" );
 			return;
 		}
+
 		if( !NET_CompareBaseAdr( from, clc.serverAddress ) ) {
 			Com_Printf( "connectResponse from a different address.  Ignored.\n" );
 			Com_Printf( "%s should have been %s\n", NET_AdrToString( from ), NET_AdrToString( clc.serverAddress ) );
 			return;
 		}
+
 		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableValue( "net_qport" ) );
 		cls.state			   = CA_CONNECTED;
 		clc.lastPacketSentTime = -9999; // send first packet immediately
@@ -1943,6 +2015,7 @@ void CL_CheckTimeout()
 			CL_Disconnect( qtrue );
 			return;
 		}
+
 	} else {
 		cl.timeoutcount = 0;
 	}
@@ -1962,10 +2035,12 @@ void CL_CheckUserinfo()
 	if( cls.state < CA_CHALLENGING ) {
 		return;
 	}
+
 	// don't overflow the reliable command buffer when paused
 	if( cl_paused->integer ) {
 		return;
 	}
+
 	// send a reliable userinfo update if needed
 	if( cvar_modifiedFlags & CVAR_USERINFO ) {
 		cvar_modifiedFlags &= ~CVAR_USERINFO;
@@ -1993,9 +2068,11 @@ void CL_Frame( int msec )
 #else
 		uivm->SetActiveMenu( UIMENU_NEED_CD );
 #endif
+
 	} else if( cls.endgamemenu ) {
 		cls.endgamemenu = qfalse;
 		uivm->SetActiveMenu( UIMENU_ENDGAME );
+
 	} else if( cls.state == CA_DISCONNECTED && !( cls.keyCatchers & KEYCATCH_UI ) && !com_sv_running->integer ) {
 		// if disconnected, bring up the menu
 		S_StopAllSounds();
@@ -2008,8 +2085,10 @@ void CL_Frame( int msec )
 		if( cls.state == CA_ACTIVE || cl_forceavidemo->integer ) {
 			Cbuf_ExecuteText( EXEC_NOW, "screenshot silent\n" );
 		}
+
 		// fixed time for next frame
 		msec = ( 1000 / cl_avidemo->integer ) * com_timescale->value;
+
 		if( msec == 0 ) {
 			msec = 1;
 		}
@@ -2072,6 +2151,7 @@ typedef struct {
 	int	 hits;
 	int	 lastSetIndex;
 } cacheItem_t;
+
 typedef enum {
 	CACHE_SOUNDS,
 	CACHE_MODELS,
@@ -2113,10 +2193,12 @@ static void CL_Cache_UsedFile_f()
 	strcpy( groupStr, Cmd_Argv( 1 ) );
 
 	strcpy( itemStr, Cmd_Argv( 2 ) );
+
 	for( i = 3; i < Cmd_Argc(); i++ ) {
 		strcat( itemStr, " " );
 		strcat( itemStr, Cmd_Argv( i ) );
 	}
+
 	Q_strlwr( itemStr );
 
 	// find the cache group
@@ -2125,6 +2207,7 @@ static void CL_Cache_UsedFile_f()
 			break;
 		}
 	}
+
 	if( i == CACHE_NUMGROUPS ) {
 		Com_Error( ERR_DROP, "usedfile without a valid cache group\n" );
 		return;
@@ -2132,23 +2215,29 @@ static void CL_Cache_UsedFile_f()
 
 	// see if it's already there
 	group = i;
+
 	for( i = 0, item = cacheItems[group]; i < MAX_CACHE_ITEMS; i++, item++ ) {
 		if( !item->name[0] ) {
 			// didn't find it, so add it here
 			Q_strncpyz( item->name, itemStr, MAX_QPATH );
+
 			if( cacheIndex > 9999 ) { // hack, but yeh
 				item->hits = cacheIndex;
+
 			} else {
 				item->hits++;
 			}
+
 			item->lastSetIndex = cacheIndex;
 			break;
 		}
+
 		if( item->name[0] == itemStr[0] && !Q_strncmp( item->name, itemStr, MAX_QPATH ) ) {
 			if( item->lastSetIndex != cacheIndex ) {
 				item->hits++;
 				item->lastSetIndex = cacheIndex;
 			}
+
 			break;
 		}
 	}
@@ -2187,6 +2276,7 @@ static void CL_Cache_EndGather_f()
 			_ftype	  = 'WlfB';
 			_fcreator = 'WlfS';
 		}
+
 #endif
 		handle = FS_FOpenFileWrite( filename );
 
@@ -2217,9 +2307,11 @@ void CL_MapRestart_f()
 	if( !com_cl_running ) {
 		return;
 	}
+
 	if( !com_cl_running->integer ) {
 		return;
 	}
+
 	Com_Printf( "This command is no longer functional.\nUse \"loadgame current\" to load the current map." );
 }
 
@@ -2232,6 +2324,7 @@ void CL_SetRecommended_f()
 {
 	if( Cmd_Argc() > 1 ) {
 		Com_SetRecommended( qtrue );
+
 	} else {
 		Com_SetRecommended( qfalse );
 	}
@@ -2256,8 +2349,10 @@ void QDECL CL_RefPrintf( int print_level, const char* fmt, ... )
 
 	if( print_level == PRINT_ALL ) {
 		Com_Printf( "%s", msg );
+
 	} else if( print_level == PRINT_WARNING ) {
 		Com_Printf( S_COLOR_YELLOW "%s", msg ); // yellow
+
 	} else if( print_level == PRINT_DEVELOPER ) {
 		Com_DPrintf( S_COLOR_RED "%s", msg ); // red
 	}
@@ -2273,6 +2368,7 @@ void CL_ShutdownRef()
 	if( !re.Shutdown ) {
 		return;
 	}
+
 	re.Shutdown( qtrue );
 	memset( &re, 0, sizeof( re ) );
 }
@@ -2420,6 +2516,7 @@ void CL_startMultiplayer_f()
 	Sys_StartProcess( "WolfMP.exe", qtrue );
 #endif
 }
+
 // -NERVE - SMF
 
 //----(SA) added
@@ -2450,12 +2547,14 @@ void CL_ShellExecute_URL_f()
 
 	if( Cmd_Argc() < 4 ) {
 		doexit = qtrue;
+
 	} else {
 		doexit = ( qboolean )( atoi( Cmd_Argv( 3 ) ) );
 	}
 
 	Sys_OpenURL( Cmd_Argv( 2 ), doexit );
 }
+
 //----(SA) end
 //===========================================================================================
 
@@ -2650,6 +2749,7 @@ void CL_Shutdown()
 		printf( "recursive shutdown\n" );
 		return;
 	}
+
 	recursive = qtrue;
 
 	CL_Disconnect( qtrue );
@@ -2713,6 +2813,7 @@ static void CL_SetServerInfo( serverInfo_t* server, const char* info, int ping )
 			server->maxPing		   = atoi( Info_ValueForKey( info, "maxping" ) );
 			server->allowAnonymous = atoi( Info_ValueForKey( info, "sv_allowAnonymous" ) );
 		}
+
 		server->ping = ping;
 	}
 }
@@ -2763,6 +2864,7 @@ void CL_ServerInfoPacket( netadr_t from, msg_t* msg )
 
 	// if this isn't the correct protocol version, ignore it
 	prot = atoi( Info_ValueForKey( infoString, "protocol" ) );
+
 	if( prot != PROTOCOL_VERSION ) {
 		Com_DPrintf( "Different protocol info packet: %s\n", infoString );
 		//		return;
@@ -2798,6 +2900,7 @@ void CL_ServerInfoPacket( netadr_t from, msg_t* msg )
 					type = 0;
 					break;
 			}
+
 			Info_SetValueForKey( cl_pinglist[i].info, "nettype", va( "%d", type ) );
 			CL_SetServerInfoByAddress( from, infoString, cl_pinglist[i].time );
 
@@ -2843,10 +2946,12 @@ void CL_ServerInfoPacket( netadr_t from, msg_t* msg )
 	cls.localServers[i].allowAnonymous = 0;
 
 	Q_strncpyz( info, MSG_ReadString( msg ), MAX_INFO_STRING );
+
 	if( strlen( info ) ) {
 		if( info[strlen( info ) - 1] != '\n' ) {
 			strncat( info, "\n", sizeof( info ) );
 		}
+
 		Com_Printf( "%s: %s", NET_AdrToString( from ), info );
 	}
 }
@@ -2862,27 +2967,33 @@ serverStatus_t* CL_GetServerStatus( netadr_t from )
 	int				i, oldest, oldestTime;
 
 	serverStatus = NULL;
+
 	for( i = 0; i < MAX_SERVERSTATUSREQUESTS; i++ ) {
 		if( NET_CompareAdr( from, cl_serverStatusList[i].address ) ) {
 			return &cl_serverStatusList[i];
 		}
 	}
+
 	for( i = 0; i < MAX_SERVERSTATUSREQUESTS; i++ ) {
 		if( cl_serverStatusList[i].retrieved ) {
 			return &cl_serverStatusList[i];
 		}
 	}
+
 	oldest	   = -1;
 	oldestTime = 0;
+
 	for( i = 0; i < MAX_SERVERSTATUSREQUESTS; i++ ) {
 		if( oldest == -1 || cl_serverStatusList[i].startTime < oldestTime ) {
 			oldest	   = i;
 			oldestTime = cl_serverStatusList[i].startTime;
 		}
 	}
+
 	if( oldest != -1 ) {
 		return &cl_serverStatusList[oldest];
 	}
+
 	serverStatusCount++;
 	return &cl_serverStatusList[serverStatusCount & ( MAX_SERVERSTATUSREQUESTS - 1 )];
 }
@@ -2904,13 +3015,17 @@ int CL_ServerStatus( char* serverAddress, char* serverStatusString, int maxLen )
 			cl_serverStatusList[i].address.port = 0;
 			cl_serverStatusList[i].retrieved	= qtrue;
 		}
+
 		return qfalse;
 	}
+
 	// get the address
 	if( !NET_StringToAdr( serverAddress, &to ) ) {
 		return qfalse;
 	}
+
 	serverStatus = CL_GetServerStatus( to );
+
 	// if no server status string then reset the server status request for this address
 	if( !serverStatusString ) {
 		serverStatus->retrieved = qtrue;
@@ -2926,6 +3041,7 @@ int CL_ServerStatus( char* serverAddress, char* serverStatusString, int maxLen )
 			serverStatus->startTime = 0;
 			return qtrue;
 		}
+
 		// resend the request regularly
 		else if( serverStatus->startTime < Sys_Milliseconds() - cl_serverStatusResendTime->integer ) {
 			serverStatus->print		= qfalse;
@@ -2937,6 +3053,7 @@ int CL_ServerStatus( char* serverAddress, char* serverStatusString, int maxLen )
 			return qfalse;
 		}
 	}
+
 	// if retrieved
 	else if( serverStatus->retrieved ) {
 		serverStatus->address	= to;
@@ -2948,6 +3065,7 @@ int CL_ServerStatus( char* serverAddress, char* serverStatusString, int maxLen )
 		NET_OutOfBandPrint( NS_CLIENT, to, "getstatus" );
 		return qfalse;
 	}
+
 	return qfalse;
 }
 
@@ -2965,12 +3083,14 @@ void CL_ServerStatusResponse( netadr_t from, msg_t* msg )
 	serverStatus_t* serverStatus;
 
 	serverStatus = NULL;
+
 	for( i = 0; i < MAX_SERVERSTATUSREQUESTS; i++ ) {
 		if( NET_CompareAdr( from, cl_serverStatusList[i].address ) ) {
 			serverStatus = &cl_serverStatusList[i];
 			break;
 		}
 	}
+
 	// if we didn't request this server status
 	if( !serverStatus ) {
 		return;
@@ -2983,26 +3103,35 @@ void CL_ServerStatusResponse( netadr_t from, msg_t* msg )
 
 	if( serverStatus->print ) {
 		Com_Printf( "Server settings:\n" );
+
 		// print cvars
 		while( *s ) {
 			for( i = 0; i < 2 && *s; i++ ) {
 				if( *s == '\\' ) {
 					s++;
 				}
+
 				l = 0;
+
 				while( *s ) {
 					info[l++] = *s;
+
 					if( l >= MAX_INFO_STRING - 1 ) {
 						break;
 					}
+
 					s++;
+
 					if( *s == '\\' ) {
 						break;
 					}
 				}
+
 				info[l] = '\0';
+
 				if( i ) {
 					Com_Printf( "%s\n", info );
+
 				} else {
 					Com_Printf( "%-24s", info );
 				}
@@ -3017,6 +3146,7 @@ void CL_ServerStatusResponse( netadr_t from, msg_t* msg )
 		Com_Printf( "\nPlayers:\n" );
 		Com_Printf( "num: score: ping: name:\n" );
 	}
+
 	for( i = 0, s = MSG_ReadStringLine( msg ); *s; s = MSG_ReadStringLine( msg ), i++ ) {
 		len = strlen( serverStatus->string );
 		Com_sprintf( &serverStatus->string[len], sizeof( serverStatus->string ) - len, "\\%s", s );
@@ -3025,23 +3155,29 @@ void CL_ServerStatusResponse( netadr_t from, msg_t* msg )
 			score = ping = 0;
 			sscanf( s, "%d %d", &score, &ping );
 			s = strchr( s, ' ' );
+
 			if( s ) {
 				s = strchr( s + 1, ' ' );
 			}
+
 			if( s ) {
 				s++;
+
 			} else {
 				s = "unknown";
 			}
+
 			Com_Printf( "%-2d   %-3d    %-3d   %s\n", i, score, ping, s );
 		}
 	}
+
 	len = strlen( serverStatus->string );
 	Com_sprintf( &serverStatus->string[len], sizeof( serverStatus->string ) - len, "\\" );
 
 	serverStatus->time	  = Sys_Milliseconds();
 	serverStatus->address = from;
 	serverStatus->pending = qfalse;
+
 	if( serverStatus->print ) {
 		serverStatus->retrieved = qtrue;
 	}
@@ -3069,6 +3205,7 @@ void CL_LocalServers_f()
 		Com_Memset( &cls.localServers[i], 0, sizeof( cls.localServers[i] ) );
 		cls.localServers[i].visible = b;
 	}
+
 	Com_Memset( &to, 0, sizeof( to ) );
 
 	// The 'xxx' in the message is a challenge that will be echoed back
@@ -3122,11 +3259,13 @@ void CL_GlobalServers_f()
 		NET_StringToAdr( "master.quake3world.com", &to );
 		cls.nummplayerservers = -1;
 		cls.pingUpdateSource  = AS_MPLAYER;
+
 	} else {
 		NET_StringToAdr( MASTER_SERVER_NAME, &to );
 		cls.numglobalservers = -1;
 		cls.pingUpdateSource = AS_GLOBAL;
 	}
+
 	to.type = NA_IP;
 	to.port = BigShort( PORT_MASTER );
 
@@ -3135,6 +3274,7 @@ void CL_GlobalServers_f()
 	// tack on keywords
 	buffptr = command + strlen( command );
 	count	= Cmd_Argc();
+
 	for( i = 3; i < count; i++ ) {
 		buffptr += sprintf( buffptr, " %s", Cmd_Argv( i ) );
 	}
@@ -3169,13 +3309,16 @@ void CL_GetPing( int n, char* buf, int buflen, int* pingtime )
 	Q_strncpyz( buf, str, buflen );
 
 	time = cl_pinglist[n].time;
+
 	if( !time ) {
 		// check for timeout
 		time	= cls.realtime - cl_pinglist[n].start;
 		maxPing = Cvar_VariableIntegerValue( "cl_maxPing" );
+
 		if( maxPing < 100 ) {
 			maxPing = 100;
 		}
+
 		if( time < maxPing ) {
 			// not timed out yet
 			time = 0;
@@ -3213,6 +3356,7 @@ void CL_GetPingInfo( int n, char* buf, int buflen )
 		if( buflen ) {
 			buf[0] = '\0';
 		}
+
 		return;
 	}
 
@@ -3270,6 +3414,7 @@ ping_t* CL_GetFreePing()
 	int		time;
 
 	pingptr = cl_pinglist;
+
 	for( i = 0; i < MAX_PINGREQUESTS; i++, pingptr++ ) {
 		// find free ping slot
 		if( pingptr->adr.port ) {
@@ -3278,6 +3423,7 @@ ping_t* CL_GetFreePing()
 					// still waiting for response
 					continue;
 				}
+
 			} else if( pingptr->time < 500 ) {
 				// results have not been queried
 				continue;
@@ -3293,9 +3439,11 @@ ping_t* CL_GetFreePing()
 	pingptr = cl_pinglist;
 	best	= cl_pinglist;
 	oldest	= INT_MIN;
+
 	for( i = 0; i < MAX_PINGREQUESTS; i++, pingptr++ ) {
 		// scan for oldest
 		time = cls.realtime - pingptr->start;
+
 		if( time > oldest ) {
 			oldest = time;
 			best   = pingptr;
@@ -3360,28 +3508,34 @@ qboolean CL_UpdateVisiblePings_f( int source )
 	cls.pingUpdateSource = source;
 
 	slots = CL_GetPingQueueCount();
+
 	if( slots < MAX_PINGREQUESTS ) {
 		serverInfo_t* server = NULL;
 
 		max = ( source == AS_GLOBAL ) ? MAX_GLOBAL_SERVERS : MAX_OTHER_SERVERS;
+
 		switch( source ) {
 			case AS_LOCAL:
 				server = &cls.localServers[0];
 				max	   = cls.numlocalservers;
 				break;
+
 			case AS_MPLAYER:
 				server = &cls.mplayerServers[0];
 				max	   = cls.nummplayerservers;
 				break;
+
 			case AS_GLOBAL:
 				server = &cls.globalServers[0];
 				max	   = cls.numglobalservers;
 				break;
+
 			case AS_FAVORITES:
 				server = &cls.favoriteServers[0];
 				max	   = cls.numfavoriteservers;
 				break;
 		}
+
 		for( i = 0; i < max; i++ ) {
 			if( server[i].visible ) {
 				if( server[i].ping == -1 ) {
@@ -3390,22 +3544,27 @@ qboolean CL_UpdateVisiblePings_f( int source )
 					if( slots >= MAX_PINGREQUESTS ) {
 						break;
 					}
+
 					for( j = 0; j < MAX_PINGREQUESTS; j++ ) {
 						if( !cl_pinglist[j].adr.port ) {
 							continue;
 						}
+
 						if( NET_CompareAdr( cl_pinglist[j].adr, server[i].adr ) ) {
 							// already on the list
 							break;
 						}
 					}
+
 					if( j >= MAX_PINGREQUESTS ) {
 						status = qtrue;
+
 						for( j = 0; j < MAX_PINGREQUESTS; j++ ) {
 							if( !cl_pinglist[j].adr.port ) {
 								break;
 							}
 						}
+
 						memcpy( &cl_pinglist[j].adr, &server[i].adr, sizeof( netadr_t ) );
 						cl_pinglist[j].start = cls.realtime;
 						cl_pinglist[j].time	 = 0;
@@ -3413,6 +3572,7 @@ qboolean CL_UpdateVisiblePings_f( int source )
 						slots++;
 					}
 				}
+
 				// if the server has a ping higher than cl_maxPing or
 				// the ping packet got lost
 				else if( server[i].ping == 0 ) {
@@ -3434,11 +3594,14 @@ qboolean CL_UpdateVisiblePings_f( int source )
 	if( slots ) {
 		status = qtrue;
 	}
+
 	for( i = 0; i < MAX_PINGREQUESTS; i++ ) {
 		if( !cl_pinglist[i].adr.port ) {
 			continue;
 		}
+
 		CL_GetPing( i, buff, MAX_STRING_CHARS, &pingTime );
+
 		if( pingTime != 0 ) {
 			CL_ClearPing( i );
 			status = qtrue;
@@ -3467,7 +3630,9 @@ void CL_ServerStatus_f()
 			Com_Printf( "Usage: serverstatus [server]\n" );
 			return;
 		}
+
 		server = cls.servername;
+
 	} else {
 		server = Cmd_Argv( 1 );
 	}
@@ -3507,6 +3672,7 @@ qboolean CL_CDKeyValidate( const char* key, const char* checksum )
 	int	 i, len;
 
 	len = strlen( key );
+
 	if( len != CDKEY_LEN ) {
 		return qfalse;
 	}
@@ -3516,12 +3682,15 @@ qboolean CL_CDKeyValidate( const char* key, const char* checksum )
 	}
 
 	sum = 0;
+
 	// for loop gets rid of conditional assignment warning
 	for( i = 0; i < len; i++ ) {
 		ch = *key++;
+
 		if( ch >= 'a' && ch <= 'z' ) {
 			ch -= 32;
 		}
+
 		switch( ch ) {
 			case '2':
 			case '3':
@@ -3541,6 +3710,7 @@ qboolean CL_CDKeyValidate( const char* key, const char* checksum )
 			case 'W':
 				sum += ch;
 				continue;
+
 			default:
 				return qfalse;
 		}
@@ -3590,19 +3760,23 @@ void CL_AddToLimboChat( const char* str )
 	lastcolor = '7';
 
 	ls = NULL;
+
 	while( *str ) {
 		if( len > LIMBOCHAT_WIDTH - 1 ) {
 #if 0
+
 			if ( ls ) {
 				str -= ( p - ls );
 				str++;
 				p -= ( p - ls );
 			}
+
 			*p = 0;
 
 			if ( cl.limboChatPos < LIMBOCHAT_HEIGHT - 1 ) {
 				cl.limboChatPos++;
 			}
+
 			p = cl.limboChatMsgs[cl.limboChatPos];
 			*p = 0;
 			*p++ = Q_COLOR_ESCAPE;
@@ -3619,12 +3793,15 @@ void CL_AddToLimboChat( const char* str )
 			*p++	  = *str++;
 			continue;
 		}
+
 		if( *str == ' ' ) {
 			ls = p;
 		}
+
 		*p++ = *str++;
 		len++;
 	}
+
 	*p = 0;
 }
 
@@ -3643,4 +3820,5 @@ qboolean CL_GetLimboString( int index, char* buf )
 	strncpy( buf, cl.limboChatMsgs[index], 140 );
 	return qtrue;
 }
+
 // -NERVE - SMF

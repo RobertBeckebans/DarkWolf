@@ -45,6 +45,7 @@ static void CG_ParseScores()
 	int i, powerups;
 
 	cg.numScores = atoi( CG_Argv( 1 ) );
+
 	if( cg.numScores > MAX_CLIENTS ) {
 		cg.numScores = MAX_CLIENTS;
 	}
@@ -53,6 +54,7 @@ static void CG_ParseScores()
 	cg.teamScores[1] = atoi( CG_Argv( 3 ) );
 
 	memset( cg.scores, 0, sizeof( cg.scores ) );
+
 	for( i = 0; i < cg.numScores; i++ ) {
 		//
 		cg.scores[i].client		= atoi( CG_Argv( i * 6 + 4 ) );
@@ -76,11 +78,13 @@ static void CG_ParseScores()
 		if( cg.scores[i].client < 0 || cg.scores[i].client >= MAX_CLIENTS ) {
 			cg.scores[i].client = 0;
 		}
+
 		cgs.clientinfo[cg.scores[i].client].score	 = cg.scores[i].score;
 		cgs.clientinfo[cg.scores[i].client].powerups = powerups;
 
 		cg.scores[i].team = cgs.clientinfo[cg.scores[i].client].team;
 	}
+
 #ifdef MISSIONPACK
 	CG_SetScoreSelection( NULL );
 #endif
@@ -208,6 +212,7 @@ static void CG_ParseMissionStats()
 	token		= COM_Parse( ( char** )&info );
 	cg.attempts = atoi( token );
 }
+
 //----(SA)	end
 
 /*
@@ -319,14 +324,17 @@ void CG_SetConfigValues()
 	cgs.scores2		   = atoi( CG_ConfigString( CS_SCORES2 ) );
 	cgs.levelStartTime = atoi( CG_ConfigString( CS_LEVEL_START_TIME ) );
 #ifdef MISSIONPACK
+
 	if( cgs.gametype == GT_CTF ) {
 		s			 = CG_ConfigString( CS_FLAGSTATUS );
 		cgs.redflag	 = s[0] - '0';
 		cgs.blueflag = s[1] - '0';
+
 	} else if( cgs.gametype == GT_1FCTF ) {
 		s			   = CG_ConfigString( CS_FLAGSTATUS );
 		cgs.flagStatus = s[0] - '0';
 	}
+
 #endif
 	cg.warmup = atoi( CG_ConfigString( CS_WARMUP ) );
 }
@@ -345,27 +353,34 @@ void CG_ShaderStateChanged()
 	char *		n, *t;
 
 	o = CG_ConfigString( CS_SHADERSTATE );
+
 	while( o && *o ) {
 		n = ( char* )strstr( o, "=" );
+
 		if( n && *n ) {
 			strncpy( originalShader, o, n - o );
 			originalShader[n - o] = 0;
 			n++;
 			t = strstr( n, ":" );
+
 			if( t && *t ) {
 				strncpy( newShader, n, t - n );
 				newShader[t - n] = 0;
+
 			} else {
 				break;
 			}
+
 			t++;
 			o = strstr( t, "@" );
+
 			if( o ) {
 				strncpy( timeOffset, t, o - t );
 				timeOffset[o - t] = 0;
 				o++;
 				sys->R_RemapShader( originalShader, newShader, timeOffset );
 			}
+
 		} else {
 			break;
 		}
@@ -395,75 +410,100 @@ static void CG_ConfigStringModified()
 	// do something with it if necessary
 	if( num == CS_MUSIC ) {
 		CG_StartMusic();
+
 	} else if( num == CS_MUSIC_QUEUE ) { //----(SA)	added
 		CG_QueueMusic();
+
 	} else if( num == CS_MISSIONSTATS ) { //----(SA)	added
 		CG_ParseMissionStats();
+
 	} else if( num == CS_SERVERINFO ) {
 		CG_ParseServerinfo();
+
 	} else if( num == CS_WARMUP ) {
 		CG_ParseWarmup();
+
 	} else if( num == CS_SCORES1 ) {
 		cgs.scores1 = atoi( str );
+
 	} else if( num == CS_SCORES2 ) {
 		cgs.scores2 = atoi( str );
+
 	} else if( num == CS_LEVEL_START_TIME ) {
 		cgs.levelStartTime = atoi( str );
+
 	} else if( num == CS_VOTE_TIME ) {
 		cgs.voteTime	 = atoi( str );
 		cgs.voteModified = qtrue;
+
 	} else if( num == CS_VOTE_YES ) {
 		cgs.voteYes		 = atoi( str );
 		cgs.voteModified = qtrue;
+
 	} else if( num == CS_VOTE_NO ) {
 		cgs.voteNo		 = atoi( str );
 		cgs.voteModified = qtrue;
+
 	} else if( num == CS_VOTE_STRING ) {
 		Q_strncpyz( cgs.voteString, str, sizeof( cgs.voteString ) );
 #if 0
 		sys->S_StartLocalSound( cgs.media.voteNow, CHAN_ANNOUNCER );
+
 	} else if( num >= CS_TEAMVOTE_TIME && num <= CS_TEAMVOTE_TIME + 1 ) {
 		cgs.teamVoteTime[num - CS_TEAMVOTE_TIME] = atoi( str );
 		cgs.teamVoteModified[num - CS_TEAMVOTE_TIME] = qtrue;
+
 	} else if( num >= CS_TEAMVOTE_YES && num <= CS_TEAMVOTE_YES + 1 ) {
 		cgs.teamVoteYes[num - CS_TEAMVOTE_YES] = atoi( str );
 		cgs.teamVoteModified[num - CS_TEAMVOTE_YES] = qtrue;
+
 	} else if( num >= CS_TEAMVOTE_NO && num <= CS_TEAMVOTE_NO + 1 ) {
 		cgs.teamVoteNo[num - CS_TEAMVOTE_NO] = atoi( str );
 		cgs.teamVoteModified[num - CS_TEAMVOTE_NO] = qtrue;
+
 	} else if( num >= CS_TEAMVOTE_STRING && num <= CS_TEAMVOTE_STRING + 1 ) {
 		Q_strncpyz( cgs.teamVoteString[num - CS_TEAMVOTE_STRING], str, sizeof( cgs.teamVoteString ) );
 		sys->S_StartLocalSound( cgs.media.voteNow, CHAN_ANNOUNCER );
 #endif
+
 	} else if( num == CS_INTERMISSION ) {
 		cg.intermissionStarted = atoi( str );
+
 	} else if( num == CS_SCREENFADE ) {
 		CG_ParseScreenFade();
+
 	} else if( num == CS_FOGVARS ) {
 		CG_ParseFog();
+
 	} else if( num >= CS_MODELS && num < CS_MODELS + MAX_MODELS ) {
 		cgs.gameModels[num - CS_MODELS] = sys->R_RegisterModel( str );
+
 	} else if( num >= CS_SOUNDS && num < CS_SOUNDS + MAX_MODELS ) {
 		if( str[0] != '*' ) { // player specific sounds don't register here
 
 			// Ridah, register sound scripts seperately
 			if( !strstr( str, ".wav" ) ) {
 				CG_SoundScriptPrecache( str );
+
 			} else {
 				cgs.gameSounds[num - CS_SOUNDS] = sys->S_RegisterSound( str );
 			}
 		}
+
 	} else if( num >= CS_PLAYERS && num < CS_PLAYERS + MAX_CLIENTS ) {
 		CG_NewClientInfo( num - CS_PLAYERS );
 	}
+
 	// Rafael particle configstring
 	else if( num >= CS_PARTICLES && num < CS_PARTICLES + MAX_PARTICLES_AREAS ) {
 		CG_NewParticleArea( num );
 	}
+
 	//----(SA)	have not reached this code yet so I don't know if I really need this here
 	else if( num >= CS_DLIGHTS && num < CS_DLIGHTS + MAX_DLIGHTS ) {
 		CG_Printf( ">>>>>>>>>>>got configstring for dlight: %d\ntell Sherman!!!!!!!!!!", num - CS_DLIGHTS );
 		//----(SA)
+
 	} else if( num == CS_SHADERSTATE ) {
 		CG_ShaderStateChanged();
 	}
@@ -484,6 +524,7 @@ static void CG_AddToTeamChat( const char* str )
 
 	if( cg_teamChatHeight.integer < TEAMCHAT_HEIGHT ) {
 		chatHeight = cg_teamChatHeight.integer;
+
 	} else {
 		chatHeight = TEAMCHAT_HEIGHT;
 	}
@@ -502,6 +543,7 @@ static void CG_AddToTeamChat( const char* str )
 	lastcolor = '7';
 
 	ls = NULL;
+
 	while( *str ) {
 		if( len > TEAMCHAT_WIDTH - 1 ) {
 			if( ls ) {
@@ -509,6 +551,7 @@ static void CG_AddToTeamChat( const char* str )
 				str++;
 				p -= ( p - ls );
 			}
+
 			*p = 0;
 
 			cgs.teamChatMsgTimes[cgs.teamChatPos % chatHeight] = cg.time;
@@ -528,12 +571,15 @@ static void CG_AddToTeamChat( const char* str )
 			*p++	  = *str++;
 			continue;
 		}
+
 		if( *str == ' ' ) {
 			ls = p;
 		}
+
 		*p++ = *str++;
 		len++;
 	}
+
 	*p = 0;
 
 	cgs.teamChatMsgTimes[cgs.teamChatPos % chatHeight] = cg.time;
@@ -600,6 +646,7 @@ void CG_SendMoveSpeeds()
 		if( !modelInfo->modelname[0] ) {
 			continue;
 		}
+
 		/*
 				// recalc them
 				// find a client that uses this model
@@ -618,6 +665,7 @@ void CG_SendMoveSpeeds()
 	}
 
 }
+
 #endif
 
 /*
@@ -635,6 +683,7 @@ static void CG_MapRestart()
 {
 	//	char buff[64];
 	int i;
+
 	if( cg_showmiss.integer ) {
 		CG_Printf( "CG_MapRestart\n" );
 	}
@@ -669,6 +718,7 @@ static void CG_MapRestart()
 			int rval;
 
 			rval = CG_NewParticleArea( CS_PARTICLES + i );
+
 			if( !rval ) {
 				break;
 			}
@@ -711,15 +761,18 @@ static void CG_MapRestart()
 
 	// RF, clear out animScriptData so we recalc everything and get new pointers from server
 	memset( cgs.animScriptData.modelInfo, 0, sizeof( cgs.animScriptData.modelInfo ) );
+
 	for( i = 0; i < MAX_CLIENTS; i++ ) {
 		if( cgs.clientinfo[i].infoValid ) {
 			CG_LoadClientInfo( &cgs.clientinfo[i] ); // re-register the valid clients
 		}
 	}
+
 	// always clear the weapon selection
 	cg.weaponSelect = WP_NONE;
 	// clear out the player weapon info
 	memset( &cg_entities[0].pe.weap, 0, sizeof( cg_entities[0].pe.weap ) );
+
 	// check for server set weapons we might not know about
 	// (FIXME: this is a hack for the time being since a scripted "selectweapon" does
 	// not hit the first snap, the server weapon set in cg_playerstate.c line 219 doesn't
@@ -731,6 +784,7 @@ static void CG_MapRestart()
 			sys->Cvar_Set( "cg_loadWeaponSelect", "0" ); // turn it off
 		}
 	}
+
 	// clear out rumble effects
 	memset( cg.cameraShake, 0, sizeof( cg.cameraShake ) );
 	memset( cg.cameraShakeAngles, 0, sizeof( cg.cameraShakeAngles ) );
@@ -742,12 +796,15 @@ static void CG_MapRestart()
 	//		CG_CenterPrint( "FIGHT!", 120, GIANTCHAR_WIDTH*2 );
 	//	}
 #ifdef MISSIONPACK
+
 	if( cg_singlePlayerActive.integer ) {
 		sys->Cvar_Set( "ui_matchStartTime", va( "%i", cg.time ) );
+
 		if( cg_recordSPDemo.integer && cg_recordSPDemoName.string && *cg_recordSPDemoName.string ) {
 			sys->SendConsoleCommand( va( "set g_synchronousclients 1 ; record %s \n", cg_recordSPDemoName.string ) );
 		}
 	}
+
 #endif
 	sys->Cvar_Set( "cg_thirdPerson", "0" );
 }
@@ -782,12 +839,15 @@ static void CG_RemoveChatEscapeChar( char* text )
 	int i, l;
 
 	l = 0;
+
 	for( i = 0; text[i]; i++ ) {
 		if( text[i] == '\x19' ) {
 			continue;
 		}
+
 		text[l++] = text[i];
 	}
+
 	text[l] = '\0';
 }
 
@@ -848,12 +908,15 @@ static void CG_ServerCommand()
 		CG_Printf( "%s", CG_Argv( 1 ) );
 #ifdef MISSIONPACK
 		cmd = CG_Argv( 1 ); // yes, this is obviously a hack, but so is the way we hear about
+
 		// votes passing or failing
 		if( !Q_stricmpn( cmd, "vote failed", 11 ) || !Q_stricmpn( cmd, "team vote failed", 16 ) ) {
 			sys->S_StartLocalSound( cgs.media.voteFailed, CHAN_ANNOUNCER );
+
 		} else if( !Q_stricmpn( cmd, "vote passed", 11 ) || !Q_stricmpn( cmd, "team vote passed", 16 ) ) {
 			sys->S_StartLocalSound( cgs.media.votePassed, CHAN_ANNOUNCER );
 		}
+
 #endif
 		return;
 	}
@@ -865,6 +928,7 @@ static void CG_ServerCommand()
 			CG_RemoveChatEscapeChar( text );
 			CG_Printf( "%s\n", text );
 		}
+
 		return;
 	}
 
@@ -887,6 +951,7 @@ static void CG_ServerCommand()
 		CG_Printf( "%s\n", text );
 		return;
 	}
+
 	// -NERVE - SMF
 
 	if( !strcmp( cmd, "vchat" ) ) {
@@ -943,6 +1008,7 @@ static void CG_ServerCommand()
 		CG_ObjectivePrint( CG_Argv( 2 ), SMALLCHAR_WIDTH, atoi( CG_Argv( 1 ) ) );
 		return;
 	}
+
 	// -NERVE - SMF
 
 	//
@@ -954,6 +1020,7 @@ static void CG_ServerCommand()
 		int fadeTime = 0;			   // default to instant start
 
 		Q_strncpyz( text, CG_Argv( 2 ), MAX_SAY_TEXT );
+
 		if( text && strlen( text ) ) {
 			fadeTime = atoi( text );
 		}
@@ -961,11 +1028,13 @@ static void CG_ServerCommand()
 		sys->S_StartBackgroundTrack( CG_Argv( 1 ), CG_Argv( 1 ), fadeTime );
 		return;
 	}
+
 	// plays once then back to whatever the loop was \/
 	if( !strcmp( cmd, "mu_play" ) ) { // has optional parameter for fade-up time
 		int fadeTime = 0;			  // default to instant start
 
 		Q_strncpyz( text, CG_Argv( 2 ), MAX_SAY_TEXT );
+
 		if( text && strlen( text ) ) {
 			fadeTime = atoi( text );
 		}
@@ -978,9 +1047,11 @@ static void CG_ServerCommand()
 		int fadeTime = 0;			  // default to instant stop
 
 		Q_strncpyz( text, CG_Argv( 1 ), MAX_SAY_TEXT );
+
 		if( text && strlen( text ) ) {
 			fadeTime = atoi( text );
 		}
+
 		sys->S_FadeBackgroundTrack( 0.0f, fadeTime, 0 );
 		sys->S_StartBackgroundTrack( "", "", -2 ); // '-2' for 'queue looping track' (QUEUED_PLAY_LOOPED)
 		return;

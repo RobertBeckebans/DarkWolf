@@ -42,9 +42,11 @@ float Com_Clamp( float min, float max, float value )
 	if( value < min ) {
 		return min;
 	}
+
 	if( value > max ) {
 		return max;
 	}
+
 	return value;
 }
 
@@ -58,12 +60,15 @@ char* COM_SkipPath( char* pathname )
 	char* last;
 
 	last = pathname;
+
 	while( *pathname ) {
 		if( *pathname == '/' ) {
 			last = pathname + 1;
 		}
+
 		pathname++;
 	}
+
 	return last;
 }
 
@@ -77,6 +82,7 @@ void COM_StripExtension( const char* in, char* out )
 	while( *in && *in != '.' ) {
 		*out++ = *in++;
 	}
+
 	*out = 0;
 }
 
@@ -113,6 +119,7 @@ void COM_DefaultExtension( char* path, int maxSize, const char* extension )
 		if( *src == '.' ) {
 			return; // it has an extension
 		}
+
 		src--;
 	}
 
@@ -133,6 +140,7 @@ qboolean COM_BitCheck( const int array[], int bitNum )
 	int i;
 
 	i = 0;
+
 	while( bitNum > 31 ) {
 		i++;
 		bitNum -= 32;
@@ -153,6 +161,7 @@ void COM_BitSet( int array[], int bitNum )
 	int i;
 
 	i = 0;
+
 	while( bitNum > 31 ) {
 		i++;
 		bitNum -= 32;
@@ -173,6 +182,7 @@ void COM_BitClear( int array[], int bitNum )
 	int i;
 
 	i = 0;
+
 	while( bitNum > 31 ) {
 		i++;
 		bitNum -= 32;
@@ -180,6 +190,7 @@ void COM_BitClear( int array[], int bitNum )
 
 	array[i] &= ~( 1 << bitNum );
 }
+
 //============================================================================
 
 /*
@@ -205,30 +216,37 @@ short BigShort( short l )
 {
 	return _BigShort( l );
 }
+
 short LittleShort( short l )
 {
 	return _LittleShort( l );
 }
+
 int BigLong( int l )
 {
 	return _BigLong( l );
 }
+
 int LittleLong( int l )
 {
 	return _LittleLong( l );
 }
+
 qint64 BigLong64( qint64 l )
 {
 	return _BigLong64( l );
 }
+
 qint64 LittleLong64( qint64 l )
 {
 	return _LittleLong64( l );
 }
+
 float BigFloat( float l )
 {
 	return _BigFloat( l );
 }
+
 float LittleFloat( float l )
 {
 	return _LittleFloat( l );
@@ -326,6 +344,7 @@ void Swap_Init()
 		_LittleLong64 = Long64NoSwap;
 		_BigFloat	  = FloatSwap;
 		_LittleFloat  = FloatNoSwap;
+
 	} else {
 		_BigShort	  = ShortNoSwap;
 		_LittleShort  = ShortSwap;
@@ -459,9 +478,11 @@ char* SkipWhitespace( char* data, qboolean* hasNewLines )
 		if( c == '\n' ) {
 			com_lines++;
 			*hasNewLines = qtrue;
+
 		} else if( !c ) {
 			return NULL;
 		}
+
 		data++;
 	}
 
@@ -482,6 +503,7 @@ int COM_Compress( char* data_p )
 	size  = 0;
 	pc	  = 0;
 	datai = datao = data_p;
+
 	if( datai ) {
 		while( ( c = *datai ) != 0 ) {
 			if( c == 13 || c == 10 ) {
@@ -492,25 +514,32 @@ int COM_Compress( char* data_p )
 				datai++;
 				size++;
 				// skip double slash comments
+
 			} else if( c == '/' && datai[1] == '/' ) {
 				while( *datai && *datai != '\n' ) {
 					datai++;
 				}
+
 				ws = qfalse;
 				// skip /* */ comments
+
 			} else if( c == '/' && datai[1] == '*' ) {
 				while( *datai && ( *datai != '*' || datai[1] != '/' ) ) {
 					datai++;
 				}
+
 				if( *datai ) {
 					datai += 2;
 				}
+
 				ws = qfalse;
+
 			} else {
 				if( ws ) {
 					*datao = ' ';
 					datao++;
 				}
+
 				*datao = c;
 				datao++;
 				datai++;
@@ -520,6 +549,7 @@ int COM_Compress( char* data_p )
 			}
 		}
 	}
+
 	*datao = 0;
 	return size;
 }
@@ -552,10 +582,12 @@ char* COM_ParseExt( char** data_p, qboolean allowLineBreaks )
 	while( 1 ) {
 		// skip whitespace
 		data = SkipWhitespace( data, &hasNewLines );
+
 		if( !data ) {
 			*data_p = NULL;
 			return com_token;
 		}
+
 		if( hasNewLines && !allowLineBreaks ) {
 			*data_p = data;
 			return com_token;
@@ -566,19 +598,24 @@ char* COM_ParseExt( char** data_p, qboolean allowLineBreaks )
 		// skip double slash comments
 		if( c == '/' && data[1] == '/' ) {
 			data += 2;
+
 			while( *data && *data != '\n' ) {
 				data++;
 			}
 		}
+
 		// skip /* */ comments
 		else if( c == '/' && data[1] == '*' ) {
 			data += 2;
+
 			while( *data && ( *data != '*' || data[1] != '/' ) ) {
 				data++;
 			}
+
 			if( *data ) {
 				data += 2;
 			}
+
 		} else {
 			break;
 		}
@@ -587,13 +624,16 @@ char* COM_ParseExt( char** data_p, qboolean allowLineBreaks )
 	// handle quoted strings
 	if( c == '\"' ) {
 		data++;
+
 		while( 1 ) {
 			c = *data++;
+
 			if( c == '\"' || !c ) {
 				com_token[len] = 0;
 				*data_p		   = ( char* )data;
 				return com_token;
 			}
+
 			if( len < MAX_TOKEN_CHARS ) {
 				com_token[len] = c;
 				len++;
@@ -607,8 +647,10 @@ char* COM_ParseExt( char** data_p, qboolean allowLineBreaks )
 			com_token[len] = c;
 			len++;
 		}
+
 		data++;
 		c = *data;
+
 		if( c == '\n' ) {
 			com_lines++;
 		}
@@ -618,6 +660,7 @@ char* COM_ParseExt( char** data_p, qboolean allowLineBreaks )
 		//		Com_Printf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
 		len = 0;
 	}
+
 	com_token[len] = '\0';
 
 	*data_p = ( char* )data;
@@ -634,6 +677,7 @@ void COM_MatchToken( char** buf_p, char* match )
 	char* token;
 
 	token = COM_Parse( buf_p );
+
 	if( strcmp( token, match ) ) {
 		Com_Error( ERR_DROP, "MatchToken: %s != %s", token, match );
 	}
@@ -654,11 +698,14 @@ void SkipBracedSection( char** program )
 	int	  depth;
 
 	depth = 0;
+
 	do {
 		token = COM_ParseExt( program, qtrue );
+
 		if( token[1] == 0 ) {
 			if( token[0] == '{' ) {
 				depth++;
+
 			} else if( token[0] == '}' ) {
 				depth--;
 			}
@@ -677,6 +724,7 @@ void SkipRestOfLine( char** data )
 	int	  c;
 
 	p = *data;
+
 	while( ( c = *p++ ) != 0 ) {
 		if( c == '\n' ) {
 			com_lines++;
@@ -756,6 +804,7 @@ int Q_isprint( int c )
 	if( c >= 0x20 && c <= 0x7E ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -764,6 +813,7 @@ int Q_islower( int c )
 	if( c >= 'a' && c <= 'z' ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -772,6 +822,7 @@ int Q_isupper( int c )
 	if( c >= 'A' && c <= 'Z' ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -780,6 +831,7 @@ int Q_isalpha( int c )
 	if( ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -789,6 +841,7 @@ int Q_isnumeric( int c )
 	if( c >= '0' && c <= '9' ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -797,6 +850,7 @@ int Q_isalphanumeric( int c )
 	if( Q_isalpha( c ) || Q_isnumeric( c ) ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -805,8 +859,10 @@ int Q_isforfilename( int c )
 	if( ( Q_isalphanumeric( c ) || c == '_' ) && c != ' ' ) { // space not allowed in filename
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
+
 //----(SA)	end
 
 char* Q_strrchr( const char* string, int c )
@@ -821,8 +877,10 @@ char* Q_strrchr( const char* string, int c )
 		if( *s == cc ) {
 			sp = s;
 		}
+
 		s++;
 	}
+
 	if( cc == 0 ) {
 		sp = s;
 	}
@@ -842,6 +900,7 @@ void Q_strncpyz( char* dest, const char* src, int destsize )
 	if( !src ) {
 		Com_Error( ERR_FATAL, "Q_strncpyz: NULL src" );
 	}
+
 	if( destsize < 1 ) {
 		Com_Error( ERR_FATAL, "Q_strncpyz: destsize < 1" );
 	}
@@ -866,9 +925,11 @@ int Q_stricmpn( const char* s1, const char* s2, int n )
 			if( Q_islower( c1 ) ) {
 				c1 -= ( 'a' - 'A' );
 			}
+
 			if( Q_islower( c2 ) ) {
 				c2 -= ( 'a' - 'A' );
 			}
+
 			if( c1 != c2 ) {
 				return c1 < c2 ? -1 : 1;
 			}
@@ -908,10 +969,12 @@ char* Q_strlwr( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = tolower( *s );
 		s++;
 	}
+
 	return s1;
 }
 
@@ -920,10 +983,12 @@ char* Q_strupr( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = toupper( *s );
 		s++;
 	}
+
 	return s1;
 }
 
@@ -933,9 +998,11 @@ void Q_strcat( char* dest, int size, const char* src )
 	int l1;
 
 	l1 = strlen( dest );
+
 	if( l1 >= size ) {
 		Com_Error( ERR_FATAL, "Q_strcat: already overflowed" );
 	}
+
 	Q_strncpyz( dest + l1, src, size - l1 );
 }
 
@@ -950,11 +1017,13 @@ int Q_PrintStrlen( const char* string )
 
 	len = 0;
 	p	= string;
+
 	while( *p ) {
 		if( Q_IsColorString( p ) ) {
 			p += 2;
 			continue;
 		}
+
 		p++;
 		len++;
 	}
@@ -970,14 +1039,18 @@ char* Q_CleanStr( char* string )
 
 	s = string;
 	d = string;
+
 	while( ( c = *s ) != 0 ) {
 		if( Q_IsColorString( s ) ) {
 			s++;
+
 		} else if( c >= 0x20 && c <= 0x7E ) {
 			*d++ = c;
 		}
+
 		s++;
 	}
+
 	*d = '\0';
 
 	return string;
@@ -992,12 +1065,15 @@ void QDECL Com_sprintf( char* dest, int size, const char* fmt, ... )
 	va_start( argptr, fmt );
 	len = vsprintf( bigbuffer, fmt, argptr );
 	va_end( argptr );
+
 	if( len >= sizeof( bigbuffer ) ) {
 		Com_Error( ERR_FATAL, "Com_sprintf: overflowed bigbuffer" );
 	}
+
 	if( len >= size ) {
 		Com_Printf( "Com_sprintf: overflow of %i in %i\n", len, size );
 	}
+
 	Q_strncpyz( dest, bigbuffer, size );
 }
 
@@ -1013,13 +1089,16 @@ int Q_strncasecmp( char* s1, char* s2, int n )
 		if( !n-- ) {
 			return 0; // strings are equal until end point
 		}
+
 		if( c1 != c2 ) {
 			if( Q_islower( c1 ) ) {
 				c1 -= ( 'a' - 'A' );
 			}
+
 			if( Q_islower( c2 ) ) {
 				c2 -= ( 'a' - 'A' );
 			}
+
 			if( c1 != c2 ) {
 				return -1; // strings not equal
 			}
@@ -1033,6 +1112,7 @@ int Q_strcasecmp( char* s1, char* s2 )
 {
 	return Q_strncasecmp( s1, s2, 99999 );
 }
+
 // done.
 
 /*
@@ -1139,17 +1219,22 @@ char* Info_ValueForKey( const char* s, const char* key )
 	}
 
 	valueindex ^= 1;
+
 	if( *s == '\\' ) {
 		s++;
 	}
+
 	while( 1 ) {
 		o = pkey;
+
 		while( *s != '\\' ) {
 			if( !*s ) {
 				return "";
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 		s++;
 
@@ -1158,6 +1243,7 @@ char* Info_ValueForKey( const char* s, const char* key )
 		while( *s != '\\' && *s ) {
 			*o++ = *s++;
 		}
+
 		*o = 0;
 
 		if( !Q_stricmp( key, pkey ) ) {
@@ -1167,6 +1253,7 @@ char* Info_ValueForKey( const char* s, const char* key )
 		if( !*s ) {
 			break;
 		}
+
 		s++;
 	}
 
@@ -1190,25 +1277,31 @@ void Info_NextPair( const char** head, char* key, char* value )
 	if( *s == '\\' ) {
 		s++;
 	}
+
 	key[0]	 = 0;
 	value[0] = 0;
 
 	o = key;
+
 	while( *s != '\\' ) {
 		if( !*s ) {
 			*o	  = 0;
 			*head = s;
 			return;
 		}
+
 		*o++ = *s++;
 	}
+
 	*o = 0;
 	s++;
 
 	o = value;
+
 	while( *s != '\\' && *s ) {
 		*o++ = *s++;
 	}
+
 	*o = 0;
 
 	*head = s;
@@ -1236,26 +1329,34 @@ void Info_RemoveKey( char* s, const char* key )
 
 	while( 1 ) {
 		start = s;
+
 		if( *s == '\\' ) {
 			s++;
 		}
+
 		o = pkey;
+
 		while( *s != '\\' ) {
 			if( !*s ) {
 				return;
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 		s++;
 
 		o = value;
+
 		while( *s != '\\' && *s ) {
 			if( !*s ) {
 				return;
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 
 		if( !strcmp( key, pkey ) ) {
@@ -1291,26 +1392,34 @@ void Info_RemoveKey_Big( char* s, const char* key )
 
 	while( 1 ) {
 		start = s;
+
 		if( *s == '\\' ) {
 			s++;
 		}
+
 		o = pkey;
+
 		while( *s != '\\' ) {
 			if( !*s ) {
 				return;
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 		s++;
 
 		o = value;
+
 		while( *s != '\\' && *s ) {
 			if( !*s ) {
 				return;
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 
 		if( !strcmp( key, pkey ) ) {
@@ -1337,9 +1446,11 @@ qboolean Info_Validate( const char* s )
 	if( strchr( s, '\"' ) ) {
 		return qfalse;
 	}
+
 	if( strchr( s, ';' ) ) {
 		return qfalse;
 	}
+
 	return qtrue;
 }
 
@@ -1374,6 +1485,7 @@ void Info_SetValueForKey( char* s, const char* key, const char* value )
 	}
 
 	Info_RemoveKey( s, key );
+
 	if( !value || !strlen( value ) ) {
 		return;
 	}
@@ -1419,6 +1531,7 @@ void Info_SetValueForKey_Big( char* s, const char* key, const char* value )
 	}
 
 	Info_RemoveKey_Big( s, key );
+
 	if( !value || !strlen( value ) ) {
 		return;
 	}

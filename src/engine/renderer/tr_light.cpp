@@ -77,6 +77,7 @@ void R_DlightBmodel( bmodel_t* bmodel )
 	R_TransformDlights( tr.refdef.num_dlights, tr.refdef.dlights, &tr.or );
 
 	mask = 0;
+
 	for( i = 0; i < tr.refdef.num_dlights; i++ ) {
 		dl = &tr.refdef.dlights[i];
 
@@ -85,10 +86,12 @@ void R_DlightBmodel( bmodel_t* bmodel )
 			if( dl->transformed[j] - bmodel->bounds[1][j] > dl->radius ) {
 				break;
 			}
+
 			if( bmodel->bounds[0][j] - dl->transformed[j] > dl->radius ) {
 				break;
 			}
 		}
+
 		if( j < 3 ) {
 			continue;
 		}
@@ -112,8 +115,10 @@ void R_DlightBmodel( bmodel_t* bmodel )
 
 		if( *surf->data == SF_FACE ) {
 			( ( srfSurfaceFace_t* )surf->data )->dlightBits[tr.smpFrame] = mask;
+
 		} else if( *surf->data == SF_GRID ) {
 			( ( srfGridMesh_t* )surf->data )->dlightBits[tr.smpFrame] = mask;
+
 		} else if( *surf->data == SF_TRIANGLES ) {
 			( ( srfTriangles_t* )surf->data )->dlightBits[tr.smpFrame] = mask;
 		}
@@ -154,19 +159,23 @@ static void	   R_SetupEntityLightingGrid( trRefEntity_t* ent )
 		// sinking into the ground can still be lit, and so
 		// multi-part models can be lit identically
 		VectorCopy( ent->e.lightingOrigin, lightOrigin );
+
 	} else {
 		VectorCopy( ent->e.origin, lightOrigin );
 	}
 
 	VectorSubtract( lightOrigin, tr.world->lightGridOrigin, lightOrigin );
+
 	for( i = 0; i < 3; i++ ) {
 		float v;
 
 		v		= lightOrigin[i] * tr.world->lightGridInverseSize[i];
 		pos[i]	= floor( v );
 		frac[i] = v - pos[i];
+
 		if( pos[i] < 0 ) {
 			pos[i] = 0;
+
 		} else if( pos[i] >= tr.world->lightGridBounds[i] - 1 ) {
 			pos[i] = tr.world->lightGridBounds[i] - 1;
 		}
@@ -185,6 +194,7 @@ static void	   R_SetupEntityLightingGrid( trRefEntity_t* ent )
 	gridData	= tr.world->lightGridData + pos[0] * gridStep[0] + pos[1] * gridStep[1] + pos[2] * gridStep[2];
 
 	totalFactor = 0;
+
 	for( i = 0; i < 8; i++ ) {
 		float  factor;
 		byte*  data;
@@ -193,10 +203,12 @@ static void	   R_SetupEntityLightingGrid( trRefEntity_t* ent )
 
 		factor = 1.0;
 		data   = gridData;
+
 		for( j = 0; j < 3; j++ ) {
 			if( i & ( 1 << j ) ) {
 				factor *= frac[j];
 				data += gridStep[j];
+
 			} else {
 				factor *= ( 1.0f - frac[j] );
 			}
@@ -205,6 +217,7 @@ static void	   R_SetupEntityLightingGrid( trRefEntity_t* ent )
 		if( !( data[0] + data[1] + data[2] ) ) {
 			continue; // ignore samples in walls
 		}
+
 		totalFactor += factor;
 
 		ent->ambientLight[0] += factor * data[0];
@@ -245,9 +258,11 @@ static void	   R_SetupEntityLightingGrid( trRefEntity_t* ent )
 	if( tr.lightGridMulDirected ) {
 		VectorScale( ent->directedLight, tr.lightGridMulDirected, ent->directedLight );
 	}
+
 	if( tr.lightGridMulAmbient ) {
 		VectorScale( ent->ambientLight, tr.lightGridMulAmbient, ent->ambientLight );
 	}
+
 	//----(SA)	end
 
 	VectorNormalize2( direction, ent->lightDir );
@@ -267,15 +282,19 @@ static void LogLight( trRefEntity_t* ent )
 	}
 
 	max1 = ent->ambientLight[0];
+
 	if( ent->ambientLight[1] > max1 ) {
 		max1 = ent->ambientLight[1];
+
 	} else if( ent->ambientLight[2] > max1 ) {
 		max1 = ent->ambientLight[2];
 	}
 
 	max2 = ent->directedLight[0];
+
 	if( ent->directedLight[1] > max2 ) {
 		max2 = ent->directedLight[1];
+
 	} else if( ent->directedLight[2] > max2 ) {
 		max2 = ent->directedLight[2];
 	}
@@ -306,6 +325,7 @@ void R_SetupEntityLighting( const trRefdef_t* refdef, trRefEntity_t* ent )
 	if( ent->lightingCalculated ) {
 		return;
 	}
+
 	ent->lightingCalculated = qtrue;
 
 	//
@@ -316,6 +336,7 @@ void R_SetupEntityLighting( const trRefdef_t* refdef, trRefEntity_t* ent )
 		// sinking into the ground can still be lit, and so
 		// multi-part models can be lit identically
 		VectorCopy( ent->e.lightingOrigin, lightOrigin );
+
 	} else {
 		VectorCopy( ent->e.origin, lightOrigin );
 	}
@@ -323,6 +344,7 @@ void R_SetupEntityLighting( const trRefdef_t* refdef, trRefEntity_t* ent )
 	// if NOWORLDMODEL, only use dynamic lights (menu system, etc)
 	if( !( refdef->rdflags & RDF_NOWORLDMODEL ) && tr.world->lightGridData ) {
 		R_SetupEntityLightingGrid( ent );
+
 	} else {
 		ent->ambientLight[0] = ent->ambientLight[1] = ent->ambientLight[2] = tr.identityLight * 150;
 		ent->directedLight[0] = ent->directedLight[1] = ent->directedLight[2] = tr.identityLight * 150;
@@ -334,6 +356,7 @@ void R_SetupEntityLighting( const trRefdef_t* refdef, trRefEntity_t* ent )
 		ent->ambientLight[0] += tr.identityLight * 128 * ent->e.hilightIntensity;
 		ent->ambientLight[1] += tr.identityLight * 128 * ent->e.hilightIntensity;
 		ent->ambientLight[2] += tr.identityLight * 128 * ent->e.hilightIntensity;
+
 	} else if( ent->e.renderfx & RF_MINLIGHT ) {
 		// give everything a minimum light add
 		ent->ambientLight[0] += tr.identityLight * 32;
@@ -362,6 +385,7 @@ void R_SetupEntityLighting( const trRefdef_t* refdef, trRefEntity_t* ent )
 		d = VectorNormalize( dir );
 
 		power = DLIGHT_AT_RADIUS * ( dl->radius * dl->radius );
+
 		if( d < DLIGHT_MINIMUM_RADIUS ) {
 			d = DLIGHT_MINIMUM_RADIUS;
 		}

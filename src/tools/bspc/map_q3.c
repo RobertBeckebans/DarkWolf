@@ -65,16 +65,21 @@ int	 Q3_BrushContents( mapbrush_t* b )
 	//
 	mixed = false;
 	hint  = false;
+
 	for( i = 1; i < b->numsides; i++ ) {
 		s = &b->original_sides[i];
+
 		if( s->contents != contents ) {
 			mixed = true;
 		}
+
 		if( s->surf & ( SURF_HINT | SURF_SKIP ) ) {
 			hint = true;
 		}
+
 		contents |= s->contents;
 	}
+
 	//
 	if( hint ) {
 		if( contents ) {
@@ -86,13 +91,16 @@ int	 Q3_BrushContents( mapbrush_t* b )
 			PrintContents( b->contents );
 			Log_Write( "\r\n" );
 		}
+
 		return 0;
 	}
+
 	// Log_Write("brush %d contents ", nummapbrushes);
 	// PrintContents(contents);
 	// Log_Write("\r\n");
 	// remove ladder and fog contents
 	contents &= ~( CONTENTS_LADDER | CONTENTS_FOG );
+
 	//
 	if( mixed ) {
 		Log_Write( "Entity %i, Brush %i: mixed face contents ", b->entitynum, b->brushnum );
@@ -102,10 +110,12 @@ int	 Q3_BrushContents( mapbrush_t* b )
 		Log_Write( "brush contents is: " );
 		PrintContents( b->contents );
 		Log_Write( "\r\n" );
+
 		//
 		if( contents & CONTENTS_DONOTENTER ) {
 			return CONTENTS_DONOTENTER; // Log_Print("mixed contents with donotenter\n");
 		}
+
 		/*
 		Log_Print("contents:"); PrintContents(contents);
 		Log_Print("\ncontents:"); PrintContents(s->contents);
@@ -116,11 +126,14 @@ int	 Q3_BrushContents( mapbrush_t* b )
 		if( contents & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) {
 			return ( contents & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) );
 		}
+
 		if( contents & CONTENTS_PLAYERCLIP ) {
 			return ( contents & CONTENTS_PLAYERCLIP );
 		}
+
 		return ( contents & CONTENTS_SOLID );
 	}
+
 	/*
 	if (contents & CONTENTS_AREAPORTAL)
 	{
@@ -131,11 +144,14 @@ int	 Q3_BrushContents( mapbrush_t* b )
 		// Log_Print("brush %i is only structural\n", b->brushnum);
 		contents = 0;
 	}
+
 	if( contents & CONTENTS_DONOTENTER ) {
 		Log_Print( "brush %i is a donotenter brush, c = %X\n", b->brushnum, contents );
 	}
+
 	return contents;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -150,6 +166,7 @@ void Q3_DPlanes2MapPlanes()
 		dplanes2mapplanes[i] = FindFloatPlane( q3_dplanes[i].normal, q3_dplanes[i].dist );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -183,20 +200,25 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 		if( nummapbrushsides >= MAX_MAPFILE_BRUSHSIDES ) {
 			Error( "MAX_MAPFILE_BRUSHSIDES" );
 		}
+
 		// pointer to the map brush side
 		side = &brushsides[nummapbrushsides];
+
 		// if the BSP brush side is textured
 		if( q3_dbrushsidetextured[bspbrush->firstSide + n] ) {
 			side->flags |= SFL_TEXTURED | SFL_VISIBLE;
+
 		} else {
 			side->flags &= ~SFL_TEXTURED;
 		}
+
 		// NOTE: all Quake3 sides are assumed textured
 		// side->flags |= SFL_TEXTURED|SFL_VISIBLE;
 		//
 		if( bspbrushside->shaderNum < 0 ) {
 			side->contents = 0;
 			side->surf	   = 0;
+
 		} else {
 			side->contents = q3_dshaders[bspbrushside->shaderNum].contentFlags;
 			side->surf	   = q3_dshaders[bspbrushside->shaderNum].surfaceFlags;
@@ -212,15 +234,19 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 				side->contents |= CONTENTS_LADDER;
 				contentFlags |= CONTENTS_LADDER;
 			}
+
 			// done.
 		}
+
 		//
 
 		if( !( strstr( q3_dshaders[bspbrushside->shaderNum].shader, "common/slip" ) ) ) {
 			side->flags |= SFL_VISIBLE;
+
 		} else if( side->surf & SURF_NODRAW ) {
 			side->flags |= SFL_TEXTURED | SFL_VISIBLE;
 		}
+
 		/*
 		if (side->contents & (CONTENTS_TRANSLUCENT|CONTENTS_STRUCTURAL))
 		{
@@ -232,6 +258,7 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 			side->contents = 0;
 			// Log_Print("found hint brush side\n");
 		}
+
 		/*
 		if ((side->surf & SURF_NODRAW) && (side->surf & SURF_NOIMPACT))
 		{
@@ -254,6 +281,7 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 		// ME: get a plane for this side
 		bspplane = &q3_dplanes[bspbrushside->planeNum];
 		planenum = FindFloatPlane( bspplane->normal, bspplane->dist );
+
 		//
 		// see if the plane has been used already
 		//
@@ -270,14 +298,17 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 				Log_Print( "Entity %i, Brush %i: duplicate plane\n", b->entitynum, b->brushnum );
 				break;
 			}
+
 			if( s2->planenum == ( planenum ^ 1 ) ) {
 				Log_Print( "Entity %i, Brush %i: mirrored plane\n", b->entitynum, b->brushnum );
 				break;
 			}
 		}
+
 		if( k != b->numsides ) {
 			continue; // duplicated
 		}
+
 		//
 		// keep this side
 		//
@@ -305,6 +336,7 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 	b->contents = q3_dshaders[bspbrush->shaderNum].contentFlags | contentFlags;
 	// Ridah, Wolf has ladders (if we call Q3_BrushContents(), we'll get the solid area bug
 	b->contents &= ~( /*CONTENTS_LADDER|*/ CONTENTS_FOG | CONTENTS_STRUCTURAL );
+
 	// b->contents = Q3_BrushContents(b);
 	//
 	//  Ridah, CONTENTS_MOSTERCLIP should prevent AAS from being created, but not clip players/AI in the game
@@ -356,6 +388,7 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 	// used as bsp splitters
 	if( b->contents & ( CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP ) ) {
 		c_clipbrushes++;
+
 		for( i = 0; i < b->numsides; i++ ) {
 			b->original_sides[i].texinfo = TEXINFO_NODE;
 		}
@@ -404,6 +437,7 @@ void Q3_BSPBrushToMapBrush( q3_dbrush_t* bspbrush, entity_t* mapent )
 	nummapbrushes++;
 	mapent->numbrushes++;
 }
+
 //===========================================================================
 //===========================================================================
 void Q3_ParseBSPBrushes( entity_t* mapent )
@@ -427,6 +461,7 @@ void Q3_ParseBSPBrushes( entity_t* mapent )
 		Q3_BSPBrushToMapBrush( &q3_dbrushes[q3_dmodels[mapent->modelnum].firstBrush + i], mapent );
 	}
 }
+
 //===========================================================================
 //===========================================================================
 qboolean Q3_ParseBSPEntity( int entnum )
@@ -444,6 +479,7 @@ qboolean Q3_ParseBSPEntity( int entnum )
 	mapent->modelnum   = -1; //-1 = no BSP model
 
 	model = ValueForKey( mapent, "model" );
+
 	if( model && strlen( model ) ) {
 		if( *model == '*' ) {
 			// get the model number of this entity (skip the leading *)
@@ -458,12 +494,14 @@ qboolean Q3_ParseBSPEntity( int entnum )
 	if( !strcmp( "worldspawn", ValueForKey( mapent, "classname" ) ) ) {
 		mapent->modelnum = 0;
 	}
+
 	// if the map entity has a BSP model (a modelnum of -1 is used for
 	// entities that aren't using a BSP model)
 	if( mapent->modelnum >= 0 ) {
 		// parse the bsp brushes
 		Q3_ParseBSPBrushes( mapent );
 	}
+
 	//
 	// the origin of the entity is already taken into account
 	//
@@ -475,8 +513,10 @@ qboolean Q3_ParseBSPEntity( int entnum )
 		mapent->areaportalnum = c_areaportals;
 		return true;
 	}
+
 	return true;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -501,32 +541,40 @@ void AAS_CreateCurveBrushes()
 
 	qprintf( "nummapbrushsides = %d\n", nummapbrushsides );
 	mapent = &entities[0];
+
 	for( i = 0; i < q3_numDrawSurfaces; i++ ) {
 		surface = &q3_drawSurfaces[i];
+
 		if( !surface->patchWidth ) {
 			continue;
 		}
+
 		// if the curve is not solid
 		if( !( q3_dshaders[surface->shaderNum].contentFlags & ( CONTENTS_SOLID | CONTENTS_PLAYERCLIP ) ) ) {
 			// Log_Print("skipped non-solid curve\n");
 			continue;
 		}
+
 		//
 		width  = surface->patchWidth;
 		height = surface->patchHeight;
 		c	   = width * height;
+
 		if( c > MAX_PATCH_VERTS ) {
 			Error( "ParseMesh: MAX_PATCH_VERTS" );
 		}
 
 		dv_p = q3_drawVerts + surface->firstVert;
+
 		for( j = 0; j < c; j++, dv_p++ ) {
 			points[j][0] = dv_p->xyz[0];
 			points[j][1] = dv_p->xyz[1];
 			points[j][2] = dv_p->xyz[2];
 		}
+
 		// create the internal facet structure
 		pc = CM_GeneratePatchCollide( width, height, points );
+
 		//
 		for( j = 0; j < pc->numFacets; j++ ) {
 			facet = &pc->facets[j];
@@ -552,38 +600,47 @@ void AAS_CreateCurveBrushes()
 			side->surf = 0;
 			//
 			side = &brush->original_sides[1];
+
 			if( create_aas ) {
 				// the plane is expanded later so it's not a problem that
 				// these first two opposite sides are coplanar
 				side->planenum = planenum ^ 1;
+
 			} else {
 				side->planenum = FindFloatPlane( mapplanes[planenum ^ 1].normal, mapplanes[planenum ^ 1].dist + 1 );
 				side->flags |= SFL_TEXTURED | SFL_VISIBLE;
 			}
+
 			side->contents = CONTENTS_SOLID;
 			side->flags |= SFL_CURVE;
 			side->surf = 0;
 			//
 			winding = BaseWindingForPlane( mapplanes[side->planenum].normal, mapplanes[side->planenum].dist );
+
 			for( n = 0; n < facet->numBorders; n++ ) {
 				// never use the surface plane as a border
 				if( facet->borderPlanes[n] == facet->surfacePlane ) {
 					continue;
 				}
+
 				//
 				side		   = &brush->original_sides[2 + n];
 				side->planenum = FindFloatPlane( pc->planes[facet->borderPlanes[n]].plane, pc->planes[facet->borderPlanes[n]].plane[3] );
+
 				if( facet->borderInward[n] ) {
 					side->planenum ^= 1;
 				}
+
 				side->contents = CONTENTS_SOLID;
 				side->flags |= SFL_TEXTURED | SFL_CURVE;
 				side->surf = 0;
+
 				// chop the winding in place
 				if( winding ) {
 					ChopWindingInPlace( &winding, mapplanes[side->planenum ^ 1].normal, mapplanes[side->planenum ^ 1].dist, 0.1 ); // CLIP_EPSILON);
 				}
 			}
+
 			// VectorCopy(pc->bounds[0], brush->mins);
 			// VectorCopy(pc->bounds[1], brush->maxs);
 			if( !winding ) {
@@ -591,8 +648,10 @@ void AAS_CreateCurveBrushes()
 				brush->numsides = 0;
 				continue;
 			}
+
 			brush->original_sides[0].winding = winding;
 			WindingBounds( winding, brush->mins, brush->maxs );
+
 			for( n = 0; n < 3; n++ ) {
 				// IDBUG: all the indexes into the mins and maxs were zero (not using i)
 				if( brush->mins[n] < -MAX_MAP_BOUNDS || brush->maxs[n] > MAX_MAP_BOUNDS ) {
@@ -601,6 +660,7 @@ void AAS_CreateCurveBrushes()
 					brush->numsides = 0; // remove the brush
 					break;
 				}
+
 				if( brush->mins[n] > MAX_MAP_BOUNDS || brush->maxs[n] < -MAX_MAP_BOUNDS ) {
 					Log_Print( "entity %i, brush %i: no visible sides on brush\n", brush->entitynum, brush->brushnum );
 					Log_Print( "brush->mins[%d] = %f, brush->maxs[%d] = %f\n", n, brush->mins[n], n, brush->maxs[n] );
@@ -608,10 +668,12 @@ void AAS_CreateCurveBrushes()
 					break;
 				}
 			}
+
 			if( create_aas ) {
 				// NOTE: brush bevels now already added
 				// AddBrushBevels(brush);
 				AAS_CreateMapBrushes( brush, mapent, false );
+
 			} else {
 				// create windings for sides and bounds for brush
 				MakeBrushWindings( brush );
@@ -621,9 +683,11 @@ void AAS_CreateCurveBrushes()
 			}
 		}
 	}
+
 	// qprintf("\r%6d curve brushes", nummapbrushsides);//++numcurvebrushes);
 	qprintf( "\r%6d curve brushes\n", numcurvebrushes );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -656,6 +720,7 @@ void Q3_LoadMapFromBSP( struct quakefile_s* qf )
 	num_entities	 = 0;
 
 	Q3_ParseEntities();
+
 	//
 	for( i = 0; i < num_entities; i++ ) {
 		Q3_ParseBSPEntity( i );
@@ -664,15 +729,18 @@ void Q3_LoadMapFromBSP( struct quakefile_s* qf )
 	AAS_CreateCurveBrushes();
 	// get the map mins and maxs from the world model
 	ClearBounds( map_mins, map_maxs );
+
 	for( i = 0; i < entities[0].numbrushes; i++ ) {
 		if( mapbrushes[i].numsides <= 0 ) {
 			continue;
 		}
+
 		// if (mapbrushes[i].mins[0] > 4096)
 		//	continue;	//no valid points
 		AddPointToBounds( mapbrushes[i].mins, map_mins, map_maxs );
 		AddPointToBounds( mapbrushes[i].maxs, map_mins, map_maxs );
 	}
+
 	/*/
 	for (i = 0; i < nummapbrushes; i++)
 	{
@@ -699,6 +767,7 @@ void Q3_LoadMapFromBSP( struct quakefile_s* qf )
 		WriteMapFile( name );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-

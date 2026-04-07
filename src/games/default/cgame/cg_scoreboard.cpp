@@ -53,6 +53,7 @@ static void CG_DrawClientScore( int x, int y, score_t* score, float* color, floa
 	// draw the handicap or bot skill marker
 	if( ci->botSkill > 0 && ci->botSkill <= 5 ) {
 		CG_DrawPic( 0, y - 8, 32, 32, cgs.media.botSkillShaders[ci->botSkill - 1] );
+
 	} else if( ci->handicap < 100 ) {
 		Com_sprintf( string, sizeof( string ), "%i", ci->handicap );
 		CG_DrawSmallStringColor( 8, y, string, color );
@@ -72,6 +73,7 @@ static void CG_DrawClientScore( int x, int y, score_t* score, float* color, floa
 
 	if( ci->powerups & ( 1 << PW_REDFLAG ) ) {
 		CG_DrawFlagModel( x - ICON_SIZE - ICON_SIZE / 2, y - ( ICON_SIZE - BIGCHAR_HEIGHT ) / 2, ICON_SIZE, ICON_SIZE, TEAM_RED );
+
 	} else if( ci->powerups & ( 1 << PW_BLUEFLAG ) ) {
 		CG_DrawFlagModel( x - ICON_SIZE - ICON_SIZE / 2, y - ( ICON_SIZE - BIGCHAR_HEIGHT ) / 2, ICON_SIZE, ICON_SIZE, TEAM_BLUE );
 	}
@@ -79,8 +81,10 @@ static void CG_DrawClientScore( int x, int y, score_t* score, float* color, floa
 	// draw the score line
 	if( score->ping == -1 ) {
 		Com_sprintf( string, sizeof( string ), "connecting     %s", ci->name );
+
 	} else if( ci->team == TEAM_SPECTATOR ) {
 		Com_sprintf( string, sizeof( string ), "SPECT %4i %4i %s", score->ping, score->time, ci->name );
+
 	} else {
 		Com_sprintf( string, sizeof( string ), "%5i %4i %4i %s", score->score, score->ping, score->time, ci->name );
 	}
@@ -92,6 +96,7 @@ static void CG_DrawClientScore( int x, int y, score_t* score, float* color, floa
 
 		if( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR || cgs.gametype >= GT_TEAM ) {
 			rank = -1;
+
 		} else {
 			rank = cg.snap->ps.persistant[PERS_RANK] & ~RANK_TIED_FLAG;
 		}
@@ -100,14 +105,17 @@ static void CG_DrawClientScore( int x, int y, score_t* score, float* color, floa
 			hcolor[0] = 0;
 			hcolor[1] = 0;
 			hcolor[2] = 0.7;
+
 		} else if( rank == 1 ) {
 			hcolor[0] = 0.7;
 			hcolor[1] = 0;
 			hcolor[2] = 0;
+
 		} else if( rank == 2 ) {
 			hcolor[0] = 0.7;
 			hcolor[1] = 0.7;
 			hcolor[2] = 0;
+
 		} else {
 			hcolor[0] = 0.7;
 			hcolor[1] = 0.7;
@@ -145,6 +153,7 @@ static int CG_TeamScoreboard( int x, int y, team_t team, float fade )
 
 	count	   = 0;
 	lineHeight = 40;
+
 	// don't draw more than 9 rows
 	for( i = 0; i < cg.numScores && count < 9; i++ ) {
 		score = &cg.scores[i];
@@ -224,19 +233,24 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade )
 	int	   i;
 
 	hcolor[3] = fade;
+
 	if( team == TEAM_RED ) {
 		VectorSet( hcolor, 0.4452, 0.1172, 0.0782 ); // LIGHT-RED
+
 	} else if( team == TEAM_BLUE ) {
 		VectorSet( hcolor, 0.1836, 0.2422, 0.1680 ); // LIGHT-GREEN
+
 	} else {
 		VectorSet( hcolor, 0.2, 0.2, 0.2 ); // DARK-GREY
 	}
+
 	// dont draw spectator if there are none
 	for( i = 0; i < cg.numScores; i++ ) {
 		if( team == cgs.clientinfo[cg.scores[i].client].team ) {
 			break;
 		}
 	}
+
 	if( team == TEAM_SPECTATOR && i == cg.numScores ) {
 		return y;
 	}
@@ -249,13 +263,17 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade )
 	tempx = x;
 
 	CG_FillRect( tempx, y, INFO_PLAYER_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor );
+
 	if( team == TEAM_RED ) {
 		CG_DrawSmallString( tempx, y, "Axis", fade );
+
 	} else if( team == TEAM_BLUE ) {
 		CG_DrawSmallString( tempx, y, "Allies", fade );
+
 	} else {
 		CG_DrawSmallString( tempx, y, "Spectators", fade );
 	}
+
 	tempx += INFO_PLAYER_WIDTH;
 
 	CG_FillRect( tempx, y, INFO_SCORE_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor );
@@ -300,6 +318,7 @@ int WM_DrawObjectives( int x, int y, int width, float fade )
 	// determine character's team
 	if( cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED ) {
 		strcpy( teamstr, "axis_desc" );
+
 	} else {
 		strcpy( teamstr, "allied_desc" );
 	}
@@ -325,6 +344,7 @@ int WM_DrawObjectives( int x, int y, int width, float fade )
 			if( status == 0 ) {
 				CG_DrawPic( x + width / 2 - strwidth / 2 - 16 - 24, y, 24, 16, sys->R_RegisterShaderNoMip( "ui/assets/ger_flag.tga" ) );
 				CG_DrawPic( x + width / 2 + strwidth / 2 - 12 + 4, y, 24, 16, sys->R_RegisterShaderNoMip( "ui/assets/ger_flag.tga" ) );
+
 			} else if( status == 1 ) {
 				CG_DrawPic( x + width / 2 - strwidth / 2 - 16 - 24, y, 24, 16, sys->R_RegisterShaderNoMip( "ui/assets/usa_flag.tga" ) );
 				CG_DrawPic( x + width / 2 + strwidth / 2 - 12 + 4, y, 24, 16, sys->R_RegisterShaderNoMip( "ui/assets/usa_flag.tga" ) );
@@ -371,10 +391,12 @@ int WM_ScoreboardOverlay( int x, int y, float fade )
 
 		if( atoi( buf ) ) {
 			CG_DrawSmallString( x - 12 + 5, y, "ALLIES WIN!", fade );
+
 		} else {
 			CG_DrawSmallString( x - 12 + 5, y, "AXIS WIN!", fade );
 		}
 	}
+
 	// JPW NERVE -- mission time & reinforce time
 	else {
 		msec = ( cgs.timelimit * 60.f * 1000.f ) - ( cg.time - cgs.levelStartTime );
@@ -390,8 +412,10 @@ int WM_ScoreboardOverlay( int x, int y, float fade )
 
 		if( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_RED ) {
 			msec = cg_redlimbotime.integer - ( cg.time % cg_redlimbotime.integer );
+
 		} else if( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_BLUE ) {
 			msec = cg_bluelimbotime.integer - ( cg.time % cg_bluelimbotime.integer );
+
 		} else { // no team (spectator mode)
 			msec = 0;
 		}
@@ -407,6 +431,7 @@ int WM_ScoreboardOverlay( int x, int y, float fade )
 			CG_DrawSmallString( x - 7, y + 16, s, fade );
 		}
 	}
+
 	// jpw
 	//	CG_DrawSmallString( x - 12 + 5, y, "Wolfenstein Multiplayer", fade ); // old one
 
@@ -427,6 +452,7 @@ int WM_ScoreboardOverlay( int x, int y, float fade )
 
 	return y;
 }
+
 // -NERVE - SMF
 
 /*
@@ -467,6 +493,7 @@ qboolean CG_DrawScoreboard()
 	if( cg.showScores || cg.predictedPlayerState.pm_type == PM_DEAD || cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
 		fade	  = 1.0;
 		fadeColor = colorWhite;
+
 	} else {
 		fadeColor = CG_FadeColor( cg.scoreFadeTime, FADE_TIME );
 
@@ -476,6 +503,7 @@ qboolean CG_DrawScoreboard()
 			cg.killerName[0]		 = 0;
 			return qfalse;
 		}
+
 		fade = *fadeColor;
 	}
 
@@ -499,11 +527,14 @@ qboolean CG_DrawScoreboard()
 				x = ( SCREEN_WIDTH - w ) / 2;
 				y = 60;
 				CG_DrawBigString( x, y, s, fade );
+
 			} else {
 				if( cg.teamScores[0] == cg.teamScores[1] ) {
 					s = va( "Teams are tied at %i", cg.teamScores[0] );
+
 				} else if( cg.teamScores[0] >= cg.teamScores[1] ) {
 					s = va( "Red leads %i to %i", cg.teamScores[0], cg.teamScores[1] );
+
 				} else {
 					s = va( "Blue leads %i to %i", cg.teamScores[1], cg.teamScores[0] );
 				}
@@ -544,12 +575,15 @@ qboolean CG_DrawScoreboard()
 		if( cg.teamScores[0] >= cg.teamScores[1] ) {
 			y = WM_TeamScoreboard( x, y, TEAM_RED, fade );
 			y = WM_TeamScoreboard( x, y, TEAM_BLUE, fade );
+
 		} else {
 			y = WM_TeamScoreboard( x, y, TEAM_BLUE, fade );
 			y = WM_TeamScoreboard( x, y, TEAM_RED, fade );
 		}
+
 		y = WM_TeamScoreboard( x, y, TEAM_SPECTATOR, fade );
 	}
+
 	// -NERVE - SMF
 	else if( cgs.gametype >= GT_TEAM ) {
 		//
@@ -558,10 +592,12 @@ qboolean CG_DrawScoreboard()
 		if( cg.teamScores[0] >= cg.teamScores[1] ) {
 			y = CG_TeamScoreboard( x, y, TEAM_RED, fade );
 			y = CG_TeamScoreboard( x, y, TEAM_BLUE, fade );
+
 		} else {
 			y = CG_TeamScoreboard( x, y, TEAM_BLUE, fade );
 			y = CG_TeamScoreboard( x, y, TEAM_RED, fade );
 		}
+
 		y = CG_TeamScoreboard( x, y, TEAM_SPECTATOR, fade );
 
 	} else if( cgs.gametype != GT_SINGLE_PLAYER ) { //----(SA) modified
@@ -636,6 +672,7 @@ void CG_DrawTourneyScoreboard()
 
 	// print the mesage of the day
 	s = CG_ConfigString( CS_MOTD );
+
 	if( !s[0] ) {
 		s = "Scoreboard";
 	}
@@ -656,6 +693,7 @@ void CG_DrawTourneyScoreboard()
 	// print the two scores
 
 	y = 160;
+
 	if( cgs.gametype >= GT_TEAM ) {
 		//
 		// teamplay scoreboard
@@ -669,15 +707,18 @@ void CG_DrawTourneyScoreboard()
 		CG_DrawStringExt( 8, y, "Blue Team", color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
 		s = va( "%i", cg.teamScores[1] );
 		CG_DrawStringExt( 632 - GIANT_WIDTH * strlen( s ), y, s, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+
 	} else {
 		//
 		// free for all scoreboard
 		//
 		for( i = 0; i < MAX_CLIENTS; i++ ) {
 			ci = &cgs.clientinfo[i];
+
 			if( !ci->infoValid ) {
 				continue;
 			}
+
 			if( ci->team != TEAM_FREE ) {
 				continue;
 			}

@@ -164,9 +164,11 @@ void		   DumpReplaceFunctions()
 	strcat( path, PATHSEPERATOR_STR );
 	strcat( path, "g_funcs.tmp" );
 	Log_Open( path );
+
 	for( rf = replacefuncs; rf; rf = rf->next ) {
 		Log_Print( "{\"%s\", (byte *)%s},\n", rf->name, rf->name );
 	}
+
 	Log_Print( "{0, 0}\n" );
 	Log_Close();
 
@@ -182,6 +184,7 @@ void		   DumpReplaceFunctions()
 	fclose( f );
 
 	strcpy( path, func_filename );
+
 	if( f = fopen( path, "rb" ) ) {
 		fseek( f, 0, SEEK_END );
 		newlen = ftell( f );
@@ -208,11 +211,13 @@ void		   DumpReplaceFunctions()
 			remove( "release\\g_save.sbr" );
 
 			updated = 1;
+
 		} else {
 			// delete the old file
 			strcpy( path, "g_funcs.tmp" );
 			remove( path );
 		}
+
 	} else {
 		rename( "g_funcs.tmp", func_filename );
 	}
@@ -223,9 +228,11 @@ void		   DumpReplaceFunctions()
 	// dump the function declarations
 	strcpy( path, "g_func_decs.tmp" );
 	Log_Open( path );
+
 	for( rf = replacefuncs; rf; rf = rf->next ) {
 		Log_Print( "extern %s;\n", rf->dec );
 	}
+
 	Log_Close();
 
 	// if it's different, rename the file over the real header
@@ -240,6 +247,7 @@ void		   DumpReplaceFunctions()
 	fclose( f );
 
 	strcpy( path, func_filedesc );
+
 	if( f = fopen( path, "rb" ) ) {
 		fseek( f, 0, SEEK_END );
 		newlen = ftell( f );
@@ -267,11 +275,13 @@ void		   DumpReplaceFunctions()
 			remove( "release\\g_save.sbr" );
 
 			updated = 1;
+
 		} else {
 			// delete the old file
 			strcpy( path, "g_func_decs.tmp" );
 			remove( path );
 		}
+
 	} else {
 		rename( "g_func_decs.tmp", func_filedesc );
 	}
@@ -293,6 +303,7 @@ replacefunc_t* FindFunctionName( char* funcname )
 			return f;
 		}
 	}
+
 	return NULL;
 }
 
@@ -301,12 +312,15 @@ int MayScrewUp( char* funcname )
 	if( !strcmp( funcname, "GetBotAPI" ) ) {
 		return false;
 	}
+
 	if( !strcmp( funcname, "main" ) ) {
 		return false;
 	}
+
 	if( !strcmp( funcname, "WinMain" ) ) {
 		return false;
 	}
+
 	return true;
 }
 
@@ -334,6 +348,7 @@ void		ConcatDec( tokenList_t* list, char* str, int inc )
 	if( list->next ) {
 		ConcatDec( list->next, str, inc );
 	}
+
 	strcat( str, list->token.string );
 	strcat( str, " " );
 }
@@ -348,21 +363,26 @@ void AddFunctionName( char* funcname, char* filename, tokenList_t* head )
 	}
 
 #if defined( __linux__ )
+
 	// the bad thing is, this doesn't preprocess .. on __linux__ this
 	// function is not implemented (q_math.c)
 	if( !Q_stricmp( funcname, "BoxOnPlaneSide" ) ) {
 		return;
 	}
+
 #endif
 
 	// NERVE - SMF - workaround for Graeme's predifined MACOSX functions
 	// TTimo - looks like linux version needs to escape those too
 #if defined( _WIN32 ) || defined( __linux__ )
+
 	if( !Q_stricmp( funcname, "qmax" ) ) {
 		return;
+
 	} else if( !Q_stricmp( funcname, "qmin" ) ) {
 		return;
 	}
+
 #endif
 	// -NERVE - SMF
 
@@ -387,6 +407,7 @@ void AddTokenToList( tokenList_t** head, token_t* token )
 	tokenList_t* newhead;
 
 	newhead = &tokenList[tokenListHead++]; // GetMemory( sizeof( tokenList_t ) );
+
 	if( tokenListHead == MAX_TOKEN_LIST ) {
 		tokenListHead = 0;
 	}
@@ -396,6 +417,7 @@ void AddTokenToList( tokenList_t** head, token_t* token )
 
 	*head = newhead;
 }
+
 /*
 void KillTokenList( tokenList_t *head )
 {
@@ -415,13 +437,16 @@ void StripTokenList( tokenList_t* head )
 	// now go back to the start of the declaration
 	lastTrav = trav;
 	trav	 = trav->next; // should be on the function name now
+
 	while( ( trav->token.type == TT_NAME ) || ( trav->token.string[0] == '*' ) ) {
 		lastTrav = trav;
 		trav	 = trav->next;
+
 		if( !trav ) {
 			return;
 		}
 	}
+
 	// now kill everything after lastTrav
 	//	KillTokenList( lastTrav );
 	lastTrav->next = NULL;
@@ -442,10 +467,12 @@ void GetFunctionNamesFromFile( char* filename )
 
 	listHead = NULL;
 	source	 = LoadSourceFile( filename );
+
 	if( !source ) {
 		Error( "error opening %s", filename );
 		return;
 	}
+
 	//	printf("loaded %s\n", filename);
 	//	if (!PC_ReadToken(source, &lasttoken))
 	//	{
@@ -456,61 +483,79 @@ void GetFunctionNamesFromFile( char* filename )
 		if( !PC_ReadToken( source, &token ) ) {
 			break;
 		}
+
 		AddTokenToList( &listHead, &token );
+
 		if( token.type == TT_PUNCTUATION ) {
 			switch( token.string[0] ) {
 				case ';': {
 					isStatic = 0;
 					break;
 				}
+
 				case '{': {
 					indent++;
 					break;
 				} // end case
+
 				case '}': {
 					indent--;
+
 					if( indent < 0 ) {
 						indent = 0;
 					}
+
 					break;
 				} // end case
+
 				case '(': {
 					if( indent <= 0 && lasttoken.type == TT_NAME ) {
 						StripTokenList( listHead );
 
 						brace = 1;
+
 						while( PC_ReadToken( source, &token ) ) {
 							AddTokenToList( &listHead, &token );
+
 							if( token.string[0] == '(' ) {
 								brace++;
+
 							} else if( token.string[0] == ')' ) {
 								brace--;
+
 								if( brace <= 0 ) {
 									if( !PC_ReadToken( source, &token ) ) {
 										break;
 									}
+
 									if( token.string[0] == '{' ) {
 										indent++;
+
 										if( !isStatic && MayScrewUp( lasttoken.string ) ) {
 											AddFunctionName( lasttoken.string, filename, listHead );
 										}
 									}
+
 									break;
 								}
 							}
 						}
 					}
+
 					break;
 				} // end case
 			}
 		}
+
 		if( token.type == TT_NAME ) {
 			if( token.string[0] == 's' && !strcmp( token.string, "static" ) ) {
 				isStatic = 1;
 			}
 		}
+
 		memcpy( &lasttoken, &token, sizeof( token_t ) );
 	}
+
 	FreeSource( source );
 }
 
@@ -519,11 +564,13 @@ void WriteWhiteSpace( FILE* fp, script_t* script )
 	int c;
 	// write out the white space
 	c = PS_NextWhiteSpaceChar( script );
+
 	while( c ) {
 		// NOTE: do NOT write out carriage returns (for unix/linux compatibility
 		if( c != 13 ) {
 			fputc( c, fp );
 		}
+
 		c = PS_NextWhiteSpaceChar( script );
 	}
 }
@@ -533,6 +580,7 @@ void WriteString( FILE* fp, script_t* script )
 	char* ptr;
 
 	ptr = script->endwhitespace_p;
+
 	while( ptr < script->script_p ) {
 		fputc( *ptr, fp );
 		ptr++;
@@ -549,31 +597,41 @@ void ScrewUpFile( char* oldfile, char* newfile )
 
 	printf( "screwing up file %s\n", oldfile );
 	script = LoadScriptFile( oldfile );
+
 	if( !script ) {
 		Error( "error opening %s\n", oldfile );
 	}
+
 	fp = fopen( newfile, "wb" );
+
 	if( !fp ) {
 		Error( "error opening %s\n", newfile );
 	}
+
 	//
 	while( PS_ReadToken( script, &token ) ) {
 		WriteWhiteSpace( fp, script );
+
 		if( token.type == TT_NAME ) {
 			f = FindFunctionName( token.string );
+
 			if( f ) {
 				ptr = f->newname;
+
 			} else {
 				ptr = token.string;
 			}
+
 			while( *ptr ) {
 				fputc( *ptr, fp );
 				ptr++;
 			}
+
 		} else {
 			WriteString( fp, script );
 		}
 	}
+
 	WriteWhiteSpace( fp, script );
 	FreeMemory( script );
 	fclose( fp );
@@ -595,14 +653,17 @@ void main( int argc, char* argv[] )
 
 	handle = ( HWND )FindFirstFile( argv[1], &filedata );
 	done   = ( handle == INVALID_HANDLE_VALUE );
+
 	while( !done ) {
 		if( !( filedata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) ) {
 			//
 			GetFunctionNamesFromFile( filedata.cFileName );
 		}
+
 		// find the next file
 		done = !FindNextFile( handle, &filedata );
 	}
+
 	DumpReplaceFunctions();
 }
 
@@ -631,6 +692,7 @@ int main( int argc, char* argv[] )
 		if( argc < 5 ) {
 			Usage();
 		}
+
 		func_filename = argv[2];
 		func_filedesc = argv[3];
 		argbase		  = 4;
@@ -640,6 +702,7 @@ int main( int argc, char* argv[] )
 		printf( "%d: %s\n", i, argv[i] );
 		GetFunctionNamesFromFile( argv[i] );
 	}
+
 	DumpReplaceFunctions();
 }
 

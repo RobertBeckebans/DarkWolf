@@ -38,14 +38,19 @@ static float* TableForFunc( genFunc_t func )
 	switch( func ) {
 		case GF_SIN:
 			return tr.sinTable;
+
 		case GF_TRIANGLE:
 			return tr.triangleTable;
+
 		case GF_SQUARE:
 			return tr.squareTable;
+
 		case GF_SAWTOOTH:
 			return tr.sawToothTable;
+
 		case GF_INVERSE_SAWTOOTH:
 			return tr.inverseSawToothTable;
+
 		case GF_NONE:
 		default:
 			break;
@@ -141,13 +146,16 @@ void RB_CalcDeformVertexes( deformStage_t* ds )
 		// get the world up vector in local coordinates
 		if( backEnd.currentEntity->e.hModel ) { // world surfaces dont have an axis
 			VectorRotate( backEnd.currentEntity->e.fireRiseDir, backEnd.currentEntity->e.axis, worldUp );
+
 		} else {
 			VectorCopy( backEnd.currentEntity->e.fireRiseDir, worldUp );
 		}
+
 		// don't go so far if sideways, since they must be moving
 		VectorScale( worldUp, 0.4 + 0.6 * fabs( backEnd.currentEntity->e.fireRiseDir[2] ), worldUp );
 
 		ds->deformationWave.frequency *= -1;
+
 		if( ds->deformationWave.frequency > 999 ) { // hack for negative Z deformation (ack)
 			inverse = qtrue;
 			ds->deformationWave.frequency -= 999;
@@ -167,6 +175,7 @@ void RB_CalcDeformVertexes( deformStage_t* ds )
 				if( inverse ) {
 					scale *= -1;
 				}
+
 				VectorMA( xyz, dot * scale, worldUp, xyz );
 			}
 		}
@@ -174,8 +183,10 @@ void RB_CalcDeformVertexes( deformStage_t* ds )
 		if( inverse ) {
 			ds->deformationWave.frequency += 999;
 		}
+
 		ds->deformationWave.frequency *= -1;
 	}
+
 	// done.
 	else if( ds->deformationWave.frequency == 0 ) {
 		scale = EvalWaveForm( &ds->deformationWave );
@@ -187,6 +198,7 @@ void RB_CalcDeformVertexes( deformStage_t* ds )
 			xyz[1] += offset[1];
 			xyz[2] += offset[2];
 		}
+
 	} else {
 		table = TableForFunc( ds->deformationWave.func );
 
@@ -287,6 +299,7 @@ void RB_CalcMoveVertexes( deformStage_t* ds )
 	VectorScale( ds->moveVector, scale, offset );
 
 	xyz = ( float* )tess.xyz;
+
 	for( i = 0; i < tess.numVertexes; i++, xyz += 4 ) {
 		VectorAdd( xyz, offset, xyz );
 	}
@@ -318,15 +331,19 @@ void DeformText( const char* text )
 	VectorClear( mid );
 	bottom = 999999;
 	top	   = -999999;
+
 	for( i = 0; i < 4; i++ ) {
 		VectorAdd( tess.xyz[i], mid, mid );
+
 		if( tess.xyz[i][2] < bottom ) {
 			bottom = tess.xyz[i][2];
 		}
+
 		if( tess.xyz[i][2] > top ) {
 			top = tess.xyz[i][2];
 		}
 	}
+
 	VectorScale( mid, 0.25f, origin );
 
 	// determine the individual character size
@@ -364,6 +381,7 @@ void DeformText( const char* text )
 
 			RB_AddQuadStampExt( origin, width, height, color, fcol, frow, fcol + size, frow + size );
 		}
+
 		VectorMA( origin, -2, width, origin );
 	}
 }
@@ -401,6 +419,7 @@ static void AutospriteDeform()
 	if( tess.numVertexes & 3 ) {
 		ri.Printf( PRINT_WARNING, "Autosprite shader %s had odd vertex count", tess.shader->name );
 	}
+
 	if( tess.numIndexes != ( tess.numVertexes >> 2 ) * 6 ) {
 		ri.Printf( PRINT_WARNING, "Autosprite shader %s had odd index count", tess.shader->name );
 	}
@@ -412,6 +431,7 @@ static void AutospriteDeform()
 	if( backEnd.currentEntity != &tr.worldEntity ) {
 		GlobalVectorToLocal( backEnd.viewParms.or.axis[1], leftDir );
 		GlobalVectorToLocal( backEnd.viewParms.or.axis[2], upDir );
+
 	} else {
 		VectorCopy( backEnd.viewParms.or.axis[1], leftDir );
 		VectorCopy( backEnd.viewParms.or.axis[2], upDir );
@@ -439,11 +459,14 @@ static void AutospriteDeform()
 		if( backEnd.currentEntity->e.nonNormalizedAxes ) {
 			float axisLength;
 			axisLength = VectorLength( backEnd.currentEntity->e.axis[0] );
+
 			if( !axisLength ) {
 				axisLength = 0;
+
 			} else {
 				axisLength = 1.0f / axisLength;
 			}
+
 			VectorScale( left, axisLength, left );
 			VectorScale( up, axisLength, up );
 		}
@@ -471,12 +494,14 @@ static void Autosprite2Deform()
 	if( tess.numVertexes & 3 ) {
 		ri.Printf( PRINT_WARNING, "Autosprite2 shader %s had odd vertex count", tess.shader->name );
 	}
+
 	if( tess.numIndexes != ( tess.numVertexes >> 2 ) * 6 ) {
 		ri.Printf( PRINT_WARNING, "Autosprite2 shader %s had odd index count", tess.shader->name );
 	}
 
 	if( backEnd.currentEntity != &tr.worldEntity ) {
 		GlobalVectorToLocal( backEnd.viewParms.or.axis[0], forward );
+
 	} else {
 		VectorCopy( backEnd.viewParms.or.axis[0], forward );
 	}
@@ -508,11 +533,13 @@ static void Autosprite2Deform()
 			VectorSubtract( v1, v2, temp );
 
 			l = DotProduct( temp, temp );
+
 			if( l < lengths[0] ) {
 				nums[1]	   = nums[0];
 				lengths[1] = lengths[0];
 				nums[0]	   = j;
 				lengths[0] = l;
+
 			} else if( l < lengths[1] ) {
 				nums[1]	   = j;
 				lengths[1] = l;
@@ -555,6 +582,7 @@ static void Autosprite2Deform()
 			if( k == 5 ) {
 				VectorMA( mid[j], l, minor, v1 );
 				VectorMA( mid[j], -l, minor, v2 );
+
 			} else {
 				VectorMA( mid[j], -l, minor, v1 );
 				VectorMA( mid[j], l, minor, v2 );
@@ -580,27 +608,35 @@ void RB_DeformTessGeometry()
 		switch( ds->deformation ) {
 			case DEFORM_NONE:
 				break;
+
 			case DEFORM_NORMALS:
 				RB_CalcDeformNormals( ds );
 				break;
+
 			case DEFORM_WAVE:
 				RB_CalcDeformVertexes( ds );
 				break;
+
 			case DEFORM_BULGE:
 				RB_CalcBulgeVertexes( ds );
 				break;
+
 			case DEFORM_MOVE:
 				RB_CalcMoveVertexes( ds );
 				break;
+
 			case DEFORM_PROJECTION_SHADOW:
 				RB_ProjectionShadowDeform();
 				break;
+
 			case DEFORM_AUTOSPRITE:
 				AutospriteDeform();
 				break;
+
 			case DEFORM_AUTOSPRITE2:
 				Autosprite2Deform();
 				break;
+
 			case DEFORM_TEXT0:
 			case DEFORM_TEXT1:
 			case DEFORM_TEXT2:
@@ -718,12 +754,14 @@ void RB_CalcWaveColor( const waveForm_t* wf, unsigned char* dstColors )
 
 	if( wf->func == GF_NOISE ) {
 		glow = wf->base + R_NoiseGet4f( 0, 0, 0, ( tess.shaderTime + wf->phase ) * wf->frequency ) * wf->amplitude;
+
 	} else {
 		glow = EvalWaveForm( wf ) * tr.identityLight;
 	}
 
 	if( glow < 0 ) {
 		glow = 0;
+
 	} else if( glow > 1 ) {
 		glow = 1;
 	}
@@ -869,6 +907,7 @@ void RB_CalcFogTexCoords( float* st )
 		fogDepthVector[3] = -fog->surface[3] + DotProduct( backEnd.or.origin, fog->surface );
 
 		eyeT = DotProduct( backEnd.or.viewOrigin, fogDepthVector ) + fogDepthVector[3];
+
 	} else {
 		eyeT = 1; // non-surface fog always has eye inside
 	}
@@ -878,6 +917,7 @@ void RB_CalcFogTexCoords( float* st )
 
 	if( eyeT < 0 ) {
 		eyeOutside = qtrue;
+
 	} else {
 		eyeOutside = qfalse;
 	}
@@ -894,12 +934,15 @@ void RB_CalcFogTexCoords( float* st )
 		if( eyeOutside ) {
 			if( t < 1.0 ) {
 				t = 1.0 / 32; // point is outside, so no fogging
+
 			} else {
 				t = 1.0 / 32 + 30.0 / 32 * t / ( t - eyeT ); // cut the distance at the fog plane
 			}
+
 		} else {
 			if( t < 0 ) {
 				t = 1.0 / 32; // point is outside, so no fogging
+
 			} else {
 				t = 31.0 / 32;
 			}
@@ -1115,6 +1158,7 @@ void   RB_CalcSpecularAlpha( unsigned char* alphas )
 	alphas += 3;
 
 	numVertexes = tess.numVertexes;
+
 	for( i = 0; i < numVertexes; i++, v += 4, normal += 4, alphas += 4 ) {
 		float ilength;
 
@@ -1139,10 +1183,12 @@ void   RB_CalcSpecularAlpha( unsigned char* alphas )
 
 		if( l < 0 ) {
 			b = 0;
+
 		} else {
 			l = l * l;
 			l = l * l;
 			b = l * 255;
+
 			if( b > 255 ) {
 				b = 255;
 			}
@@ -1179,28 +1225,37 @@ void RB_CalcDiffuseColor( unsigned char* colors )
 	normal = tess.normal[0];
 
 	numVertexes = tess.numVertexes;
+
 	for( i = 0; i < numVertexes; i++, v += 4, normal += 4 ) {
 		incoming = DotProduct( normal, lightDir );
+
 		if( incoming <= 0 ) {
 			*( int* )&colors[i * 4] = ambientLightInt;
 			continue;
 		}
+
 		j = myftol( ambientLight[0] + incoming * directedLight[0] );
+
 		if( j > 255 ) {
 			j = 255;
 		}
+
 		colors[i * 4 + 0] = j;
 
 		j = myftol( ambientLight[1] + incoming * directedLight[1] );
+
 		if( j > 255 ) {
 			j = 255;
 		}
+
 		colors[i * 4 + 1] = j;
 
 		j = myftol( ambientLight[2] + incoming * directedLight[2] );
+
 		if( j > 255 ) {
 			j = 255;
 		}
+
 		colors[i * 4 + 2] = j;
 
 		colors[i * 4 + 3] = 255;

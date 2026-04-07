@@ -71,6 +71,7 @@ void AICast_DBG_AddAIFunc( cast_state_t* cs, char* funcname )
 			G_Printf( "%s: %s\n", g_entities[cs->entityNum].aiName, funcname );
 		}
 	}
+
 	aifuncs[numaifuncs] = funcname;
 	numaifuncs++;
 }
@@ -86,9 +87,11 @@ void AICast_DBG_ListAIFuncs( cast_state_t* cs, int numprint )
 
 	if( aicast_debug.integer != 2 || ( g_entities[cs->entityNum].aiName && !strcmp( aicast_debugname.string, g_entities[cs->entityNum].aiName ) ) ) {
 		AICast_Printf( AICAST_PRT_DEBUG, S_COLOR_RED "AICast_ProcessAIFunctions: executed more than %d AI funcs\n", MAX_AIFUNCS );
+
 		for( i = MAX_AIFUNCS - numprint; i < MAX_AIFUNCS; i++ ) {
 			AICast_Printf( AICAST_PRT_DEBUG, "%s, ", aifuncs[i] );
 		}
+
 		AICast_Printf( AICAST_PRT_DEBUG, "\n" );
 	}
 }
@@ -107,6 +110,7 @@ void AICast_DebugFrame( cast_state_t* cs )
 
 		if( cs->castScriptStatus.castScriptEventIndex >= 0 ) {
 			ent->client->ps.eFlags |= EF_TALK;
+
 		} else {
 			ent->client->ps.eFlags &= ~EF_TALK;
 		}
@@ -138,12 +142,14 @@ void AICast_DBG_RouteTable_f( vec3_t org, char* param )
 	if( Q_stricmp( param, "src" ) == 0 ) { // set the src
 		srcarea = 1 + sys->AAS_PointAreaNum( org );
 		return;
+
 	} else if( Q_stricmp( param, "dest" ) == 0 ) {
 		dstarea = 1 + sys->AAS_PointAreaNum( org );
 	}
 
 	if( srcarea && dstarea ) { // show the path
 		sys->AAS_RT_ShowRoute( org, srcarea - 1, dstarea - 1 );
+
 	} else {
 		sys->Printf( "You must specify 'src' & 'dest' first\n" );
 	}
@@ -184,6 +190,7 @@ void AICast_DBG_Cmd_f( int clientNum )
 	char	   cmd[MAX_TOKEN_CHARS];
 
 	ent = g_entities + clientNum;
+
 	if( !ent->client ) {
 		return; // not fully in game yet
 	}
@@ -196,17 +203,20 @@ void AICast_DBG_Cmd_f( int clientNum )
 		AICast_DBG_RouteTable_f( ent->client->ps.origin, cmd );
 		return;
 	}
+
 	if( Q_stricmp( cmd, "spawn" ) == 0 ) {
 		// spawn a given character
 		sys->Argv( 2, cmd, sizeof( cmd ) );
 		AICast_DBG_Spawn_f( ent->client, cmd );
 		return;
 	}
+
 	if( Q_stricmp( cmd, "getname" ) == 0 ) {
 		// get name of character we're looking at
 		//		AICast_DBG_GetName_f(ent);
 		return;
 	}
+
 	if( Q_stricmp( cmd, "followme" ) == 0 ) {
 		// tell character to follow us
 		sys->Argv( 2, cmd, sizeof( cmd ) );
@@ -214,6 +224,7 @@ void AICast_DBG_Cmd_f( int clientNum )
 		return;
 	}
 }
+
 /*
 // Ridah, faster Win32 code
 #ifdef _WIN32

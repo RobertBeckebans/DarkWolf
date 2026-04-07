@@ -56,21 +56,26 @@ tmp_node_t* AAS_PruneNodes_r( tmp_node_t* tmpnode )
 	if( !tmpnode ) {
 		return NULL;
 	}
+
 	//
 	if( tmpnode->tmparea ) {
 		return tmpnode;
 	}
+
 	// process the children first
 	tmpnode->children[0] = AAS_PruneNodes_r( tmpnode->children[0] );
 	tmpnode->children[1] = AAS_PruneNodes_r( tmpnode->children[1] );
+
 	// if both children are areas
 	if( tmpnode->children[0] && tmpnode->children[1] && tmpnode->children[0]->tmparea && tmpnode->children[1]->tmparea ) {
 		tmparea1 = tmpnode->children[0]->tmparea;
+
 		while( tmparea1->mergedarea ) {
 			tmparea1 = tmparea1->mergedarea;
 		}
 
 		tmparea2 = tmpnode->children[1]->tmparea;
+
 		while( tmparea2->mergedarea ) {
 			tmparea2 = tmparea2->mergedarea;
 		}
@@ -86,15 +91,18 @@ tmp_node_t* AAS_PruneNodes_r( tmp_node_t* tmpnode )
 			return tmpnode;
 		}
 	}
+
 	// if both solid leafs
 	if( !tmpnode->children[0] && !tmpnode->children[1] ) {
 		c_numprunes++;
 		AAS_FreeTmpNode( tmpnode );
 		return NULL;
 	}
+
 	//
 	return tmpnode;
 }
+
 //===========================================================================
 //
 // Parameter:				-

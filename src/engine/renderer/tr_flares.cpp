@@ -157,6 +157,7 @@ void RB_AddFlare( void* surface, int fogNum, vec3_t point, vec3_t color, float s
 
 	// see if a flare with a matching surface, scene, and view exists
 	oldest = r_flareStructs;
+
 	for( f = r_activeFlares; f; f = f->next ) {
 		//		if ( f->surface == surface && f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->inPortal == backEnd.viewParms.isPortal ) {
 
@@ -172,6 +173,7 @@ void RB_AddFlare( void* surface, int fogNum, vec3_t point, vec3_t color, float s
 			// the list is completely full
 			return;
 		}
+
 		f				 = r_inactiveFlares;
 		r_inactiveFlares = r_inactiveFlares->next;
 		f->next			 = r_activeFlares;
@@ -232,19 +234,23 @@ void RB_AddDlightFlares()
 
 	l	= backEnd.refdef.dlights;
 	fog = tr.world->fogs;
+
 	for( i = 0; i < backEnd.refdef.num_dlights; i++, l++ ) {
 		// find which fog volume the light is in
 		for( j = 1; j < tr.world->numfogs; j++ ) {
 			fog = &tr.world->fogs[j];
+
 			for( k = 0; k < 3; k++ ) {
 				if( l->origin[k] < fog->bounds[0][k] || l->origin[k] > fog->bounds[1][k] ) {
 					break;
 				}
 			}
+
 			if( k == 3 ) {
 				break;
 			}
 		}
+
 		if( j == tr.world->numfogs ) {
 			j = 0;
 		}
@@ -274,22 +280,27 @@ void RB_AddCoronaFlares()
 
 	cor = backEnd.refdef.coronas;
 	fog = tr.world->fogs;
+
 	for( i = 0; i < backEnd.refdef.num_coronas; i++, cor++ ) {
 		// find which fog volume the corona is in
 		for( j = 1; j < tr.world->numfogs; j++ ) {
 			fog = &tr.world->fogs[j];
+
 			for( k = 0; k < 3; k++ ) {
 				if( cor->origin[k] < fog->bounds[0][k] || cor->origin[k] > fog->bounds[1][k] ) {
 					break;
 				}
 			}
+
 			if( k == 3 ) {
 				break;
 			}
 		}
+
 		if( j == tr.world->numfogs ) {
 			j = 0;
 		}
+
 		RB_AddFlare( ( void* )cor, j, cor->origin, cor->color, cor->scale, NULL, cor->id, cor->flags );
 	}
 }
@@ -341,18 +352,22 @@ void RB_TestFlare( flare_t* f )
 			f->visible	= qtrue;
 			f->fadeTime = backEnd.refdef.time - 1;
 		}
+
 		fade = ( ( backEnd.refdef.time - f->fadeTime ) / 1000.0f ) * r_flareFade->value;
+
 	} else {
 		if( f->visible ) {
 			f->visible	= qfalse;
 			f->fadeTime = backEnd.refdef.time - 1;
 		}
+
 		fade = 1.0f - ( ( backEnd.refdef.time - f->fadeTime ) / 1000.0f ) * r_flareFade->value;
 	}
 
 	if( fade < 0 ) {
 		fade = 0;
 	}
+
 	if( fade > 1 ) {
 		fade = 1;
 	}
@@ -391,6 +406,7 @@ void RB_RenderFlare( flare_t* f )
 
 	if( f->flags & 2 ) { // spotlight flare
 		RB_BeginSurface( tr.spotFlareShader, f->fogNum );
+
 	} else {
 		RB_BeginSurface( tr.flareShader, f->fogNum );
 	}
@@ -483,6 +499,7 @@ void RB_RenderFlares()
 	// perform z buffer readback on each flare in this view
 	draw = qfalse;
 	prev = &r_activeFlares;
+
 	while( ( f = *prev ) != NULL ) {
 		// throw out any flares that weren't added last frame
 		if( f->addedFrame < backEnd.viewParms.frameCount - 1 ) {
@@ -494,10 +511,13 @@ void RB_RenderFlares()
 
 		// don't draw any here that aren't from this scene / portal
 		f->drawIntensity = 0;
+
 		if( f->frameSceneNum == backEnd.viewParms.frameSceneNum && f->inPortal == backEnd.viewParms.isPortal ) {
 			RB_TestFlare( f );
+
 			if( f->drawIntensity ) {
 				draw = qtrue;
+
 			} else {
 				// this flare has completely faded out, so remove it from the chain
 				*prev			 = f->next;

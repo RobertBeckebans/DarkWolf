@@ -54,6 +54,7 @@ qboolean	loadCamera( int camNum, const char* name )
 	if( camNum < 0 || camNum >= MAX_CAMERAS ) {
 		return qfalse;
 	}
+
 	camera[camNum].clear();
 	// TTimo static_cast confused gcc, went for C-style casting
 	return ( qboolean )( camera[camNum].load( name ) );
@@ -62,12 +63,15 @@ qboolean	loadCamera( int camNum, const char* name )
 qboolean getCameraInfo( int camNum, int time, float* origin, float* angles, float* fov )
 {
 	idVec3 dir, org;
+
 	if( camNum < 0 || camNum >= MAX_CAMERAS ) {
 		return qfalse;
 	}
+
 	org[0] = origin[0];
 	org[1] = origin[1];
 	org[2] = origin[2];
+
 	if( camera[camNum].getCameraInfo( time, org, dir, fov ) ) {
 		origin[0] = org[0];
 		origin[1] = org[1];
@@ -76,6 +80,7 @@ qboolean getCameraInfo( int camNum, int time, float* origin, float* angles, floa
 		angles[0] = asin( dir[2] ) * 180 / 3.14159;
 		return qtrue;
 	}
+
 	return qfalse;
 }
 
@@ -84,6 +89,7 @@ void startCamera( int camNum, int time )
 	if( camNum < 0 || camNum >= MAX_CAMERAS ) {
 		return;
 	}
+
 	camera[camNum].startCamera( time );
 }
 
@@ -157,21 +163,25 @@ void idSplineList::addToRenderer()
 
 	int	   step = 0;
 	idVec3 step1;
+
 	for( i = 3; i < controlPoints.Num(); i++ ) {
 		for( float tension = 0.0f; tension < 1.001f; tension += 0.1f ) {
 			float x = 0;
 			float y = 0;
 			float z = 0;
+
 			for( int j = 0; j < 4; j++ ) {
 				x += controlPoints[i - ( 3 - j )]->x * calcSpline( j, tension );
 				y += controlPoints[i - ( 3 - j )]->y * calcSpline( j, tension );
 				z += controlPoints[i - ( 3 - j )]->z * calcSpline( j, tension );
 			}
+
 			if( step == 0 ) {
 				step1[0] = x;
 				step1[1] = y;
 				step1[2] = z;
 				step	 = 1;
+
 			} else {
 				debugLine( white, step1[0], step1[1], step1[2], x, y, z );
 				step = 0;
@@ -184,19 +194,23 @@ void idSplineList::buildSpline()
 {
 	// int start = Sys_Milliseconds();
 	clearSpline();
+
 	for( int i = 3; i < controlPoints.Num(); i++ ) {
 		for( float tension = 0.0f; tension < 1.001f; tension += granularity ) {
 			float x = 0;
 			float y = 0;
 			float z = 0;
+
 			for( int j = 0; j < 4; j++ ) {
 				x += controlPoints[i - ( 3 - j )]->x * calcSpline( j, tension );
 				y += controlPoints[i - ( 3 - j )]->y * calcSpline( j, tension );
 				z += controlPoints[i - ( 3 - j )]->z * calcSpline( j, tension );
 			}
+
 			splinePoints.Append( new idVec3( x, y, z ) );
 		}
 	}
+
 	dirty = false;
 	// Com_Printf("Spline build took %f seconds\n", (float)(Sys_Milliseconds() - start) / 1000);
 }
@@ -220,11 +234,13 @@ float idSplineList::totalDistance()
 	float  dist = 0.0;
 	idVec3 temp;
 	int	   count = splinePoints.Num();
+
 	for( int i = 1; i < count; i++ ) {
 		temp = *splinePoints[i - 1];
 		temp -= *splinePoints[i];
 		dist += temp.Length();
 	}
+
 	return dist;
 }
 
@@ -248,6 +264,7 @@ void idSplineList::initPosition( long bt, long totalTime )
 	double distSoFar = 0.0;
 	idVec3 temp;
 	int	   count = splinePoints.Num();
+
 	// for(int i = 2; i < count - 1; i++) {
 	for( int i = 1; i < count; i++ ) {
 		temp = *splinePoints[i - 1];
@@ -257,6 +274,7 @@ void idSplineList::initPosition( long bt, long totalTime )
 		percent *= totalTime;
 		splineTime.Append( percent + bt );
 	}
+
 	assert( splineTime.Num() == splinePoints.Num() );
 	activeSegment = 0;
 }
@@ -266,13 +284,17 @@ float idSplineList::calcSpline( int step, float tension )
 	switch( step ) {
 		case 0:
 			return ( pow( 1 - tension, 3 ) ) / 6;
+
 		case 1:
 			return ( 3 * pow( tension, 3 ) - 6 * pow( tension, 2 ) + 4 ) / 6;
+
 		case 2:
 			return ( -3 * pow( tension, 3 ) + 3 * pow( tension, 2 ) + 3 * tension + 1 ) / 6;
+
 		case 3:
 			return pow( tension, 3 ) / 6;
 	}
+
 	return 0.0;
 }
 
@@ -288,11 +310,13 @@ void idSplineList::setSelectedPoint( idVec3* p )
 {
 	if( p ) {
 		p->Snap();
+
 		for( int i = 0; i < controlPoints.Num(); i++ ) {
 			if( *p == *controlPoints[i] ) {
 				selected = controlPoints[i];
 			}
 		}
+
 	} else {
 		selected = NULL;
 	}
@@ -304,6 +328,7 @@ const idVec3* idSplineList::getPosition( long t )
 	//	static long lastTime = -1; // TTimo unused
 
 	int			  count = splineTime.Num();
+
 	if( count == 0 ) {
 		return &zero;
 	}
@@ -326,17 +351,21 @@ const idVec3* idSplineList::getPosition( long t )
 				interpolatedPos = v2;
 				return &interpolatedPos;
 			}
+
 			return splinePoints[activeSegment];
+
 		} else {
 			activeSegment++;
 		}
 	}
+
 	return splinePoints[count - 1];
 }
 
 void idSplineList::parse( const char*( *text ) )
 {
 	const char* token;
+
 	// Com_MatchToken( text, "{" );
 	do {
 		token = Com_Parse( text );
@@ -344,6 +373,7 @@ void idSplineList::parse( const char*( *text ) )
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !Q_stricmp( token, "}" ) ) {
 			break;
 		}
@@ -357,11 +387,14 @@ void idSplineList::parse( const char*( *text ) )
 			Com_UngetToken();
 			idStr		key	  = Com_ParseOnLine( text );
 			const char* token = Com_Parse( text );
+
 			if( Q_stricmp( key.c_str(), "granularity" ) == 0 ) {
 				granularity = atof( token );
+
 			} else if( Q_stricmp( key.c_str(), "name" ) == 0 ) {
 				name = token;
 			}
+
 			token = Com_Parse( text );
 
 		} while( 1 );
@@ -391,10 +424,12 @@ void idSplineList::write( fileHandle_t file, const char* p )
 	s = va( "\t\t\tgranularity %f\n", granularity );
 	FS_Write( s.c_str(), s.length(), file );
 	int count = controlPoints.Num();
+
 	for( int i = 0; i < count; i++ ) {
 		s = va( "\t\t\t( %f %f %f )\n", controlPoints[i]->x, controlPoints[i]->y, controlPoints[i]->z );
 		FS_Write( s.c_str(), s.length(), file );
 	}
+
 	s = "\t\t}\n";
 	FS_Write( s.c_str(), s.length(), file );
 }
@@ -402,9 +437,11 @@ void idSplineList::write( fileHandle_t file, const char* p )
 void idCameraDef::getActiveSegmentInfo( int segment, idVec3& origin, idVec3& direction, float* fov )
 {
 #if 0
+
 	if( !cameraSpline.validTime() ) {
 		buildCamera();
 	}
+
 	double d = ( double )segment / numSegments();
 	getCameraInfo( d * totalTime * 1000, origin, direction, fov );
 #endif
@@ -447,10 +484,12 @@ bool idCameraDef::getCameraInfo( long time, idVec3& origin, idVec3& direction, f
 	for( int i = 0; i < events.Num(); i++ ) {
 		if( time >= startTime + events[i]->getTime() && !events[i]->getTriggered() ) {
 			events[i]->setTriggered( true );
+
 			if( events[i]->getType() == idCameraEvent::EVENT_TARGET ) {
 				setActiveTargetByName( events[i]->getParam() );
 				getActiveTarget()->start( startTime + events[i]->getTime() );
 				// Com_Printf("Triggered event switch to target: %s\n",events[i]->getParam());
+
 			} else if( events[i]->getType() == idCameraEvent::EVENT_TRIGGER ) {
 				// empty!
 			} else if( events[i]->getType() == idCameraEvent::EVENT_FOV ) {
@@ -462,14 +501,17 @@ bool idCameraDef::getCameraInfo( long time, idVec3& origin, idVec3& direction, f
 				float		newfov = ( param1 ) ? atof( param1 ) : 90;
 				fov.reset( fov.getFOV( time ), newfov, time, len );
 				//*fv = fov = atof(events[i]->getParam());
+
 			} else if( events[i]->getType() == idCameraEvent::EVENT_FADEIN ) {
 				float time = atof( events[i]->getParam() );
 				Cbuf_AddText( va( "fade 0 0 0 0 %f", time ) );
 				Cbuf_Execute();
+
 			} else if( events[i]->getType() == idCameraEvent::EVENT_FADEOUT ) {
 				float time = atof( events[i]->getParam() );
 				Cbuf_AddText( va( "fade 0 0 0 255 %f", time ) );
 				Cbuf_Execute();
+
 			} else if( events[i]->getType() == idCameraEvent::EVENT_CAMERA ) {
 				memset( buff, 0, sizeof( buff ) );
 				strcpy( buff, events[i]->getParam() );
@@ -479,11 +521,14 @@ bool idCameraDef::getCameraInfo( long time, idVec3& origin, idVec3& direction, f
 				if( param2 ) {
 					loadCamera( atoi( param1 ), va( "cameras/%s.camera", param2 ) );
 					startCamera( time );
+
 				} else {
 					loadCamera( 0, va( "cameras/%s.camera", events[i]->getParam() ) );
 					startCamera( time );
 				}
+
 				return true;
+
 			} else if( events[i]->getType() == idCameraEvent::EVENT_STOP ) {
 				return false;
 			}
@@ -499,6 +544,7 @@ bool idCameraDef::getCameraInfo( long time, idVec3& origin, idVec3& direction, f
 	idVec3 temp = origin;
 
 	int	   numTargets = targetPositions.Num();
+
 	if( numTargets == 0 ) {
 		// empty!
 	} else {
@@ -534,27 +580,33 @@ void idCameraDef::buildCamera()
 
 	totalTime = baseTime;
 	cameraPosition->setTime( totalTime * 1000 );
+
 	// we have a base time layout for the path and the target path
 	// now we need to layer on any wait or speed changes
 	for( i = 0; i < events.Num(); i++ ) {
 		// idCameraEvent *ev = events[i]; // TTimo: unused
 		events[i]->setTriggered( false );
+
 		switch( events[i]->getType() ) {
 			case idCameraEvent::EVENT_TARGET: {
 				targets.Append( i );
 				break;
 			}
+
 			case idCameraEvent::EVENT_FEATHER: {
 				long  startTime = 0;
 				float speed		= 0;
 				long  loopTime	= 10;
 				float stepGoal	= cameraPosition->getBaseVelocity() / ( 1000 / loopTime );
+
 				while( startTime <= 1000 ) {
 					cameraPosition->addVelocity( startTime, loopTime, speed );
 					speed += stepGoal;
+
 					if( speed > cameraPosition->getBaseVelocity() ) {
 						speed = cameraPosition->getBaseVelocity();
 					}
+
 					startTime += loopTime;
 				}
 
@@ -564,49 +616,62 @@ void idCameraDef::buildCamera()
 				startTime	 = ( long int )( totalTime * 1000 - 1000 );
 				long endTime = startTime + 1000;
 				speed		 = cameraPosition->getBaseVelocity();
+
 				while( startTime < endTime ) {
 					speed -= stepGoal;
+
 					if( speed < 0 ) {
 						speed = 0;
 					}
+
 					cameraPosition->addVelocity( startTime, loopTime, speed );
 					startTime += loopTime;
 				}
+
 				break;
 			}
+
 			case idCameraEvent::EVENT_WAIT: {
 				waits.Append( atof( events[i]->getParam() ) );
 
 				// FIXME: this is quite hacky for Wolf E3, accel and decel needs
 				//  do be parameter based etc..
 				long startTime = events[i]->getTime() - 1000;
+
 				if( startTime < 0 ) {
 					startTime = 0;
 				}
+
 				float speed	   = cameraPosition->getBaseVelocity();
 				long  loopTime = 10;
 				float steps	   = speed / ( ( events[i]->getTime() - startTime ) / loopTime );
+
 				while( startTime <= events[i]->getTime() - loopTime ) {
 					cameraPosition->addVelocity( startTime, loopTime, speed );
 					speed -= steps;
 					startTime += loopTime;
 				}
+
 				cameraPosition->addVelocity( events[i]->getTime(), atof( events[i]->getParam() ) * 1000, 0 );
 
 				startTime	 = ( long int )( events[i]->getTime() + atof( events[i]->getParam() ) * 1000 );
 				long endTime = startTime + 1000;
 				speed		 = 0;
+
 				while( startTime <= endTime ) {
 					cameraPosition->addVelocity( startTime, loopTime, speed );
 					speed += steps;
 					startTime += loopTime;
 				}
+
 				break;
 			}
+
 			case idCameraEvent::EVENT_TARGETWAIT: {
 				// targetWaits.Append(i);
 				break;
 			}
+
 			case idCameraEvent::EVENT_SPEED: {
 					/*
 									// take the average delay between up to the next five segments
@@ -652,13 +717,17 @@ void idCameraDef::buildCamera()
 	// and allocate it across the active target, then reset time to this point
 	long timeSoFar = 0;
 	long total	   = ( long int )( totalTime * 1000 );
+
 	for( i = 0; i < targets.Num(); i++ ) {
 		long t;
+
 		if( i < targets.Num() - 1 ) {
 			t = events[targets[i + 1]]->getTime();
+
 		} else {
 			t = total - timeSoFar;
 		}
+
 		// t is how much time to use for this target
 		setActiveTargetByName( events[targets[i]]->getParam() );
 		getActiveTarget()->setTime( t );
@@ -682,41 +751,51 @@ void idCameraDef::startCamera( long t )
 void idCameraDef::parse( const char*( *text ) )
 {
 	const char* token;
+
 	do {
 		token = Com_Parse( text );
 
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !Q_stricmp( token, "}" ) ) {
 			break;
 		}
 
 		if( Q_stricmp( token, "time" ) == 0 ) {
 			baseTime = Com_ParseFloat( text );
+
 		} else if( Q_stricmp( token, "camera_fixed" ) == 0 ) {
 			cameraPosition = new idFixedPosition();
 			cameraPosition->parse( text );
+
 		} else if( Q_stricmp( token, "camera_interpolated" ) == 0 ) {
 			cameraPosition = new idInterpolatedPosition();
 			cameraPosition->parse( text );
+
 		} else if( Q_stricmp( token, "camera_spline" ) == 0 ) {
 			cameraPosition = new idSplinePosition();
 			cameraPosition->parse( text );
+
 		} else if( Q_stricmp( token, "target_fixed" ) == 0 ) {
 			idFixedPosition* pos = new idFixedPosition();
 			pos->parse( text );
 			targetPositions.Append( pos );
+
 		} else if( Q_stricmp( token, "target_interpolated" ) == 0 ) {
 			idInterpolatedPosition* pos = new idInterpolatedPosition();
 			pos->parse( text );
 			targetPositions.Append( pos );
+
 		} else if( Q_stricmp( token, "target_spline" ) == 0 ) {
 			idSplinePosition* pos = new idSplinePosition();
 			pos->parse( text );
 			targetPositions.Append( pos );
+
 		} else if( Q_stricmp( token, "fov" ) == 0 ) {
 			fov.parse( text );
+
 		} else if( Q_stricmp( token, "event" ) == 0 ) {
 			idCameraEvent* event = new idCameraEvent();
 			event->parse( text );
@@ -741,6 +820,7 @@ bool idCameraDef::load( const char* filename )
 	const char* buf_p;
 	// TTimo: unused (int length = FS_ReadFile( filename, (void **)&buf );)
 	FS_ReadFile( filename, ( void** )&buf );
+
 	if( !buf ) {
 		return false;
 	}
@@ -758,6 +838,7 @@ bool idCameraDef::load( const char* filename )
 void idCameraDef::save( const char* filename )
 {
 	fileHandle_t file = FS_FOpenFileWrite( filename );
+
 	if( file ) {
 		int	  i;
 		idStr s = "cameraPathDef { \n";
@@ -780,6 +861,7 @@ void idCameraDef::save( const char* filename )
 		s = "}\n";
 		FS_Write( s.c_str(), s.length(), file );
 	}
+
 	FS_FCloseFile( file );
 }
 
@@ -791,9 +873,11 @@ int idCameraDef::sortEvents( const void* p1, const void* p2 )
 	if( ev1->getTime() > ev2->getTime() ) {
 		return -1;
 	}
+
 	if( ev1->getTime() < ev2->getTime() ) {
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -802,6 +886,7 @@ void idCameraDef::addEvent( idCameraEvent* event )
 	events.Append( event );
 	// events.Sort(&sortEvents);
 }
+
 void idCameraDef::addEvent( idCameraEvent::eventType t, const char* param, long time )
 {
 	addEvent( new idCameraEvent( t, param, time ) );
@@ -814,12 +899,14 @@ void		idCameraEvent::parse( const char*( *text ) )
 {
 	const char* token;
 	Com_MatchToken( text, "{" );
+
 	do {
 		token = Com_Parse( text );
 
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !strcmp( token, "}" ) ) {
 			break;
 		}
@@ -834,13 +921,17 @@ void		idCameraEvent::parse( const char*( *text ) )
 			Com_UngetToken();
 			idStr		key	  = Com_ParseOnLine( text );
 			const char* token = Com_Parse( text );
+
 			if( Q_stricmp( key.c_str(), "type" ) == 0 ) {
 				type = static_cast<idCameraEvent::eventType>( atoi( token ) );
+
 			} else if( Q_stricmp( key.c_str(), "param" ) == 0 ) {
 				paramStr = token;
+
 			} else if( Q_stricmp( key.c_str(), "time" ) == 0 ) {
 				time = atoi( token );
 			}
+
 			token = Com_Parse( text );
 
 		} while( 1 );
@@ -903,6 +994,7 @@ const idVec3* idInterpolatedPosition::getPosition( long t )
 
 	if( percent > 1.0 ) {
 		percent = 1.0;
+
 	} else if( percent < 0.0 ) {
 		percent = 0.0;
 	}
@@ -923,12 +1015,14 @@ void idCameraFOV::parse( const char*( *text ) )
 {
 	const char* token;
 	Com_MatchToken( text, "{" );
+
 	do {
 		token = Com_Parse( text );
 
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !strcmp( token, "}" ) ) {
 			break;
 		}
@@ -943,15 +1037,20 @@ void idCameraFOV::parse( const char*( *text ) )
 			Com_UngetToken();
 			idStr		key	  = Com_ParseOnLine( text );
 			const char* token = Com_Parse( text );
+
 			if( Q_stricmp( key.c_str(), "fov" ) == 0 ) {
 				fov = atof( token );
+
 			} else if( Q_stricmp( key.c_str(), "startFOV" ) == 0 ) {
 				startFOV = atof( token );
+
 			} else if( Q_stricmp( key.c_str(), "endFOV" ) == 0 ) {
 				endFOV = atof( token );
+
 			} else if( Q_stricmp( key.c_str(), "time" ) == 0 ) {
 				time = atoi( token );
 			}
+
 			token = Com_Parse( text );
 
 		} while( 1 );
@@ -969,12 +1068,15 @@ void idCameraFOV::parse( const char*( *text ) )
 bool idCameraPosition::parseToken( const char* key, const char*( *text ) )
 {
 	const char* token = Com_Parse( text );
+
 	if( Q_stricmp( key, "time" ) == 0 ) {
 		time = atol( token );
 		return true;
+
 	} else if( Q_stricmp( key, "type" ) == 0 ) {
 		type = static_cast<idCameraPosition::positionType>( atoi( token ) );
 		return true;
+
 	} else if( Q_stricmp( key, "velocity" ) == 0 ) {
 		long t	= atol( token );
 		token	= Com_Parse( text );
@@ -983,16 +1085,20 @@ bool idCameraPosition::parseToken( const char* key, const char*( *text ) )
 		float s = atof( token );
 		addVelocity( t, d, s );
 		return true;
+
 	} else if( Q_stricmp( key, "baseVelocity" ) == 0 ) {
 		baseVelocity = atof( token );
 		return true;
+
 	} else if( Q_stricmp( key, "name" ) == 0 ) {
 		name = token;
 		return true;
+
 	} else if( Q_stricmp( key, "time" ) == 0 ) {
 		time = atoi( token );
 		return true;
 	}
+
 	Com_UngetToken();
 	return false;
 }
@@ -1001,12 +1107,14 @@ void idFixedPosition::parse( const char*( *text ) )
 {
 	const char* token;
 	Com_MatchToken( text, "{" );
+
 	do {
 		token = Com_Parse( text );
 
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !strcmp( token, "}" ) ) {
 			break;
 		}
@@ -1022,13 +1130,16 @@ void idFixedPosition::parse( const char*( *text ) )
 			idStr		key = Com_ParseOnLine( text );
 
 			const char* token = Com_Parse( text );
+
 			if( Q_stricmp( key.c_str(), "pos" ) == 0 ) {
 				Com_UngetToken();
 				Com_Parse1DMatrix( text, 3, pos );
+
 			} else {
 				Com_UngetToken();
 				idCameraPosition::parseToken( key.c_str(), text );
 			}
+
 			token = Com_Parse( text );
 
 		} while( 1 );
@@ -1047,12 +1158,14 @@ void idInterpolatedPosition::parse( const char*( *text ) )
 {
 	const char* token;
 	Com_MatchToken( text, "{" );
+
 	do {
 		token = Com_Parse( text );
 
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !strcmp( token, "}" ) ) {
 			break;
 		}
@@ -1068,16 +1181,20 @@ void idInterpolatedPosition::parse( const char*( *text ) )
 			idStr		key = Com_ParseOnLine( text );
 
 			const char* token = Com_Parse( text );
+
 			if( Q_stricmp( key.c_str(), "startPos" ) == 0 ) {
 				Com_UngetToken();
 				Com_Parse1DMatrix( text, 3, startPos );
+
 			} else if( Q_stricmp( key.c_str(), "endPos" ) == 0 ) {
 				Com_UngetToken();
 				Com_Parse1DMatrix( text, 3, endPos );
+
 			} else {
 				Com_UngetToken();
 				idCameraPosition::parseToken( key.c_str(), text );
 			}
+
 			token = Com_Parse( text );
 
 		} while( 1 );
@@ -1096,12 +1213,14 @@ void idSplinePosition::parse( const char*( *text ) )
 {
 	const char* token;
 	Com_MatchToken( text, "{" );
+
 	do {
 		token = Com_Parse( text );
 
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !strcmp( token, "}" ) ) {
 			break;
 		}
@@ -1117,12 +1236,15 @@ void idSplinePosition::parse( const char*( *text ) )
 			idStr		key = Com_ParseOnLine( text );
 
 			const char* token = Com_Parse( text );
+
 			if( Q_stricmp( key.c_str(), "target" ) == 0 ) {
 				target.parse( text );
+
 			} else {
 				Com_UngetToken();
 				idCameraPosition::parseToken( key.c_str(), text );
 			}
+
 			token = Com_Parse( text );
 
 		} while( 1 );
@@ -1217,10 +1339,12 @@ void idCameraDef::addTarget( const char* name, idCameraPosition::positionType ty
 	// TTimo: unused
 	// const char *text = (name == NULL) ? va("target0%d", numTargets()+1) : name;
 	idCameraPosition* pos = newFromType( type );
+
 	if( pos ) {
 		pos->setName( name );
 		targetPositions.Append( pos );
 		activeTarget = numTargets() - 1;
+
 		if( activeTarget == 0 ) {
 			// first one
 			addEvent( idCameraEvent::EVENT_TARGET, name, 0 );
@@ -1256,15 +1380,19 @@ const idVec3* idSplinePosition::getPosition( long t )
 	int	   count = target.numSegments();
 	// TTimo fixed MSVCism
 	int	   i;
+
 	for( i = 1; i < count; i++ ) {
 		temp = *target.getSegmentPoint( i - 1 );
 		temp -= *target.getSegmentPoint( i );
 		tempDistance += temp.Length();
+
 		if( i & 1 ) {
 			lastDistance1 = tempDistance;
+
 		} else {
 			lastDistance2 = tempDistance;
 		}
+
 		if( tempDistance >= targetDistance ) {
 			break;
 		}
@@ -1272,6 +1400,7 @@ const idVec3* idSplinePosition::getPosition( long t )
 
 	if( i >= count - 1 ) {
 		interpolatedPos = *target.getSegmentPoint( i - 1 );
+
 	} else {
 #if 0
 		double timeHi = target.getSegmentTime( i + 1 );
@@ -1284,6 +1413,7 @@ const idVec3* idSplinePosition::getPosition( long t )
 		v2 += v1;
 		interpolatedPos = v2;
 #else
+
 		if( lastDistance1 > lastDistance2 ) {
 			double d	  = lastDistance2;
 			lastDistance2 = lastDistance1;
@@ -1299,5 +1429,6 @@ const idVec3* idSplinePosition::getPosition( long t )
 		interpolatedPos = v2;
 #endif
 	}
+
 	return &interpolatedPos;
 }

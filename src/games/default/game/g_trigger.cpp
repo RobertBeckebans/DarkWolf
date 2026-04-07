@@ -53,6 +53,7 @@ void multi_wait( gentity_t* ent )
 void multi_trigger( gentity_t* ent, gentity_t* activator )
 {
 	ent->activator = activator;
+
 	if( ent->nextthink ) {
 		return; // can't retrigger until the wait is over
 	}
@@ -62,6 +63,7 @@ void multi_trigger( gentity_t* ent, gentity_t* activator )
 	if( ent->wait > 0 ) {
 		ent->think	   = multi_wait;
 		ent->nextthink = level.time + ( ent->wait + ent->random * crandom() ) * 1000;
+
 	} else {
 		// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
@@ -87,6 +89,7 @@ void Touch_Multi( gentity_t* self, gentity_t* other, trace_t* trace )
 			return;
 		}
 	}
+
 	multi_trigger( self, other );
 }
 
@@ -106,8 +109,10 @@ void Enable_Trigger_Touch( gentity_t* ent )
 
 	// find the client number that uses this entity
 	targ = AICast_FindEntityForName( ent->aiName );
+
 	if( !targ ) {
 		return;
+
 	} else {
 		// bail if GIBFLAG and targ has been jibbed
 		if( targ->health <= GIB_HEALTH && ( ent->spawnflags & 2 ) ) {
@@ -241,6 +246,7 @@ void trigger_push_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 	if( other->client->ps.pm_type != PM_NORMAL ) {
 		return;
 	}
+
 	if( other->client->ps.powerups[PW_FLIGHT] ) {
 		return;
 	}
@@ -253,6 +259,7 @@ void trigger_push_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 		// don't play the event sound again if we are in a fat trigger
 		G_AddPredictableEvent( other, EV_JUMP_PAD, 0 );
 	}
+
 	VectorCopy( self->s.origin2, other->client->ps.velocity );
 
 	if( self->spawnflags & 2 ) {
@@ -278,6 +285,7 @@ void AimAtTarget( gentity_t* self )
 	VectorScale( origin, 0.5, origin );
 
 	ent = G_PickTarget( self->target );
+
 	if( !ent ) {
 		G_FreeEntity( self );
 		return;
@@ -286,6 +294,7 @@ void AimAtTarget( gentity_t* self )
 	height	= ent->s.origin[2] - origin[2];
 	gravity = g_gravity.value;
 	time	= sqrt( fabs( height / ( 0.5f * gravity ) ) );
+
 	if( !time ) {
 		G_FreeEntity( self );
 		return;
@@ -344,6 +353,7 @@ void SP_trigger_push( gentity_t* self )
 		self->use	= trigger_push_use;
 		self->touch = NULL;
 		sys->UnlinkEntity( self );
+
 	} else {
 		sys->LinkEntity( self );
 	}
@@ -361,6 +371,7 @@ void Use_target_push( gentity_t* self, gentity_t* other, gentity_t* activator )
 	if( activator->client->ps.pm_type != PM_NORMAL ) {
 		return;
 	}
+
 	if( activator->client->ps.powerups[PW_FLIGHT] ) {
 		return;
 	}
@@ -384,6 +395,7 @@ void SP_target_push( gentity_t* self )
 	if( !self->speed ) {
 		self->speed = 1000;
 	}
+
 	G_SetMovedir( self->s.angles, self->s.origin2 );
 	VectorScale( self->s.origin2, self->speed, self->s.origin2 );
 
@@ -392,12 +404,14 @@ void SP_target_push( gentity_t* self )
 	} else {
 		self->noise_index = G_SoundIndex( "sound/misc/windfly.wav" );
 	}
+
 	if( self->target ) {
 		VectorCopy( self->s.origin, self->r.absmin );
 		VectorCopy( self->s.origin, self->r.absmax );
 		self->think		= AimAtTarget;
 		self->nextthink = level.time + FRAMETIME;
 	}
+
 	self->use = Use_target_push;
 }
 
@@ -416,11 +430,13 @@ void trigger_teleporter_touch( gentity_t* self, gentity_t* other, trace_t* trace
 	if( !other->client ) {
 		return;
 	}
+
 	if( other->client->ps.pm_type == PM_DEAD ) {
 		return;
 	}
 
 	dest = G_PickTarget( self->target );
+
 	if( !dest ) {
 		G_Printf( "Couldn't find teleporter destination\n" );
 		return;
@@ -488,6 +504,7 @@ void hurt_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 			return;
 		}
 	}
+
 	//----(SA)	end
 
 	if( self->timestamp > level.time ) {
@@ -496,6 +513,7 @@ void hurt_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 
 	if( self->spawnflags & 16 ) {
 		self->timestamp = level.time + 1000;
+
 	} else {
 		self->timestamp = level.time + FRAMETIME;
 	}
@@ -507,9 +525,11 @@ void hurt_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 
 	if( self->spawnflags & 8 ) {
 		dflags = DAMAGE_NO_PROTECTION;
+
 	} else {
 		dflags = 0;
 	}
+
 	G_Damage( other, self, self, NULL, NULL, self->damage, dflags, MOD_TRIGGER_HURT );
 
 	if( self->spawnflags & 32 ) {
@@ -530,6 +550,7 @@ void hurt_use( gentity_t* self, gentity_t* other, gentity_t* activator )
 {
 	if( self->touch ) {
 		self->touch = NULL;
+
 	} else {
 		self->touch = hurt_touch;
 	}
@@ -713,6 +734,7 @@ void trigger_aidoor_stayopen( gentity_t* ent, gentity_t* other, trace_t* trace )
 		if( door->moverState == MOVER_POS2 ) { // door is in open state waiting to close keep it open
 			door->nextthink = level.time + door->wait + 3000;
 		}
+
 		//----(SA)	end
 
 		// Ridah, door isn't ready, find a free ai_marker, and wait there until it's open
@@ -791,11 +813,14 @@ void gas_think( gentity_t* ent )
 
 	if( ent->health < ent->count ) {
 		ent->think = G_FreeEntity;
+
 		if( ent->s.density == 5 ) {
 			ent->nextthink = level.time + FRAMETIME;
+
 		} else {
 			ent->nextthink = level.time + 3000;
 		}
+
 		return;
 	}
 
@@ -814,6 +839,7 @@ void gas_think( gentity_t* ent )
 
 		tent->s.angles2[0] = 8;
 		tent->s.angles2[1] = 32;
+
 	} else {
 		tent->s.time	= 5000;
 		tent->s.time2	= 3000;
@@ -869,6 +895,7 @@ void Touch_flagonly( gentity_t* ent, gentity_t* other, trace_t* trace )
 		ent->touch	   = NULL;
 		ent->nextthink = level.time + FRAMETIME;
 		ent->think	   = G_FreeEntity;
+
 	} else if( ent->spawnflags & BLUE_FLAG && other->client->ps.powerups[PW_BLUEFLAG] ) {
 		G_Script_ScriptEvent( ent, "death", "" );
 
@@ -908,16 +935,21 @@ void Touch_objective_info( gentity_t* ent, gentity_t* other, trace_t* trace )
 	if( ent->track ) {
 		if( ent->spawnflags & AXIS_OBJECTIVE ) {
 			sys->SendServerCommand( other - g_entities, va( "oid 0 \"" S_COLOR_RED "You are near %s\n\"", ent->track ) );
+
 		} else if( ent->spawnflags & ALLIED_OBJECTIVE ) {
 			sys->SendServerCommand( other - g_entities, va( "oid 1 \"" S_COLOR_BLUE "You are near %s\n\"", ent->track ) );
+
 		} else {
 			sys->SendServerCommand( other - g_entities, va( "oid -1 \"You are near %s\n\"", ent->track ) );
 		}
+
 	} else {
 		if( ent->spawnflags & AXIS_OBJECTIVE ) {
 			sys->SendServerCommand( other - g_entities, va( "oid 0 \"" S_COLOR_RED "You are near objective #%i\n\"", ent->count ) );
+
 		} else if( ent->spawnflags & ALLIED_OBJECTIVE ) {
 			sys->SendServerCommand( other - g_entities, va( "oid 1 \"" S_COLOR_BLUE "You are near objective #%i\n\"", ent->count ) );
+
 		} else {
 			sys->SendServerCommand( other - g_entities, va( "oid -1 \"You are near objective #%i\n\"", ent->count ) );
 		}

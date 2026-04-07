@@ -64,6 +64,7 @@ void				Com_BeginParseSession( const char* filename )
 	if( parseInfoNum == MAX_PARSE_INFO - 1 ) {
 		Com_Error( ERR_FATAL, "Com_BeginParseSession: session overflow" );
 	}
+
 	parseInfoNum++;
 	pi = &parseInfo[parseInfoNum];
 
@@ -81,6 +82,7 @@ void Com_EndParseSession()
 	if( parseInfoNum == 0 ) {
 		Com_Error( ERR_FATAL, "Com_EndParseSession: session underflow" );
 	}
+
 	parseInfoNum--;
 	pi = &parseInfo[parseInfoNum];
 }
@@ -139,6 +141,7 @@ void Com_UngetToken()
 	if( pi->ungetToken ) {
 		Com_ScriptError( "UngetToken called twice" );
 	}
+
 	pi->ungetToken = qtrue;
 }
 
@@ -150,10 +153,12 @@ static const char* SkipWhitespace( const char( *data ), qboolean* hasNewLines )
 		if( !c ) {
 			return NULL;
 		}
+
 		if( c == '\n' ) {
 			pi->lines++;
 			*hasNewLines = qtrue;
 		}
+
 		data++;
 	}
 
@@ -198,10 +203,12 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 	while( 1 ) {
 		// skip whitespace
 		data = SkipWhitespace( data, &hasNewLines );
+
 		if( !data ) {
 			*data_p = NULL;
 			return pi->token;
 		}
+
 		if( hasNewLines && !allowLineBreaks ) {
 			*data_p = data;
 			return pi->token;
@@ -214,6 +221,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 			while( *data && *data != '\n' ) {
 				data++;
 			}
+
 			continue;
 		}
 
@@ -223,11 +231,14 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 				if( *data == '\n' ) {
 					pi->lines++;
 				}
+
 				data++;
 			}
+
 			if( *data ) {
 				data += 2;
 			}
+
 			continue;
 		}
 
@@ -238,18 +249,23 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 	// handle quoted strings
 	if( c == '\"' ) {
 		data++;
+
 		while( 1 ) {
 			c = *data++;
+
 			if( ( c == '\\' ) && ( *data == '\"' ) ) {
 				// allow quoted strings to use \" to indicate the " character
 				data++;
+
 			} else if( c == '\"' || !c ) {
 				pi->token[len] = 0;
 				*data_p		   = ( char* )data;
 				return pi->token;
+
 			} else if( *data == '\n' ) {
 				pi->lines++;
 			}
+
 			if( len < MAX_TOKEN_CHARS - 1 ) {
 				pi->token[len] = c;
 				len++;
@@ -265,6 +281,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 				pi->token[len] = c;
 				len++;
 			}
+
 			data++;
 
 			c = *data;
@@ -276,6 +293,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 				pi->token[len] = c;
 				len++;
 			}
+
 			data++;
 			c = *data;
 
@@ -284,6 +302,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 					pi->token[len] = c;
 					len++;
 				}
+
 				data++;
 				c = *data;
 			}
@@ -293,6 +312,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 					pi->token[len] = c;
 					len++;
 				}
+
 				data++;
 
 				c = *data;
@@ -302,6 +322,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 		if( len == MAX_TOKEN_CHARS ) {
 			len = 0;
 		}
+
 		pi->token[len] = 0;
 
 		*data_p = ( char* )data;
@@ -317,6 +338,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 				pi->token[len] = c;
 				len++;
 			}
+
 			data++;
 
 			c = *data;
@@ -325,6 +347,7 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 		if( len == MAX_TOKEN_CHARS ) {
 			len = 0;
 		}
+
 		pi->token[len] = 0;
 
 		*data_p = ( char* )data;
@@ -337,11 +360,13 @@ static char* Com_ParseExt( const char*( *data_p ), qboolean allowLineBreaks )
 		int j;
 
 		l = strlen( *punc );
+
 		for( j = 0; j < l; j++ ) {
 			if( data[j] != ( *punc )[j] ) {
 				break;
 			}
 		}
+
 		if( j == l ) {
 			// a valid multi-character punctuation
 			memcpy( pi->token, *punc, l );
@@ -372,6 +397,7 @@ const char* Com_Parse( const char*( *data_p ) )
 		pi->ungetToken = qfalse;
 		return pi->token;
 	}
+
 	return Com_ParseExt( data_p, qtrue );
 }
 
@@ -386,6 +412,7 @@ const char* Com_ParseOnLine( const char*( *data_p ) )
 		pi->ungetToken = qfalse;
 		return pi->token;
 	}
+
 	return Com_ParseExt( data_p, qfalse );
 }
 
@@ -399,9 +426,11 @@ void Com_MatchToken( const char*( *buf_p ), const char* match, qboolean warning 
 	const char* token;
 
 	token = Com_Parse( buf_p );
+
 	if( strcmp( token, match ) ) {
 		if( warning ) {
 			Com_ScriptWarning( "MatchToken: %s != %s", token, match );
+
 		} else {
 			Com_ScriptError( "MatchToken: %s != %s", token, match );
 		}
@@ -423,11 +452,14 @@ void Com_SkipBracedSection( const char*( *program ) )
 	int			depth;
 
 	depth = 0;
+
 	do {
 		token = Com_Parse( program );
+
 		if( token[1] == 0 ) {
 			if( token[0] == '{' ) {
 				depth++;
+
 			} else if( token[0] == '}' ) {
 				depth--;
 			}
@@ -446,6 +478,7 @@ void Com_SkipRestOfLine( const char*( *data ) )
 	int			c;
 
 	p = *data;
+
 	while( ( c = *p++ ) != 0 ) {
 		if( c == '\n' ) {
 			pi->lines++;
@@ -467,14 +500,18 @@ const char* Com_ParseRestOfLine( const char*( *data_p ) )
 	const char* token;
 
 	line[0] = 0;
+
 	while( 1 ) {
 		token = Com_ParseOnLine( data_p );
+
 		if( !token[0] ) {
 			break;
 		}
+
 		if( line[0] ) {
 			Q_strcat( line, sizeof( line ), " " );
 		}
+
 		Q_strcat( line, sizeof( line ), token );
 	}
 
@@ -486,9 +523,11 @@ float Com_ParseFloat( const char*( *buf_p ) )
 	const char* token;
 
 	token = Com_Parse( buf_p );
+
 	if( !token[0] ) {
 		return 0;
 	}
+
 	return atof( token );
 }
 
@@ -497,9 +536,11 @@ int Com_ParseInt( const char*( *buf_p ) )
 	const char* token;
 
 	token = Com_Parse( buf_p );
+
 	if( !token[0] ) {
 		return 0;
 	}
+
 	return ( int )atof( token );
 }
 

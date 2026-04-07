@@ -246,9 +246,11 @@ signed char ClampChar( int i )
 	if( i < -128 ) {
 		return -128;
 	}
+
 	if( i > 127 ) {
 		return 127;
 	}
+
 	return i;
 }
 
@@ -257,9 +259,11 @@ signed short ClampShort( int i )
 	if( i < -32768 ) {
 		return -32768;
 	}
+
 	if( i > 0x7fff ) {
 		return 0x7fff;
 	}
+
 	return i;
 }
 
@@ -275,8 +279,10 @@ int DirToByte( vec3_t dir )
 
 	bestd = 0;
 	best  = 0;
+
 	for( i = 0; i < NUMVERTEXNORMALS; i++ ) {
 		d = DotProduct( dir, bytedirs[i] );
+
 		if( d > bestd ) {
 			bestd = d;
 			best  = i;
@@ -292,6 +298,7 @@ void ByteToDir( int b, vec3_t dir )
 		VectorCopy( vec3_origin, dir );
 		return;
 	}
+
 	VectorCopy( bytedirs[b], dir );
 }
 
@@ -323,20 +330,24 @@ float NormalizeColor( const vec3_t in, vec3_t out )
 	float max;
 
 	max = in[0];
+
 	if( in[1] > max ) {
 		max = in[1];
 	}
+
 	if( in[2] > max ) {
 		max = in[2];
 	}
 
 	if( !max ) {
 		VectorClear( out );
+
 	} else {
 		out[0] = in[0] / max;
 		out[1] = in[1] / max;
 		out[2] = in[2] / max;
 	}
+
 	return max;
 }
 
@@ -355,6 +366,7 @@ qboolean PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const ve
 	VectorSubtract( b, a, d1 );
 	VectorSubtract( c, a, d2 );
 	CrossProduct( d2, d1, plane );
+
 	if( VectorNormalize( plane ) == 0 ) {
 		return qfalse;
 	}
@@ -455,25 +467,32 @@ void vectoangles( const vec3_t value1, vec3_t angles )
 
 	if( value1[1] == 0 && value1[0] == 0 ) {
 		yaw = 0;
+
 		if( value1[2] > 0 ) {
 			pitch = 90;
+
 		} else {
 			pitch = 270;
 		}
+
 	} else {
 		if( value1[0] ) {
 			yaw = ( atan2( value1[1], value1[0] ) * 180 / M_PI );
+
 		} else if( value1[1] > 0 ) {
 			yaw = 90;
+
 		} else {
 			yaw = 270;
 		}
+
 		if( yaw < 0 ) {
 			yaw += 360;
 		}
 
 		forward = sqrt( value1[0] * value1[0] + value1[1] * value1[1] );
 		pitch	= ( atan2( value1[2], forward ) * 180 / M_PI );
+
 		if( pitch < 0 ) {
 			pitch += 360;
 		}
@@ -612,9 +631,11 @@ float LerpAngle( float from, float to, float frac )
 	if( to - from > 180 ) {
 		to -= 360;
 	}
+
 	if( to - from < -180 ) {
 		to += 360;
 	}
+
 	a = from + frac * ( to - from );
 
 	return a;
@@ -632,12 +653,15 @@ float AngleSubtract( float a1, float a2 )
 	float a;
 
 	a = a1 - a2;
+
 	while( a > 180 ) {
 		a -= 360;
 	}
+
 	while( a < -180 ) {
 		a += 360;
 	}
+
 	return a;
 }
 
@@ -676,9 +700,11 @@ returns angle normalized to the range [-180 < angle <= 180]
 float AngleNormalize180( float angle )
 {
 	angle = AngleNormalize360( angle );
+
 	if( angle > 180.0 ) {
 		angle -= 360.0;
 	}
+
 	return angle;
 }
 
@@ -707,11 +733,13 @@ void SetPlaneSignbits( cplane_t* out )
 
 	// for fast box on planeside test
 	bits = 0;
+
 	for( j = 0; j < 3; j++ ) {
 		if( out->normal[j] < 0 ) {
 			bits |= 1 << j;
 		}
 	}
+
 	out->signbits = bits;
 }
 
@@ -768,9 +796,11 @@ int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, struct cplane_s* p )
 		if( p->dist <= emins[p->type] ) {
 			return 1;
 		}
+
 		if( p->dist >= emaxs[p->type] ) {
 			return 2;
 		}
+
 		return 3;
 	}
 
@@ -780,49 +810,60 @@ int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, struct cplane_s* p )
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			break;
+
 		case 1:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			break;
+
 		case 2:
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			break;
+
 		case 3:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			break;
+
 		case 4:
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			break;
+
 		case 5:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			break;
+
 		case 6:
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			break;
+
 		case 7:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			break;
+
 		default:
 			dist1 = dist2 = 0; // shut up compiler
 			break;
 	}
 
 	sides = 0;
+
 	if( dist1 >= p->dist ) {
 		sides = 1;
 	}
+
 	if( dist2 < p->dist ) {
 		sides |= 2;
 	}
 
 	return sides;
 }
+
 	#else
 		#pragma warning( disable : 4035 )
 
@@ -1055,6 +1096,7 @@ __declspec( naked ) int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, struct cplan
 		int 3
 	}
 }
+
 		#pragma warning( default : 4035 )
 
 	#endif
@@ -1091,6 +1133,7 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs )
 	if( v[0] < mins[0] ) {
 		mins[0] = v[0];
 	}
+
 	if( v[0] > maxs[0] ) {
 		maxs[0] = v[0];
 	}
@@ -1098,6 +1141,7 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs )
 	if( v[1] < mins[1] ) {
 		mins[1] = v[1];
 	}
+
 	if( v[1] > maxs[1] ) {
 		maxs[1] = v[1];
 	}
@@ -1105,6 +1149,7 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs )
 	if( v[2] < mins[2] ) {
 		mins[2] = v[2];
 	}
+
 	if( v[2] > maxs[2] ) {
 		maxs[2] = v[2];
 	}
@@ -1163,6 +1208,7 @@ vec_t VectorNormalize2( const vec3_t v, vec3_t out )
 		out[0]	= v[0] * ilength;
 		out[1]	= v[1] * ilength;
 		out[2]	= v[2] * ilength;
+
 	} else {
 		VectorClear( out );
 	}
@@ -1263,9 +1309,11 @@ int Q_log2( int val )
 	int answer;
 
 	answer = 0;
+
 	while( ( val >>= 1 ) != 0 ) {
 		answer++;
 	}
+
 	return answer;
 }
 
@@ -1326,11 +1374,13 @@ void AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up 
 		forward[1] = cp * sy;
 		forward[2] = -sp;
 	}
+
 	if( right ) {
 		right[0] = ( -1 * sr * sp * cy + -1 * cr * -sy );
 		right[1] = ( -1 * sr * sp * sy + -1 * cr * cy );
 		right[2] = -1 * sr * cp;
 	}
+
 	if( up ) {
 		up[0] = ( cr * sp * cy + -sr * -sy );
 		up[1] = ( cr * sp * sy + -sr * cy );
@@ -1357,6 +1407,7 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 			minelem = fabs( src[i] );
 		}
 	}
+
 	tempvec[0] = tempvec[1] = tempvec[2] = 0.0F;
 	tempvec[pos]						 = 1.0F;
 
@@ -1415,14 +1466,18 @@ float vectoyaw( const vec3_t vec )
 
 	if( vec[YAW] == 0 && vec[PITCH] == 0 ) {
 		yaw = 0;
+
 	} else {
 		if( vec[PITCH] ) {
 			yaw = ( atan2( vec[YAW], vec[PITCH] ) * 180 / M_PI );
+
 		} else if( vec[YAW] > 0 ) {
 			yaw = 90;
+
 		} else {
 			yaw = 270;
 		}
+
 		if( yaw < 0 ) {
 			yaw += 360;
 		}
@@ -1456,10 +1511,12 @@ void AxisToAngles( vec3_t axis[3], vec3_t angles )
 	// now find the angles, the PITCH is effectively our ROLL
 	vectoangles( right, roll_angles );
 	roll_angles[PITCH] = AngleNormalize180( roll_angles[PITCH] );
+
 	// if the yaw is more than 90 degrees difference, we should adjust the pitch
 	if( DotProduct( right, axisDefault[1] ) < 0 ) {
 		if( roll_angles[PITCH] < 0 ) {
 			roll_angles[PITCH] = -90 + ( -90 - roll_angles[PITCH] );
+
 		} else {
 			roll_angles[PITCH] = 90 + ( 90 - roll_angles[PITCH] );
 		}
@@ -1475,4 +1532,5 @@ float VectorDistance( vec3_t v1, vec3_t v2 )
 	VectorSubtract( v2, v1, dir );
 	return VectorLength( dir );
 }
+
 // done.

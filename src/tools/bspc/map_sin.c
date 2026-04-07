@@ -62,6 +62,7 @@ int Sin_BrushContents( mapbrush_t* b )
 #else
 	trans = texinfo[s->texinfo].flags;
 #endif
+
 	for( i = 1; i < b->numsides; i++, s++ ) {
 		s = &b->original_sides[i];
 #ifdef SIN
@@ -69,13 +70,16 @@ int Sin_BrushContents( mapbrush_t* b )
 #else
 		trans |= texinfo[s->texinfo].flags;
 #endif
+
 		if( s->contents != contents ) {
 #ifdef SIN
+
 			if( ( s->contents & CONTENTS_DETAIL && !( contents & CONTENTS_DETAIL ) ) || ( !( s->contents & CONTENTS_DETAIL ) && contents & CONTENTS_DETAIL ) ) {
 				s->contents |= CONTENTS_DETAIL;
 				contents |= CONTENTS_DETAIL;
 				continue;
 			}
+
 #endif
 			printf( "Entity %i, Brush %i: mixed face contents\n", b->entitynum, b->brushnum );
 			break;
@@ -83,6 +87,7 @@ int Sin_BrushContents( mapbrush_t* b )
 	}
 
 #ifdef SIN
+
 	if( contents & CONTENTS_FENCE ) {
 		//		contents |= CONTENTS_TRANSLUCENT;
 		contents |= CONTENTS_DETAIL;
@@ -91,17 +96,20 @@ int Sin_BrushContents( mapbrush_t* b )
 		contents &= ~CONTENTS_FENCE;
 		contents |= CONTENTS_WINDOW;
 	}
+
 #endif
 
 	// if any side is translucent, mark the contents
 	// and change solid to window
 #ifdef SIN
+
 	if( trans > 0 )
 #else
 	if( trans & ( SURF_TRANS33 | SURF_TRANS66 ) )
 #endif
 	{
 		contents |= CONTENTS_Q2TRANSLUCENT;
+
 		if( contents & CONTENTS_SOLID ) {
 			contents &= ~CONTENTS_SOLID;
 			contents |= CONTENTS_WINDOW;

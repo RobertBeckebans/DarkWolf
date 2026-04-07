@@ -67,6 +67,7 @@ void		Q_strncpyz( char* dest, const char* src, int destsize )
 	if( !src ) {
 		Error( "Q_strncpyz: NULL src" );
 	}
+
 	if( destsize < 1 ) {
 		Error( "Q_strncpyz: destsize < 1" );
 	}
@@ -91,9 +92,11 @@ int Q_stricmpn( const char* s1, const char* s2, int n )
 			if( c1 >= 'a' && c1 <= 'z' ) {
 				c1 -= ( 'a' - 'A' );
 			}
+
 			if( c2 >= 'a' && c2 <= 'z' ) {
 				c2 -= ( 'a' - 'A' );
 			}
+
 			if( c1 != c2 ) {
 				return c1 < c2 ? -1 : 1;
 			}
@@ -127,6 +130,7 @@ int Q_stricmp( const char* s1, const char* s2 )
 {
 	return Q_stricmpn( s1, s2, 99999 );
 }
+
 	#include <stdio.h>
 	#include <ctype.h>
 
@@ -135,10 +139,12 @@ char* Q_strlwr( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = tolower( *s );
 		s++;
 	}
+
 	return s1;
 }
 
@@ -147,10 +153,12 @@ char* Q_strupr( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = toupper( *s );
 		s++;
 	}
+
 	return s1;
 }
 
@@ -245,6 +253,7 @@ void QDECL SourceError( source_t* source, char* str, ... )
 	Log_Print( "error: file %s, line %d: %s\n", source->scriptstack->filename, source->scriptstack->line, text );
 #endif // BSPC
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -269,6 +278,7 @@ void QDECL SourceWarning( source_t* source, char* str, ... )
 	Log_Print( "warning: file %s, line %d: %s\n", source->scriptstack->filename, source->scriptstack->line, text );
 #endif // BSPC
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -287,6 +297,7 @@ void PC_PushIndent( source_t* source, int type, int skip )
 	indent->next		= source->indentstack;
 	source->indentstack = indent;
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -301,6 +312,7 @@ void PC_PopIndent( source_t* source, int* type, int* skip )
 	*skip = 0;
 
 	indent = source->indentstack;
+
 	if( !indent ) {
 		return;
 	}
@@ -316,6 +328,7 @@ void PC_PopIndent( source_t* source, int* type, int* skip )
 	source->skip -= indent->skip;
 	FreeMemory( indent );
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -332,10 +345,12 @@ void PC_PushScript( source_t* source, script_t* script )
 			return;
 		}
 	}
+
 	// push the script on the script stack
 	script->next		= source->scriptstack;
 	source->scriptstack = script;
 }
+
 //============================================================================
 //
 // Parameter:			-
@@ -357,6 +372,7 @@ void PC_InitTokenHeap()
 	tokenheapinitialized = qtrue;
 	*/
 }
+
 //============================================================================
 //
 // Parameter:			-
@@ -369,6 +385,7 @@ token_t* PC_CopyToken( token_t* token )
 
 	//	t = (token_t *) malloc(sizeof(token_t));
 	t = ( token_t* )GetMemory( sizeof( token_t ) );
+
 	//	t = freetokens;
 	if( !t ) {
 #ifdef BSPC
@@ -382,12 +399,14 @@ token_t* PC_CopyToken( token_t* token )
 #endif
 		return NULL;
 	}
+
 	//	freetokens = freetokens->next;
 	memcpy( t, token, sizeof( token_t ) );
 	t->next = NULL;
 	numtokens++;
 	return t;
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -402,6 +421,7 @@ void PC_FreeToken( token_t* token )
 	//	freetokens = token;
 	numtokens--;
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -420,6 +440,7 @@ int PC_ReadSourceToken( source_t* source, token_t* token )
 		if( PS_ReadToken( source->scriptstack, token ) ) {
 			return qtrue;
 		}
+
 		// if at the end of the script
 		if( EndOfScript( source->scriptstack ) ) {
 			// remove all indents of the script
@@ -428,15 +449,18 @@ int PC_ReadSourceToken( source_t* source, token_t* token )
 				PC_PopIndent( source, &type, &skip );
 			}
 		}
+
 		// if this was the initial script
 		if( !source->scriptstack->next ) {
 			return qfalse;
 		}
+
 		// remove the script and return to the last one
 		script				= source->scriptstack;
 		source->scriptstack = source->scriptstack->next;
 		FreeScript( script );
 	}
+
 	// copy the already available token
 	memcpy( token, source->tokens, sizeof( token_t ) );
 	// free the read token
@@ -445,6 +469,7 @@ int PC_ReadSourceToken( source_t* source, token_t* token )
 	PC_FreeToken( t );
 	return qtrue;
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -460,6 +485,7 @@ int PC_UnreadSourceToken( source_t* source, token_t* token )
 	source->tokens = t;
 	return qtrue;
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -475,81 +501,101 @@ int PC_ReadDefineParms( source_t* source, define_t* define, token_t** parms, int
 		SourceError( source, "define %s missing parms", define->name );
 		return qfalse;
 	}
+
 	//
 	if( define->numparms > maxparms ) {
 		SourceError( source, "define with more than %d parameters", maxparms );
 		return qfalse;
 	}
+
 	//
 	for( i = 0; i < define->numparms; i++ ) {
 		parms[i] = NULL;
 	}
+
 	// if no leading "("
 	if( strcmp( token.string, "(" ) ) {
 		PC_UnreadSourceToken( source, &token );
 		SourceError( source, "define %s missing parms", define->name );
 		return qfalse;
 	}
+
 	// read the define parameters
 	for( done = 0, numparms = 0, indent = 0; !done; ) {
 		if( numparms >= maxparms ) {
 			SourceError( source, "define %s with too many parms", define->name );
 			return qfalse;
 		}
+
 		if( numparms >= define->numparms ) {
 			SourceWarning( source, "define %s has too many parms", define->name );
 			return qfalse;
 		}
+
 		parms[numparms] = NULL;
 		lastcomma		= 1;
 		last			= NULL;
+
 		while( !done ) {
 			//
 			if( !PC_ReadSourceToken( source, &token ) ) {
 				SourceError( source, "define %s incomplete", define->name );
 				return qfalse;
 			}
+
 			//
 			if( !strcmp( token.string, "," ) ) {
 				if( indent <= 0 ) {
 					if( lastcomma ) {
 						SourceWarning( source, "too many comma's" );
 					}
+
 					lastcomma = 1;
 					break;
 				}
 			}
+
 			lastcomma = 0;
+
 			//
 			if( !strcmp( token.string, "(" ) ) {
 				indent++;
 				continue;
+
 			} else if( !strcmp( token.string, ")" ) ) {
 				if( --indent <= 0 ) {
 					if( !parms[define->numparms - 1] ) {
 						SourceWarning( source, "too few define parms" );
 					}
+
 					done = 1;
 					break;
 				}
 			}
+
 			//
 			if( numparms < define->numparms ) {
 				//
 				t		= PC_CopyToken( &token );
 				t->next = NULL;
+
 				if( last ) {
 					last->next = t;
+
 				} else {
 					parms[numparms] = t;
 				}
+
 				last = t;
 			}
 		}
+
 		numparms++;
 	}
+
 	return qtrue;
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -565,12 +611,15 @@ int PC_StringizeTokens( token_t* tokens, token_t* token )
 	token->endwhitespace_p = NULL;
 	token->string[0]	   = '\0';
 	strcat( token->string, "\"" );
+
 	for( t = tokens; t; t = t->next ) {
 		strncat( token->string, t->string, MAX_TOKEN - strlen( token->string ) );
 	}
+
 	strncat( token->string, "\"", MAX_TOKEN - strlen( token->string ) );
 	return qtrue;
 }
+
 //============================================================================
 //
 // Parameter:				-
@@ -584,6 +633,7 @@ int PC_MergeTokens( token_t* t1, token_t* t2 )
 		strcat( t1->string, t2->string );
 		return qtrue;
 	}
+
 	// merging of two strings
 	if( t1->type == TT_STRING && t2->type == TT_STRING ) {
 		// remove trailing double quote
@@ -592,9 +642,11 @@ int PC_MergeTokens( token_t* t1, token_t* t2 )
 		strcat( t1->string, &t2->string[1] );
 		return qtrue;
 	}
+
 	// FIXME: merging of two number of the same sub type
 	return qfalse;
 }
+
 //============================================================================
 //
 // Parameter:				-

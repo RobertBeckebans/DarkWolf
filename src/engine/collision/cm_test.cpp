@@ -47,11 +47,14 @@ int CM_PointLeafnum_r( const vec3_t p, int num )
 
 		if( plane->type < 3 ) {
 			d = p[plane->type] - plane->dist;
+
 		} else {
 			d = DotProduct( plane->normal, p ) - plane->dist;
 		}
+
 		if( d < 0 ) {
 			num = node->children[1];
+
 		} else {
 			num = node->children[0];
 		}
@@ -67,6 +70,7 @@ int CM_PointLeafnum( const vec3_t p )
 	if( !cm.numNodes ) { // map not loaded
 		return 0;
 	}
+
 	return CM_PointLeafnum_r( p, 0 );
 }
 
@@ -93,6 +97,7 @@ void CM_StoreLeafs( leafList_t* ll, int nodenum )
 		ll->overflowed = qtrue;
 		return;
 	}
+
 	ll->list[ll->count++] = leafNum;
 }
 
@@ -111,32 +116,42 @@ void CM_StoreBrushes( leafList_t* ll, int nodenum )
 	for( k = 0; k < leaf->numLeafBrushes; k++ ) {
 		brushnum = cm.leafbrushes[leaf->firstLeafBrush + k];
 		b		 = &cm.brushes[brushnum];
+
 		if( b->checkcount == cm.checkcount ) {
 			continue; // already checked this brush in another leaf
 		}
+
 		b->checkcount = cm.checkcount;
+
 		for( i = 0; i < 3; i++ ) {
 			if( b->bounds[0][i] >= ll->bounds[1][i] || b->bounds[1][i] <= ll->bounds[0][i] ) {
 				break;
 			}
 		}
+
 		if( i != 3 ) {
 			continue;
 		}
+
 		if( ll->count >= ll->maxcount ) {
 			ll->overflowed = qtrue;
 			return;
 		}
+
 		( ( cbrush_t** )ll->list )[ll->count++] = b;
 	}
+
 #if 0
+
 	// store patches?
 	for( k = 0 ; k < leaf->numLeafSurfaces ; k++ ) {
 		patch = cm.surfaces[ cm.leafsurfaces[ leaf->firstleafsurface + k ] ];
+
 		if( !patch ) {
 			continue;
 		}
 	}
+
 #endif
 }
 
@@ -162,10 +177,13 @@ void CM_BoxLeafnums_r( leafList_t* ll, int nodenum )
 		node  = &cm.nodes[nodenum];
 		plane = node->plane;
 		s	  = BoxOnPlaneSide( ll->bounds[0], ll->bounds[1], plane );
+
 		if( s == 1 ) {
 			nodenum = node->children[0];
+
 		} else if( s == 2 ) {
 			nodenum = node->children[1];
+
 		} else {
 			// go down both
 			CM_BoxLeafnums_r( ll, node->children[0] );
@@ -251,12 +269,14 @@ int CM_PointContents( const vec3_t p, clipHandle_t model )
 	if( model ) {
 		clipm = CM_ClipHandleToModel( model );
 		leaf  = &clipm->leaf;
+
 	} else {
 		leafnum = CM_PointLeafnum_r( p, 0 );
 		leaf	= &cm.leafs[leafnum];
 	}
 
 	contents = 0;
+
 	for( k = 0; k < leaf->numLeafBrushes; k++ ) {
 		brushnum = cm.leafbrushes[leaf->firstLeafBrush + k];
 		b		 = &cm.brushes[brushnum];
@@ -264,6 +284,7 @@ int CM_PointContents( const vec3_t p, clipHandle_t model )
 		// see if the point is in the brush
 		for( i = 0; i < b->numsides; i++ ) {
 			d = DotProduct( p, b->sides[i].plane->normal );
+
 			// FIXME test for Cash
 			//			if ( d >= b->sides[i].plane->dist ) {
 			if( d > b->sides[i].plane->dist ) {
@@ -346,12 +367,14 @@ void CM_FloodArea_r( int areaNum, int floodnum )
 		if( area->floodnum == floodnum ) {
 			return;
 		}
+
 		Com_Error( ERR_DROP, "FloodArea_r: reflooded" );
 	}
 
 	area->floodnum	 = floodnum;
 	area->floodvalid = cm.floodvalid;
 	con				 = cm.areaPortals + areaNum * cm.numAreas;
+
 	for( i = 0; i < cm.numAreas; i++ ) {
 		if( con[i] > 0 ) {
 			CM_FloodArea_r( i, floodnum );
@@ -376,10 +399,12 @@ void CM_FloodAreaConnections()
 	floodnum = 0;
 
 	area = cm.areas; // Ridah, optimization
+
 	for( i = 0; i < cm.numAreas; i++, area++ ) {
 		if( area->floodvalid == cm.floodvalid ) {
 			continue; // already flooded into
 		}
+
 		floodnum++;
 		CM_FloodArea_r( i, floodnum );
 	}
@@ -404,9 +429,11 @@ void CM_AdjustAreaPortalState( int area1, int area2, qboolean open )
 	if( open ) {
 		cm.areaPortals[area1 * cm.numAreas + area2]++;
 		cm.areaPortals[area2 * cm.numAreas + area1]++;
+
 	} else if( cm.areaPortals[area2 * cm.numAreas + area1] ) { // Ridah, fixes loadgame issue
 		cm.areaPortals[area1 * cm.numAreas + area2]--;
 		cm.areaPortals[area2 * cm.numAreas + area1]--;
+
 		if( cm.areaPortals[area2 * cm.numAreas + area1] < 0 ) {
 			Com_Error( ERR_DROP, "CM_AdjustAreaPortalState: negative reference count" );
 		}
@@ -424,9 +451,11 @@ CM_AreasConnected
 qboolean CM_AreasConnected( int area1, int area2 )
 {
 #ifndef BSPC
+
 	if( cm_noAreas->integer ) {
 		return qtrue;
 	}
+
 #endif
 
 	if( area1 < 0 || area2 < 0 ) {
@@ -440,6 +469,7 @@ qboolean CM_AreasConnected( int area1, int area2 )
 	if( cm.areas[area1].floodnum == cm.areas[area2].floodnum ) {
 		return qtrue;
 	}
+
 	return qfalse;
 }
 
@@ -466,6 +496,7 @@ int CM_WriteAreaBits( byte* buffer, int area )
 	bytes = ( cm.numAreas + 7 ) >> 3;
 
 #ifndef BSPC
+
 	if( cm_noAreas->integer || area == -1 )
 #else
 	if( area == -1 )
@@ -473,8 +504,10 @@ int CM_WriteAreaBits( byte* buffer, int area )
 	{
 		// for debugging, send everything
 		Com_Memset( buffer, 255, bytes );
+
 	} else {
 		floodnum = cm.areas[area].floodnum;
+
 		for( i = 0; i < cm.numAreas; i++ ) {
 			if( cm.areas[i].floodnum == floodnum || area == -1 ) {
 				buffer[i >> 3] |= 1 << ( i & 7 );

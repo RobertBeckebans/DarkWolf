@@ -63,10 +63,12 @@ void CG_AdjustFrom640( float* x, float* y, float* w, float* h )
 void CG_AdjustFrom640Strech( float* x, float* y, float* w, float* h )
 {
 #if 0
+
 	// adjust for wide screens
 	if( cgs.glconfig.vidWidth * 480 > cgs.glconfig.vidHeight * 640 ) {
 		*x += 0.5 * ( cgs.glconfig.vidWidth - ( cgs.glconfig.vidHeight * 640 / 480 ) );
 	}
+
 #endif
 
 	// NERVE - SMF - hack to make images display properly in small view / limbo mode
@@ -79,6 +81,7 @@ void CG_AdjustFrom640Strech( float* x, float* y, float* w, float* h )
 		( *w ) *= xscale;
 		( *h ) *= yscale;
 	}
+
 	// -NERVE - SMF
 
 	// scale for screen sizes
@@ -178,9 +181,11 @@ void CG_FilledBar( float x, float y, float w, float h, const float* startColorIn
 	// hud alpha
 	if( !( flags & BAR_NOHUDALPHA ) ) {
 		startColor[3] *= cg_hudAlpha.value;
+
 		if( endColor ) {
 			endColor[3] *= cg_hudAlpha.value;
 		}
+
 		if( backgroundcolor ) {
 			backgroundcolor[3] *= cg_hudAlpha.value;
 		}
@@ -214,12 +219,14 @@ void CG_FilledBar( float x, float y, float w, float h, const float* startColorIn
 	if( flags & BAR_VERT ) {
 		if( flags & BAR_LEFT ) { // TODO: remember to swap colors on the ends here
 			y += ( h * ( 1 - frac ) );
+
 		} else if( flags & BAR_CENTER ) {
 			y += ( h * ( 1 - frac ) / 2 );
 		}
 
 		if( flags & BAR_LERP_COLOR ) {
 			CG_FillRect( x, y, w, h * frac, colorAtPos );
+
 		} else {
 			//			CG_FillRectGradient ( x, y, w, h * frac, startColor, endColor, 0 );
 			CG_FillRect( x, y, w, h * frac, startColor );
@@ -228,12 +235,14 @@ void CG_FilledBar( float x, float y, float w, float h, const float* startColorIn
 	} else {
 		if( flags & BAR_LEFT ) { // TODO: remember to swap colors on the ends here
 			x += ( w * ( 1 - frac ) );
+
 		} else if( flags & BAR_CENTER ) {
 			x += ( w * ( 1 - frac ) / 2 );
 		}
 
 		if( flags & BAR_LERP_COLOR ) {
 			CG_FillRect( x, y, w * frac, h, colorAtPos );
+
 		} else {
 			//			CG_FillRectGradient ( x, y, w * frac, h, startColor, endColor, 0 );
 			CG_FillRect( x, y, w * frac, h, startColor );
@@ -403,6 +412,7 @@ void CG_DrawStringExt( int x, int y, const char* string, const float* setColor, 
 	if( maxChars <= 0 ) {
 		maxChars = 32767; // do them all!
 	}
+
 	// draw the drop shadow
 	if( shadow ) {
 		color[0] = color[1] = color[2] = 0;
@@ -411,11 +421,13 @@ void CG_DrawStringExt( int x, int y, const char* string, const float* setColor, 
 		s	= string;
 		xx	= x;
 		cnt = 0;
+
 		while( *s && cnt < maxChars ) {
 			if( Q_IsColorString( s ) ) {
 				s += 2;
 				continue;
 			}
+
 			CG_DrawChar( xx + 2, y + 2, charWidth, charHeight, *s );
 			cnt++;
 			xx += charWidth;
@@ -428,6 +440,7 @@ void CG_DrawStringExt( int x, int y, const char* string, const float* setColor, 
 	xx	= x;
 	cnt = 0;
 	sys->R_SetColor( setColor );
+
 	while( *s && cnt < maxChars ) {
 		if( Q_IsColorString( s ) ) {
 			if( !forceColor ) {
@@ -435,14 +448,17 @@ void CG_DrawStringExt( int x, int y, const char* string, const float* setColor, 
 				color[3] = setColor[3];
 				sys->R_SetColor( color );
 			}
+
 			s += 2;
 			continue;
 		}
+
 		CG_DrawChar( xx, y, charWidth, charHeight, *s );
 		xx += charWidth;
 		cnt++;
 		s++;
 	}
+
 	sys->R_SetColor( NULL );
 }
 
@@ -465,6 +481,7 @@ void CG_DrawStringExt2( int x, int y, const char* string, const float* setColor,
 	if( maxChars <= 0 ) {
 		maxChars = 32767; // do them all!
 	}
+
 	// draw the drop shadow
 	if( shadow ) {
 		color[0] = color[1] = color[2] = 0;
@@ -473,11 +490,13 @@ void CG_DrawStringExt2( int x, int y, const char* string, const float* setColor,
 		s	= string;
 		xx	= x;
 		cnt = 0;
+
 		while( *s && cnt < maxChars ) {
 			if( Q_IsColorString( s ) ) {
 				s += 2;
 				continue;
 			}
+
 			CG_DrawChar2( xx + 2, y + 2, charWidth, charHeight, *s );
 			cnt++;
 			xx += charWidth;
@@ -490,6 +509,7 @@ void CG_DrawStringExt2( int x, int y, const char* string, const float* setColor,
 	xx	= x;
 	cnt = 0;
 	sys->R_SetColor( setColor );
+
 	while( *s && cnt < maxChars ) {
 		if( Q_IsColorString( s ) ) {
 			if( !forceColor ) {
@@ -497,14 +517,17 @@ void CG_DrawStringExt2( int x, int y, const char* string, const float* setColor,
 				color[3] = setColor[3];
 				sys->R_SetColor( color );
 			}
+
 			s += 2;
 			continue;
 		}
+
 		CG_DrawChar2( xx, y, charWidth, charHeight, *s );
 		xx += charWidth;
 		cnt++;
 		s++;
 	}
+
 	sys->R_SetColor( NULL );
 }
 
@@ -527,6 +550,7 @@ void CG_DrawStringExt3( int x, int y, const char* string, const float* setColor,
 	if( maxChars <= 0 ) {
 		maxChars = 32767; // do them all!
 	}
+
 	s  = string;
 	xx = 0;
 
@@ -548,11 +572,13 @@ void CG_DrawStringExt3( int x, int y, const char* string, const float* setColor,
 		s	= string;
 		xx	= x;
 		cnt = 0;
+
 		while( *s && cnt < maxChars ) {
 			if( Q_IsColorString( s ) ) {
 				s += 2;
 				continue;
 			}
+
 			CG_DrawChar2( xx + 2, y + 2, charWidth, charHeight, *s );
 			cnt++;
 			xx += charWidth;
@@ -565,6 +591,7 @@ void CG_DrawStringExt3( int x, int y, const char* string, const float* setColor,
 	xx	= x;
 	cnt = 0;
 	sys->R_SetColor( setColor );
+
 	while( *s && cnt < maxChars ) {
 		if( Q_IsColorString( s ) ) {
 			if( !forceColor ) {
@@ -572,14 +599,17 @@ void CG_DrawStringExt3( int x, int y, const char* string, const float* setColor,
 				color[3] = setColor[3];
 				sys->R_SetColor( color );
 			}
+
 			s += 2;
 			continue;
 		}
+
 		CG_DrawChar2( xx, y, charWidth, charHeight, *s );
 		xx += charWidth;
 		cnt++;
 		s++;
 	}
+
 	sys->R_SetColor( NULL );
 }
 
@@ -661,6 +691,7 @@ void CG_DrawBigStringColor( int x, int y, const char* s, vec4_t color )
 	// CG_DrawStringExt( x, y, s, color, qtrue, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
 	CG_DrawStringExt2( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
 }
+
 // END JOSEPH
 
 // JOSEPH 4-25-00
@@ -677,6 +708,7 @@ void CG_DrawBigStringColor2( int x, int y, const char* s, vec4_t color )
 {
 	CG_DrawStringExt3( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
 }
+
 // END JOSEPH
 
 void CG_DrawSmallString( int x, int y, const char* s, float alpha )
@@ -708,6 +740,7 @@ int CG_DrawStrlen( const char* str )
 	while( *s ) {
 		if( Q_IsColorString( s ) ) {
 			s += 2;
+
 		} else {
 			count++;
 			s++;
@@ -795,9 +828,11 @@ float* CG_FadeColor( int startMsec, int totalMsec )
 	// fade out
 	if( totalMsec - t < FADE_TIME ) {
 		color[3] = ( totalMsec - t ) * 1.0 / FADE_TIME;
+
 	} else {
 		color[3] = 1.0;
 	}
+
 	color[0] = color[1] = color[2] = 1;
 
 	return color;
@@ -818,10 +853,13 @@ float* CG_TeamColor( int team )
 	switch( team ) {
 		case TEAM_RED:
 			return red;
+
 		case TEAM_BLUE:
 			return blue;
+
 		case TEAM_SPECTATOR:
 			return spectator;
+
 		default:
 			return other;
 	}
@@ -844,28 +882,36 @@ void CG_GetColorForHealth( int health, int armor, vec4_t hcolor )
 		hcolor[3] = 1;
 		return;
 	}
+
 	count = armor;
 	max	  = health * ARMOR_PROTECTION / ( 1.0 - ARMOR_PROTECTION );
+
 	if( max < count ) {
 		count = max;
 	}
+
 	health += count;
 
 	// set the color based on health
 	hcolor[0] = 1.0;
 	hcolor[3] = 1.0;
+
 	if( health >= 100 ) {
 		hcolor[2] = 1.0;
+
 	} else if( health < 66 ) {
 		hcolor[2] = 0;
+
 	} else {
 		hcolor[2] = ( health - 66 ) / 33.0;
 	}
 
 	if( health > 60 ) {
 		hcolor[1] = 1.0;
+
 	} else if( health < 30 ) {
 		hcolor[1] = 0;
+
 	} else {
 		hcolor[1] = ( health - 30 ) / 30.0;
 	}
@@ -885,33 +931,42 @@ void CG_ColorForHealth( vec4_t hcolor )
 	// calculate the total points of damage that can
 	// be sustained at the current health / armor level
 	health = cg.snap->ps.stats[STAT_HEALTH];
+
 	if( health <= 0 ) {
 		VectorClear( hcolor ); // black
 		hcolor[3] = 1;
 		return;
 	}
+
 	count = cg.snap->ps.stats[STAT_ARMOR];
 	max	  = health * ARMOR_PROTECTION / ( 1.0 - ARMOR_PROTECTION );
+
 	if( max < count ) {
 		count = max;
 	}
+
 	health += count;
 
 	// set the color based on health
 	hcolor[0] = 1.0;
 	hcolor[3] = 1.0;
+
 	if( health >= 100 ) {
 		hcolor[2] = 1.0;
+
 	} else if( health < 66 ) {
 		hcolor[2] = 0;
+
 	} else {
 		hcolor[2] = ( health - 66 ) / 33.0;
 	}
 
 	if( health > 60 ) {
 		hcolor[1] = 1.0;
+
 	} else if( health < 30 ) {
 		hcolor[1] = 0;
+
 	} else {
 		hcolor[1] = ( health - 30 ) / 30.0;
 	}
@@ -1121,10 +1176,13 @@ static void UI_DrawBannerString2( int x, int y, const char* str, vec4_t color )
 	ay = y * cgs.screenXScale;
 
 	s = str;
+
 	while( *s ) {
 		ch = *s & 127;
+
 		if( ch == ' ' ) {
 			ax += ( ( float )PROPB_SPACE_WIDTH + ( float )PROPB_GAP_WIDTH ) * cgs.screenXScale;
+
 		} else if( Q_isupper( ch ) ) {
 			ch -= 'A';
 			fcol	= ( float )propMapB[ch][0] / 256.0f;
@@ -1136,6 +1194,7 @@ static void UI_DrawBannerString2( int x, int y, const char* str, vec4_t color )
 			sys->R_DrawStretchPic( ax, ay, aw, ah, fcol, frow, fcol + fwidth, frow + fheight, cgs.media.charsetPropB );
 			ax += ( aw + ( float )PROPB_GAP_WIDTH * cgs.screenXScale );
 		}
+
 		s++;
 	}
 
@@ -1152,15 +1211,20 @@ void UI_DrawBannerString( int x, int y, const char* str, int style, vec4_t color
 	// find the width of the drawn text
 	s	  = str;
 	width = 0;
+
 	while( *s ) {
 		ch = *s;
+
 		if( ch == ' ' ) {
 			width += PROPB_SPACE_WIDTH;
+
 		} else if( ch >= 'A' && ch <= 'Z' ) {
 			width += propMapB[ch - 'A'][2] + PROPB_GAP_WIDTH;
 		}
+
 		s++;
 	}
+
 	width -= PROPB_GAP_WIDTH;
 
 	switch( style & UI_FORMATMASK ) {
@@ -1195,13 +1259,16 @@ int UI_ProportionalStringWidth( const char* str )
 
 	s	  = str;
 	width = 0;
+
 	while( *s ) {
 		ch		  = *s & 127;
 		charWidth = propMap[ch][2];
+
 		if( charWidth != -1 ) {
 			width += charWidth;
 			width += PROP_GAP_WIDTH;
 		}
+
 		s++;
 	}
 
@@ -1229,10 +1296,13 @@ static void UI_DrawProportionalString2( int x, int y, const char* str, vec4_t co
 	ay = y * cgs.screenXScale;
 
 	s = str;
+
 	while( *s ) {
 		ch = *s & 127;
+
 		if( ch == ' ' ) {
 			aw = ( float )PROP_SPACE_WIDTH * cgs.screenXScale * sizeScale;
+
 		} else if( propMap[ch][2] != -1 ) {
 			fcol	= ( float )propMap[ch][0] / 256.0f;
 			frow	= ( float )propMap[ch][1] / 256.0f;
@@ -1241,6 +1311,7 @@ static void UI_DrawProportionalString2( int x, int y, const char* str, vec4_t co
 			aw		= ( float )propMap[ch][2] * cgs.screenXScale * sizeScale;
 			ah		= ( float )PROP_HEIGHT * cgs.screenXScale * sizeScale;
 			sys->R_DrawStretchPic( ax, ay, aw, ah, fcol, frow, fcol + fwidth, frow + fheight, charset );
+
 		} else {
 			aw = 0;
 		}
@@ -1262,6 +1333,7 @@ float UI_ProportionalSizeScale( int style )
 	if( style & UI_SMALLFONT ) {
 		return 0.75;
 	}
+
 	if( style & UI_EXSMALLFONT ) {
 		return 0.4;
 	}
@@ -1328,6 +1400,7 @@ void UI_DrawProportionalString( int x, int y, const char* str, int style, vec4_t
 		UI_DrawProportionalString2( x, y, str, drawcolor, sizeScale, cgs.media.charsetPropGlow );
 		return;
 	}
+
 	// END JOSEPH
 
 	UI_DrawProportionalString2( x, y, str, color, sizeScale, cgs.media.charsetProp );

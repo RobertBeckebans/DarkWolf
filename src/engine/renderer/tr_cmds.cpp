@@ -58,6 +58,7 @@ void						  R_PerformanceCounters()
 			backEnd.pc.c_totalIndexes / 3,
 			R_SumOfUsedImages() / ( 1000000.0f ),
 			backEnd.pc.c_overDraw / ( float )( glConfig.vidWidth * glConfig.vidHeight ) );
+
 	} else if( r_speeds->integer == 2 ) {
 		ri.Printf( PRINT_ALL,
 			"(patch) %i sin %i sclip  %i sout %i bin %i bclip %i bout\n",
@@ -75,13 +76,16 @@ void						  R_PerformanceCounters()
 			tr.pc.c_box_cull_md3_in,
 			tr.pc.c_box_cull_md3_clip,
 			tr.pc.c_box_cull_md3_out );
+
 	} else if( r_speeds->integer == 3 ) {
 		ri.Printf( PRINT_ALL, "viewcluster: %i\n", tr.viewCluster );
+
 	} else if( r_speeds->integer == 4 ) {
 		if( backEnd.pc.c_dlightVertexes ) {
 			ri.Printf( PRINT_ALL, "dlight srf:%i  culled:%i  verts:%i  tris:%i\n", tr.pc.c_dlightSurfaces, tr.pc.c_dlightSurfacesCulled, backEnd.pc.c_dlightVertexes, backEnd.pc.c_dlightIndexes / 3 );
 		}
 	}
+
 	//----(SA)	this is unnecessary since it will always show 2048.  I moved this to where it is accurate for the world
 	//	else if (r_speeds->integer == 5 )
 	//	{
@@ -103,11 +107,14 @@ R_InitCommandBuffers
 void R_InitCommandBuffers()
 {
 	glConfig.smpActive = qfalse;
+
 	if( r_smp->integer ) {
 		ri.Printf( PRINT_ALL, "Trying SMP acceleration...\n" );
+
 		if( GLimp_SpawnRenderThread( RB_RenderThread ) ) {
 			ri.Printf( PRINT_ALL, "...succeeded.\n" );
 			glConfig.smpActive = qtrue;
+
 		} else {
 			ri.Printf( PRINT_ALL, "...failed.\n" );
 		}
@@ -152,11 +159,14 @@ void R_IssueRenderCommands( qboolean runPerformanceCounters )
 		// if the render thread is not idle, wait for it
 		if( renderThreadActive ) {
 			c_blockedOnRender++;
+
 			if( r_showSmp->integer ) {
 				ri.Printf( PRINT_ALL, "R" );
 			}
+
 		} else {
 			c_blockedOnMain++;
+
 			if( r_showSmp->integer ) {
 				ri.Printf( PRINT_ALL, "." );
 			}
@@ -177,6 +187,7 @@ void R_IssueRenderCommands( qboolean runPerformanceCounters )
 		// let it start on the new batch
 		if( !glConfig.smpActive ) {
 			RB_ExecuteRenderCommands( cmdList->cmds );
+
 		} else {
 			GLimp_WakeRenderer( cmdList );
 		}
@@ -198,11 +209,13 @@ void R_SyncRenderThread()
 	if( !tr.registered ) {
 		return;
 	}
+
 	R_IssueRenderCommands( qfalse );
 
 	if( !glConfig.smpActive ) {
 		return;
 	}
+
 	GLimp_FrontEndSleep();
 }
 
@@ -225,6 +238,7 @@ void* R_GetCommandBuffer( int bytes )
 		if( bytes > MAX_RENDER_COMMANDS - 4 ) {
 			ri.Error( ERR_FATAL, "R_GetCommandBuffer: bad size %i", bytes );
 		}
+
 		// if we run out of room, just start dropping commands
 		return NULL;
 	}
@@ -245,9 +259,11 @@ void R_AddDrawSurfCmd( drawSurf_t* drawSurfs, int numDrawSurfs )
 	drawSurfsCommand_t* cmd;
 
 	cmd = ( drawSurfsCommand_t* )R_GetCommandBuffer( sizeof( *cmd ) );
+
 	if( !cmd ) {
 		return;
 	}
+
 	cmd->commandId = RC_DRAW_SURFS;
 
 	cmd->drawSurfs	  = drawSurfs;
@@ -266,9 +282,11 @@ void RE_RenderRaytracing()
 {
 	raytraceRenderCommand_t* cmd;
 	cmd = ( raytraceRenderCommand_t* )R_GetCommandBuffer( sizeof( *cmd ) );
+
 	if( !cmd ) {
 		return;
 	}
+
 	cmd->commandId = RC_RAYTRACE;
 }
 
@@ -284,10 +302,13 @@ void RE_SetColor( const float* rgba )
 	setColorCommand_t* cmd;
 
 	cmd = ( setColorCommand_t* )R_GetCommandBuffer( sizeof( *cmd ) );
+
 	if( !cmd ) {
 		return;
 	}
+
 	cmd->commandId = RC_SET_COLOR;
+
 	if( !rgba ) {
 		static float colorWhite[4] = { 1, 1, 1, 1 };
 
@@ -310,9 +331,11 @@ void RE_StretchPic( float x, float y, float w, float h, float s1, float t1, floa
 	stretchPicCommand_t* cmd;
 
 	cmd = ( stretchPicCommand_t* )R_GetCommandBuffer( sizeof( *cmd ) );
+
 	if( !cmd ) {
 		return;
 	}
+
 	cmd->commandId = RC_STRETCH_PIC;
 	cmd->shader	   = R_GetShaderByHandle( hShader );
 	cmd->x		   = x;
@@ -336,9 +359,11 @@ void RE_StretchPicGradient( float x, float y, float w, float h, float s1, float 
 	stretchPicCommand_t* cmd;
 
 	cmd = ( stretchPicCommand_t* )R_GetCommandBuffer( sizeof( *cmd ) );
+
 	if( !cmd ) {
 		return;
 	}
+
 	cmd->commandId = RC_STRETCH_PIC_GRADIENT;
 	cmd->shader	   = R_GetShaderByHandle( hShader );
 	cmd->x		   = x;
@@ -362,6 +387,7 @@ void RE_StretchPicGradient( float x, float y, float w, float h, float s1, float 
 	cmd->gradientColor[3] = gradientColor[3] * 255;
 	cmd->gradientType	  = gradientType;
 }
+
 //----(SA)	end
 
 /*
@@ -379,6 +405,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame )
 	if( !tr.registered ) {
 		return;
 	}
+
 	glState.finishCalled = qfalse;
 
 	tr.frameCount++;
@@ -392,10 +419,12 @@ void RE_BeginFrame( stereoFrame_t stereoFrame )
 			ri.Printf( PRINT_ALL, "Warning: not enough stencil bits to measure overdraw: %d\n", glConfig.stencilBits );
 			ri.Cvar_Set( "r_measureOverdraw", "0" );
 			r_measureOverdraw->modified = qfalse;
+
 		} else if( r_shadows->integer == 2 ) {
 			ri.Printf( PRINT_ALL, "Warning: stencil shadows and overdraw measurement are mutually exclusive\n" );
 			ri.Cvar_Set( "r_measureOverdraw", "0" );
 			r_measureOverdraw->modified = qfalse;
+
 		} else {
 			R_SyncRenderThread();
 			glEnable( GL_STENCIL_TEST );
@@ -404,13 +433,16 @@ void RE_BeginFrame( stereoFrame_t stereoFrame )
 			glStencilFunc( GL_ALWAYS, 0U, ~0U );
 			glStencilOp( GL_KEEP, GL_INCR, GL_INCR );
 		}
+
 		r_measureOverdraw->modified = qfalse;
+
 	} else {
 		// this is only reached if it was on and is now off
 		if( r_measureOverdraw->modified ) {
 			R_SyncRenderThread();
 			glDisable( GL_STENCIL_TEST );
 		}
+
 		r_measureOverdraw->modified = qfalse;
 	}
 
@@ -438,6 +470,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame )
 		int err;
 
 		R_SyncRenderThread();
+
 		if( ( err = glGetError() ) != GL_NO_ERROR ) {
 			ri.Error( ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!\n", err );
 		}
@@ -447,25 +480,32 @@ void RE_BeginFrame( stereoFrame_t stereoFrame )
 	// draw buffer stuff
 	//
 	cmd = ( drawBufferCommand_t* )R_GetCommandBuffer( sizeof( *cmd ) );
+
 	if( !cmd ) {
 		return;
 	}
+
 	cmd->commandId = RC_DRAW_BUFFER;
 
 	if( glConfig.stereoEnabled ) {
 		if( stereoFrame == STEREO_LEFT ) {
 			cmd->buffer = ( int )GL_BACK_LEFT;
+
 		} else if( stereoFrame == STEREO_RIGHT ) {
 			cmd->buffer = ( int )GL_BACK_RIGHT;
+
 		} else {
 			ri.Error( ERR_FATAL, "RE_BeginFrame: Stereo is enabled, but stereoFrame was %i", stereoFrame );
 		}
+
 	} else {
 		if( stereoFrame != STEREO_CENTER ) {
 			ri.Error( ERR_FATAL, "RE_BeginFrame: Stereo is disabled, but stereoFrame was %i", stereoFrame );
 		}
+
 		if( !Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) ) {
 			cmd->buffer = ( int )GL_FRONT;
+
 		} else {
 			cmd->buffer = ( int )GL_BACK;
 		}
@@ -486,10 +526,13 @@ void RE_EndFrame( int* frontEndMsec, int* backEndMsec )
 	if( !tr.registered ) {
 		return;
 	}
+
 	cmd = ( swapBuffersCommand_t* )R_GetCommandBuffer( sizeof( *cmd ) );
+
 	if( !cmd ) {
 		return;
 	}
+
 	cmd->commandId = RC_SWAP_BUFFERS;
 
 	R_IssueRenderCommands( qtrue );
@@ -501,9 +544,12 @@ void RE_EndFrame( int* frontEndMsec, int* backEndMsec )
 	if( frontEndMsec ) {
 		*frontEndMsec = tr.frontEndMsec;
 	}
+
 	tr.frontEndMsec = 0;
+
 	if( backEndMsec ) {
 		*backEndMsec = backEnd.pc.msec;
 	}
+
 	backEnd.pc.msec = 0;
 }

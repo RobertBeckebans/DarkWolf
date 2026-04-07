@@ -39,9 +39,11 @@ static int bloc = 0;
 void	   Huff_putBit( int bit, byte* fout, int* offset )
 {
 	bloc = *offset;
+
 	if( ( bloc & 7 ) == 0 ) {
 		fout[( bloc >> 3 )] = 0;
 	}
+
 	fout[( bloc >> 3 )] |= bit << ( bloc & 7 );
 	bloc++;
 	*offset = bloc;
@@ -63,6 +65,7 @@ static void add_bit( char bit, byte* fout )
 	if( ( bloc & 7 ) == 0 ) {
 		fout[( bloc >> 3 )] = 0;
 	}
+
 	fout[( bloc >> 3 )] |= bit << ( bloc & 7 );
 	bloc++;
 }
@@ -79,8 +82,10 @@ static int get_bit( byte* fin )
 static node_t** get_ppnode( huff_t* huff )
 {
 	node_t** tppnode;
+
 	if( !huff->freelist ) {
 		return &( huff->nodePtrs[huff->blocPtrs++] );
+
 	} else {
 		tppnode		   = huff->freelist;
 		huff->freelist = ( node_t** )*tppnode;
@@ -105,9 +110,11 @@ static void swap( huff_t* huff, node_t* node1, node_t* node2 )
 	if( par1 ) {
 		if( par1->left == node1 ) {
 			par1->left = node2;
+
 		} else {
 			par1->right = node2;
 		}
+
 	} else {
 		huff->tree = node2;
 	}
@@ -115,9 +122,11 @@ static void swap( huff_t* huff, node_t* node1, node_t* node2 )
 	if( par2 ) {
 		if( par2->left == node2 ) {
 			par2->left = node1;
+
 		} else {
 			par2->right = node1;
 		}
+
 	} else {
 		huff->tree = node1;
 	}
@@ -142,18 +151,23 @@ static void swaplist( node_t* node1, node_t* node2 )
 	if( node1->next == node1 ) {
 		node1->next = node2;
 	}
+
 	if( node2->next == node2 ) {
 		node2->next = node1;
 	}
+
 	if( node1->next ) {
 		node1->next->prev = node1;
 	}
+
 	if( node2->next ) {
 		node2->next->prev = node2;
 	}
+
 	if( node1->prev ) {
 		node1->prev->next = node1;
 	}
+
 	if( node2->prev ) {
 		node2->prev->next = node2;
 	}
@@ -170,28 +184,38 @@ static void increment( huff_t* huff, node_t* node )
 
 	if( node->next != NULL && node->next->weight == node->weight ) {
 		lnode = *node->head;
+
 		if( lnode != node->parent ) {
 			swap( huff, lnode, node );
 		}
+
 		swaplist( lnode, node );
 	}
+
 	if( node->prev && node->prev->weight == node->weight ) {
 		*node->head = node->prev;
+
 	} else {
 		*node->head = NULL;
 		free_ppnode( huff, node->head );
 	}
+
 	node->weight++;
+
 	if( node->next && node->next->weight == node->weight ) {
 		node->head = node->next->head;
+
 	} else {
 		node->head	= get_ppnode( huff );
 		*node->head = node;
 	}
+
 	if( node->parent ) {
 		increment( huff, node->parent );
+
 		if( node->prev == node->parent ) {
 			swaplist( node, node->parent );
+
 			if( *node->head == node ) {
 				*node->head = node->parent;
 			}
@@ -202,6 +226,7 @@ static void increment( huff_t* huff, node_t* node )
 void Huff_addRef( huff_t* huff, byte ch )
 {
 	node_t *tnode, *tnode2;
+
 	if( huff->loc[ch] == NULL ) { /* if this is the first transmission of this node */
 		tnode  = &( huff->nodeList[huff->blocNode++] );
 		tnode2 = &( huff->nodeList[huff->blocNode++] );
@@ -209,38 +234,48 @@ void Huff_addRef( huff_t* huff, byte ch )
 		tnode2->symbol = INTERNAL_NODE;
 		tnode2->weight = 1;
 		tnode2->next   = huff->lhead->next;
+
 		if( huff->lhead->next ) {
 			huff->lhead->next->prev = tnode2;
+
 			if( huff->lhead->next->weight == 1 ) {
 				tnode2->head = huff->lhead->next->head;
+
 			} else {
 				tnode2->head  = get_ppnode( huff );
 				*tnode2->head = tnode2;
 			}
+
 		} else {
 			tnode2->head  = get_ppnode( huff );
 			*tnode2->head = tnode2;
 		}
+
 		huff->lhead->next = tnode2;
 		tnode2->prev	  = huff->lhead;
 
 		tnode->symbol = ch;
 		tnode->weight = 1;
 		tnode->next	  = huff->lhead->next;
+
 		if( huff->lhead->next ) {
 			huff->lhead->next->prev = tnode;
+
 			if( huff->lhead->next->weight == 1 ) {
 				tnode->head = huff->lhead->next->head;
+
 			} else {
 				/* this should never happen */
 				tnode->head	 = get_ppnode( huff );
 				*tnode->head = tnode2;
 			}
+
 		} else {
 			/* this should never happen */
 			tnode->head	 = get_ppnode( huff );
 			*tnode->head = tnode;
 		}
+
 		huff->lhead->next = tnode;
 		tnode->prev		  = huff->lhead;
 		tnode->left = tnode->right = NULL;
@@ -248,9 +283,11 @@ void Huff_addRef( huff_t* huff, byte ch )
 		if( huff->lhead->parent ) {
 			if( huff->lhead->parent->left == huff->lhead ) { /* lhead is guaranteed to by the NYT */
 				huff->lhead->parent->left = tnode2;
+
 			} else {
 				huff->lhead->parent->right = tnode2;
 			}
+
 		} else {
 			huff->tree = tnode2;
 		}
@@ -264,6 +301,7 @@ void Huff_addRef( huff_t* huff, byte ch )
 		huff->loc[ch] = tnode;
 
 		increment( huff, tnode2->parent );
+
 	} else {
 		increment( huff, huff->loc[ch] );
 	}
@@ -275,13 +313,16 @@ int Huff_Receive( node_t* node, int* ch, byte* fin )
 	while( node && node->symbol == INTERNAL_NODE ) {
 		if( get_bit( fin ) ) {
 			node = node->right;
+
 		} else {
 			node = node->left;
 		}
 	}
+
 	if( !node ) {
 		Com_Error( ERR_DROP, "Illegal tree!\n" );
 	}
+
 	return ( *ch = node->symbol );
 }
 
@@ -289,16 +330,20 @@ int Huff_Receive( node_t* node, int* ch, byte* fin )
 void Huff_offsetReceive( node_t* node, int* ch, byte* fin, int* offset )
 {
 	bloc = *offset;
+
 	while( node && node->symbol == INTERNAL_NODE ) {
 		if( get_bit( fin ) ) {
 			node = node->right;
+
 		} else {
 			node = node->left;
 		}
 	}
+
 	if( !node ) {
 		Com_Error( ERR_DROP, "Illegal tree!\n" );
 	}
+
 	*ch		= node->symbol;
 	*offset = bloc;
 }
@@ -309,9 +354,11 @@ static void send( node_t* node, node_t* child, byte* fout )
 	if( node->parent ) {
 		send( node->parent, node, fout );
 	}
+
 	if( child ) {
 		if( node->right == child ) {
 			add_bit( 1, fout );
+
 		} else {
 			add_bit( 0, fout );
 		}
@@ -322,12 +369,15 @@ static void send( node_t* node, node_t* child, byte* fout )
 void Huff_transmit( huff_t* huff, int ch, byte* fout )
 {
 	int i;
+
 	if( huff->loc[ch] == NULL ) {
 		/* node_t hasn't been transmitted, send a NYT, then the symbol */
 		Huff_transmit( huff, NYT, fout );
+
 		for( i = 7; i >= 0; i-- ) {
 			add_bit( ( char )( ( ch >> i ) & 0x1 ), fout );
 		}
+
 	} else {
 		send( huff->loc[ch], NULL, fout );
 	}
@@ -368,8 +418,10 @@ void Huff_Decompress( msg_t* mbuf, int offset )
 
 	for( j = 0; j < cch; j++ ) {
 		Huff_Receive( huff.tree, &ch, buffer ); /* Get a character */
-		if( ch == NYT ) {						/* We got a NYT, get the symbol associated with it */
+
+		if( ch == NYT ) { /* We got a NYT, get the symbol associated with it */
 			ch = 0;
+
 			for( i = 0; i < 8; i++ ) {
 				ch = ( ch << 1 ) + get_bit( buffer );
 			}

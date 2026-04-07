@@ -307,6 +307,7 @@ void grabber_use( gentity_t* ent, gentity_t* other, gentity_t* activator )
 
 	if( !ent->active ) {
 		grabber_wake( ent );
+
 	} else {
 		grabber_attack( ent );
 	}
@@ -377,9 +378,11 @@ void SP_misc_grabber_trap( gentity_t* ent )
 	if( !ent->health ) {
 		ent->health = 100; // default to 100
 	}
+
 	if( !ent->damage ) {
 		ent->damage = 10; // default to 10
 	}
+
 	ent->s.frame = 5;
 
 	ent->use = grabber_use; // allow 'waking' from trigger
@@ -422,6 +425,7 @@ void use_spotlight( gentity_t* ent, gentity_t* other, gentity_t* activator )
 
 	if( ent->r.linked ) {
 		sys->UnlinkEntity( ent );
+
 	} else {
 		tent = G_PickTarget( ent->target );
 		VectorCopy( tent->s.origin, ent->s.origin2 );
@@ -451,9 +455,11 @@ void spotlight_finish_spawning( gentity_t* ent )
 
 	ent->use = use_spotlight;
 	ent->die = spotlight_die;
+
 	if( !ent->health ) {
 		ent->health = 1;
 	}
+
 	ent->takedamage = 1;
 	ent->think		= 0;
 	ent->nextthink	= 0;
@@ -542,6 +548,7 @@ void SP_misc_gamemodel( gentity_t* ent )
 	}
 
 	G_SpawnInt( "trunk", "0", &trunksize );
+
 	if( !G_SpawnInt( "trunkhight", "0", &trunkheight ) ) {
 		trunkheight = 256;
 	}
@@ -568,6 +575,7 @@ void SP_misc_gamemodel( gentity_t* ent )
 	if( ent->spawnflags & 1 ) {
 		ent->s.apos.trType = ( trType_t )1; // misc_gamemodels (since they have no movement) will use type = 0 for static models, type = 1 for auto-aligning models
 	}
+
 	sys->LinkEntity( ent );
 }
 
@@ -576,6 +584,7 @@ void SP_misc_gamemodel( gentity_t* ent )
 void locateMaster( gentity_t* ent )
 {
 	ent->target_ent = G_Find( NULL, FOFS( targetname ), ent->target );
+
 	if( ent->target_ent ) {
 		ent->s.otherEntityNum = ent->target_ent->s.number;
 	}
@@ -645,16 +654,19 @@ void locateCamera( gentity_t* ent )
 	gentity_t* owner;
 
 	owner = G_PickTarget( ent->target );
+
 	if( !owner ) {
 		G_Printf( "Couldn't find target for misc_partal_surface\n" );
 		G_FreeEntity( ent );
 		return;
 	}
+
 	ent->r.ownerNum = owner->s.number;
 
 	// frame holds the rotate speed
 	if( owner->spawnflags & 1 ) {
 		ent->s.frame = 25;
+
 	} else if( owner->spawnflags & 2 ) {
 		ent->s.frame = 75;
 	}
@@ -666,9 +678,11 @@ void locateCamera( gentity_t* ent )
 
 	// see if the portal_camera has a target
 	target = G_PickTarget( owner->target );
+
 	if( target ) {
 		VectorSubtract( target->s.origin, owner->s.origin, dir );
 		VectorNormalize( dir );
+
 	} else {
 		G_SetMovedir( owner->s.angles, dir );
 	}
@@ -691,6 +705,7 @@ void SP_misc_portal_surface( gentity_t* ent )
 
 	if( !ent->target ) {
 		VectorCopy( ent->s.origin, ent->s.origin2 );
+
 	} else {
 		ent->think	   = locateCamera;
 		ent->nextthink = level.time + 100;
@@ -731,9 +746,11 @@ void Use_Shooter( gentity_t* ent, gentity_t* other, gentity_t* activator )
 	// see if we have a target
 	if( ent->enemy ) {
 		VectorSubtract( ent->enemy->r.currentOrigin, ent->s.origin, dir );
+
 		if( ent->s.weapon != WP_SNIPER ) {
 			VectorNormalize( dir );
 		}
+
 	} else {
 		VectorCopy( ent->movedir, dir );
 	}
@@ -762,6 +779,7 @@ void Use_Shooter( gentity_t* ent, gentity_t* other, gentity_t* activator )
 			VectorScale( dir, 700, dir ); //----(SA)	had to add this as fire_grenade now expects a non-normalized direction vector
 			fire_grenade( ent, ent->s.origin, dir, WP_GRENADE_LAUNCHER );
 			break;
+
 		case WP_PANZERFAUST:
 			fire_rocket( ent, ent->s.origin, dir );
 			break;
@@ -774,6 +792,7 @@ void Use_Shooter( gentity_t* ent, gentity_t* other, gentity_t* activator )
 		case WP_SNIPER:
 			fire_lead( ent, ent->s.origin, dir, ent->damage );
 			break;
+
 			// done
 
 		case WP_MORTAR:
@@ -802,6 +821,7 @@ void InitShooter( gentity_t* ent, int weapon )
 	if( weapon != WP_SNIPER ) {
 		RegisterItem( BG_FindItemForWeapon( ( weapon_t )weapon ) );
 	}
+
 	// done
 
 	G_SetMovedir( ent->s.angles, ent->movedir );
@@ -819,6 +839,7 @@ void InitShooter( gentity_t* ent, int weapon )
 		ent->think	   = InitShooter_Finish;
 		ent->nextthink = level.time + 500;
 	}
+
 	sys->LinkEntity( ent );
 }
 
@@ -835,6 +856,7 @@ void SP_shooter_mortar( gentity_t* ent )
 
 	if( ent->spawnflags & 1 ) { // smoke at source
 	}
+
 	if( ent->spawnflags & 2 ) { // muzzle flash at source
 	}
 }
@@ -868,6 +890,7 @@ void use_shooter_tesla( gentity_t* ent, gentity_t* other, gentity_t* activator )
 
 	if( ent->r.linked ) {
 		sys->UnlinkEntity( ent );
+
 	} else {
 		tent = G_PickTarget( ent->target );
 		VectorCopy( tent->s.origin, ent->s.origin2 );
@@ -898,6 +921,7 @@ void shooter_tesla_finish_spawning( gentity_t* ent )
 
 	// locate the target and set the location
 	tent = G_PickTarget( ent->target );
+
 	if( !tent ) { // if there's a problem with tent
 		G_Printf( "shooter_tesla (%s) at %s has no target.\n", ent->target, vtos( ent->s.origin ) );
 		return;
@@ -927,6 +951,7 @@ void SP_shooter_tesla( gentity_t* ent )
 	// set number of bolts
 	if( ent->count ) {
 		ent->s.density = ent->count;
+
 	} else {
 		ent->s.density = 2;
 	}
@@ -934,6 +959,7 @@ void SP_shooter_tesla( gentity_t* ent )
 	// width
 	if( G_SpawnFloat( "width", "", &tempf ) ) {
 		ent->s.frame = ( int )tempf;
+
 	} else {
 		ent->s.frame = 20;
 	}
@@ -941,26 +967,32 @@ void SP_shooter_tesla( gentity_t* ent )
 	// 'sticky' time (stored in .weapon)
 	if( G_SpawnFloat( "sticktime", "", &tempf ) ) {
 		ent->s.time2 = ( int )( tempf * 1000.0f );
+
 	} else {
 		ent->s.time2 = 500; // default to 1/2 sec
 	}
+
 	// randomness
 	ent->s.angles2[0] = ent->random;
 
 	// DLIGHT
 	if( ent->spawnflags & 2 ) {
 		int dlightsize;
+
 		if( G_SpawnInt( "dlightsize", "", &dlightsize ) ) {
 			ent->s.time = dlightsize;
+
 		} else {
 			ent->s.time = 500;
 		}
 
 		if( ent->random ) {
 			ent->s.time2 = ent->random;
+
 		} else {
 			ent->s.time2 = 4; // dlight randomness
 		}
+
 		if( ent->dl_color[0] <= 0 && // if it's black or has no color assigned
 			ent->dl_color[1] <= 0 && ent->dl_color[2] <= 0 ) {
 			// default is the same color as the tesla weapon
@@ -983,6 +1015,7 @@ void SP_shooter_tesla( gentity_t* ent )
 	ent->think	   = shooter_tesla_finish_spawning;
 	ent->nextthink = level.time + 100;
 }
+
 //----(SA)	end
 
 /*QUAKED shooter_grenade (1 0 0) (-16 -16 -16) (16 16 16)
@@ -1013,12 +1046,15 @@ void SP_shooter_sniper( gentity_t* ent )
 	if( !ent->damage ) {
 		ent->damage = 10;
 	}
+
 	if( !ent->radius ) { // radius
 		ent->radius = 256;
 	}
+
 	if( !ent->delay ) {
 		ent->delay = 1.0; // one sec
 	}
+
 	InitShooter( ent, WP_SNIPER );
 
 	ent->delay *= 1000;
@@ -1048,6 +1084,7 @@ void brush_activate_sniper( gentity_t* ent, gentity_t* other, trace_t* trace )
 
 	if( !sniper ) {
 		G_Printf( "sniper not found: %s\n" );
+
 	} else {
 		if( visible( sniper, other ) ) {
 			if( sniper->wait < level.time ) {
@@ -1056,9 +1093,11 @@ void brush_activate_sniper( gentity_t* ent, gentity_t* other, trace_t* trace )
 					sniper->wait  = level.time + sniper->delay;
 					// record enemypos pos
 					VectorCopy( ent->enemy->r.currentOrigin, ent->pos1 );
+
 				} else if( sniper->count == 1 ) {
 					VectorSubtract( ent->enemy->r.currentOrigin, ent->pos1, vec );
 					dist = VectorLength( vec );
+
 					if( dist < sniper->radius ) {
 						// ok the enemy is still inside the radius take a shot
 						sniper->enemy = other;
@@ -1075,6 +1114,7 @@ void brush_activate_sniper( gentity_t* ent, gentity_t* other, trace_t* trace )
 					sniper->wait  = level.time + sniper->delay;
 				}
 			}
+
 		} else {
 			// sniper->wait = level.time + sniper->delay;
 			sniper->count = 0;
@@ -1127,6 +1167,7 @@ void use_corona( gentity_t* ent, gentity_t* other, gentity_t* activator )
 {
 	if( ent->r.linked ) {
 		sys->UnlinkEntity( ent );
+
 	} else {
 		ent->active = 0;
 		sys->LinkEntity( ent );
@@ -1148,6 +1189,7 @@ void SP_corona( gentity_t* ent )
 		ent->dl_color[1] <= 0 && ent->dl_color[2] <= 0 ) {
 		ent->dl_color[0] = ent->dl_color[1] = ent->dl_color[2] = 1; // set white
 	}
+
 	ent->dl_color[0] = ent->dl_color[0] * 255;
 	ent->dl_color[1] = ent->dl_color[1] * 255;
 	ent->dl_color[2] = ent->dl_color[2] * 255;
@@ -1261,6 +1303,7 @@ void use_dlight( gentity_t* ent, gentity_t* other, gentity_t* activator )
 {
 	if( ent->r.linked ) {
 		sys->UnlinkEntity( ent );
+
 	} else {
 		ent->active = 0;
 		sys->LinkEntity( ent );
@@ -1301,6 +1344,7 @@ void SP_dlight( gentity_t* ent )
 		style				= max( 1, style ); // clamp to predefined range
 		style				= min( 19, style );
 		ent->dl_stylestring = predef_lightstyles[style - 1]; // these are input as 1-20
+
 	} else {
 		ent->dl_stylestring = "mmmaaa"; // default to a strobe to call attention to this not being set
 	}
@@ -1315,9 +1359,11 @@ void SP_dlight( gentity_t* ent )
 	ent->health = offset; // set the offset into the string
 
 	ent->think = dlight_finish_spawning;
+
 	if( !dlightstarttime ) { // sync up all the dlights
 		dlightstarttime = level.time + 100;
 	}
+
 	ent->nextthink = dlightstarttime;
 
 	if( ent->dl_color[0] <= 0 && // if it's black or has no color assigned, make it white
@@ -1340,6 +1386,7 @@ void SP_dlight( gentity_t* ent )
 		sys->LinkEntity( ent );
 	}
 }
+
 // done (SA)
 
 // Rafael particles
@@ -1387,9 +1434,11 @@ void snowInPVS( gentity_t* ent )
 
 		if( inPVS ) {
 			ent->active = qtrue;
+
 		} else {
 			ent->active = qfalse;
 		}
+
 	} else {
 		return;
 	}
@@ -1402,6 +1451,7 @@ void snowInPVS( gentity_t* ent )
 	if( ent->active ) {
 		tent = G_TempEntity( player->r.currentOrigin, EV_SNOW_ON );
 		// G_Printf( "on\n");
+
 	} else {
 		tent = G_TempEntity( player->r.currentOrigin, EV_SNOW_OFF );
 		// G_Printf( "off\n");
@@ -1421,6 +1471,7 @@ void snow_think( gentity_t* ent )
 
 	if( ent->spawnflags & 2 ) { // bubble
 		dest[2] += 8192;
+
 	} else {
 		dest[2] -= 8192;
 	}
@@ -1429,6 +1480,7 @@ void snow_think( gentity_t* ent )
 
 	if( ent->spawnflags & 1 ) {
 		turb = 1;
+
 	} else {
 		turb = 0;
 	}
@@ -1448,6 +1500,7 @@ void snow_think( gentity_t* ent )
 			CS_PARTICLES,
 			MAX_PARTICLES_AREAS,
 			qtrue );
+
 	} else if( !Q_stricmp( ent->classname, "misc_snow128" ) ) {
 		G_FindConfigstringIndex( va( "%i %.2f %.2f %.2f %.2f %.2f %.2f %i %i %i",
 									 PARTICLE_SNOW128,
@@ -1463,6 +1516,7 @@ void snow_think( gentity_t* ent )
 			CS_PARTICLES,
 			MAX_PARTICLES_AREAS,
 			qtrue );
+
 	} else if( !Q_stricmp( ent->classname, "misc_snow64" ) ) {
 		G_FindConfigstringIndex( va( "%i %.2f %.2f %.2f %.2f %.2f %.2f %i %i %i",
 									 PARTICLE_SNOW64,
@@ -1478,6 +1532,7 @@ void snow_think( gentity_t* ent )
 			CS_PARTICLES,
 			MAX_PARTICLES_AREAS,
 			qtrue );
+
 	} else if( !Q_stricmp( ent->classname, "misc_snow32" ) ) {
 		G_FindConfigstringIndex( va( "%i %.2f %.2f %.2f %.2f %.2f %.2f %i %i %i",
 									 PARTICLE_SNOW32,
@@ -1493,6 +1548,7 @@ void snow_think( gentity_t* ent )
 			CS_PARTICLES,
 			MAX_PARTICLES_AREAS,
 			qtrue );
+
 	} else if( !Q_stricmp( ent->classname, "misc_bubbles8" ) ) {
 		G_FindConfigstringIndex( va( "%i %.2f %.2f %.2f %.2f %.2f %.2f %i %i %i",
 									 PARTICLE_BUBBLE8,
@@ -1508,6 +1564,7 @@ void snow_think( gentity_t* ent )
 			CS_PARTICLES,
 			MAX_PARTICLES_AREAS,
 			qtrue );
+
 	} else if( !Q_stricmp( ent->classname, "misc_bubbles16" ) ) {
 		G_FindConfigstringIndex( va( "%i %.2f %.2f %.2f %.2f %.2f %.2f %i %i %i",
 									 PARTICLE_BUBBLE16,
@@ -1523,6 +1580,7 @@ void snow_think( gentity_t* ent )
 			CS_PARTICLES,
 			MAX_PARTICLES_AREAS,
 			qtrue );
+
 	} else if( !Q_stricmp( ent->classname, "misc_bubbles32" ) ) {
 		G_FindConfigstringIndex( va( "%i %.2f %.2f %.2f %.2f %.2f %.2f %i %i %i",
 									 PARTICLE_BUBBLE32,
@@ -1538,6 +1596,7 @@ void snow_think( gentity_t* ent )
 			CS_PARTICLES,
 			MAX_PARTICLES_AREAS,
 			qtrue );
+
 	} else if( !Q_stricmp( ent->classname, "misc_bubbles64" ) ) {
 		G_FindConfigstringIndex( va( "%i %.2f %.2f %.2f %.2f %.2f %.2f %i %i %i",
 									 PARTICLE_BUBBLE64,
@@ -1577,6 +1636,7 @@ void SP_Snow( gentity_t* ent )
 
 	ent->active = qtrue;
 }
+
 // done.
 
 void SP_Bubbles( gentity_t* ent )
@@ -1609,6 +1669,7 @@ void		  flakPuff( vec3_t origin, qboolean sky )
 	vec3_t	   point;
 
 	VectorCopy( origin, point );
+
 	if( sky ) {
 		VectorMA( point, -256, forward, point );
 	}
@@ -1684,6 +1745,7 @@ void Fire_Lead( gentity_t* ent, gentity_t* activator, float spread, int damage )
 	if( !Q_stricmp( ent->classname, "misc_mg42" ) ) {
 		mg42_muzzleflash( ent, mg42_muzzle ); // get current position for mg42 muzzle flash/bullet origin
 		VectorCopy( mg42_muzzle, lead_muzzle );
+
 	} else {
 		VectorCopy( muzzle, lead_muzzle );
 	}
@@ -1704,19 +1766,24 @@ void Fire_Lead( gentity_t* ent, gentity_t* activator, float spread, int damage )
 		if( !Q_stricmp( ent->classname, "misc_flak" ) ) {
 			if( ent->count == 1 ) {
 				G_AddEvent( ent, EV_FLAKGUN1, 0 );
+
 			} else if( ent->count == 2 ) {
 				G_AddEvent( ent, EV_FLAKGUN2, 0 );
+
 			} else if( ent->count == 3 ) {
 				G_AddEvent( ent, EV_FLAKGUN3, 0 );
+
 			} else if( ent->count == 4 ) {
 				G_AddEvent( ent, EV_FLAKGUN4, 0 );
 			}
 
 			flakPuff( tr.endpos, qtrue );
+
 		} else {
 			//			mg42_muzzleflash (ent, 0);
 			G_AddEvent( ent, EV_FIRE_WEAPON_MG42, 0 );
 		}
+
 		return;
 	}
 
@@ -1751,6 +1818,7 @@ void Fire_Lead( gentity_t* ent, gentity_t* activator, float spread, int damage )
 			tent->s.otherEntityNum	= ent->s.number;
 			tent->s.otherEntityNum2 = activator->s.number; // (SA) store the user id, so the client can position the tracer
 		}
+
 		// done.
 	}
 
@@ -1760,13 +1828,17 @@ void Fire_Lead( gentity_t* ent, gentity_t* activator, float spread, int damage )
 
 	if( !Q_stricmp( ent->classname, "misc_mg42" ) ) {
 		G_AddEvent( ent, EV_FIRE_WEAPON_MG42, 0 );
+
 	} else if( !Q_stricmp( ent->classname, "misc_flak" ) ) {
 		if( ent->count == 1 ) {
 			G_AddEvent( ent, EV_FLAKGUN1, 0 );
+
 		} else if( ent->count == 2 ) {
 			G_AddEvent( ent, EV_FLAKGUN2, 0 );
+
 		} else if( ent->count == 3 ) {
 			G_AddEvent( ent, EV_FLAKGUN3, 0 );
+
 		} else if( ent->count == 4 ) {
 			G_AddEvent( ent, EV_FLAKGUN4, 0 );
 		}
@@ -1792,6 +1864,7 @@ void  clamp_hweapontofirearc( gentity_t* self, gentity_t* other, vec3_t dang )
 	if( other ) {
 		VectorCopy( self->TargetAngles, dang );
 		yawspeed = MG42_YAWSPEED;
+
 	} else { // go back to start position
 		VectorCopy( self->s.angles, dang );
 		yawspeed = MG42_IDLEYAWSPEED;
@@ -1809,16 +1882,19 @@ void  clamp_hweapontofirearc( gentity_t* self, gentity_t* other, vec3_t dang )
 				clamped = qtrue;
 				dang[0] = 20.0;
 			}
+
 		} else if( dang[0] > 0 && dang[0] > 10.0 ) {
 			clamped = qtrue;
 			dang[0] = 10.0;
 		}
+
 	} else {
 		if( self->spawnflags & 1 ) {
 			if( dang[0] > 0 && dang[0] > ( self->varc / 2 ) ) {
 				clamped = qtrue;
 				dang[0] = self->varc / 2;
 			}
+
 		} else if( dang[0] > 0 && dang[0] > ( self->varc / 2 ) ) {
 			clamped = qtrue;
 			dang[0] = self->varc / 2;
@@ -1829,10 +1905,13 @@ void  clamp_hweapontofirearc( gentity_t* self, gentity_t* other, vec3_t dang )
 
 	if( !Q_stricmp( self->classname, "misc_mg42" ) || !( self->active ) ) {
 		diff = AngleDifference( dang[YAW], self->s.angles[YAW] );
+
 		if( fabs( diff ) > self->harc ) {
 			clamped = qtrue;
+
 			if( diff > 0 ) {
 				dang[YAW] = AngleMod( self->s.angles[YAW] + self->harc );
+
 			} else {
 				dang[YAW] = AngleMod( self->s.angles[YAW] - self->harc );
 			}
@@ -1842,10 +1921,13 @@ void  clamp_hweapontofirearc( gentity_t* self, gentity_t* other, vec3_t dang )
 		for( i = 0; i < 3; i++ ) {
 			BG_EvaluateTrajectory( &self->s.apos, level.time, self->r.currentAngles );
 			diff = AngleDifference( dang[i], self->r.currentAngles[i] );
+
 			if( fabs( diff ) > ( yawspeed * ( ( float )FRAMETIME / 1000.0 ) ) ) {
 				clamped = qtrue;
+
 				if( diff > 0 ) {
 					dang[i] = AngleMod( self->r.currentAngles[i] + ( yawspeed * ( ( float )FRAMETIME / 1000.0 ) ) );
+
 				} else {
 					dang[i] = AngleMod( self->r.currentAngles[i] - ( yawspeed * ( ( float )FRAMETIME / 1000.0 ) ) );
 				}
@@ -1860,18 +1942,21 @@ void  clamp_hweapontofirearc( gentity_t* self, gentity_t* other, vec3_t dang )
 	// sanity check the angles again to make sure we don't go passed the harc whilst trying to get to the other side
 	// diff = AngleDifference( dang[YAW], self->s.angles[YAW] );
 	diff = AngleDifference( self->s.angles[YAW], dang[YAW] );
+
 	// if (fabs(diff) > self->harc) {
 	if( fabs( diff ) > self->harc && other && other->r.svFlags & SVF_CASTAI ) {
 		clamped = qtrue;
 
 		if( diff > 0 ) {
 			dang[YAW] = AngleMod( self->s.angles[YAW] + self->harc );
+
 		} else {
 			dang[YAW] = AngleMod( self->s.angles[YAW] - self->harc );
 		}
 
 		//		G_Printf ("dang %5.2f ang %5.2f diff %5.2f\n", dang[YAW], self->s.angles[YAW], diff);
 	}
+
 	//	else
 	//		G_Printf ("not clamped cang %5.2f\n", self->TargetAngles[YAW]);
 
@@ -1884,10 +1969,12 @@ void  clamp_hweapontofirearc( gentity_t* self, gentity_t* other, vec3_t dang )
 		if( other->r.svFlags & SVF_CASTAI ) {
 			if( !other->mg42ClampTime ) {
 				other->mg42ClampTime = level.time;
+
 			} else if( other->mg42ClampTime < level.time - 750 ) {
 				other->active = qfalse;
 			}
 		}
+
 	} else if( other ) {
 		other->mg42ClampTime = 0;
 	}
@@ -1955,6 +2042,7 @@ void mg42_touch( gentity_t* self, gentity_t* other, trace_t* trace )
 
 		if( self->s.frame ) {
 			other->client->ps.gunfx = 1;
+
 		} else {
 			other->client->ps.gunfx = 0;
 		}
@@ -1992,6 +2080,7 @@ void mg42_track( gentity_t* self, gentity_t* other )
 				// G_Printf ("gun: destroyed = %d\n", self->s.frame);
 				G_AddEvent( self, EV_GENERAL_SOUND, snd_noammo );
 				other->client->ps.gunfx = 1;
+
 			} else {
 				AngleVectors( self->s.apos.trBase, forward, right, up );
 				VectorCopy( self->s.pos.trBase, muzzle );
@@ -2000,6 +2089,7 @@ void mg42_track( gentity_t* self, gentity_t* other )
 					VectorMA( muzzle, 16, forward, muzzle );
 					VectorMA( muzzle, 16, up, muzzle );
 					validshot = qtrue;
+
 				} else if( !Q_stricmp( self->classname, "misc_flak" ) ) {
 					if( self->delay < level.time ) {
 						self->delay = level.time + 250;
@@ -2015,14 +2105,17 @@ void mg42_track( gentity_t* self, gentity_t* other )
 							VectorMA( muzzle, 72, forward, muzzle );
 							VectorMA( muzzle, 31, up, muzzle );
 							VectorMA( muzzle, 22, right, muzzle );
+
 						} else if( self->count == 1 ) {
 							VectorMA( muzzle, 72, forward, muzzle );
 							VectorMA( muzzle, 31, up, muzzle );
 							VectorMA( muzzle, -22, right, muzzle );
+
 						} else if( self->count == 3 ) {
 							VectorMA( muzzle, 72, forward, muzzle );
 							VectorMA( muzzle, 10, up, muzzle );
 							VectorMA( muzzle, 22, right, muzzle );
+
 						} else if( self->count == 4 ) {
 							VectorMA( muzzle, 72, forward, muzzle );
 							VectorMA( muzzle, 10, up, muzzle );
@@ -2033,6 +2126,7 @@ void mg42_track( gentity_t* self, gentity_t* other )
 						self->s.frame++;
 					}
 				}
+
 				// snap to integer coordinates for more efficient network bandwidth usage
 				SnapVector( muzzle );
 
@@ -2040,12 +2134,15 @@ void mg42_track( gentity_t* self, gentity_t* other )
 					if( !( other->r.svFlags & SVF_CASTAI ) ) {
 						if( is_flak ) {
 							Fire_Lead( self, other, FLAK_SPREAD, FLAK_DAMAGE );
+
 						} else {
 							Fire_Lead( self, other, MG42_SPREAD, MG42_DAMAGE );
 						}
+
 					} else {
 						if( self->damage ) {
 							Fire_Lead( self, other, MG42_SPREAD / self->accuracy, self->damage );
+
 						} else {
 							Fire_Lead( self, other, MG42_SPREAD / self->accuracy, MG42_DAMAGE_AI );
 						}
@@ -2057,6 +2154,7 @@ void mg42_track( gentity_t* self, gentity_t* other )
 					other->client->ps.viewlocked = 2; // this enable screen jitter when firing
 				}
 			}
+
 		} else {
 			other->client->ps.viewlocked = 1;
 		}
@@ -2064,9 +2162,11 @@ void mg42_track( gentity_t* self, gentity_t* other )
 		// move to the position over the next frame
 		VectorCopy( self->TargetAngles, dang );
 		VectorSubtract( dang, self->s.apos.trBase, self->s.apos.trDelta );
+
 		for( i = 0; i < 3; i++ ) {
 			self->s.apos.trDelta[i] = AngleNormalize180( self->s.apos.trDelta[i] );
 		}
+
 		VectorScale( self->s.apos.trDelta, 1000 / 50, self->s.apos.trDelta );
 		self->s.apos.trTime		= level.time;
 		self->s.apos.trDuration = 50;
@@ -2094,24 +2194,31 @@ void Flak_Animate( gentity_t* ent )
 	if( ent->count == 1 ) {
 		if( ent->s.frame == GUN1_LASTFIRE ) {
 			ent->s.frame = GUN2_IDLE;
+
 		} else if( ent->s.frame > GUN1_IDLE ) {
 			ent->s.frame++;
 		}
+
 	} else if( ent->count == 2 ) {
 		if( ent->s.frame == GUN2_LASTFIRE ) {
 			ent->s.frame = GUN3_IDLE;
+
 		} else if( ent->s.frame > GUN2_IDLE ) {
 			ent->s.frame++;
 		}
+
 	} else if( ent->count == 3 ) {
 		if( ent->s.frame == GUN3_LASTFIRE ) {
 			ent->s.frame = GUN4_IDLE;
+
 		} else if( ent->s.frame > GUN3_IDLE ) {
 			ent->s.frame++;
 		}
+
 	} else if( ent->count == 4 ) {
 		if( ent->s.frame == GUN4_LASTFIRE ) {
 			ent->s.frame = GUN1_IDLE;
+
 		} else if( ent->s.frame > GUN4_IDLE ) {
 			ent->s.frame++;
 		}
@@ -2146,19 +2253,24 @@ void mg42_think( gentity_t* self )
 
 		if( owner->r.svFlags & SVF_CASTAI ) {
 			usedist = USEMG42_DISTANCE;
+
 		} else {
 			// kinda dumb since the player had to be close enough to activate it to get this
 			// far and the start point for the difference is calculated differently each place anyway
 			//			usedist = 96;
 			usedist = 999; // always allow the touch by player
 		}
+
 		if( len < usedist && ( owner->active == 1 ) && owner->health > 0 ) {
 			self->active = qtrue;
+
 			if( is_flak ) {
 				owner->client->ps.persistant[PERS_HWEAPON_USE] = 2;
+
 			} else {
 				owner->client->ps.persistant[PERS_HWEAPON_USE] = 1;
 			}
+
 			mg42_track( self, owner );
 			self->nextthink = level.time + 50;
 
@@ -2206,9 +2318,11 @@ void mg42_think( gentity_t* self )
 	// clamp_hweapontofirearc( self, NULL, vec );
 	// move to the position over the next frame
 	VectorSubtract( self->s.angles, self->s.apos.trBase, self->s.apos.trDelta );
+
 	for( i = 0; i < 3; i++ ) {
 		self->s.apos.trDelta[i] = AngleNormalize180( self->s.apos.trDelta[i] );
 	}
+
 	VectorScale( self->s.apos.trDelta, 400 / 50, self->s.apos.trDelta );
 	self->s.apos.trTime		= level.time;
 	self->s.apos.trDuration = 50;
@@ -2248,9 +2362,11 @@ void mg42_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int d
 	// DHM - Nerve :: self->chain not set if no tripod
 	if( self->chain ) {
 		gun = self->chain;
+
 	} else {
 		gun = self;
 	}
+
 	// dhm - end
 
 	owner = &g_entities[gun->r.ownerNum];
@@ -2264,6 +2380,7 @@ void mg42_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int d
 			gun->health	 = 0;
 			self->health = 0;
 		}
+
 		// dhm - end
 	}
 
@@ -2392,6 +2509,7 @@ void mg42_spawn( gentity_t* ent )
 
 	if( !( ent->spawnflags & 2 ) ) { // no tripod
 		gun->mg42BaseEnt = base->s.number;
+
 	} else {
 		gun->mg42BaseEnt = -1;
 	}
@@ -2425,6 +2543,7 @@ void SP_mg42( gentity_t* self )
 
 	if( !self->harc ) {
 		self->harc = 115;
+
 	} else {
 		if( self->harc < 45 ) {
 			self->harc = 45;
@@ -2458,12 +2577,14 @@ void SP_mg42( gentity_t* self )
 	if( !self->accuracy ) {
 		self->accuracy = 1;
 	}
+
 	// JPW NERVE
 	if( g_gametype.integer != GT_SINGLE_PLAYER ) {
 		if( !self->damage ) {
 			self->damage = 25;
 		}
 	}
+
 	// jpw
 }
 
@@ -2508,6 +2629,7 @@ void SP_misc_flak( gentity_t* self )
 {
 	if( !self->harc ) {
 		self->harc = 180;
+
 	} else {
 		if( self->harc < 90 ) {
 			self->harc = 115;
@@ -2589,6 +2711,7 @@ void firetrail_use( gentity_t* ent, gentity_t* other, gentity_t* activator )
 {
 	if( ent->s.eType == ET_RAMJET ) {
 		ent->s.eType = ET_GENERAL;
+
 	} else {
 		ent->s.eType = ET_RAMJET;
 	}
@@ -2611,6 +2734,7 @@ void tagemitter_use( gentity_t* ent, gentity_t* other, gentity_t* activator )
 {
 	if( ent->s.eType == ET_EFFECT3 ) {
 		ent->s.eType = ET_GENERAL;
+
 	} else {
 		ent->s.eType = ET_EFFECT3;
 	}
@@ -2623,6 +2747,7 @@ void misc_tagemitter_finishspawning( gentity_t* ent )
 	gentity_t *emitter, *parent;
 
 	parent = G_Find( NULL, FOFS( targetname ), ent->target );
+
 	if( !parent ) {
 		G_Error( "misc_tagemitter: can't find parent script mover with targetname \"%s\"\n", ent->target );
 	}
@@ -2675,6 +2800,7 @@ void misc_firetrails_finishspawning( gentity_t* ent )
 	gentity_t *left, *right, *airplane;
 
 	airplane = G_Find( NULL, FOFS( targetname ), ent->target );
+
 	if( !airplane ) {
 		G_Error( "can't find airplane with targetname \"%s\" for firetrails", ent->target );
 	}

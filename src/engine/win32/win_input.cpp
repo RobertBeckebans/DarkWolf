@@ -154,18 +154,23 @@ void IN_ActivateWin32Mouse()
 	height = GetSystemMetrics( SM_CYSCREEN );
 
 	GetWindowRect( g_wv.hWnd, &window_rect );
+
 	if( window_rect.left < 0 ) {
 		window_rect.left = 0;
 	}
+
 	if( window_rect.top < 0 ) {
 		window_rect.top = 0;
 	}
+
 	if( window_rect.right >= width ) {
 		window_rect.right = width - 1;
 	}
+
 	if( window_rect.bottom >= height - 1 ) {
 		window_rect.bottom = height - 1;
 	}
+
 	window_center_x = ( window_rect.right + window_rect.left ) / 2;
 	window_center_y = ( window_rect.bottom + window_rect.top ) / 2;
 
@@ -173,6 +178,7 @@ void IN_ActivateWin32Mouse()
 
 	SetCapture( g_wv.hWnd );
 	ClipCursor( &window_rect );
+
 	while( ShowCursor( FALSE ) >= 0 )
 		;
 }
@@ -186,6 +192,7 @@ void IN_DeactivateWin32Mouse()
 {
 	ClipCursor( NULL );
 	ReleaseCapture();
+
 	while( ShowCursor( TRUE ) < 0 )
 		;
 }
@@ -225,10 +232,12 @@ void IN_ActivateMouse()
 	if( !s_wmv.mouseInitialized ) {
 		return;
 	}
+
 	if( !in_mouse->integer ) {
 		s_wmv.mouseActive = qfalse;
 		return;
 	}
+
 	if( s_wmv.mouseActive ) {
 		return;
 	}
@@ -247,6 +256,7 @@ void IN_DeactivateMouse()
 	if( !s_wmv.mouseInitialized ) {
 		return;
 	}
+
 	if( !s_wmv.mouseActive ) {
 		return;
 	}
@@ -452,12 +462,15 @@ static qboolean IN_InitXInput()
 	}
 
 	s_xinputDll = LoadLibraryA( "xinput1_4.dll" );
+
 	if( !s_xinputDll ) {
 		s_xinputDll = LoadLibraryA( "xinput9_1_0.dll" );
 	}
+
 	if( !s_xinputDll ) {
 		s_xinputDll = LoadLibraryA( "xinput1_3.dll" );
 	}
+
 	if( !s_xinputDll ) {
 		return qfalse;
 	}
@@ -516,6 +529,7 @@ void IN_StartupJoystick()
 		memset( &state, 0, sizeof( state ) );
 
 		result = pXInputGetState( i, &state );
+
 		if( result == ERROR_SUCCESS ) {
 			joy.avail				   = qtrue;
 			joy.id					   = i;
@@ -544,6 +558,7 @@ static float JoyToF( SHORT value )
 
 	if( value >= 0 ) {
 		fValue = ( float )value / 32767.0f;
+
 	} else {
 		fValue = ( float )value / 32768.0f;
 	}
@@ -551,9 +566,11 @@ static float JoyToF( SHORT value )
 	if( fValue < -1.0f ) {
 		fValue = -1.0f;
 	}
+
 	if( fValue > 1.0f ) {
 		fValue = 1.0f;
 	}
+
 	return fValue;
 }
 
@@ -563,8 +580,10 @@ static float JoyToFDeadZone( SHORT value, SHORT deadZone )
 
 	if( value > deadZone ) {
 		fValue = ( float )( value - deadZone ) / ( float )( 32767 - deadZone );
+
 	} else if( value < -deadZone ) {
 		fValue = ( float )( value + deadZone ) / ( float )( 32768 - deadZone );
+
 	} else {
 		fValue = 0.0f;
 	}
@@ -572,9 +591,11 @@ static float JoyToFDeadZone( SHORT value, SHORT deadZone )
 	if( fValue < -1.0f ) {
 		fValue = -1.0f;
 	}
+
 	if( fValue > 1.0f ) {
 		fValue = 1.0f;
 	}
+
 	return fValue;
 }
 
@@ -647,6 +668,7 @@ void						   IN_JoyMove()
 
 	memset( &state, 0, sizeof( state ) );
 	result = pXInputGetState( joy.id, &state );
+
 	if( result != ERROR_SUCCESS ) {
 		joy.avail = qfalse;
 		Com_Printf( "XInput controller disconnected\n" );
@@ -684,6 +706,7 @@ void						   IN_JoyMove()
 	if( ltPressed != ( joy.oldLeftTriggerPressed ? qtrue : qfalse ) ) {
 		IN_EmitKeyTransition( K_JOY11, ltPressed );
 	}
+
 	if( rtPressed != ( joy.oldRightTriggerPressed ? qtrue : qfalse ) ) {
 		IN_EmitKeyTransition( K_JOY12, rtPressed );
 	}
@@ -704,12 +727,14 @@ void						   IN_JoyMove()
 
 	if( lx < -joy_threshold->value ) {
 		povstate |= ( 1 << 0 ); // JOY13
+
 	} else if( lx > joy_threshold->value ) {
 		povstate |= ( 1 << 1 ); // JOY14
 	}
 
 	if( ly > joy_threshold->value ) {
 		povstate |= ( 1 << 2 ); // JOY15
+
 	} else if( ly < -joy_threshold->value ) {
 		povstate |= ( 1 << 3 ); // JOY16
 	}
@@ -720,12 +745,15 @@ void						   IN_JoyMove()
 	if( buttons & XINPUT_GAMEPAD_DPAD_LEFT ) {
 		povstate |= ( 1 << 12 ); // JOY24
 	}
+
 	if( buttons & XINPUT_GAMEPAD_DPAD_RIGHT ) {
 		povstate |= ( 1 << 13 ); // JOY25
 	}
+
 	if( buttons & XINPUT_GAMEPAD_DPAD_UP ) {
 		povstate |= ( 1 << 14 ); // JOY26
 	}
+
 	if( buttons & XINPUT_GAMEPAD_DPAD_DOWN ) {
 		povstate |= ( 1 << 15 ); // JOY27
 	}
@@ -739,6 +767,7 @@ void						   IN_JoyMove()
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, joyDirectionKeys[i], qfalse, 0, NULL );
 		}
 	}
+
 	joy.oldpovstate = povstate;
 
 	//
@@ -807,8 +836,10 @@ static void CALLBACK MidiInProc( HMIDIIN hMidiIn, UINT uMsg, DWORD dwInstance, D
 	switch( uMsg ) {
 		case MIM_OPEN:
 			break;
+
 		case MIM_CLOSE:
 			break;
+
 		case MIM_DATA:
 			message = dwParam1 & 0xff;
 
@@ -816,16 +847,21 @@ static void CALLBACK MidiInProc( HMIDIIN hMidiIn, UINT uMsg, DWORD dwInstance, D
 				if( ( ( message & 0x0f ) + 1 ) == in_midichannel->integer ) {
 					MIDI_NoteOn( ( dwParam1 & 0xff00 ) >> 8, ( dwParam1 & 0xff0000 ) >> 16 );
 				}
+
 			} else if( ( message & 0xf0 ) == 0x80 ) {
 				if( ( ( message & 0x0f ) + 1 ) == in_midichannel->integer ) {
 					MIDI_NoteOff( ( dwParam1 & 0xff00 ) >> 8 );
 				}
 			}
+
 			break;
+
 		case MIM_LONGDATA:
 			break;
+
 		case MIM_ERROR:
 			break;
+
 		case MIM_LONGERROR:
 			break;
 	}
@@ -845,9 +881,11 @@ static void MidiInfo_f()
 	for( i = 0; i < s_midiInfo.numDevices; i++ ) {
 		if( i == Cvar_VariableValue( "in_mididevice" ) ) {
 			Com_Printf( "***" );
+
 		} else {
 			Com_Printf( "..." );
 		}
+
 		Com_Printf( "device %2d:       %s\n", i, s_midiInfo.caps[i].szPname );
 		Com_Printf( "...manufacturer ID: 0x%hx\n", s_midiInfo.caps[i].wMid );
 		Com_Printf( "...product ID:      0x%hx\n", s_midiInfo.caps[i].wPid );
@@ -864,6 +902,7 @@ static void IN_StartupMIDI()
 	}
 
 	s_midiInfo.numDevices = midiInGetNumDevs();
+
 	if( s_midiInfo.numDevices > MAX_MIDIIN_DEVICES ) {
 		s_midiInfo.numDevices = MAX_MIDIIN_DEVICES;
 	}
@@ -892,5 +931,6 @@ static void IN_ShutdownMIDI()
 		midiInClose( s_midiInfo.hMidiIn );
 		s_midiInfo.hMidiIn = NULL;
 	}
+
 	memset( &s_midiInfo, 0, sizeof( s_midiInfo ) );
 }

@@ -478,6 +478,7 @@ void CG_UpdateCvars()
 	for( i = 0, cv = cvarTable; i < cvarTableSize; i++, cv++ ) {
 		sys->Cvar_Update( cv->vmCvar );
 	}
+
 	/* RF, disabled this, not needed anymore
 		// if force model changed
 		if ( forceModelModificationCount != cg_forceModel.modificationCount ) {
@@ -492,6 +493,7 @@ int CG_CrosshairPlayer()
 	if( cg.time > ( cg.crosshairClientTime + 1000 ) ) {
 		return -1;
 	}
+
 	return cg.crosshairClientNum;
 }
 
@@ -500,6 +502,7 @@ int CG_LastAttacker()
 	if( !cg.attackerTime ) {
 		return -1;
 	}
+
 	return cg.snap->ps.persistant[PERS_ATTACKER];
 }
 
@@ -584,6 +587,7 @@ void CG_SetupDlightstyles()
 
 	for( i = 1; i < MAX_DLIGHT_CONFIGSTRINGS; i++ ) {
 		str = ( char* )CG_ConfigString( CS_DLIGHTS + i );
+
 		if( !strlen( str ) ) {
 			break;
 		}
@@ -598,6 +602,7 @@ void CG_SetupDlightstyles()
 		token			  = COM_Parse( &str ); // offset
 		cent->dl_frame	  = atoi( token );
 		cent->dl_oldframe = cent->dl_frame - 1;
+
 		if( cent->dl_oldframe < 0 ) {
 			cent->dl_oldframe = strlen( cent->dl_stylestring );
 		}
@@ -615,6 +620,7 @@ void CG_SetupDlightstyles()
 			if( cent->dl_stylestring[j] < 'a' ) {
 				cent->dl_stylestring[j] = 'a';
 			}
+
 			if( cent->dl_stylestring[j] > 'z' ) {
 				cent->dl_stylestring[j] = 'z';
 			}
@@ -649,23 +655,28 @@ static void CG_RegisterItemSounds( int itemNum )
 
 	// parse the space seperated precache string for other media
 	s = item->sounds;
+
 	if( !s || !s[0] ) {
 		return;
 	}
 
 	while( *s ) {
 		start = s;
+
 		while( *s && *s != ' ' ) {
 			s++;
 		}
 
 		len = s - start;
+
 		if( len >= MAX_QPATH || len < 5 ) {
 			CG_Error( "PrecacheItem: %s has bad precache string", item->classname );
 			return;
 		}
+
 		memcpy( data, start, len );
 		data[len] = 0;
+
 		if( *s ) {
 			s++;
 		}
@@ -698,10 +709,12 @@ static void CG_LoadPickupNames()
 
 	Com_sprintf( filename, MAX_QPATH, "text/pickupnames.txt" );
 	len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 	if( len <= 0 ) {
 		CG_Printf( S_COLOR_RED "WARNING: pickup name file (pickupnames.txt not found in main/text)\n" );
 		return;
 	}
+
 	if( len > MAX_BUFFER ) {
 		CG_Error( "%s is too big, make it smaller (max = %i bytes)\n", filename, MAX_BUFFER );
 	}
@@ -715,15 +728,19 @@ static void CG_LoadPickupNames()
 
 	for( i = 0; i < bg_numItems; i++ ) {
 		token = COM_ParseExt( &text, qtrue );
+
 		if( !token[0] ) {
 			break;
 		}
+
 		if( !Q_stricmp( token, "---" ) ) { // no name.  use hardcoded value
 			if( bg_itemlist[i].pickup_name && strlen( bg_itemlist[i].pickup_name ) ) {
 				Com_sprintf( cgs.itemPrintNames[i], MAX_QPATH, bg_itemlist[i].pickup_name );
+
 			} else {
 				cgs.itemPrintNames[i][0] = 0;
 			}
+
 		} else {
 			Com_sprintf( cgs.itemPrintNames[i], MAX_QPATH, token );
 		}
@@ -742,10 +759,12 @@ static void CG_LoadTranslationStrings()
 
 	Com_sprintf( filename, MAX_QPATH, "text/strings.txt" );
 	len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 	if( len <= 0 ) {
 		CG_Printf( S_COLOR_RED "WARNING: string translation file (strings.txt not found in main/text)\n" );
 		return;
 	}
+
 	if( len > MAX_BUFFER ) {
 		CG_Error( "%s is too big, make it smaller (max = %i bytes)\n", filename, MAX_BUFFER );
 	}
@@ -761,9 +780,11 @@ static void CG_LoadTranslationStrings()
 
 	for( i = 0; i < numStrings; i++ ) {
 		token = COM_ParseExt( &text, qtrue );
+
 		if( !token[0] ) {
 			break;
 		}
+
 		translateStrings[i].localname = ( char* )malloc( strlen( token ) + 1 );
 		strcpy( translateStrings[i].localname, token );
 	}
@@ -894,9 +915,11 @@ static void CG_RegisterSounds()
 
 	for( i = 1; i < MAX_SOUNDS; i++ ) {
 		soundName = CG_ConfigString( CS_SOUNDS + i );
+
 		if( !soundName[0] ) {
 			break;
 		}
+
 		if( soundName[0] == '*' ) {
 			continue; // custom sound
 		}
@@ -905,6 +928,7 @@ static void CG_RegisterSounds()
 		if( !strstr( soundName, ".wav" ) ) {
 			cgs.gameSounds[i]	  = CG_SoundScriptPrecache( soundName ); //----(SA)	shouldn't this be okay?  The cs index is reserved anyway, so it can't hurt, right?
 			cgs.gameSoundTypes[i] = 2;
+
 		} else {
 			cgs.gameSounds[i]	  = sys->S_RegisterSound( soundName );
 			cgs.gameSoundTypes[i] = 1;
@@ -1073,16 +1097,20 @@ static void CG_RegisterGraphics()
 	for( i = 0; i < 5; i++ ) {
 		cgs.media.viewBloodAni[i] = sys->R_RegisterShader( va( "viewBloodBlend%i", i + 1 ) );
 	}
+
 	cgs.media.viewFlashBlood = sys->R_RegisterShader( "viewFlashBlood" );
+
 	for( i = 0; i < 16; i++ ) {
 		cgs.media.viewFlashFire[i] = sys->R_RegisterShader( va( "viewFlashFire%i", i + 1 ) );
 	}
+
 	// done
 
 	// Rafael bats
 	for( i = 0; i < 10; i++ ) {
 		cgs.media.bats[i] = sys->R_RegisterShader( va( "bats%i", i + 1 ) );
 	}
+
 	// done
 
 	cgs.media.smokePuffRageProShader = sys->R_RegisterShader( "smokePuffRagePro" );
@@ -1354,10 +1382,12 @@ static void CG_RegisterGraphics()
 	///////////
 	// code is almost complete for doing this correctly.  will remove when that is complete.
 	CG_LoadingString( " - weapons" );
+
 	for( i = WP_KNIFE; i < WP_GAUNTLET; i++ ) {
 		//		CG_LoadingString( va("   - %d", i) );
 		CG_RegisterWeapon( i );
 	}
+
 	///////////
 	// END
 
@@ -1401,6 +1431,7 @@ static void CG_RegisterGraphics()
 
 	// register the inline models
 	cgs.numInlineModels = sys->CM_NumInlineModels();
+
 	for( i = 1; i < cgs.numInlineModels; i++ ) {
 		char   name[10];
 		vec3_t mins, maxs;
@@ -1409,6 +1440,7 @@ static void CG_RegisterGraphics()
 		Com_sprintf( name, sizeof( name ), "*%i", i );
 		cgs.inlineDrawModel[i] = sys->R_RegisterModel( name );
 		sys->R_ModelBounds( cgs.inlineDrawModel[i], mins, maxs );
+
 		for( j = 0; j < 3; j++ ) {
 			cgs.inlineModelMidpoints[i][j] = mins[j] + 0.5 * ( maxs[j] - mins[j] );
 		}
@@ -1421,9 +1453,11 @@ static void CG_RegisterGraphics()
 		const char* modelName;
 
 		modelName = CG_ConfigString( CS_MODELS + i );
+
 		if( !modelName[0] ) {
 			break;
 		}
+
 		cgs.gameModels[i] = sys->R_RegisterModel( modelName );
 	}
 
@@ -1435,6 +1469,7 @@ static void CG_RegisterGraphics()
 			int rval;
 
 			rval = CG_NewParticleArea( CS_PARTICLES + i );
+
 			if( !rval ) {
 				break;
 			}
@@ -1461,9 +1496,11 @@ static void CG_RegisterClients()
 		const char* clientInfo;
 
 		clientInfo = CG_ConfigString( CS_PLAYERS + i );
+
 		if( !clientInfo[0] ) {
 			continue;
 		}
+
 		CG_LoadingClient( i );
 		CG_NewClientInfo( i );
 	}
@@ -1481,6 +1518,7 @@ const char* CG_ConfigString( int index )
 	if( index < 0 || index >= MAX_CONFIGSTRINGS ) {
 		CG_Error( "CG_ConfigString: bad index: %i", index );
 	}
+
 	return cgs.gameState.stringData + cgs.gameState.stringOffsets[index];
 }
 
@@ -1538,10 +1576,12 @@ char* CG_GetMenuBuffer( const char* filename )
 	static char	 buf[MAX_MENUFILE];
 
 	len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 	if( !f ) {
 		sys->Print( va( S_COLOR_RED "menu file not found: %s, using default\n", filename ) );
 		return NULL;
 	}
+
 	if( len >= MAX_MENUFILE ) {
 		sys->Print( va( S_COLOR_RED "menu file too large: %s is %i, max allowed is %i", filename, len, MAX_MENUFILE ) );
 		sys->FS_FCloseFile( f );
@@ -1568,6 +1608,7 @@ qboolean CG_Asset_Parse( int handle )
 	if( !sys->PC_ReadToken( handle, &token ) ) {
 		return qfalse;
 	}
+
 	if( Q_stricmp( token.string, "{" ) != 0 ) {
 		return qfalse;
 	}
@@ -1584,9 +1625,11 @@ qboolean CG_Asset_Parse( int handle )
 		// font
 		if( Q_stricmp( token.string, "font" ) == 0 ) {
 			int pointSize;
+
 			if( !PC_String_Parse( handle, &tempStr ) || !PC_Int_Parse( handle, &pointSize ) ) {
 				return qfalse;
 			}
+
 			cgDC.registerFont( tempStr, pointSize, &cgDC.Assets.textFont );
 			continue;
 		}
@@ -1594,9 +1637,11 @@ qboolean CG_Asset_Parse( int handle )
 		// smallFont
 		if( Q_stricmp( token.string, "smallFont" ) == 0 ) {
 			int pointSize;
+
 			if( !PC_String_Parse( handle, &tempStr ) || !PC_Int_Parse( handle, &pointSize ) ) {
 				return qfalse;
 			}
+
 			cgDC.registerFont( tempStr, pointSize, &cgDC.Assets.smallFont );
 			continue;
 		}
@@ -1604,9 +1649,11 @@ qboolean CG_Asset_Parse( int handle )
 		// font
 		if( Q_stricmp( token.string, "bigfont" ) == 0 ) {
 			int pointSize;
+
 			if( !PC_String_Parse( handle, &tempStr ) || !PC_Int_Parse( handle, &pointSize ) ) {
 				return qfalse;
 			}
+
 			cgDC.registerFont( tempStr, pointSize, &cgDC.Assets.bigFont );
 			continue;
 		}
@@ -1614,9 +1661,11 @@ qboolean CG_Asset_Parse( int handle )
 		// handwriting
 		if( Q_stricmp( token.string, "handwritingFont" ) == 0 ) {
 			int pointSize;
+
 			if( !PC_String_Parse( handle, &tempStr ) || !PC_Int_Parse( handle, &pointSize ) ) {
 				return qfalse;
 			}
+
 			cgDC.registerFont( tempStr, pointSize, &cgDC.Assets.handwritingFont );
 			continue;
 		}
@@ -1626,6 +1675,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_String_Parse( handle, &tempStr ) ) {
 				return qfalse;
 			}
+
 			cgDC.Assets.gradientBar = sys->R_RegisterShaderNoMip( tempStr );
 			continue;
 		}
@@ -1635,6 +1685,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_String_Parse( handle, &tempStr ) ) {
 				return qfalse;
 			}
+
 			cgDC.Assets.menuEnterSound = sys->S_RegisterSound( tempStr );
 			continue;
 		}
@@ -1644,6 +1695,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_String_Parse( handle, &tempStr ) ) {
 				return qfalse;
 			}
+
 			cgDC.Assets.menuExitSound = sys->S_RegisterSound( tempStr );
 			continue;
 		}
@@ -1653,6 +1705,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_String_Parse( handle, &tempStr ) ) {
 				return qfalse;
 			}
+
 			cgDC.Assets.itemFocusSound = sys->S_RegisterSound( tempStr );
 			continue;
 		}
@@ -1662,6 +1715,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_String_Parse( handle, &tempStr ) ) {
 				return qfalse;
 			}
+
 			cgDC.Assets.menuBuzzSound = sys->S_RegisterSound( tempStr );
 			continue;
 		}
@@ -1670,6 +1724,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_String_Parse( handle, &cgDC.Assets.cursorStr ) ) {
 				return qfalse;
 			}
+
 			cgDC.Assets.cursor = sys->R_RegisterShaderNoMip( cgDC.Assets.cursorStr );
 			continue;
 		}
@@ -1678,6 +1733,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_Float_Parse( handle, &cgDC.Assets.fadeClamp ) ) {
 				return qfalse;
 			}
+
 			continue;
 		}
 
@@ -1685,6 +1741,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_Int_Parse( handle, &cgDC.Assets.fadeCycle ) ) {
 				return qfalse;
 			}
+
 			continue;
 		}
 
@@ -1692,6 +1749,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_Float_Parse( handle, &cgDC.Assets.fadeAmount ) ) {
 				return qfalse;
 			}
+
 			continue;
 		}
 
@@ -1699,6 +1757,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_Float_Parse( handle, &cgDC.Assets.shadowX ) ) {
 				return qfalse;
 			}
+
 			continue;
 		}
 
@@ -1706,6 +1765,7 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_Float_Parse( handle, &cgDC.Assets.shadowY ) ) {
 				return qfalse;
 			}
+
 			continue;
 		}
 
@@ -1713,10 +1773,12 @@ qboolean CG_Asset_Parse( int handle )
 			if( !PC_Color_Parse( handle, &cgDC.Assets.shadowColor ) ) {
 				return qfalse;
 			}
+
 			cgDC.Assets.shadowFadeClamp = cgDC.Assets.shadowColor[3];
 			continue;
 		}
 	}
+
 	// return qfalse;
 }
 
@@ -1726,9 +1788,11 @@ void CG_ParseMenu( const char* menuFile )
 	int		   handle;
 
 	handle = sys->PC_LoadSource( menuFile );
+
 	if( !handle ) {
 		handle = sys->PC_LoadSource( "ui/testhud.menu" );
 	}
+
 	if( !handle ) {
 		return;
 	}
@@ -1755,6 +1819,7 @@ void CG_ParseMenu( const char* menuFile )
 		if( Q_stricmp( token.string, "assetGlobalDef" ) == 0 ) {
 			if( CG_Asset_Parse( handle ) ) {
 				continue;
+
 			} else {
 				break;
 			}
@@ -1765,6 +1830,7 @@ void CG_ParseMenu( const char* menuFile )
 			Menu_New( handle );
 		}
 	}
+
 	sys->PC_FreeSource( handle );
 }
 
@@ -1791,6 +1857,7 @@ qboolean CG_Load_Menu( char** p )
 
 		CG_ParseMenu( token );
 	}
+
 	return qfalse;
 }
 
@@ -1805,9 +1872,11 @@ void CG_LoadMenus( const char* menuFile )
 	start = sys->Milliseconds();
 
 	len = sys->FS_FOpenFile( menuFile, &f, FS_READ );
+
 	if( !f ) {
 		sys->Error( va( S_COLOR_YELLOW "menu file not found: %s, using default\n", menuFile ) );
 		len = sys->FS_FOpenFile( "ui/hud.txt", &f, FS_READ );
+
 		if( !f ) {
 			sys->Error( va( S_COLOR_RED "default menu file not found: ui/hud.txt, unable to continue!\n", menuFile ) );
 		}
@@ -1831,6 +1900,7 @@ void CG_LoadMenus( const char* menuFile )
 
 	while( 1 ) {
 		token = COM_ParseExt( &p, qtrue );
+
 		if( !token || token[0] == 0 || token[0] == '}' ) {
 			break;
 		}
@@ -1852,6 +1922,7 @@ void CG_LoadMenus( const char* menuFile )
 		if( Q_stricmp( token, "loadmenu" ) == 0 ) {
 			if( CG_Load_Menu( &p ) ) {
 				continue;
+
 			} else {
 				break;
 			}
@@ -1870,21 +1941,25 @@ static int CG_FeederCount( float feederID )
 {
 	int i, count;
 	count = 0;
+
 	if( feederID == FEEDER_REDTEAM_LIST ) {
 		for( i = 0; i < cg.numScores; i++ ) {
 			if( cg.scores[i].team == TEAM_RED ) {
 				count++;
 			}
 		}
+
 	} else if( feederID == FEEDER_BLUETEAM_LIST ) {
 		for( i = 0; i < cg.numScores; i++ ) {
 			if( cg.scores[i].team == TEAM_BLUE ) {
 				count++;
 			}
 		}
+
 	} else if( feederID == FEEDER_SCOREBOARD ) {
 		return cg.numScores;
 	}
+
 	return count;
 }
 
@@ -1894,18 +1969,22 @@ static int CG_FeederCount( float feederID )
 static clientInfo_t* CG_InfoFromScoreIndex( int index, int team, int* scoreIndex )
 {
 	int i, count;
+
 	if( cgs.gametype >= GT_TEAM ) {
 		count = 0;
+
 		for( i = 0; i < cg.numScores; i++ ) {
 			if( cg.scores[i].team == team ) {
 				if( count == index ) {
 					*scoreIndex = i;
 					return &cgs.clientinfo[cg.scores[i].client];
 				}
+
 				count++;
 			}
 		}
 	}
+
 	*scoreIndex = index;
 	return &cgs.clientinfo[cg.scores[index].client];
 }
@@ -1924,6 +2003,7 @@ static const char* CG_FeederItemText( float feederID, int index, int column, qha
 
 	if( feederID == FEEDER_REDTEAM_LIST ) {
 		team = TEAM_RED;
+
 	} else if( feederID == FEEDER_BLUETEAM_LIST ) {
 		team = TEAM_BLUE;
 	}
@@ -1938,59 +2018,78 @@ static const char* CG_FeederItemText( float feederID, int index, int column, qha
 				if( info->powerups & ( 1 << PW_NEUTRALFLAG ) ) {
 					item	= BG_FindItemForPowerup( PW_NEUTRALFLAG );
 					*handle = cg_items[ITEM_INDEX( item )].icon;
+
 				} else if( info->powerups & ( 1 << PW_REDFLAG ) ) {
 					item	= BG_FindItemForPowerup( PW_REDFLAG );
 					*handle = cg_items[ITEM_INDEX( item )].icon;
+
 				} else if( info->powerups & ( 1 << PW_BLUEFLAG ) ) {
 					item	= BG_FindItemForPowerup( PW_BLUEFLAG );
 					*handle = cg_items[ITEM_INDEX( item )].icon;
+
 				} else {
 					if( info->botSkill > 0 && info->botSkill <= 5 ) {
 						*handle = cgs.media.botSkillShaders[info->botSkill - 1];
+
 					} else if( info->handicap < 100 ) {
 						return va( "%i", info->handicap );
 					}
 				}
+
 				break;
+
 			case 1:
 				if( team == -1 ) {
 					return "";
+
 				} else {
 					*handle = CG_StatusHandle( info->teamTask );
 				}
+
 				break;
+
 			case 2:
 				if( cg.snap->ps.stats[STAT_CLIENTS_READY] & ( 1 << sp->client ) ) {
 					return "Ready";
 				}
+
 				if( team == -1 ) {
 					if( cgs.gametype == GT_TOURNAMENT ) {
 						return va( "%i/%i", info->wins, info->losses );
+
 					} else if( info->infoValid && info->team == TEAM_SPECTATOR ) {
 						return "Spectator";
+
 					} else {
 						return "";
 					}
+
 				} else {
 					if( info->teamLeader ) {
 						return "Leader";
 					}
 				}
+
 #endif // #ifdef MISSIONPACK
 				break;
+
 			case 3:
 				return info->name;
 				break;
+
 			case 4:
 				return va( "%i", info->score );
 				break;
+
 			case 5:
 				return va( "%4i", sp->time );
 				break;
+
 			case 6:
 				if( sp->ping == -1 ) {
 					return "connecting";
 				}
+
 				return va( "%4i", sp->ping );
 				break;
 		}
@@ -2010,14 +2109,17 @@ static void CG_FeederSelection( float feederID, int index )
 		int i, count;
 		int team = ( feederID == FEEDER_REDTEAM_LIST ) ? TEAM_RED : TEAM_BLUE;
 		count	 = 0;
+
 		for( i = 0; i < cg.numScores; i++ ) {
 			if( cg.scores[i].team == team ) {
 				if( index == count ) {
 					cg.selectedScore = i;
 				}
+
 				count++;
 			}
 		}
+
 	} else {
 		cg.selectedScore = index;
 	}
@@ -2041,21 +2143,26 @@ static int CG_OwnerDrawWidth( int ownerDraw, int font, float scale )
 	switch( ownerDraw ) {
 		case CG_GAME_TYPE:
 			return CG_Text_Width( CG_GameTypeString(), font, scale, 0 );
+
 		case CG_GAME_STATUS:
 			return CG_Text_Width( CG_GetGameStatusText(), font, scale, 0 );
 			break;
+
 		case CG_KILLER:
 			return CG_Text_Width( CG_GetKillerText(), font, scale, 0 );
 			break;
 #ifdef MISSIONPACK
+
 		case CG_RED_NAME:
 			return CG_Text_Width( cg_redTeamName.string, font, scale, 0 );
 			break;
+
 		case CG_BLUE_NAME:
 			return CG_Text_Width( cg_blueTeamName.string, font, scale, 0 );
 			break;
 #endif
 	}
+
 	return 0;
 }
 
@@ -2101,6 +2208,7 @@ const char* CG_translateString( const char* str )
 			if( translateStrings[i].localname && strlen( translateStrings[i].localname ) ) {
 				return translateStrings[i].localname;
 			}
+
 			break;
 		}
 	}
@@ -2121,34 +2229,44 @@ void CG_LoadHudMenu()
 
 	cgDC.registerShaderNoMip = []( const char* p ) -> qhandle_t { return sys->R_RegisterShaderNoMip( p ); };
 	cgDC.setColor			 = []( const vec4_t v ) { sys->R_SetColor( v ); };
-	cgDC.drawHandlePic		 = &CG_DrawPic;
-	cgDC.drawStretchPic		 = []( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader ) { sys->R_DrawStretchPic( x, y, w, h, s1, t1, s2, t2, hShader ); };
-	cgDC.drawTextWithCursor	 = &CG_Text_PaintWithCursor;
-	cgDC.drawText			 = &CG_Text_Paint;
-	cgDC.textWidth			 = &CG_Text_Width;
-	cgDC.textHeight			 = &CG_Text_Height;
-	cgDC.registerModel		 = []( const char* p ) -> qhandle_t { return sys->R_RegisterModel( p ); };
-	cgDC.modelBounds		 = []( qhandle_t model, vec3_t min, vec3_t max ) { sys->R_ModelBounds( model, min, max ); };
-	cgDC.fillRect			 = &CG_FillRect;
-	cgDC.drawRect			 = &CG_DrawRect;
-	cgDC.drawSides			 = &CG_DrawSides;
-	cgDC.drawTopBottom		 = &CG_DrawTopBottom;
-	cgDC.clearScene			 = []() { sys->R_ClearScene(); };
+
+	cgDC.drawHandlePic	= &CG_DrawPic;
+	cgDC.drawStretchPic = []( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader ) { sys->R_DrawStretchPic( x, y, w, h, s1, t1, s2, t2, hShader ); };
+
+	cgDC.drawTextWithCursor = &CG_Text_PaintWithCursor;
+	cgDC.drawText			= &CG_Text_Paint;
+	cgDC.textWidth			= &CG_Text_Width;
+	cgDC.textHeight			= &CG_Text_Height;
+	cgDC.registerModel		= []( const char* p ) -> qhandle_t { return sys->R_RegisterModel( p ); };
+	cgDC.modelBounds		= []( qhandle_t model, vec3_t min, vec3_t max ) { sys->R_ModelBounds( model, min, max ); };
+
+	cgDC.fillRect	   = &CG_FillRect;
+	cgDC.drawRect	   = &CG_DrawRect;
+	cgDC.drawSides	   = &CG_DrawSides;
+	cgDC.drawTopBottom = &CG_DrawTopBottom;
+	cgDC.clearScene	   = []() { sys->R_ClearScene(); };
+
 	cgDC.addRefEntityToScene = []( const refEntity_t* re ) { sys->R_AddRefEntityToScene( re ); };
-	cgDC.renderScene		 = []( const refdef_t* fd ) { sys->R_RenderScene( fd ); };
-	cgDC.registerFont		 = []( const char* pFontname, int pointSize, fontInfo_t* font ) { sys->R_RegisterFont( pFontname, pointSize, font ); };
-	cgDC.ownerDrawItem		 = &CG_OwnerDraw;
-	cgDC.getValue			 = &CG_GetValue;
-	cgDC.ownerDrawVisible	 = &CG_OwnerDrawVisible;
-	cgDC.runScript			 = &CG_RunMenuScript;
-	cgDC.getTeamColor		 = &CG_GetTeamColor;
-	cgDC.setCVar			 = []( const char* cvar, const char* value ) { sys->Cvar_Set( cvar, value ); };
-	cgDC.getCVarString		 = []( const char* cvar, char* buffer, int bufsize ) { sys->Cvar_VariableStringBuffer( cvar, buffer, bufsize ); };
-	cgDC.getCVarValue		 = &CG_Cvar_Get;
-	cgDC.drawTextWithCursor	 = &CG_Text_PaintWithCursor;
+
+	cgDC.renderScene = []( const refdef_t* fd ) { sys->R_RenderScene( fd ); };
+
+	cgDC.registerFont = []( const char* pFontname, int pointSize, fontInfo_t* font ) { sys->R_RegisterFont( pFontname, pointSize, font ); };
+
+	cgDC.ownerDrawItem	  = &CG_OwnerDraw;
+	cgDC.getValue		  = &CG_GetValue;
+	cgDC.ownerDrawVisible = &CG_OwnerDrawVisible;
+	cgDC.runScript		  = &CG_RunMenuScript;
+	cgDC.getTeamColor	  = &CG_GetTeamColor;
+	cgDC.setCVar		  = []( const char* cvar, const char* value ) { sys->Cvar_Set( cvar, value ); };
+
+	cgDC.getCVarString = []( const char* cvar, char* buffer, int bufsize ) { sys->Cvar_VariableStringBuffer( cvar, buffer, bufsize ); };
+
+	cgDC.getCVarValue		= &CG_Cvar_Get;
+	cgDC.drawTextWithCursor = &CG_Text_PaintWithCursor;
 	// cgDC.setOverstrikeMode = []( qboolean b ) { sys->Key_SetOverstrikeMode( b ); };
 	// cgDC.getOverstrikeMode = []() -> qboolean { return sys->Key_GetOverstrikeMode(); };
-	cgDC.startLocalSound	= []( sfxHandle_t sfx, int channelNum ) { sys->S_StartLocalSound( sfx, channelNum ); };
+	cgDC.startLocalSound = []( sfxHandle_t sfx, int channelNum ) { sys->S_StartLocalSound( sfx, channelNum ); };
+
 	cgDC.ownerDrawHandleKey = &CG_OwnerDrawHandleKey;
 	cgDC.feederCount		= &CG_FeederCount;
 	cgDC.feederItemImage	= &CG_FeederItemImage;
@@ -2167,11 +2285,13 @@ void CG_LoadHudMenu()
 	// cgDC.Pause = &CG_Pause;
 	cgDC.registerSound		  = []( const char* name ) -> sfxHandle_t { return sys->S_RegisterSound( name ); };
 	cgDC.startBackgroundTrack = []( const char* intro, const char* loop, int fadeupTime ) { sys->S_StartBackgroundTrack( intro, loop, fadeupTime ); };
-	cgDC.stopBackgroundTrack  = []() { sys->S_StopBackgroundTrack(); };
-	cgDC.playCinematic		  = &CG_PlayCinematic;
-	cgDC.stopCinematic		  = &CG_StopCinematic;
-	cgDC.drawCinematic		  = &CG_DrawCinematic;
-	cgDC.runCinematicFrame	  = &CG_RunCinematicFrame;
+
+	cgDC.stopBackgroundTrack = []() { sys->S_StopBackgroundTrack(); };
+
+	cgDC.playCinematic	   = &CG_PlayCinematic;
+	cgDC.stopCinematic	   = &CG_StopCinematic;
+	cgDC.drawCinematic	   = &CG_DrawCinematic;
+	cgDC.runCinematicFrame = &CG_RunCinematicFrame;
 
 	Init_Display( &cgDC );
 
@@ -2179,6 +2299,7 @@ void CG_LoadHudMenu()
 
 	sys->Cvar_VariableStringBuffer( "cg_hudFiles", buff, sizeof( buff ) );
 	hudSet = buff;
+
 	if( hudSet[0] == '\0' ) {
 		hudSet = "ui/hud.txt";
 	}
@@ -2265,6 +2386,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence )
 
 	// check version
 	s = CG_ConfigString( CS_GAME_VERSION );
+
 	if( strcmp( s, GAME_VERSION ) ) {
 		CG_Error( "Client/Server game mismatch: %s/%s", GAME_VERSION, s );
 	}
@@ -2338,6 +2460,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence )
 	if( cgs.gametype == GT_WOLF ) {
 		sys->Cvar_Set( "cg_drawTimer", "0" ); // jpw
 	}
+
 	// jpw
 	// -NERVE - SMF
 }

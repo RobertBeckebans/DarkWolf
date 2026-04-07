@@ -90,12 +90,15 @@ static qboolean GLW_StartDriverAndSetMode( const char* drivername, int mode, int
 		case RSERR_INVALID_FULLSCREEN:
 			ri.Printf( PRINT_ALL, "...WARNING: fullscreen unavailable in this mode\n" );
 			return qfalse;
+
 		case RSERR_INVALID_MODE:
 			ri.Printf( PRINT_ALL, "...WARNING: could not set the given mode (%d)\n", mode );
 			return qfalse;
+
 		default:
 			break;
 	}
+
 	return qtrue;
 }
 
@@ -118,9 +121,11 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 	// count number of PFDs
 	if( glConfig.driverType > GLDRV_ICD ) {
 		maxPFD = wglDescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
+
 	} else {
 		maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
 	}
+
 	if( maxPFD > MAX_PFDS ) {
 		ri.Printf( PRINT_WARNING, "...numPFDs > MAX_PFDS (%d > %d)\n", maxPFD, MAX_PFDS );
 		maxPFD = MAX_PFDS;
@@ -132,6 +137,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 	for( i = 1; i <= maxPFD; i++ ) {
 		if( glConfig.driverType > GLDRV_ICD ) {
 			wglDescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
+
 		} else {
 			DescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
 		}
@@ -147,6 +153,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 				if( r_verbose->integer ) {
 					ri.Printf( PRINT_ALL, "...PFD %d rejected, software acceleration\n", i );
 				}
+
 				continue;
 			}
 		}
@@ -156,6 +163,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 			if( r_verbose->integer ) {
 				ri.Printf( PRINT_ALL, "...PFD %d rejected, not RGBA\n", i );
 			}
+
 			continue;
 		}
 
@@ -164,6 +172,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 			if( r_verbose->integer ) {
 				ri.Printf( PRINT_ALL, "...PFD %d rejected, improper flags (%x instead of %x)\n", i, pfds[i].dwFlags, pPFD->dwFlags );
 			}
+
 			continue;
 		}
 
@@ -171,6 +180,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 		if( pfds[i].cDepthBits < 15 ) {
 			continue;
 		}
+
 		if( ( pfds[i].cStencilBits < 4 ) && ( pPFD->cStencilBits > 0 ) ) {
 			continue;
 		}
@@ -202,6 +212,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 					bestMatch = i;
 					continue;
 				}
+
 				// otherwise if this PFD has more bits than our best, use it
 				else if( pfds[i].cColorBits > pfds[bestMatch].cColorBits ) {
 					bestMatch = i;
@@ -216,6 +227,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 					bestMatch = i;
 					continue;
 				}
+
 				// otherwise if this PFD has more bits than our best, use it
 				else if( pfds[i].cDepthBits > pfds[bestMatch].cDepthBits ) {
 					bestMatch = i;
@@ -230,12 +242,14 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 					bestMatch = i;
 					continue;
 				}
+
 				// otherwise if this PFD has more bits than our best, use it
 				else if( ( pfds[i].cStencilBits > pfds[bestMatch].cStencilBits ) && ( pPFD->cStencilBits > 0 ) ) {
 					bestMatch = i;
 					continue;
 				}
 			}
+
 		} else {
 			bestMatch = i;
 		}
@@ -249,11 +263,14 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR* pPFD )
 		if( !r_allowSoftwareGL->integer ) {
 			ri.Printf( PRINT_ALL, "...no hardware acceleration found\n" );
 			return 0;
+
 		} else {
 			ri.Printf( PRINT_ALL, "...using software emulation\n" );
 		}
+
 	} else if( pfds[bestMatch].dwFlags & PFD_GENERIC_ACCELERATED ) {
 		ri.Printf( PRINT_ALL, "...MCD acceleration found\n" );
+
 	} else {
 		ri.Printf( PRINT_ALL, "...hardware acceleration found\n" );
 	}
@@ -309,6 +326,7 @@ static void GLW_CreatePFD( PIXELFORMATDESCRIPTOR* pPFD, int colorbits, int depth
 		ri.Printf( PRINT_ALL, "...attempting to use stereo\n" );
 		src.dwFlags |= PFD_STEREO;
 		glConfig.stereoEnabled = qtrue;
+
 	} else {
 		glConfig.stereoEnabled = qfalse;
 	}
@@ -337,14 +355,17 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR* pPFD )
 			ri.Printf( PRINT_ALL, "...GLW_ChoosePFD failed\n" );
 			return TRY_PFD_FAIL_SOFT;
 		}
+
 		ri.Printf( PRINT_ALL, "...PIXELFORMAT %d selected\n", pixelformat );
 
 		if( glConfig.driverType > GLDRV_ICD ) {
 			wglDescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
+
 			if( wglSetPixelFormat( glw_state.hDC, pixelformat, pPFD ) == FALSE ) {
 				ri.Printf( PRINT_ALL, "...wglSetPixelFormat failed\n" );
 				return TRY_PFD_FAIL_SOFT;
 			}
+
 		} else {
 			DescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
 
@@ -362,20 +383,24 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR* pPFD )
 	//
 	if( !glw_state.hGLRC ) {
 		ri.Printf( PRINT_ALL, "...creating GL context: " );
+
 		if( ( glw_state.hGLRC = ( HGLRC )wglCreateContext( glw_state.hDC ) ) == 0 ) {
 			ri.Printf( PRINT_ALL, "failed\n" );
 
 			return TRY_PFD_FAIL_HARD;
 		}
+
 		ri.Printf( PRINT_ALL, "succeeded\n" );
 
 		ri.Printf( PRINT_ALL, "...making context current: " );
+
 		if( !wglMakeCurrent( glw_state.hDC, glw_state.hGLRC ) ) {
 			wglDeleteContext( glw_state.hGLRC );
 			glw_state.hGLRC = NULL;
 			ri.Printf( PRINT_ALL, "failed\n" );
 			return TRY_PFD_FAIL_HARD;
 		}
+
 		ri.Printf( PRINT_ALL, "succeeded\n" );
 	}
 
@@ -406,6 +431,7 @@ static qboolean GLW_InitDriver( const char* drivername, int colorbits )
 			ri.Printf( PRINT_ALL, "failed\n" );
 			return qfalse;
 		}
+
 		ri.Printf( PRINT_ALL, "succeeded\n" );
 	}
 
@@ -419,9 +445,11 @@ static qboolean GLW_InitDriver( const char* drivername, int colorbits )
 	if( r_depthbits->integer == 0 ) {
 		if( colorbits > 16 ) {
 			depthbits = 24;
+
 		} else {
 			depthbits = 16;
 		}
+
 	} else {
 		depthbits = r_depthbits->integer;
 	}
@@ -430,6 +458,7 @@ static qboolean GLW_InitDriver( const char* drivername, int colorbits )
 	// do not allow stencil if Z-buffer depth likely won't contain it
 	//
 	stencilbits = r_stencilbits->integer;
+
 	if( depthbits < 24 ) {
 		stencilbits = 0;
 	}
@@ -443,6 +472,7 @@ static qboolean GLW_InitDriver( const char* drivername, int colorbits )
 	//
 	if( !glw_state.pixelFormatSet ) {
 		GLW_CreatePFD( &pfd, colorbits, depthbits, stencilbits, r_stereo->integer );
+
 		if( ( tpfd = GLW_MakeContext( &pfd ) ) != TRY_PFD_SUCCESS ) {
 			if( tpfd == TRY_PFD_FAIL_HARD ) {
 				ri.Printf( PRINT_WARNING, "...failed hard\n" );
@@ -467,7 +497,9 @@ static qboolean GLW_InitDriver( const char* drivername, int colorbits )
 			if( colorbits > glw_state.desktopBitsPixel ) {
 				colorbits = glw_state.desktopBitsPixel;
 			}
+
 			GLW_CreatePFD( &pfd, colorbits, depthbits, 0, r_stereo->integer );
+
 			if( GLW_MakeContext( &pfd ) != TRY_PFD_SUCCESS ) {
 				if( glw_state.hDC ) {
 					ReleaseDC( g_wv.hWnd, glw_state.hDC );
@@ -537,6 +569,7 @@ static qboolean GLW_CreateWindow( const char* drivername, int width, int height,
 		if( !RegisterClass( &wc ) ) {
 			ri.Error( ERR_FATAL, "GLW_CreateWindow: could not register window class" );
 		}
+
 		s_classRegistered = qtrue;
 		ri.Printf( PRINT_ALL, "...registered window class\n" );
 	}
@@ -556,6 +589,7 @@ static qboolean GLW_CreateWindow( const char* drivername, int width, int height,
 		if( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) ) {
 			exstyle	  = WS_EX_TOPMOST;
 			stylebits = WS_POPUP | WS_VISIBLE | WS_SYSMENU;
+
 		} else {
 			exstyle	  = 0;
 			stylebits = WINDOW_STYLE | WS_SYSMENU;
@@ -568,6 +602,7 @@ static qboolean GLW_CreateWindow( const char* drivername, int width, int height,
 		if( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) ) {
 			x = 0;
 			y = 0;
+
 		} else {
 			vid_xpos = ri.Cvar_Get( "vid_xpos", "", 0 );
 			vid_ypos = ri.Cvar_Get( "vid_ypos", "", 0 );
@@ -579,6 +614,7 @@ static qboolean GLW_CreateWindow( const char* drivername, int width, int height,
 			if( x < 0 ) {
 				x = 0;
 			}
+
 			if( y < 0 ) {
 				y = 0;
 			}
@@ -587,6 +623,7 @@ static qboolean GLW_CreateWindow( const char* drivername, int width, int height,
 				if( x + w > glw_state.desktopWidth ) {
 					x = ( glw_state.desktopWidth - w );
 				}
+
 				if( y + h > glw_state.desktopHeight ) {
 					y = ( glw_state.desktopHeight - h );
 				}
@@ -602,6 +639,7 @@ static qboolean GLW_CreateWindow( const char* drivername, int width, int height,
 		ShowWindow( g_wv.hWnd, SW_SHOW );
 		UpdateWindow( g_wv.hWnd );
 		ri.Printf( PRINT_ALL, "...created window@%d,%d (%dx%d)\n", x, y, w, h );
+
 	} else {
 		ri.Printf( PRINT_ALL, "...window already present, CreateWindowEx skipped\n" );
 	}
@@ -626,21 +664,27 @@ static void PrintCDSError( int value )
 		case DISP_CHANGE_RESTART:
 			ri.Printf( PRINT_ALL, "restart required\n" );
 			break;
+
 		case DISP_CHANGE_BADPARAM:
 			ri.Printf( PRINT_ALL, "bad param\n" );
 			break;
+
 		case DISP_CHANGE_BADFLAGS:
 			ri.Printf( PRINT_ALL, "bad flags\n" );
 			break;
+
 		case DISP_CHANGE_FAILED:
 			ri.Printf( PRINT_ALL, "DISP_CHANGE_FAILED\n" );
 			break;
+
 		case DISP_CHANGE_BADMODE:
 			ri.Printf( PRINT_ALL, "bad mode\n" );
 			break;
+
 		case DISP_CHANGE_NOTUPDATED:
 			ri.Printf( PRINT_ALL, "not updated\n" );
 			break;
+
 		default:
 			ri.Printf( PRINT_ALL, "unknown error %d\n", value );
 			break;
@@ -661,10 +705,12 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 	// print out informational messages
 	//
 	ri.Printf( PRINT_ALL, "...setting mode %d:", mode );
+
 	if( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, mode ) ) {
 		ri.Printf( PRINT_ALL, " invalid mode\n" );
 		return RSERR_INVALID_MODE;
 	}
+
 	ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, win_fs[cdsFullscreen] );
 
 	//
@@ -719,9 +765,11 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 				dm.dmBitsPerPel = colorbits;
 				dm.dmFields |= DM_BITSPERPEL;
 				ri.Printf( PRINT_ALL, "...using colorsbits of %d\n", colorbits );
+
 			} else {
 				ri.Printf( PRINT_ALL, "WARNING:...changing depth not supported on Win95 < pre-OSR 2.x\n" );
 			}
+
 		} else {
 			ri.Printf( PRINT_ALL, "...using desktop display depth of %d\n", glw_state.desktopBitsPixel );
 		}
@@ -738,6 +786,7 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 				return RSERR_INVALID_MODE;
 			}
 		}
+
 		//
 		// need to call CDS
 		//
@@ -756,6 +805,7 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 				}
 
 				glw_state.cdsFullscreen = qtrue;
+
 			} else {
 				//
 				// the exact mode failed, so scan EnumDisplaySettings for the next largest mode
@@ -775,6 +825,7 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 						modeNum = -1;
 						break;
 					}
+
 					if( devmode.dmPelsWidth >= glConfig.vidWidth && devmode.dmPelsHeight >= glConfig.vidHeight && devmode.dmBitsPerPel >= 15 ) {
 						break;
 					}
@@ -782,6 +833,7 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 
 				if( modeNum != -1 && ( cdsRet = ChangeDisplaySettings( &devmode, CDS_FULLSCREEN ) ) == DISP_CHANGE_SUCCESSFUL ) {
 					ri.Printf( PRINT_ALL, " ok\n" );
+
 					if( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue ) ) {
 						ri.Printf( PRINT_ALL, "...restoring display settings\n" );
 						ChangeDisplaySettings( 0, 0 );
@@ -789,6 +841,7 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 					}
 
 					glw_state.cdsFullscreen = qtrue;
+
 				} else {
 					ri.Printf( PRINT_ALL, " failed, " );
 
@@ -799,19 +852,23 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 
 					glw_state.cdsFullscreen = qfalse;
 					glConfig.isFullscreen	= qfalse;
+
 					if( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qfalse ) ) {
 						return RSERR_INVALID_MODE;
 					}
+
 					return RSERR_INVALID_FULLSCREEN;
 				}
 			}
 		}
+
 	} else {
 		if( glw_state.cdsFullscreen ) {
 			ChangeDisplaySettings( 0, 0 );
 		}
 
 		glw_state.cdsFullscreen = qfalse;
+
 		if( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qfalse ) ) {
 			return RSERR_INVALID_MODE;
 		}
@@ -822,6 +879,7 @@ static rserr_t GLW_SetMode( const char* drivername, int mode, int colorbits, qbo
 	//
 	memset( &dm, 0, sizeof( dm ) );
 	dm.dmSize = sizeof( dm );
+
 	if( EnumDisplaySettings( NULL, ENUM_CURRENT_SETTINGS, &dm ) ) {
 		glConfig.displayFrequency = dm.dmDisplayFrequency;
 	}
@@ -858,11 +916,13 @@ static void GLW_InitExtensions()
 		if( r_ext_compressed_textures->integer ) {
 			glConfig.textureCompression = TC_EXT_COMP_S3TC;
 			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_compression_s3tc\n" );
+
 		} else {
 			glConfig.textureCompression = TC_NONE;
 			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_compression_s3tc\n" );
 		}
 	}
+
 	/* RF, disabled this section, since this method produces very ugly results on nvidia hardware
 	else if ( strstr( glConfig.extensions_string, "GL_S3_s3tc" ) )
 	{
@@ -887,10 +947,12 @@ static void GLW_InitExtensions()
 		if( r_ext_texture_env_add->integer ) {
 			glConfig.textureEnvAddAvailable = qtrue;
 			ri.Printf( PRINT_ALL, "...using GL_EXT_texture_env_add\n" );
+
 		} else {
 			glConfig.textureEnvAddAvailable = qfalse;
 			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_env_add\n" );
 		}
+
 	} else {
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_env_add not found\n" );
 	}
@@ -914,6 +976,7 @@ static void GLW_InitExtensions()
 			ri.Printf( PRINT_ALL, "...ignoring GL_EXT_texture_filter_anisotropic\n" );
 			ri.Cvar_Set( "r_ext_texture_filter_anisotropic", "0" );
 		}
+
 	} else {
 		//		ri.Printf( PRINT_ALL, "...GL_EXT_texture_filter_anisotropic not found\n" );
 		ri.Cvar_Set( "r_ext_texture_filter_anisotropic", "0" );
@@ -924,10 +987,12 @@ static void GLW_InitExtensions()
 		if( r_ext_NV_fog_dist->integer ) {
 			glConfig.NVFogAvailable = qtrue;
 			ri.Printf( PRINT_ALL, "...using GL_NV_fog_distance\n" );
+
 		} else {
 			ri.Printf( PRINT_ALL, "...ignoring GL_NV_fog_distance\n" );
 			ri.Cvar_Set( "r_ext_NV_fog_dist", "0" );
 		}
+
 	} else {
 		ri.Printf( PRINT_ALL, "...GL_NV_fog_distance not found\n" );
 		ri.Cvar_Set( "r_ext_NV_fog_dist", "0" );
@@ -956,15 +1021,18 @@ static qboolean GLW_CheckOSVersion()
 	if( GetVersionEx( &vinfo ) ) {
 		if( vinfo.dwMajorVersion > 4 ) {
 			glw_state.allowdisplaydepthchange = qtrue;
+
 		} else if( vinfo.dwMajorVersion == 4 ) {
 			if( vinfo.dwPlatformId == VER_PLATFORM_WIN32_NT ) {
 				glw_state.allowdisplaydepthchange = qtrue;
+
 			} else if( vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS ) {
 				if( LOWORD( vinfo.dwBuildNumber ) >= OSR2_BUILD_NUMBER ) {
 					glw_state.allowdisplaydepthchange = qtrue;
 				}
 			}
 		}
+
 	} else {
 		ri.Printf( PRINT_ALL, "GLW_CheckOSVersion() - GetVersionEx failed\n" );
 		return qfalse;
@@ -992,6 +1060,7 @@ static qboolean GLW_LoadOpenGL( const char* drivername )
 	//
 	if( strstr( buffer, "opengl32" ) != 0 || r_maskMinidriver->integer ) {
 		glConfig.driverType = GLDRV_ICD;
+
 	} else {
 		glConfig.driverType = GLDRV_STANDALONE;
 
@@ -1010,9 +1079,11 @@ static qboolean GLW_LoadOpenGL( const char* drivername )
 	//
 	if( 1 ) {
 #if 0
+
 		// FIXME: newer 3Dfx drivers means this can go away
 		if( !Q_stricmp( buffer, _3DFX_DRIVER_NAME ) ) {
 			cdsFullscreen = qfalse;
+
 		} else
 #endif
 		{
@@ -1029,6 +1100,7 @@ static qboolean GLW_LoadOpenGL( const char* drivername )
 						goto fail;
 					}
 				}
+
 			} else {
 				goto fail;
 			}
@@ -1040,6 +1112,7 @@ static qboolean GLW_LoadOpenGL( const char* drivername )
 
 		return qtrue;
 	}
+
 fail:
 
 	// QGL_Shutdown();
@@ -1089,31 +1162,39 @@ static void GLW_StartOpenGL()
 	if( !GLW_LoadOpenGL( r_glDriver->string ) ) {
 		if( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) ) {
 			attemptedOpenGL32 = qtrue;
+
 		} else if( !Q_stricmp( r_glDriver->string, _3DFX_DRIVER_NAME ) ) {
 			attempted3Dfx = qtrue;
 		}
 
 		if( !attempted3Dfx ) {
 			attempted3Dfx = qtrue;
+
 			if( GLW_LoadOpenGL( _3DFX_DRIVER_NAME ) ) {
 				ri.Cvar_Set( "r_glDriver", _3DFX_DRIVER_NAME );
 				r_glDriver->modified = qfalse;
+
 			} else {
 				if( !attemptedOpenGL32 ) {
 					if( !GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) ) {
 						ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 					}
+
 					ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
 					r_glDriver->modified = qfalse;
+
 				} else {
 					ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 				}
 			}
+
 		} else if( !attemptedOpenGL32 ) {
 			attemptedOpenGL32 = qtrue;
+
 			if( GLW_LoadOpenGL( OPENGL_DRIVER_NAME ) ) {
 				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
 				r_glDriver->modified = qfalse;
+
 			} else {
 				ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 			}
@@ -1182,12 +1263,15 @@ void GLimp_Init()
 		if( strstr( buf, "voodoo graphics/1 tmu/2 mb" ) ) {
 			ri.Cvar_Set( "r_picmip", "2" );
 			ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
+
 		} else if( strstr( buf, "matrox" ) ) {
 			ri.Cvar_Set( "r_allowExtensions", "0" );
+
 		} else {
 			if( strstr( buf, "rage 128" ) || strstr( buf, "rage128" ) ) {
 				ri.Cvar_Set( "r_finish", "0" );
 			}
+
 			// Savage3D and Savage4 should always have trilinear enabled
 			else if( strstr( buf, "savage3d" ) || strstr( buf, "s3 savage4" ) ) {
 				ri.Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
@@ -1202,21 +1286,26 @@ void GLimp_Init()
 	if( strstr( buf, "banshee" ) || strstr( buf, "voodoo3" ) ) {
 		glConfig.hardwareType = GLHW_3DFX_2D3D;
 	}
+
 	// VOODOO GRAPHICS w/ 2MB
 	else if( strstr( buf, "voodoo graphics/1 tmu/2 mb" ) ) {
 	} else if( strstr( buf, "glzicd" ) ) {
 	} else if( strstr( buf, "rage pro" ) || strstr( buf, "Rage Pro" ) || strstr( buf, "ragepro" ) ) {
 		glConfig.hardwareType = GLHW_RAGEPRO;
+
 	} else if( strstr( buf, "rage 128" ) ) {
 	} else if( strstr( buf, "permedia2" ) ) {
 		glConfig.hardwareType = GLHW_PERMEDIA2;
+
 	} else if( strstr( buf, "riva 128" ) ) {
 		glConfig.hardwareType = GLHW_RIVA128;
+
 	} else if( strstr( buf, "riva tnt " ) ) {
 	}
 
 	if( strstr( buf, "geforce" ) || strstr( buf, "ge-force" ) || strstr( buf, "radeon" ) || strstr( buf, "nv20" ) || strstr( buf, "nv30" ) || strstr( buf, "quadro" ) ) {
 		ri.Cvar_Set( "r_highQualityVideo", "1" );
+
 	} else {
 		ri.Cvar_Set( "r_highQualityVideo", "0" );
 	}

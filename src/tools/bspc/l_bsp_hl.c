@@ -251,6 +251,7 @@ void HL_FreeMaxBSP()
 	Log_Print( " of BSP memory\n" );
 	hl_allocatedbspmem = 0;
 }
+
 // #endif //ME
 
 /*
@@ -287,17 +288,21 @@ int HL_CompressVis( byte* vis, byte* dest )
 
 	for( j = 0; j < visrow; j++ ) {
 		*dest_p++ = vis[j];
+
 		if( vis[j] ) {
 			continue;
 		}
 
 		rep = 1;
+
 		for( j++; j < visrow; j++ )
 			if( vis[j] || rep == 255 ) {
 				break;
+
 			} else {
 				rep++;
 			}
+
 		*dest_p++ = rep;
 		j--;
 	}
@@ -327,6 +332,7 @@ void HL_DecompressVis( byte* in, byte* decompressed )
 
 		c = in[1];
 		in += 2;
+
 		while( c ) {
 			*out++ = 0;
 			c--;
@@ -384,6 +390,7 @@ void HL_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 3; j++ ) {
 			hl_dplanes[i].normal[j] = LittleFloat( hl_dplanes[i].normal[j] );
 		}
+
 		hl_dplanes[i].dist = LittleFloat( hl_dplanes[i].dist );
 		hl_dplanes[i].type = LittleLong( hl_dplanes[i].type );
 	}
@@ -395,6 +402,7 @@ void HL_SwapBSPFile( qboolean todisk )
 		for( j = 0; j < 8; j++ ) {
 			hl_texinfo[i].vecs[0][j] = LittleFloat( hl_texinfo[i].vecs[0][j] );
 		}
+
 		hl_texinfo[i].miptex = LittleLong( hl_texinfo[i].miptex );
 		hl_texinfo[i].flags	 = LittleLong( hl_texinfo[i].flags );
 	}
@@ -416,10 +424,12 @@ void HL_SwapBSPFile( qboolean todisk )
 	//
 	for( i = 0; i < hl_numnodes; i++ ) {
 		hl_dnodes[i].planenum = LittleLong( hl_dnodes[i].planenum );
+
 		for( j = 0; j < 3; j++ ) {
 			hl_dnodes[i].mins[j] = LittleShort( hl_dnodes[i].mins[j] );
 			hl_dnodes[i].maxs[j] = LittleShort( hl_dnodes[i].maxs[j] );
 		}
+
 		hl_dnodes[i].children[0] = LittleShort( hl_dnodes[i].children[0] );
 		hl_dnodes[i].children[1] = LittleShort( hl_dnodes[i].children[1] );
 		hl_dnodes[i].firstface	 = LittleShort( hl_dnodes[i].firstface );
@@ -431,6 +441,7 @@ void HL_SwapBSPFile( qboolean todisk )
 	//
 	for( i = 0; i < hl_numleafs; i++ ) {
 		hl_dleafs[i].contents = LittleLong( hl_dleafs[i].contents );
+
 		for( j = 0; j < 3; j++ ) {
 			hl_dleafs[i].mins[j] = LittleShort( hl_dleafs[i].mins[j] );
 			hl_dleafs[i].maxs[j] = LittleShort( hl_dleafs[i].maxs[j] );
@@ -455,12 +466,16 @@ void HL_SwapBSPFile( qboolean todisk )
 	//
 	if( hl_texdatasize ) {
 		mtl = ( hl_dmiptexlump_t* )hl_dtexdata;
+
 		if( todisk ) {
 			c = mtl->nummiptex;
+
 		} else {
 			c = LittleLong( mtl->nummiptex );
 		}
+
 		mtl->nummiptex = LittleLong( mtl->nummiptex );
+
 		for( i = 0; i < c; i++ ) {
 			mtl->dataofs[i] = LittleLong( mtl->dataofs[i] );
 		}
@@ -638,15 +653,20 @@ int ArrayUsage( char* szItem, int items, int maxitems, int itemsize )
 	float percentage = maxitems ? items * 100.0 / maxitems : 0.0;
 
 	qprintf( "%-12s  %7i/%-7i  %7i/%-7i  (%4.1f%%)", szItem, items, maxitems, items * itemsize, maxitems * itemsize, percentage );
+
 	if( percentage > 80.0 ) {
 		qprintf( "VERY FULL!\n" );
+
 	} else if( percentage > 95.0 ) {
 		qprintf( "SIZE DANGER!\n" );
+
 	} else if( percentage > 99.9 ) {
 		qprintf( "SIZE OVERFLOW!!!\n" );
+
 	} else {
 		qprintf( "\n" );
 	}
+
 	return items * itemsize;
 }
 
@@ -655,15 +675,20 @@ int GlobUsage( char* szItem, int itemstorage, int maxstorage )
 	float percentage = maxstorage ? itemstorage * 100.0 / maxstorage : 0.0;
 
 	qprintf( "%-12s     [variable]    %7i/%-7i  (%4.1f%%)", szItem, itemstorage, maxstorage, percentage );
+
 	if( percentage > 80.0 ) {
 		qprintf( "VERY FULL!\n" );
+
 	} else if( percentage > 95.0 ) {
 		qprintf( "SIZE DANGER!\n" );
+
 	} else if( percentage > 99.9 ) {
 		qprintf( "SIZE OVERFLOW!!!\n" );
+
 	} else {
 		qprintf( "\n" );
 	}
+
 	return itemstorage;
 }
 
@@ -805,9 +830,11 @@ void HL_UnparseEntities()
 
 	for( i = 0; i < num_entities; i++ ) {
 		ep = entities[i].epairs;
+
 		if( !ep ) {
 			continue; // ent got removed
 		}
+
 		strcat( end, "{\n" );
 		end += 2;
 
@@ -816,6 +843,7 @@ void HL_UnparseEntities()
 			strcat( end, line );
 			end += strlen( line );
 		}
+
 		strcat( end, "}\n" );
 		end += 2;
 
@@ -823,6 +851,7 @@ void HL_UnparseEntities()
 			Error( "Entity text too long" );
 		}
 	}
+
 	hl_entdatasize = end - buf + 1;
 }
 

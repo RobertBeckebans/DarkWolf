@@ -93,12 +93,15 @@ void		  R_Fog( glfog_t* curfog )
 	if( !curfog->density ) {
 		curfog->density = 1;
 	}
+
 	if( !curfog->hint ) {
 		curfog->hint = GL_DONT_CARE;
 	}
+
 	if( !curfog->mode ) {
 		curfog->mode = GL_LINEAR;
 	}
+
 	//----(SA)	end
 
 	R_FogOn();
@@ -119,14 +122,17 @@ void		  R_Fog( glfog_t* curfog )
 	//	}
 	//	if(curfog->hint != setfog.hint || !setfog.registered) {
 	glHint( GL_FOG_HINT, curfog->hint );
+
 	//		setfog.hint = curfog->hint;
 	//	}
 	//	if(curfog->start != setfog.start || !setfog.registered) {
 	if( backEnd.refdef.rdflags & RDF_SNOOPERVIEW ) {
 		glFogf( GL_FOG_START, curfog->end ); // snooper starts GL fog out further
+
 	} else {
 		glFogf( GL_FOG_START, curfog->start );
 	}
+
 	//		setfog.start = curfog->start;
 	//	}
 
@@ -135,15 +141,18 @@ void		  R_Fog( glfog_t* curfog )
 		glFogf( GL_FOG_END, r_zfar->value );
 		//			setfog.end = r_zfar->value;
 		//		}
+
 	} else {
 		//		if(curfog->end != setfog.end || !setfog.registered) {
 		if( backEnd.refdef.rdflags & RDF_SNOOPERVIEW ) {
 			glFogf( GL_FOG_END, curfog->end + 1000 ); // snooper ends GL fog out further.  this works fine with our maps, but could be 'funky' with later maps
 		}
+
 		//				glFogf (GL_FOG_END, curfog->end);
 		else {
 			glFogf( GL_FOG_END, curfog->end );
 		}
+
 		//			setfog.end = curfog->end;
 		//		}
 	}
@@ -159,6 +168,7 @@ void R_FogOff()
 	if( !fogIsOn ) {
 		return;
 	}
+
 	glDisable( GL_FOG );
 	fogIsOn = qfalse;
 }
@@ -192,6 +202,7 @@ void R_FogOn()
 		if( !( glfogsettings[FOG_PORTALVIEW].registered ) ) {
 			return;
 		}
+
 	} else if( !glfogNum ) {
 		return;
 	}
@@ -199,6 +210,7 @@ void R_FogOn()
 	glEnable( GL_FOG );
 	fogIsOn = qtrue;
 }
+
 // done.
 
 //----(SA)
@@ -235,17 +247,20 @@ void R_SetFog( int fogvar, int var1, int var2, float r, float g, float b, float 
 		glfogsettings[fogvar].color[3] = 1;
 		glfogsettings[fogvar].start	   = var1;
 		glfogsettings[fogvar].end	   = var2;
+
 		if( density >= 1 ) {
 			glfogsettings[fogvar].mode		  = GL_LINEAR;
 			glfogsettings[fogvar].drawsky	  = qfalse;
 			glfogsettings[fogvar].clearscreen = qtrue;
 			glfogsettings[fogvar].density	  = 1.0;
+
 		} else {
 			glfogsettings[fogvar].mode		  = GL_EXP;
 			glfogsettings[fogvar].drawsky	  = qtrue;
 			glfogsettings[fogvar].clearscreen = qfalse;
 			glfogsettings[fogvar].density	  = density;
 		}
+
 		glfogsettings[fogvar].hint		 = GL_DONT_CARE;
 		glfogsettings[fogvar].registered = qtrue;
 
@@ -282,6 +297,7 @@ void R_SetFog( int fogvar, int var1, int var2, float r, float g, float b, float 
 
 	if( glfogsettings[FOG_CURRENT].registered ) {
 		memcpy( &glfogsettings[FOG_LAST], &glfogsettings[FOG_CURRENT], sizeof( glfog_t ) );
+
 	} else {
 		// if no current fog fall back to world fog
 		// FIXME: handle transition if there is no FOG_MAP fog
@@ -296,6 +312,7 @@ void R_SetFog( int fogvar, int var1, int var2, float r, float g, float b, float 
 		glfogsettings[FOG_TARGET].finishTime = 0;
 		glfogsettings[FOG_TARGET].dirty		 = 1;
 		glfogsettings[FOG_CURRENT].dirty	 = 1;
+
 	} else {
 		// setup transition times
 		glfogsettings[FOG_TARGET].startTime	 = tr.refdef.time;
@@ -340,25 +357,32 @@ int R_CullLocalBox( vec3_t bounds[2] )
 
 	// check against frustum planes
 	anyBack = 0;
+
 	for( i = 0; i < 4; i++ ) {
 		frust = &tr.viewParms.frustum[i];
 
 		front = back = 0;
+
 		for( j = 0; j < 8; j++ ) {
 			dists[j] = DotProduct( transformed[j], frust->normal );
+
 			if( dists[j] > frust->dist ) {
 				front = 1;
+
 				if( back ) {
 					break; // a point is in front
 				}
+
 			} else {
 				back = 1;
 			}
 		}
+
 		if( !front ) {
 			// all points were behind one of the planes
 			return CULL_OUT;
 		}
+
 		anyBack |= back;
 	}
 
@@ -400,8 +424,10 @@ int R_CullPointAndRadius( vec3_t pt, float radius )
 		frust = &tr.viewParms.frustum[i];
 
 		dist = DotProduct( pt, frust->normal ) - frust->dist;
+
 		if( dist < -radius ) {
 			return CULL_OUT;
+
 		} else if( dist <= radius ) {
 			mightBeClipped = qtrue;
 		}
@@ -529,6 +555,7 @@ void R_RotateForEntity( const trRefEntity_t* ent, const viewParms_t* viewParms, 
 	if( ent == NULL || ent->e.reType != RT_MODEL ) {
 		if( viewParms ) {
 			* or = viewParms->world;
+
 		} else {
 			VectorClear( or->origin );
 
@@ -555,6 +582,7 @@ void R_RotateForEntity( const trRefEntity_t* ent, const viewParms_t* viewParms, 
 
 			VectorClear( or->viewOrigin );
 		}
+
 		return;
 	}
 
@@ -595,11 +623,14 @@ void R_RotateForEntity( const trRefEntity_t* ent, const viewParms_t* viewParms, 
 		// compensate for scale in the axes if necessary
 		if( ent->e.nonNormalizedAxes ) {
 			axisLength = VectorLength( ent->e.axis[0] );
+
 			if( !axisLength ) {
 				axisLength = 0.0f;
+
 			} else {
 				axisLength = 1.0f / axisLength;
 			}
+
 		} else {
 			axisLength = 1.0f;
 		}
@@ -607,6 +638,7 @@ void R_RotateForEntity( const trRefEntity_t* ent, const viewParms_t* viewParms, 
 		or->viewOrigin[0] = DotProduct( delta, or->axis[0] ) * axisLength;
 		or->viewOrigin[1] = DotProduct( delta, or->axis[1] ) * axisLength;
 		or->viewOrigin[2] = DotProduct( delta, or->axis[2] ) * axisLength;
+
 	} else {
 		memcpy( or->modelMatrix, glMatrix, sizeof( glMatrix ) );
 		VectorClear( or->viewOrigin );
@@ -686,18 +718,23 @@ void R_SetFrameFog()
 			memcpy( &glfogsettings[FOG_CURRENT], &glfogsettings[FOG_TARGET], sizeof( glfog_t ) );
 			glfogsettings[FOG_TARGET].finishTime = 0;
 		}
+
 		// transitioning from distance to density
 		else if( glfogsettings[FOG_LAST].mode == GL_LINEAR && glfogsettings[FOG_TARGET].mode == GL_EXP ) {
 			memcpy( &glfogsettings[FOG_CURRENT], &glfogsettings[FOG_TARGET], sizeof( glfog_t ) );
 			glfogsettings[FOG_TARGET].finishTime = 0;
 		}
+
 		// transitioning like fog modes
 		else {
 			fadeTime = glfogsettings[FOG_TARGET].finishTime - glfogsettings[FOG_TARGET].startTime;
+
 			if( fadeTime <= 0 ) {
 				fadeTime = 1; // avoid divide by zero
 			}
+
 			lerpPos = ( float )( tr.refdef.time - glfogsettings[FOG_TARGET].startTime ) / ( float )fadeTime;
+
 			if( lerpPos > 1 ) {
 				lerpPos = 1;
 			}
@@ -720,6 +757,7 @@ void R_SetFrameFog()
 		}
 
 		glfogsettings[FOG_CURRENT].dirty = 1;
+
 	} else {
 		// potential FIXME: since this is the most common occurance, diff first and only set changes
 		//		if(glfogsettings[FOG_CURRENT].dirty) {
@@ -734,16 +772,19 @@ void R_SetFrameFog()
 		if( glfogsettings[FOG_CURRENT].end < tr.viewParms.zFar ) {
 			tr.viewParms.zFar = glfogsettings[FOG_CURRENT].end;
 		}
+
 		if( backEnd.refdef.rdflags & RDF_SNOOPERVIEW ) {
 			tr.viewParms.zFar += 1000; // zfar out slightly further for snooper.  this works fine with our maps, but could be 'funky' with later maps
 		}
 	}
+
 	//	else
 	//		glfogsettings[FOG_CURRENT].end = 5;
 
 	if( r_speeds->integer == 5 ) {
 		if( glfogsettings[FOG_CURRENT].mode == GL_LINEAR ) {
 			ri.Printf( PRINT_ALL, "farclip fog - den: %0.1f  calc zFar: %0.1f  fog zfar: %0.1f\n", glfogsettings[FOG_CURRENT].density, tr.viewParms.zFar, glfogsettings[FOG_CURRENT].end );
+
 		} else {
 			ri.Printf( PRINT_ALL, "density fog - den: %0.6f  calc zFar: %0.1f  fog zFar: %0.1f\n", glfogsettings[FOG_CURRENT].density, tr.viewParms.zFar, glfogsettings[FOG_CURRENT].end );
 		}
@@ -784,6 +825,7 @@ static void SetFarClip()
 	// set far clipping planes dynamically
 	//
 	farthestCornerDistance = 0;
+
 	for( i = 0; i < 8; i++ ) {
 		vec3_t v;
 		vec3_t vecTo;
@@ -791,18 +833,21 @@ static void SetFarClip()
 
 		if( i & 1 ) {
 			v[0] = tr.viewParms.visBounds[0][0];
+
 		} else {
 			v[0] = tr.viewParms.visBounds[1][0];
 		}
 
 		if( i & 2 ) {
 			v[1] = tr.viewParms.visBounds[0][1];
+
 		} else {
 			v[1] = tr.viewParms.visBounds[1][1];
 		}
 
 		if( i & 4 ) {
 			v[2] = tr.viewParms.visBounds[0][2];
+
 		} else {
 			v[2] = tr.viewParms.visBounds[1][2];
 		}
@@ -838,8 +883,10 @@ void R_SetupProjection()
 	// set up projection matrix
 	//
 	zNear = r_znear->value;
+
 	if( r_zfar->value ) {
 		zFar = r_zfar->value; // (SA) allow override for helping level designers test fog distances
+
 	} else {
 		zFar = tr.viewParms.zFar;
 	}
@@ -930,6 +977,7 @@ void R_MirrorPoint( vec3_t in, orientation_t* surface, orientation_t* camera, ve
 	VectorSubtract( in, surface->origin, local );
 
 	VectorClear( transformed );
+
 	for( i = 0; i < 3; i++ ) {
 		d = DotProduct( local, surface->axis[i] );
 		VectorMA( transformed, d, camera->axis[i], transformed );
@@ -944,6 +992,7 @@ void R_MirrorVector( vec3_t in, orientation_t* surface, orientation_t* camera, v
 	float d;
 
 	VectorClear( out );
+
 	for( i = 0; i < 3; i++ ) {
 		d = DotProduct( in, surface->axis[i] );
 		VectorMA( out, d, camera->axis[i], out );
@@ -967,10 +1016,12 @@ void R_PlaneForSurface( surfaceBase_t* surfType, cplane_t* plane )
 		plane->normal[0] = 1;
 		return;
 	}
+
 	switch( surfType->surfaceType ) {
 		case SF_FACE:
 			*plane = ( ( srfSurfaceFace_t* )surfType )->plane;
 			return;
+
 		case SF_TRIANGLES:
 			tri = ( srfTriangles_t* )surfType;
 			v1	= tri->verts + tri->indexes[0];
@@ -980,12 +1031,14 @@ void R_PlaneForSurface( surfaceBase_t* surfType, cplane_t* plane )
 			VectorCopy( plane4, plane->normal );
 			plane->dist = plane4[3];
 			return;
+
 		case SF_POLY:
 			poly = ( srfPoly_t* )surfType;
 			PlaneFromPoints( plane4, poly->verts[0].xyz, poly->verts[1].xyz, poly->verts[2].xyz );
 			VectorCopy( plane4, plane->normal );
 			plane->dist = plane4[3];
 			return;
+
 		default:
 			memset( plane, 0, sizeof( *plane ) );
 			plane->normal[0] = 1;
@@ -1029,6 +1082,7 @@ qboolean R_GetPortalOrientations( drawSurf_t* drawSurf, int entityNum, orientati
 
 		// translate the original plane
 		originalPlane.dist = originalPlane.dist + DotProduct( originalPlane.normal, tr.or.origin );
+
 	} else {
 		plane = originalPlane;
 	}
@@ -1042,11 +1096,13 @@ qboolean R_GetPortalOrientations( drawSurf_t* drawSurf, int entityNum, orientati
 	// the origin of the camera
 	for( i = 0; i < tr.refdef.num_entities; i++ ) {
 		e = &tr.refdef.entities[i];
+
 		if( e->e.reType != RT_PORTALSURFACE ) {
 			continue;
 		}
 
 		d = DotProduct( e->e.origin, originalPlane.normal ) - originalPlane.dist;
+
 		if( d > 64 || d < -64 ) {
 			continue;
 		}
@@ -1086,6 +1142,7 @@ qboolean R_GetPortalOrientations( drawSurf_t* drawSurf, int entityNum, orientati
 				VectorCopy( camera->axis[1], transformed );
 				RotatePointAroundVector( camera->axis[1], camera->axis[0], transformed, d );
 				CrossProduct( camera->axis[0], camera->axis[1], camera->axis[2] );
+
 			} else {
 				// bobbing rotate, with skinNum being the rotation offset
 				d = sin( tr.refdef.time * 0.003f );
@@ -1094,12 +1151,14 @@ qboolean R_GetPortalOrientations( drawSurf_t* drawSurf, int entityNum, orientati
 				RotatePointAroundVector( camera->axis[1], camera->axis[0], transformed, d );
 				CrossProduct( camera->axis[0], camera->axis[1], camera->axis[2] );
 			}
+
 		} else if( e->e.skinNum ) {
 			d = e->e.skinNum;
 			VectorCopy( camera->axis[1], transformed );
 			RotatePointAroundVector( camera->axis[1], camera->axis[0], transformed, d );
 			CrossProduct( camera->axis[0], camera->axis[1], camera->axis[2] );
 		}
+
 		*mirror = qfalse;
 		return qtrue;
 	}
@@ -1143,6 +1202,7 @@ static qboolean IsMirror( const drawSurf_t* drawSurf, int entityNum )
 
 		// translate the original plane
 		originalPlane.dist = originalPlane.dist + DotProduct( originalPlane.normal, tr.or.origin );
+
 	} else {
 		plane = originalPlane;
 	}
@@ -1152,11 +1212,13 @@ static qboolean IsMirror( const drawSurf_t* drawSurf, int entityNum )
 	// the origin of the camera
 	for( i = 0; i < tr.refdef.num_entities; i++ ) {
 		e = &tr.refdef.entities[i];
+
 		if( e->e.reType != RT_PORTALSURFACE ) {
 			continue;
 		}
 
 		d = DotProduct( e->e.origin, originalPlane.normal ) - originalPlane.dist;
+
 		if( d > 64 || d < -64 ) {
 			continue;
 		}
@@ -1168,6 +1230,7 @@ static qboolean IsMirror( const drawSurf_t* drawSurf, int entityNum )
 
 		return qfalse;
 	}
+
 	return qfalse;
 }
 
@@ -1213,10 +1276,12 @@ static qboolean SurfIsOffscreen( const drawSurf_t* drawSurf, vec4_t clipDest[128
 		for( j = 0; j < 3; j++ ) {
 			if( clip[j] >= clip[3] ) {
 				pointFlags |= ( 1 << ( j * 2 ) );
+
 			} else if( clip[j] <= -clip[3] ) {
 				pointFlags |= ( 1 << ( j * 2 + 1 ) );
 			}
 		}
+
 		pointAnd &= pointFlags;
 		pointOr |= pointFlags;
 	}
@@ -1241,6 +1306,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t* drawSurf, vec4_t clipDest[128
 		VectorSubtract( tess.xyz[tess.indexes[i]], tr.viewParms.or.origin, normal );
 
 		len = VectorLengthSquared( normal ); // lose the sqrt
+
 		if( len < shortest ) {
 			shortest = len;
 		}
@@ -1249,6 +1315,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t* drawSurf, vec4_t clipDest[128
 			numTriangles--;
 		}
 	}
+
 	if( !numTriangles ) {
 		return qtrue;
 	}
@@ -1301,6 +1368,7 @@ qboolean R_MirrorViewBySurface( drawSurf_t* drawSurf, int entityNum )
 
 	newParms		  = tr.viewParms;
 	newParms.isPortal = qtrue;
+
 	if( !R_GetPortalOrientations( drawSurf, entityNum, &surface, &camera, newParms.pvsOrigin, &newParms.isMirror ) ) {
 		return qfalse; // bad portal, no portalentity
 	}
@@ -1342,14 +1410,17 @@ int R_SpriteFogNum( trRefEntity_t* ent )
 
 	for( i = 1; i < tr.world->numfogs; i++ ) {
 		fog = &tr.world->fogs[i];
+
 		for( j = 0; j < 3; j++ ) {
 			if( ent->e.origin[j] - ent->e.radius >= fog->bounds[1][j] ) {
 				break;
 			}
+
 			if( ent->e.origin[j] + ent->e.radius <= fog->bounds[0][j] ) {
 				break;
 			}
 		}
+
 		if( j == 3 ) {
 			return i;
 		}
@@ -1357,6 +1428,7 @@ int R_SpriteFogNum( trRefEntity_t* ent )
 
 	return 0;
 }
+
 /*
 ==========================================================================================
 
@@ -1395,11 +1467,13 @@ static void shortsort( drawSurf_t* lo, drawSurf_t* hi )
 
 	while( hi > lo ) {
 		max = lo;
+
 		for( p = lo + 1; p <= hi; p++ ) {
 			if( p->sort > max->sort ) {
 				max = p;
 			}
 		}
+
 		SwapDrawSurf( max, hi );
 		hi--;
 	}
@@ -1446,6 +1520,7 @@ recurse:
 	/* below a certain size, it is faster to use a O(n^2) sorting method */
 	if( size <= CUTOFF ) {
 		shortsort( ( drawSurf_t* )lo, ( drawSurf_t* )hi );
+
 	} else {
 		/* First we pick a partitioning element. The efficiency of the
 		   algorithm demands that we find one that is approximately the
@@ -1532,6 +1607,7 @@ recurse:
 				lo = loguy;
 				goto recurse; /* do small recursion */
 			}
+
 		} else {
 			if( loguy < hi ) {
 				lostk[stkptr] = loguy;
@@ -1550,6 +1626,7 @@ recurse:
 	   Check if there are any, and do them. */
 
 	--stkptr;
+
 	if( stkptr >= 0 ) {
 		lo = lostk[stkptr];
 		hi = histk[stkptr];
@@ -1655,6 +1732,7 @@ void R_SortDrawSurfs( drawSurf_t* drawSurfs, int numDrawSurfs )
 			if( r_portalOnly->integer ) {
 				return;
 			}
+
 			break; // only one mirror view at a time
 		}
 	}
@@ -1697,6 +1775,7 @@ void R_AddEntitySurfaces()
 		switch( ent->e.reType ) {
 			case RT_PORTALSURFACE:
 				break; // don't draw anything
+
 			case RT_SPRITE:
 			case RT_SPLASH:
 			case RT_BEAM:
@@ -1704,12 +1783,14 @@ void R_AddEntitySurfaces()
 			case RT_RAIL_CORE:
 			case RT_RAIL_CORE_TAPER:
 			case RT_RAIL_RINGS:
+
 				// self blood sprites, talk balloons, etc should not be drawn in the primary
 				// view.  We can't just do this check for all entities, because md3
 				// entities may still want to cast shadows from them
 				if( ( ent->e.renderfx & RF_THIRD_PERSON ) && !tr.viewParms.isPortal ) {
 					continue;
 				}
+
 				shader = R_GetShaderByHandle( ent->e.customShader );
 				// GR - these entities are not tessellated
 				R_AddDrawSurf( &entitySurface, shader, R_SpriteFogNum( ent ), 0, ATI_TESS_NONE );
@@ -1720,39 +1801,49 @@ void R_AddEntitySurfaces()
 				R_RotateForEntity( ent, &tr.viewParms, &tr.or );
 
 				tr.currentModel = R_GetModelByHandle( ent->e.hModel );
+
 				if( !tr.currentModel ) {
 					// GR - not tessellated
 					R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0, ATI_TESS_NONE );
+
 				} else {
 					switch( tr.currentModel->type ) {
 						case MOD_MESH:
 							R_AddMD3Surfaces( ent );
 							break;
+
 						// Ridah
 						case MOD_MDC:
 							R_AddMDCSurfaces( ent );
 							break;
+
 						// done.
 						case MOD_MDS:
 							R_AddAnimSurfaces( ent );
 							break;
+
 						case MOD_BRUSH:
 							R_AddBrushModelSurfaces( ent );
 							break;
+
 						case MOD_BAD: // null model axis
 							if( ( ent->e.renderfx & RF_THIRD_PERSON ) && !tr.viewParms.isPortal ) {
 								break;
 							}
+
 							shader = R_GetShaderByHandle( ent->e.customShader );
 							// GR - not tessellated
 							R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0, ATI_TESS_NONE );
 							break;
+
 						default:
 							ri.Error( ERR_DROP, "R_AddEntitySurfaces: Bad modeltype" );
 							break;
 					}
 				}
+
 				break;
+
 			default:
 				ri.Error( ERR_DROP, "R_AddEntitySurfaces: Bad reType" );
 		}
@@ -1795,9 +1886,11 @@ void R_DebugPolygon( int color, int numPoints, float* points )
 
 	glColor3f( color & 1, ( color >> 1 ) & 1, ( color >> 2 ) & 1 );
 	glBegin( GL_POLYGON );
+
 	for( i = 0; i < numPoints; i++ ) {
 		glVertex3fv( points + i * 3 );
 	}
+
 	glEnd();
 
 	// draw wireframe outline
@@ -1805,9 +1898,11 @@ void R_DebugPolygon( int color, int numPoints, float* points )
 	glDepthRange( 0, 0 );
 	glColor3f( 1, 1, 1 );
 	glBegin( GL_POLYGON );
+
 	for( i = 0; i < numPoints; i++ ) {
 		glVertex3fv( points + i * 3 );
 	}
+
 	glEnd();
 	glDepthRange( 0, 1 );
 }
@@ -1864,6 +1959,7 @@ void R_RenderView( viewParms_t* parms )
 			lastTime = tr.refdef.time;
 		}
 	}
+
 	// done.
 
 	tr.viewCount++;

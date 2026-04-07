@@ -154,12 +154,14 @@ static int Is3DNOW()
 
 	// check extended functions
 	CPUID( 0x80000000, regs );
+
 	if( regs[0] < 0x80000000 ) {
 		return qfalse;
 	}
 
 	// bit 31 of EDX denotes 3DNow! support
 	CPUID( 0x80000001, regs );
+
 	if( regs[3] & ( 1u << 31 ) ) {
 		return qtrue;
 	}

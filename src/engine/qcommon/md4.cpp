@@ -173,6 +173,7 @@ void MD4Update( MD4_CTX* context, const unsigned char* input, unsigned int input
 		}
 
 		index = 0;
+
 	} else {
 		i = 0;
 	}

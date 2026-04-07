@@ -70,26 +70,31 @@ static void	   HSVtoRGB( float h, float s, float v, float rgb[3] )
 			rgb[1] = t;
 			rgb[2] = p;
 			break;
+
 		case 1:
 			rgb[0] = q;
 			rgb[1] = v;
 			rgb[2] = p;
 			break;
+
 		case 2:
 			rgb[0] = p;
 			rgb[1] = v;
 			rgb[2] = t;
 			break;
+
 		case 3:
 			rgb[0] = p;
 			rgb[1] = q;
 			rgb[2] = v;
 			break;
+
 		case 4:
 			rgb[0] = t;
 			rgb[1] = p;
 			rgb[2] = v;
 			break;
+
 		case 5:
 			rgb[0] = v;
 			rgb[1] = p;
@@ -150,9 +155,11 @@ static void R_LoadLightmaps( lump_t* l )
 	double			sumIntensity = 0;
 
 	len = l->filelen;
+
 	if( !len ) {
 		return;
 	}
+
 	buf = fileBase + l->fileofs;
 
 	// we are about to upload textures
@@ -160,6 +167,7 @@ static void R_LoadLightmaps( lump_t* l )
 
 	// create all the lightmaps
 	tr.numLightmaps = len / ( LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3 );
+
 	if( tr.numLightmaps == 1 ) {
 		// FIXME: HACK: maps with only one lightmap turn up fullbright for some reason.
 		// this avoids this, but isn't the correct solution.
@@ -187,6 +195,7 @@ static void R_LoadLightmaps( lump_t* l )
 
 				if( intensity > 255 ) {
 					intensity = 1.0f;
+
 				} else {
 					intensity /= 255.0f;
 				}
@@ -204,12 +213,14 @@ static void R_LoadLightmaps( lump_t* l )
 
 				sumIntensity += intensity;
 			}
+
 		} else {
 			for( j = 0; j < LIGHTMAP_SIZE * LIGHTMAP_SIZE; j++ ) {
 				R_ColorShiftLightingBytes( &buf_p[j * 3], &image[j * 4] );
 				image[j * 4 + 3] = 255;
 			}
 		}
+
 		tr.lightmaps[i] = R_CreateImage( va( "*lightmap%d", i ), image, LIGHTMAP_SIZE, LIGHTMAP_SIZE, qfalse, qfalse, GL_CLAMP );
 	}
 
@@ -246,9 +257,11 @@ static void R_LoadVisibility( lump_t* l )
 	memset( s_worldData.novis, 0xff, len );
 
 	len = l->filelen;
+
 	if( !len ) {
 		return;
 	}
+
 	buf = fileBase + l->fileofs;
 
 	s_worldData.numClusters	 = LittleLong( ( ( int* )buf )[0] );
@@ -258,6 +271,7 @@ static void R_LoadVisibility( lump_t* l )
 	// we don't need to allocate another copy
 	if( tr.externalVisData ) {
 		s_worldData.vis = tr.externalVisData;
+
 	} else {
 		byte* dest;
 
@@ -280,9 +294,11 @@ static shader_t* ShaderForShaderNum( int shaderNum, int lightmapNum )
 	dshader_t* dsh;
 
 	shaderNum = LittleLong( shaderNum );
+
 	if( shaderNum < 0 || shaderNum >= s_worldData.numShaders ) {
 		ri.Error( ERR_DROP, "ShaderForShaderNum: bad num %i", shaderNum );
 	}
+
 	dsh = &s_worldData.shaders[shaderNum];
 
 	if( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
@@ -335,11 +351,13 @@ void* R_GetSurfMemory( int size )
 	size = ( size + 31 ) & ~31;
 
 	surfHunkSize += size;
+
 	if( surfHunkSize >= SURF_HUNK_MAXSIZE ) {
 		// allocate a new chunk
 		R_InitSurfMemory();
 		surfHunkSize += size; // since it just got reset
 	}
+
 	retval = surfHunkPtr;
 	surfHunkPtr += size;
 
@@ -471,11 +489,13 @@ static void ParseFace( dsurface_t* ds, drawVert_t* verts, msurface_t* surf, int*
 
 	// get shader value
 	surf->shader = ShaderForShaderNum( ds->shaderNum, lightmapNum );
+
 	if( r_singleShader->integer && !surf->shader->isSky ) {
 		surf->shader = tr.defaultShader;
 	}
 
 	numPoints = LittleLong( ds->numVerts );
+
 	if( numPoints > MAX_FACE_POINTS ) {
 		ri.Printf( PRINT_WARNING, "WARNING: MAX_FACE_POINTS exceeded: %i\n", numPoints );
 		numPoints	 = MAX_FACE_POINTS;
@@ -498,18 +518,22 @@ static void ParseFace( dsurface_t* ds, drawVert_t* verts, msurface_t* surf, int*
 	cv->ofsIndices	= ofsIndexes;
 
 	verts += LittleLong( ds->firstVert );
+
 	for( i = 0; i < numPoints; i++ ) {
 		for( j = 0; j < 3; j++ ) {
 			cv->points[i][j] = LittleFloat( verts[i].xyz[j] );
 		}
+
 		for( j = 0; j < 2; j++ ) {
 			cv->points[i][3 + j] = LittleFloat( verts[i].st[j] );
 			cv->points[i][5 + j] = LittleFloat( verts[i].lightmap[j] );
 		}
+
 		R_ColorShiftLightingBytes( verts[i].color, ( byte* )&cv->points[i][7] );
 	}
 
 	indexes += LittleLong( ds->firstIndex );
+
 	for( i = 0; i < numIndexes; i++ ) {
 		( ( int* )( ( byte* )cv + cv->ofsIndices ) )[i] = LittleLong( indexes[i] );
 	}
@@ -518,6 +542,7 @@ static void ParseFace( dsurface_t* ds, drawVert_t* verts, msurface_t* surf, int*
 	for( i = 0; i < 3; i++ ) {
 		cv->plane.normal[i] = LittleFloat( ds->lightmapVecs[2][i] );
 	}
+
 	cv->plane.dist = DotProduct( cv->points[0], cv->plane.normal );
 	SetPlaneSignbits( &cv->plane );
 	cv->plane.type = PlaneTypeForNormal( cv->plane.normal );
@@ -550,6 +575,7 @@ static void ParseMesh( dsurface_t* ds, drawVert_t* verts, msurface_t* surf )
 
 	// get shader value
 	surf->shader = ShaderForShaderNum( ds->shaderNum, lightmapNum );
+
 	if( r_singleShader->integer && !surf->shader->isSky ) {
 		surf->shader = tr.defaultShader;
 	}
@@ -566,15 +592,18 @@ static void ParseMesh( dsurface_t* ds, drawVert_t* verts, msurface_t* surf )
 
 	verts += LittleLong( ds->firstVert );
 	numPoints = width * height;
+
 	for( i = 0; i < numPoints; i++ ) {
 		for( j = 0; j < 3; j++ ) {
 			points[i].xyz[j]	= LittleFloat( verts[i].xyz[j] );
 			points[i].normal[j] = LittleFloat( verts[i].normal[j] );
 		}
+
 		for( j = 0; j < 2; j++ ) {
 			points[i].st[j]		  = LittleFloat( verts[i].st[j] );
 			points[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
 		}
+
 		R_ColorShiftLightingBytes( verts[i].color, points[i].color );
 	}
 
@@ -589,6 +618,7 @@ static void ParseMesh( dsurface_t* ds, drawVert_t* verts, msurface_t* surf )
 		bounds[0][i] = LittleFloat( ds->lightmapVecs[0][i] );
 		bounds[1][i] = LittleFloat( ds->lightmapVecs[1][i] );
 	}
+
 	VectorAdd( bounds[0], bounds[1], bounds[1] );
 	VectorScale( bounds[1], 0.5f, grid->lodOrigin );
 	VectorSubtract( bounds[0], grid->lodOrigin, tmpVec );
@@ -611,6 +641,7 @@ static void ParseTriSurf( dsurface_t* ds, drawVert_t* verts, msurface_t* surf, i
 
 	// get shader
 	surf->shader = ShaderForShaderNum( ds->shaderNum, LIGHTMAP_BY_VERTEX );
+
 	if( r_singleShader->integer && !surf->shader->isSky ) {
 		surf->shader = tr.defaultShader;
 	}
@@ -633,12 +664,15 @@ static void ParseTriSurf( dsurface_t* ds, drawVert_t* verts, msurface_t* surf, i
 	// copy vertexes
 	ClearBounds( tri->bounds[0], tri->bounds[1] );
 	verts += LittleLong( ds->firstVert );
+
 	for( i = 0; i < numVerts; i++ ) {
 		for( j = 0; j < 3; j++ ) {
 			tri->verts[i].xyz[j]	= LittleFloat( verts[i].xyz[j] );
 			tri->verts[i].normal[j] = LittleFloat( verts[i].normal[j] );
 		}
+
 		AddPointToBounds( tri->verts[i].xyz, tri->bounds[0], tri->bounds[1] );
+
 		for( j = 0; j < 2; j++ ) {
 			tri->verts[i].st[j]		  = LittleFloat( verts[i].st[j] );
 			tri->verts[i].lightmap[j] = LittleFloat( verts[i].lightmap[j] );
@@ -649,8 +683,10 @@ static void ParseTriSurf( dsurface_t* ds, drawVert_t* verts, msurface_t* surf, i
 
 	// copy indexes
 	indexes += LittleLong( ds->firstIndex );
+
 	for( i = 0; i < numIndexes; i++ ) {
 		tri->indexes[i] = LittleLong( indexes[i] );
+
 		if( tri->indexes[i] < 0 || tri->indexes[i] >= numVerts ) {
 			ri.Error( ERR_DROP, "Bad index in triangle surface" );
 		}
@@ -672,6 +708,7 @@ static void ParseFlare( dsurface_t* ds, drawVert_t* verts, msurface_t* surf, int
 
 	// get shader
 	surf->shader = ShaderForShaderNum( ds->shaderNum, LIGHTMAP_BY_VERTEX );
+
 	if( r_singleShader->integer && !surf->shader->isSky ) {
 		surf->shader = tr.defaultShader;
 	}
@@ -704,15 +741,19 @@ int R_MergedWidthPoints( srfGridMesh_t* grid, int offset )
 			if( Q_fabs( grid->verts[i + offset].xyz[0] - grid->verts[j + offset].xyz[0] ) > .1 ) {
 				continue;
 			}
+
 			if( Q_fabs( grid->verts[i + offset].xyz[1] - grid->verts[j + offset].xyz[1] ) > .1 ) {
 				continue;
 			}
+
 			if( Q_fabs( grid->verts[i + offset].xyz[2] - grid->verts[j + offset].xyz[2] ) > .1 ) {
 				continue;
 			}
+
 			return qtrue;
 		}
 	}
+
 	return qfalse;
 }
 
@@ -732,15 +773,19 @@ int R_MergedHeightPoints( srfGridMesh_t* grid, int offset )
 			if( Q_fabs( grid->verts[grid->width * i + offset].xyz[0] - grid->verts[grid->width * j + offset].xyz[0] ) > .1 ) {
 				continue;
 			}
+
 			if( Q_fabs( grid->verts[grid->width * i + offset].xyz[1] - grid->verts[grid->width * j + offset].xyz[1] ) > .1 ) {
 				continue;
 			}
+
 			if( Q_fabs( grid->verts[grid->width * i + offset].xyz[2] - grid->verts[grid->width * j + offset].xyz[2] ) > .1 ) {
 				continue;
 			}
+
 			return qtrue;
 		}
 	}
+
 	return qfalse;
 }
 
@@ -761,86 +806,110 @@ void R_FixSharedVertexLodError_r( int start, srfGridMesh_t* grid1 )
 	for( j = start; j < s_worldData.numsurfaces; j++ ) {
 		//
 		grid2 = ( srfGridMesh_t* )s_worldData.surfaces[j].data;
+
 		// if this surface is not a grid
 		if( grid2->surfaceType != SF_GRID ) {
 			continue;
 		}
+
 		// if the LOD errors are already fixed for this patch
 		if( grid2->lodFixed == 2 ) {
 			continue;
 		}
+
 		// grids in the same LOD group should have the exact same lod radius
 		if( grid1->lodRadius != grid2->lodRadius ) {
 			continue;
 		}
+
 		// grids in the same LOD group should have the exact same lod origin
 		if( grid1->lodOrigin[0] != grid2->lodOrigin[0] ) {
 			continue;
 		}
+
 		if( grid1->lodOrigin[1] != grid2->lodOrigin[1] ) {
 			continue;
 		}
+
 		if( grid1->lodOrigin[2] != grid2->lodOrigin[2] ) {
 			continue;
 		}
+
 		//
 		touch = qfalse;
+
 		for( n = 0; n < 2; n++ ) {
 			//
 			if( n ) {
 				offset1 = ( grid1->height - 1 ) * grid1->width;
+
 			} else {
 				offset1 = 0;
 			}
+
 			if( R_MergedWidthPoints( grid1, offset1 ) ) {
 				continue;
 			}
+
 			for( k = 1; k < grid1->width - 1; k++ ) {
 				for( m = 0; m < 2; m++ ) {
 					if( m ) {
 						offset2 = ( grid2->height - 1 ) * grid2->width;
+
 					} else {
 						offset2 = 0;
 					}
+
 					if( R_MergedWidthPoints( grid2, offset2 ) ) {
 						continue;
 					}
+
 					for( l = 1; l < grid2->width - 1; l++ ) {
 						//
 						if( Q_fabs( grid1->verts[k + offset1].xyz[0] - grid2->verts[l + offset2].xyz[0] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[k + offset1].xyz[1] - grid2->verts[l + offset2].xyz[1] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[k + offset1].xyz[2] - grid2->verts[l + offset2].xyz[2] ) > .1 ) {
 							continue;
 						}
+
 						// ok the points are equal and should have the same lod error
 						grid2->widthLodError[l] = grid1->widthLodError[k];
 						touch					= qtrue;
 					}
 				}
+
 				for( m = 0; m < 2; m++ ) {
 					if( m ) {
 						offset2 = grid2->width - 1;
+
 					} else {
 						offset2 = 0;
 					}
+
 					if( R_MergedHeightPoints( grid2, offset2 ) ) {
 						continue;
 					}
+
 					for( l = 1; l < grid2->height - 1; l++ ) {
 						//
 						if( Q_fabs( grid1->verts[k + offset1].xyz[0] - grid2->verts[grid2->width * l + offset2].xyz[0] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[k + offset1].xyz[1] - grid2->verts[grid2->width * l + offset2].xyz[1] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[k + offset1].xyz[2] - grid2->verts[grid2->width * l + offset2].xyz[2] ) > .1 ) {
 							continue;
 						}
+
 						// ok the points are equal and should have the same lod error
 						grid2->heightLodError[l] = grid1->widthLodError[k];
 						touch					 = qtrue;
@@ -848,62 +917,79 @@ void R_FixSharedVertexLodError_r( int start, srfGridMesh_t* grid1 )
 				}
 			}
 		}
+
 		for( n = 0; n < 2; n++ ) {
 			//
 			if( n ) {
 				offset1 = grid1->width - 1;
+
 			} else {
 				offset1 = 0;
 			}
+
 			if( R_MergedHeightPoints( grid1, offset1 ) ) {
 				continue;
 			}
+
 			for( k = 1; k < grid1->height - 1; k++ ) {
 				for( m = 0; m < 2; m++ ) {
 					if( m ) {
 						offset2 = ( grid2->height - 1 ) * grid2->width;
+
 					} else {
 						offset2 = 0;
 					}
+
 					if( R_MergedWidthPoints( grid2, offset2 ) ) {
 						continue;
 					}
+
 					for( l = 1; l < grid2->width - 1; l++ ) {
 						//
 						if( Q_fabs( grid1->verts[grid1->width * k + offset1].xyz[0] - grid2->verts[l + offset2].xyz[0] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[grid1->width * k + offset1].xyz[1] - grid2->verts[l + offset2].xyz[1] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[grid1->width * k + offset1].xyz[2] - grid2->verts[l + offset2].xyz[2] ) > .1 ) {
 							continue;
 						}
+
 						// ok the points are equal and should have the same lod error
 						grid2->widthLodError[l] = grid1->heightLodError[k];
 						touch					= qtrue;
 					}
 				}
+
 				for( m = 0; m < 2; m++ ) {
 					if( m ) {
 						offset2 = grid2->width - 1;
+
 					} else {
 						offset2 = 0;
 					}
+
 					if( R_MergedHeightPoints( grid2, offset2 ) ) {
 						continue;
 					}
+
 					for( l = 1; l < grid2->height - 1; l++ ) {
 						//
 						if( Q_fabs( grid1->verts[grid1->width * k + offset1].xyz[0] - grid2->verts[grid2->width * l + offset2].xyz[0] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[grid1->width * k + offset1].xyz[1] - grid2->verts[grid2->width * l + offset2].xyz[1] ) > .1 ) {
 							continue;
 						}
+
 						if( Q_fabs( grid1->verts[grid1->width * k + offset1].xyz[2] - grid2->verts[grid2->width * l + offset2].xyz[2] ) > .1 ) {
 							continue;
 						}
+
 						// ok the points are equal and should have the same lod error
 						grid2->heightLodError[l] = grid1->heightLodError[k];
 						touch					 = qtrue;
@@ -911,6 +997,7 @@ void R_FixSharedVertexLodError_r( int start, srfGridMesh_t* grid1 )
 				}
 			}
 		}
+
 		if( touch ) {
 			grid2->lodFixed = 2;
 			R_FixSharedVertexLodError_r( start, grid2 );
@@ -936,14 +1023,17 @@ void R_FixSharedVertexLodError()
 	for( i = 0; i < s_worldData.numsurfaces; i++ ) {
 		//
 		grid1 = ( srfGridMesh_t* )s_worldData.surfaces[i].data;
+
 		// if this surface is not a grid
 		if( grid1->surfaceType != SF_GRID ) {
 			continue;
 		}
+
 		//
 		if( grid1->lodFixed ) {
 			continue;
 		}
+
 		//
 		grid1->lodFixed = 2;
 		// recursively fix other patches in the same LOD group
@@ -964,123 +1054,156 @@ int R_StitchPatches( int grid1num, int grid2num )
 
 	grid1 = ( srfGridMesh_t* )s_worldData.surfaces[grid1num].data;
 	grid2 = ( srfGridMesh_t* )s_worldData.surfaces[grid2num].data;
+
 	for( n = 0; n < 2; n++ ) {
 		//
 		if( n ) {
 			offset1 = ( grid1->height - 1 ) * grid1->width;
+
 		} else {
 			offset1 = 0;
 		}
+
 		if( R_MergedWidthPoints( grid1, offset1 ) ) {
 			continue;
 		}
+
 		for( k = 0; k < grid1->width - 2; k += 2 ) {
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->width >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = ( grid2->height - 1 ) * grid2->width;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedWidthPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->width - 1; l++ ) {
 					//
 					v1 = grid1->verts[k + offset1].xyz;
 					v2 = grid2->verts[l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[k + 2 + offset1].xyz;
 					v2 = grid2->verts[l + 1 + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[l + offset2].xyz;
 					v2 = grid2->verts[l + 1 + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert column into grid2 right after after column l
 					if( m ) {
 						row = grid2->height - 1;
+
 					} else {
 						row = 0;
 					}
+
 					grid2								= R_GridInsertColumn( grid2, l + 1, row, grid1->verts[k + 1 + offset1].xyz, grid1->widthLodError[k + 1] );
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
 					return qtrue;
 				}
 			}
+
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->height >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = grid2->width - 1;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedHeightPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->height - 1; l++ ) {
 					//
 					v1 = grid1->verts[k + offset1].xyz;
 					v2 = grid2->verts[grid2->width * l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[k + 2 + offset1].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[grid2->width * l + offset2].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert row into grid2 right after after row l
 					if( m ) {
 						column = grid2->width - 1;
+
 					} else {
 						column = 0;
 					}
+
 					grid2								= R_GridInsertRow( grid2, l + 1, column, grid1->verts[k + 1 + offset1].xyz, grid1->widthLodError[k + 1] );
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
@@ -1089,123 +1212,156 @@ int R_StitchPatches( int grid1num, int grid2num )
 			}
 		}
 	}
+
 	for( n = 0; n < 2; n++ ) {
 		//
 		if( n ) {
 			offset1 = grid1->width - 1;
+
 		} else {
 			offset1 = 0;
 		}
+
 		if( R_MergedHeightPoints( grid1, offset1 ) ) {
 			continue;
 		}
+
 		for( k = 0; k < grid1->height - 2; k += 2 ) {
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->width >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = ( grid2->height - 1 ) * grid2->width;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedWidthPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->width - 1; l++ ) {
 					//
 					v1 = grid1->verts[grid1->width * k + offset1].xyz;
 					v2 = grid2->verts[l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[grid1->width * ( k + 2 ) + offset1].xyz;
 					v2 = grid2->verts[l + 1 + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[l + offset2].xyz;
 					v2 = grid2->verts[( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert column into grid2 right after after column l
 					if( m ) {
 						row = grid2->height - 1;
+
 					} else {
 						row = 0;
 					}
+
 					grid2								= R_GridInsertColumn( grid2, l + 1, row, grid1->verts[grid1->width * ( k + 1 ) + offset1].xyz, grid1->heightLodError[k + 1] );
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
 					return qtrue;
 				}
 			}
+
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->height >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = grid2->width - 1;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedHeightPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->height - 1; l++ ) {
 					//
 					v1 = grid1->verts[grid1->width * k + offset1].xyz;
 					v2 = grid2->verts[grid2->width * l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[grid1->width * ( k + 2 ) + offset1].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[grid2->width * l + offset2].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert row into grid2 right after after row l
 					if( m ) {
 						column = grid2->width - 1;
+
 					} else {
 						column = 0;
 					}
+
 					grid2								= R_GridInsertRow( grid2, l + 1, column, grid1->verts[grid1->width * ( k + 1 ) + offset1].xyz, grid1->heightLodError[k + 1] );
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
@@ -1214,127 +1370,162 @@ int R_StitchPatches( int grid1num, int grid2num )
 			}
 		}
 	}
+
 	for( n = 0; n < 2; n++ ) {
 		//
 		if( n ) {
 			offset1 = ( grid1->height - 1 ) * grid1->width;
+
 		} else {
 			offset1 = 0;
 		}
+
 		if( R_MergedWidthPoints( grid1, offset1 ) ) {
 			continue;
 		}
+
 		for( k = grid1->width - 1; k > 1; k -= 2 ) {
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->width >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = ( grid2->height - 1 ) * grid2->width;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedWidthPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->width - 1; l++ ) {
 					//
 					v1 = grid1->verts[k + offset1].xyz;
 					v2 = grid2->verts[l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[k - 2 + offset1].xyz;
 					v2 = grid2->verts[l + 1 + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[l + offset2].xyz;
 					v2 = grid2->verts[( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert column into grid2 right after after column l
 					if( m ) {
 						row = grid2->height - 1;
+
 					} else {
 						row = 0;
 					}
+
 					grid2								= R_GridInsertColumn( grid2, l + 1, row, grid1->verts[k - 1 + offset1].xyz, grid1->widthLodError[k + 1] );
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
 					return qtrue;
 				}
 			}
+
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->height >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = grid2->width - 1;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedHeightPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->height - 1; l++ ) {
 					//
 					v1 = grid1->verts[k + offset1].xyz;
 					v2 = grid2->verts[grid2->width * l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[k - 2 + offset1].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[grid2->width * l + offset2].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert row into grid2 right after after row l
 					if( m ) {
 						column = grid2->width - 1;
+
 					} else {
 						column = 0;
 					}
+
 					grid2 = R_GridInsertRow( grid2, l + 1, column, grid1->verts[k - 1 + offset1].xyz, grid1->widthLodError[k + 1] );
+
 					if( !grid2 ) {
 						break;
 					}
+
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
 					return qtrue;
@@ -1342,123 +1533,156 @@ int R_StitchPatches( int grid1num, int grid2num )
 			}
 		}
 	}
+
 	for( n = 0; n < 2; n++ ) {
 		//
 		if( n ) {
 			offset1 = grid1->width - 1;
+
 		} else {
 			offset1 = 0;
 		}
+
 		if( R_MergedHeightPoints( grid1, offset1 ) ) {
 			continue;
 		}
+
 		for( k = grid1->height - 1; k > 1; k -= 2 ) {
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->width >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = ( grid2->height - 1 ) * grid2->width;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedWidthPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->width - 1; l++ ) {
 					//
 					v1 = grid1->verts[grid1->width * k + offset1].xyz;
 					v2 = grid2->verts[l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[grid1->width * ( k - 2 ) + offset1].xyz;
 					v2 = grid2->verts[l + 1 + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[l + offset2].xyz;
 					v2 = grid2->verts[( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert column into grid2 right after after column l
 					if( m ) {
 						row = grid2->height - 1;
+
 					} else {
 						row = 0;
 					}
+
 					grid2								= R_GridInsertColumn( grid2, l + 1, row, grid1->verts[grid1->width * ( k - 1 ) + offset1].xyz, grid1->heightLodError[k + 1] );
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
 					return qtrue;
 				}
 			}
+
 			for( m = 0; m < 2; m++ ) {
 				if( grid2->height >= MAX_GRID_SIZE ) {
 					break;
 				}
+
 				if( m ) {
 					offset2 = grid2->width - 1;
+
 				} else {
 					offset2 = 0;
 				}
+
 				// if (R_MergedHeightPoints(grid2, offset2))
 				//	continue;
 				for( l = 0; l < grid2->height - 1; l++ ) {
 					//
 					v1 = grid1->verts[grid1->width * k + offset1].xyz;
 					v2 = grid2->verts[grid2->width * l + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
 
 					v1 = grid1->verts[grid1->width * ( k - 2 ) + offset1].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[1] - v2[1] ) > .1 ) {
 						continue;
 					}
+
 					if( Q_fabs( v1[2] - v2[2] ) > .1 ) {
 						continue;
 					}
+
 					//
 					v1 = grid2->verts[grid2->width * l + offset2].xyz;
 					v2 = grid2->verts[grid2->width * ( l + 1 ) + offset2].xyz;
+
 					if( Q_fabs( v1[0] - v2[0] ) < .01 && Q_fabs( v1[1] - v2[1] ) < .01 && Q_fabs( v1[2] - v2[2] ) < .01 ) {
 						continue;
 					}
+
 					//
 					// ri.Printf( PRINT_ALL, "found highest LoD crack between two patches\n" );
 					// insert row into grid2 right after after row l
 					if( m ) {
 						column = grid2->width - 1;
+
 					} else {
 						column = 0;
 					}
+
 					grid2								= R_GridInsertRow( grid2, l + 1, column, grid1->verts[grid1->width * ( k - 1 ) + offset1].xyz, grid1->heightLodError[k + 1] );
 					grid2->lodStitched					= qfalse;
 					s_worldData.surfaces[grid2num].data = ( surfaceType_t* )grid2;
@@ -1467,6 +1691,7 @@ int R_StitchPatches( int grid1num, int grid2num )
 			}
 		}
 	}
+
 	return qfalse;
 }
 
@@ -1490,32 +1715,40 @@ int R_TryStitchingPatch( int grid1num )
 
 	numstitches = 0;
 	grid1		= ( srfGridMesh_t* )s_worldData.surfaces[grid1num].data;
+
 	for( j = 0; j < s_worldData.numsurfaces; j++ ) {
 		//
 		grid2 = ( srfGridMesh_t* )s_worldData.surfaces[j].data;
+
 		// if this surface is not a grid
 		if( grid2->surfaceType != SF_GRID ) {
 			continue;
 		}
+
 		// grids in the same LOD group should have the exact same lod radius
 		if( grid1->lodRadius != grid2->lodRadius ) {
 			continue;
 		}
+
 		// grids in the same LOD group should have the exact same lod origin
 		if( grid1->lodOrigin[0] != grid2->lodOrigin[0] ) {
 			continue;
 		}
+
 		if( grid1->lodOrigin[1] != grid2->lodOrigin[1] ) {
 			continue;
 		}
+
 		if( grid1->lodOrigin[2] != grid2->lodOrigin[2] ) {
 			continue;
 		}
+
 		//
 		while( R_StitchPatches( grid1num, j ) ) {
 			numstitches++;
 		}
 	}
+
 	return numstitches;
 }
 
@@ -1530,19 +1763,24 @@ void R_StitchAllPatches()
 	srfGridMesh_t* grid1;
 
 	numstitches = 0;
+
 	do {
 		stitched = qfalse;
+
 		for( i = 0; i < s_worldData.numsurfaces; i++ ) {
 			//
 			grid1 = ( srfGridMesh_t* )s_worldData.surfaces[i].data;
+
 			// if this surface is not a grid
 			if( grid1->surfaceType != SF_GRID ) {
 				continue;
 			}
+
 			//
 			if( grid1->lodStitched ) {
 				continue;
 			}
+
 			//
 			grid1->lodStitched = qtrue;
 			stitched		   = qtrue;
@@ -1550,6 +1788,7 @@ void R_StitchAllPatches()
 			numstitches += R_TryStitchingPatch( i );
 		}
 	} while( stitched );
+
 	ri.Printf( PRINT_ALL, "stitched %d LoD cracks\n", numstitches );
 }
 
@@ -1566,10 +1805,12 @@ void R_MovePatchSurfacesToHunk()
 	for( i = 0; i < s_worldData.numsurfaces; i++ ) {
 		//
 		grid = ( srfGridMesh_t* )s_worldData.surfaces[i].data;
+
 		// if this surface is not a grid
 		if( grid->surfaceType != SF_GRID ) {
 			continue;
 		}
+
 		//
 		size	 = ( grid->width * grid->height - 1 ) * sizeof( drawVert_t ) + sizeof( *grid );
 		hunkgrid = ( srfGridMesh_t* )ri.Hunk_Alloc( size, h_low );
@@ -1608,17 +1849,21 @@ static void R_LoadSurfaces( lump_t* surfs, lump_t* verts, lump_t* indexLump )
 	numFlares	= 0;
 
 	in = ( dsurface_t* )( fileBase + surfs->fileofs );
+
 	if( surfs->filelen % sizeof( *in ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	count = surfs->filelen / sizeof( *in );
 
 	dv = ( drawVert_t* )( fileBase + verts->fileofs );
+
 	if( verts->filelen % sizeof( *dv ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
 
 	indexes = ( int* )( fileBase + indexLump->fileofs );
+
 	if( indexLump->filelen % sizeof( *indexes ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
@@ -1639,18 +1884,22 @@ static void R_LoadSurfaces( lump_t* surfs, lump_t* verts, lump_t* indexLump )
 				ParseMesh( in, dv, out );
 				numMeshes++;
 				break;
+
 			case MST_TRIANGLE_SOUP:
 				ParseTriSurf( in, dv, out, indexes );
 				numTriSurfs++;
 				break;
+
 			case MST_PLANAR:
 				ParseFace( in, dv, out, indexes );
 				numFaces++;
 				break;
+
 			case MST_FLARE:
 				ParseFlare( in, dv, out, indexes );
 				numFlares++;
 				break;
+
 			default:
 				ri.Error( ERR_DROP, "Bad surfaceType" );
 		}
@@ -1681,9 +1930,11 @@ static void R_LoadSubmodels( lump_t* l )
 	int		  i, j, count;
 
 	in = ( dmodel_t* )( fileBase + l->fileofs );
+
 	if( l->filelen % sizeof( *in ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	count = l->filelen / sizeof( *in );
 
 	s_worldData.bmodels = out = ( bmodel_t* )ri.Hunk_Alloc( count * sizeof( *out ), h_low );
@@ -1720,9 +1971,11 @@ R_SetParent
 static void R_SetParent( mnode_t* node, mnode_t* parent )
 {
 	node->parent = parent;
+
 	if( node->contents != -1 ) {
 		return;
 	}
+
 	R_SetParent( node->children[0], node );
 	R_SetParent( node->children[1], node );
 }
@@ -1741,9 +1994,11 @@ static void R_LoadNodesAndLeafs( lump_t* nodeLump, lump_t* leafLump )
 	int		 numNodes, numLeafs;
 
 	in = ( dnode_t* )( fileBase + nodeLump->fileofs );
+
 	if( nodeLump->filelen % sizeof( dnode_t ) || leafLump->filelen % sizeof( dleaf_t ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	numNodes = nodeLump->filelen / sizeof( dnode_t );
 	numLeafs = leafLump->filelen / sizeof( dleaf_t );
 
@@ -1767,8 +2022,10 @@ static void R_LoadNodesAndLeafs( lump_t* nodeLump, lump_t* leafLump )
 
 		for( j = 0; j < 2; j++ ) {
 			p = LittleLong( in->children[j] );
+
 			if( p >= 0 ) {
 				out->children[j] = s_worldData.nodes + p;
+
 			} else {
 				out->children[j] = s_worldData.nodes + numNodes + ( -1 - p );
 			}
@@ -1777,6 +2034,7 @@ static void R_LoadNodesAndLeafs( lump_t* nodeLump, lump_t* leafLump )
 
 	// load leafs
 	inLeaf = ( dleaf_t* )( fileBase + leafLump->fileofs );
+
 	for( i = 0; i < numLeafs; i++, inLeaf++, out++ ) {
 		for( j = 0; j < 3; j++ ) {
 			out->mins[j] = LittleLong( inLeaf->mins[j] );
@@ -1811,9 +2069,11 @@ static void R_LoadShaders( lump_t* l )
 	dshader_t *in, *out;
 
 	in = ( dshader_t* )( fileBase + l->fileofs );
+
 	if( l->filelen % sizeof( *in ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	count = l->filelen / sizeof( *in );
 	out	  = ( dshader_t* )ri.Hunk_Alloc( count * sizeof( *out ), h_low );
 
@@ -1840,9 +2100,11 @@ static void R_LoadMarksurfaces( lump_t* l )
 	msurface_t** out;
 
 	in = ( int* )( fileBase + l->fileofs );
+
 	if( l->filelen % sizeof( *in ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	count = l->filelen / sizeof( *in );
 	out	  = ( msurface_t** )ri.Hunk_Alloc( count * sizeof( *out ), h_low );
 
@@ -1869,9 +2131,11 @@ static void R_LoadPlanes( lump_t* l )
 	int		  bits;
 
 	in = ( dplane_t* )( fileBase + l->fileofs );
+
 	if( l->filelen % sizeof( *in ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	count = l->filelen / sizeof( *in );
 	out	  = ( cplane_t* )ri.Hunk_Alloc( count * 2 * sizeof( *out ), h_low );
 
@@ -1880,8 +2144,10 @@ static void R_LoadPlanes( lump_t* l )
 
 	for( i = 0; i < count; i++, in++, out++ ) {
 		bits = 0;
+
 		for( j = 0; j < 3; j++ ) {
 			out->normal[j] = LittleFloat( in->normal[j] );
+
 			if( out->normal[j] < 0 ) {
 				bits |= 1 << j;
 			}
@@ -1914,9 +2180,11 @@ static void R_LoadFogs( lump_t* l, lump_t* brushesLump, lump_t* sidesLump )
 	int			  firstSide;
 
 	fogs = ( dfog_t* )( fileBase + l->fileofs );
+
 	if( l->filelen % sizeof( *fogs ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	count = l->filelen / sizeof( *fogs );
 
 	// create fog strucutres for them
@@ -1929,15 +2197,19 @@ static void R_LoadFogs( lump_t* l, lump_t* brushesLump, lump_t* sidesLump )
 	}
 
 	brushes = ( dbrush_t* )( fileBase + brushesLump->fileofs );
+
 	if( brushesLump->filelen % sizeof( *brushes ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	brushesCount = brushesLump->filelen / sizeof( *brushes );
 
 	sides = ( dbrushside_t* )( fileBase + sidesLump->fileofs );
+
 	if( sidesLump->filelen % sizeof( *sides ) ) {
 		ri.Error( ERR_DROP, "LoadMap: funny lump size in %s", s_worldData.name );
 	}
+
 	sidesCount = sidesLump->filelen / sizeof( *sides );
 
 	for( i = 0; i < count; i++, fogs++ ) {
@@ -1946,6 +2218,7 @@ static void R_LoadFogs( lump_t* l, lump_t* brushesLump, lump_t* sidesLump )
 		if( ( unsigned )out->originalBrushNumber >= brushesCount ) {
 			ri.Error( ERR_DROP, "fog brushNumber out of range" );
 		}
+
 		brush = brushes + out->originalBrushNumber;
 
 		firstSide = LittleLong( brush->firstSide );
@@ -1994,6 +2267,7 @@ static void R_LoadFogs( lump_t* l, lump_t* brushesLump, lump_t* sidesLump )
 
 		if( sideNum == -1 ) {
 			out->hasSurface = qfalse;
+
 		} else {
 			out->hasSurface = qtrue;
 			planeNum		= LittleLong( sides[firstSide + sideNum].planeNum );
@@ -2051,6 +2325,7 @@ void R_FindLightGridBounds( vec3_t mins, vec3_t maxs )
 	for( i = 0; i < w->numsurfaces; i++ ) {
 		surf = &w->surfaces[i];
 		shd	 = surf->shader;
+
 		if( !( *surf->data == SF_FACE ) ) {
 			continue;
 		}
@@ -2179,6 +2454,7 @@ void R_LoadEntities( lump_t* l )
 	w->entityParsePoint = w->entityString;
 
 	token = COM_ParseExt( &p, qtrue );
+
 	if( !*token || *token != '{' ) {
 		return;
 	}
@@ -2191,6 +2467,7 @@ void R_LoadEntities( lump_t* l )
 		if( !*token || *token == '}' ) {
 			break;
 		}
+
 		Q_strncpyz( keyname, token, sizeof( keyname ) );
 
 		// parse value
@@ -2199,34 +2476,45 @@ void R_LoadEntities( lump_t* l )
 		if( !*token || *token == '}' ) {
 			break;
 		}
+
 		Q_strncpyz( value, token, sizeof( value ) );
 
 		// check for remapping of shaders for vertex lighting
 		s = "vertexremapshader";
+
 		if( !Q_strncmp( keyname, s, strlen( s ) ) ) {
 			s = strchr( value, ';' );
+
 			if( !s ) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in vertexshaderremap '%s'\n", value );
 				break;
 			}
+
 			*s++ = 0;
+
 			if( r_vertexLight->integer ) {
 				R_RemapShader( value, s, "0" );
 			}
+
 			continue;
 		}
+
 		// check for remapping of shaders
 		s = "remapshader";
+
 		if( !Q_strncmp( keyname, s, strlen( s ) ) ) {
 			s = strchr( value, ';' );
+
 			if( !s ) {
 				ri.Printf( PRINT_WARNING, "WARNING: no semi colon in shaderremap '%s'\n", value );
 				break;
 			}
+
 			*s++ = 0;
 			R_RemapShader( value, s, "0" );
 			continue;
 		}
+
 		// check for a different grid size
 		if( !Q_stricmp( keyname, "gridsize" ) ) {
 			sscanf( value, "%f %f %f", &w->lightGridSize[0], &w->lightGridSize[1], &w->lightGridSize[2] );
@@ -2246,9 +2534,11 @@ qboolean R_GetEntityToken( char* buffer, int size )
 
 	s = COM_Parse( &s_worldData.entityParsePoint );
 	Q_strncpyz( buffer, s, size );
+
 	if( !s_worldData.entityParsePoint || !s[0] ) {
 		s_worldData.entityParsePoint = s_worldData.entityString;
 		return qfalse;
+
 	} else {
 		return qtrue;
 	}
@@ -2283,9 +2573,11 @@ static glRaytracingMeshHandle_t R_CreateRaytracingMeshFromFace( const srfSurface
 		if( rtVerts ) {
 			ri.Hunk_FreeTempMemory( rtVerts );
 		}
+
 		if( rtIndices ) {
 			ri.Hunk_FreeTempMemory( rtIndices );
 		}
+
 		return 0;
 	}
 
@@ -2296,6 +2588,7 @@ static glRaytracingMeshHandle_t R_CreateRaytracingMeshFromFace( const srfSurface
 	}
 
 	const int* indices = ( const int* )( ( const byte* )face + face->ofsIndices );
+
 	for( int i = 0; i < face->numIndices; ++i ) {
 		rtIndices[i] = ( uint32_t )indices[i];
 	}
@@ -2334,9 +2627,11 @@ static glRaytracingMeshHandle_t R_CreateRaytracingMeshFromTriSurf( const srfTria
 		if( rtVerts ) {
 			ri.Hunk_FreeTempMemory( rtVerts );
 		}
+
 		if( rtIndices ) {
 			ri.Hunk_FreeTempMemory( rtIndices );
 		}
+
 		return 0;
 	}
 
@@ -2389,9 +2684,11 @@ static glRaytracingMeshHandle_t R_CreateRaytracingMeshFromGrid( const srfGridMes
 		if( rtVerts ) {
 			ri.Hunk_FreeTempMemory( rtVerts );
 		}
+
 		if( rtIndices ) {
 			ri.Hunk_FreeTempMemory( rtIndices );
 		}
+
 		return 0;
 	}
 
@@ -2405,6 +2702,7 @@ static glRaytracingMeshHandle_t R_CreateRaytracingMeshFromGrid( const srfGridMes
 	}
 
 	int idx = 0;
+
 	for( int y = 0; y < grid->height - 1; ++y ) {
 		for( int x = 0; x < grid->width - 1; ++x ) {
 			const uint32_t i0 = ( uint32_t )( y * grid->width + x );
@@ -2580,6 +2878,7 @@ void RE_LoadWorldMap( const char* name )
 
 	// load it
 	ri.FS_ReadFile( name, ( void** )&buffer );
+
 	if( !buffer ) {
 		ri.Error( ERR_DROP, "RE_LoadWorldMap: %s not found", name );
 	}
@@ -2602,9 +2901,11 @@ void RE_LoadWorldMap( const char* name )
 
 	i = LittleLong( header->version );
 #ifndef _SKIP_BSP_CHECK
+
 	if( i != BSP_VERSION ) {
 		ri.Error( ERR_DROP, "RE_LoadWorldMap: %s has wrong version number (%i should be %i)", name, i, BSP_VERSION );
 	}
+
 #endif
 
 	// swap all the lumps

@@ -256,6 +256,7 @@ static void AssertCvarRange( cvar_t* cv, float minVal, float maxVal, qboolean sh
 	if( cv->value < minVal ) {
 		ri.Printf( PRINT_WARNING, "WARNING: cvar '%s' out of range (%f < %f)\n", cv->name, cv->value, minVal );
 		ri.Cvar_Set( cv->name, va( "%f", minVal ) );
+
 	} else if( cv->value > maxVal ) {
 		ri.Printf( PRINT_WARNING, "WARNING: cvar '%s' out of range (%f > %f)\n", cv->name, cv->value, maxVal );
 		ri.Cvar_Set( cv->name, va( "%f", maxVal ) );
@@ -325,31 +326,40 @@ void GL_CheckErrors()
 	char s[64];
 
 	err = glGetError();
+
 	if( err == GL_NO_ERROR ) {
 		return;
 	}
+
 	if( r_ignoreGLErrors->integer ) {
 		return;
 	}
+
 	switch( err ) {
 		case GL_INVALID_ENUM:
 			strcpy( s, "GL_INVALID_ENUM" );
 			break;
+
 		case GL_INVALID_VALUE:
 			strcpy( s, "GL_INVALID_VALUE" );
 			break;
+
 		case GL_INVALID_OPERATION:
 			strcpy( s, "GL_INVALID_OPERATION" );
 			break;
+
 		case GL_STACK_OVERFLOW:
 			strcpy( s, "GL_STACK_OVERFLOW" );
 			break;
+
 		case GL_STACK_UNDERFLOW:
 			strcpy( s, "GL_STACK_UNDERFLOW" );
 			break;
+
 		case GL_OUT_OF_MEMORY:
 			strcpy( s, "GL_OUT_OF_MEMORY" );
 			break;
+
 		default:
 			Com_sprintf( s, sizeof( s ), "%i", err );
 			break;
@@ -377,6 +387,7 @@ qboolean   R_GetModeInfo( int* width, int* height, float* windowAspect, int mode
 	if( mode < -1 ) {
 		return qfalse;
 	}
+
 	if( mode >= s_numVidModes ) {
 		mode = 0;
 	}
@@ -405,9 +416,11 @@ static void R_ModeList_f()
 	int i;
 
 	ri.Printf( PRINT_ALL, "\n" );
+
 	for( i = 0; i < s_numVidModes; i++ ) {
 		ri.Printf( PRINT_ALL, "%s\n", r_vidModes[i].description );
 	}
+
 	ri.Printf( PRINT_ALL, "\n" );
 }
 
@@ -443,6 +456,7 @@ void R_TakeScreenshot( int x, int y, int width, int height, char* fileName )
 
 	// swap rgb to bgr
 	c = 18 + width * height * 3;
+
 	for( i = 18; i < c; i += 3 ) {
 		temp		  = buffer[i];
 		buffer[i]	  = buffer[i + 2];
@@ -568,9 +582,11 @@ void R_LevelShot()
 	// resample from source
 	xScale = glConfig.vidWidth / 512.0f;
 	yScale = glConfig.vidHeight / 384.0f;
+
 	for( y = 0; y < 128; y++ ) {
 		for( x = 0; x < 128; x++ ) {
 			r = g = b = 0;
+
 			for( yy = 0; yy < 3; yy++ ) {
 				for( xx = 0; xx < 4; xx++ ) {
 					src = source + 3 * ( glConfig.vidWidth * ( int )( ( y * 3 + yy ) * yScale ) + ( int )( ( x * 4 + xx ) * xScale ) );
@@ -579,6 +595,7 @@ void R_LevelShot()
 					b += src[2];
 				}
 			}
+
 			dst	   = buffer + 18 + 3 * ( y * 128 + x );
 			dst[0] = b / 12;
 			dst[1] = g / 12;
@@ -625,6 +642,7 @@ void R_ScreenShot_f()
 
 	if( !strcmp( ri.Cmd_Argv( 1 ), "silent" ) ) {
 		silent = qtrue;
+
 	} else {
 		silent = qfalse;
 	}
@@ -632,6 +650,7 @@ void R_ScreenShot_f()
 	if( ri.Cmd_Argc() == 2 && !silent ) {
 		// explicit filename
 		Com_sprintf( checkname, MAX_OSPATH, "screenshots/%s.tga", ri.Cmd_Argv( 1 ) );
+
 	} else {
 		// scan for a free filename
 
@@ -641,11 +660,13 @@ void R_ScreenShot_f()
 		if( lastNumber == -1 ) {
 			lastNumber = 0;
 		}
+
 		// scan for a free number
 		for( ; lastNumber <= 9999; lastNumber++ ) {
 			R_ScreenshotFilename( lastNumber, checkname );
 
 			len = ri.FS_ReadFile( checkname, NULL );
+
 			if( len <= 0 ) {
 				break; // file doesn't exist
 			}
@@ -680,6 +701,7 @@ void R_ScreenShotJPEG_f()
 
 	if( !strcmp( ri.Cmd_Argv( 1 ), "silent" ) ) {
 		silent = qtrue;
+
 	} else {
 		silent = qfalse;
 	}
@@ -687,6 +709,7 @@ void R_ScreenShotJPEG_f()
 	if( ri.Cmd_Argc() == 2 && !silent ) {
 		// explicit filename
 		Com_sprintf( checkname, MAX_OSPATH, "screenshots/%s.jpg", ri.Cmd_Argv( 1 ) );
+
 	} else {
 		// scan for a free filename
 
@@ -696,11 +719,13 @@ void R_ScreenShotJPEG_f()
 		if( lastNumber == -1 ) {
 			lastNumber = 0;
 		}
+
 		// scan for a free number
 		for( ; lastNumber <= 9999; lastNumber++ ) {
 			R_ScreenshotFilenameJPEG( lastNumber, checkname );
 
 			len = ri.FS_ReadFile( checkname, NULL );
+
 			if( len <= 0 ) {
 				break; // file doesn't exist
 			}
@@ -787,16 +812,21 @@ void GfxInfo_f()
 	ri.Printf( PRINT_ALL, "GL_MAX_ACTIVE_TEXTURES_ARB: %d\n", glConfig.maxActiveTextures );
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
 	ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", r_mode->integer, glConfig.vidWidth, glConfig.vidHeight, fsstrings[r_fullscreen->integer == 1] );
+
 	if( glConfig.displayFrequency ) {
 		ri.Printf( PRINT_ALL, "%d\n", glConfig.displayFrequency );
+
 	} else {
 		ri.Printf( PRINT_ALL, "N/A\n" );
 	}
+
 	if( glConfig.deviceSupportsGamma ) {
 		ri.Printf( PRINT_ALL, "GAMMA: hardware w/ %d overbright bits\n", tr.overbrightBits );
+
 	} else {
 		ri.Printf( PRINT_ALL, "GAMMA: software w/ %d overbright bits\n", tr.overbrightBits );
 	}
+
 	ri.Printf( PRINT_ALL, "CPU: %s\n", sys_cpustring->string );
 
 	// rendering primitives
@@ -806,19 +836,25 @@ void GfxInfo_f()
 		// default is to use triangles if compiled vertex arrays are present
 		ri.Printf( PRINT_ALL, "rendering primitives: " );
 		primitives = r_primitives->integer;
+
 		if( primitives == 0 ) {
 			if( glLockArraysEXT ) {
 				primitives = 2;
+
 			} else {
 				primitives = 1;
 			}
 		}
+
 		if( primitives == -1 ) {
 			ri.Printf( PRINT_ALL, "none\n" );
+
 		} else if( primitives == 2 ) {
 			ri.Printf( PRINT_ALL, "single glDrawElements\n" );
+
 		} else if( primitives == 1 ) {
 			ri.Printf( PRINT_ALL, "multiple glArrayElement\n" );
+
 		} else if( primitives == 3 ) {
 			ri.Printf( PRINT_ALL, "multiple glColor4ubv + glTexCoord2fv + glVertex3fv\n" );
 		}
@@ -834,6 +870,7 @@ void GfxInfo_f()
 	ri.Printf( PRINT_ALL, "compressed textures: %s\n", enablestrings[glConfig.textureCompression != TC_NONE] );
 
 	ri.Printf( PRINT_ALL, "NV distance fog: %s\n", enablestrings[glConfig.NVFogAvailable != 0] );
+
 	if( glConfig.NVFogAvailable ) {
 		ri.Printf( PRINT_ALL, "Fog Mode: %s\n", r_nv_fogdist_mode->string );
 	}
@@ -841,15 +878,19 @@ void GfxInfo_f()
 	if( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		ri.Printf( PRINT_ALL, "HACK: using vertex lightmap approximation\n" );
 	}
+
 	if( glConfig.hardwareType == GLHW_RAGEPRO ) {
 		ri.Printf( PRINT_ALL, "HACK: ragePro approximations\n" );
 	}
+
 	if( glConfig.hardwareType == GLHW_RIVA128 ) {
 		ri.Printf( PRINT_ALL, "HACK: riva128 approximations\n" );
 	}
+
 	if( glConfig.smpActive ) {
 		ri.Printf( PRINT_ALL, "Using dual processor acceleration\n" );
 	}
+
 	if( r_finish->integer ) {
 		ri.Printf( PRINT_ALL, "Forcing glFinish\n" );
 	}
@@ -920,6 +961,7 @@ void		R_Register()
 		//	else
 		r_stencilbits = ri.Cvar_Get( "r_stencilbits", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	}
+
 #else
 	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE | CVAR_LATCH );
 #endif
@@ -1106,6 +1148,7 @@ void R_Init()
 	if( ( int )tess.xyz & 15 ) {
 		Com_Printf( "WARNING: tess.xyz not 16 byte aligned\n" );
 	}
+
 	memset( tess.constantColor255, 255, sizeof( tess.constantColor255 ) );
 
 	//
@@ -1120,9 +1163,11 @@ void R_Init()
 		if( i < FUNCTABLE_SIZE / 2 ) {
 			if( i < FUNCTABLE_SIZE / 4 ) {
 				tr.triangleTable[i] = ( float )i / ( FUNCTABLE_SIZE / 4 );
+
 			} else {
 				tr.triangleTable[i] = 1.0f - tr.triangleTable[i - FUNCTABLE_SIZE / 4];
 			}
+
 		} else {
 			tr.triangleTable[i] = -tr.triangleTable[i - FUNCTABLE_SIZE / 2];
 		}
@@ -1138,11 +1183,13 @@ void R_Init()
 	R_Hunk_Begin();
 
 	max_polys = r_maxpolys->integer;
+
 	if( max_polys < MAX_POLYS ) {
 		max_polys = MAX_POLYS;
 	}
 
 	max_polyverts = r_maxpolyverts->integer;
+
 	if( max_polyverts < MAX_POLYVERTS ) {
 		max_polyverts = MAX_POLYVERTS;
 	}
@@ -1153,9 +1200,11 @@ void R_Init()
 	if( r_smp->integer ) {
 		//		backEndData[1] = ri.Hunk_Alloc( sizeof( *backEndData[1] ), h_low );
 		backEndData[1] = ( backEndData_t* )ri.Hunk_Alloc( sizeof( *backEndData[1] ) + sizeof( srfPoly_t ) * max_polys + sizeof( polyVert_t ) * max_polyverts, h_low );
+
 	} else {
 		backEndData[1] = NULL;
 	}
+
 	R_ToggleSmpFrame();
 
 	InitOpenGL();
@@ -1173,6 +1222,7 @@ void R_Init()
 	RB_ZombieFXInit();
 
 	err = glGetError();
+
 	if( err != GL_NO_ERROR ) {
 		ri.Printf( PRINT_ALL, "glGetError() = 0x%x\n", err );
 	}
@@ -1218,6 +1268,7 @@ void RE_Shutdown( qboolean destroyWindow )
 				R_SyncRenderThread();
 				R_ShutdownCommandBuffers();
 				R_DeleteTextures();
+
 			} else {
 				// backup the current media
 				R_ShutdownCommandBuffers();
@@ -1227,6 +1278,7 @@ void RE_Shutdown( qboolean destroyWindow )
 				R_BackupImages();
 			}
 		}
+
 	} else if( tr.registered ) {
 		R_SyncRenderThread();
 		R_ShutdownCommandBuffers();
@@ -1258,6 +1310,7 @@ Touch all images to make sure they are resident
 void RE_EndRegistration()
 {
 	R_SyncRenderThread();
+
 	if( !Sys_LowPhysicalMemory() ) {
 		RB_ShowImages();
 	}

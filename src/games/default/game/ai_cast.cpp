@@ -126,10 +126,12 @@ void		  AICast_Printf( int type, const char* fmt, ... )
 			G_Printf( "%s", str );
 			break;
 		}
+
 		default: {
 			if( aicast_debug.integer >= type ) {
 				G_Printf( "%s", str );
 			}
+
 			break;
 		}
 	}
@@ -145,6 +147,7 @@ cast_state_t* AICast_GetCastState( int entitynum )
 	if( entitynum < 0 || entitynum > level.maxclients ) {
 		return NULL;
 	}
+
 	//
 	return &( caststates[entitynum] );
 }
@@ -163,6 +166,7 @@ int AICast_SetupClient( int client )
 		botstates[client] = ( bot_state_t* )G_Alloc( sizeof( bot_state_t ) );
 		memset( botstates[client], 0, sizeof( bot_state_t ) );
 	}
+
 	bs = botstates[client];
 
 	if( bs->inuse ) {
@@ -199,6 +203,7 @@ int AICast_ShutdownClient( int client )
 	if( !( bs = botstates[client] ) ) {
 		return BLERR_NOERROR;
 	}
+
 	if( !bs->inuse ) {
 		BotAI_Print( PRT_ERROR, "client %d already shutdown\n", client );
 		return BLERR_AICLIENTALREADYSHUTDOWN;
@@ -253,10 +258,12 @@ gentity_t* AICast_AddCastToGame( gentity_t* ent, char* castname, char* model, ch
 
 	// have the server allocate a client slot
 	clientNum = sys->BotAllocateClient();
+
 	if( clientNum == -1 ) {
 		G_Printf( S_COLOR_RED "BotAllocateClient failed\n" );
 		return NULL;
 	}
+
 	bot = &g_entities[clientNum];
 	bot->r.svFlags |= SVF_BOT;
 	bot->r.svFlags |= SVF_CASTAI; // flag it for special Cast AI behaviour
@@ -298,17 +305,21 @@ void AICast_CheckLevelAttributes( cast_state_t* cs, gentity_t* ent, char** ppStr
 
 	while( 1 ) {
 		s = COM_Parse( ppStr );
+
 		if( !s[0] || !Q_strncmp( s, "}", 2 ) ) { // end of attributes
 			break;
 		}
+
 		//
 		for( i = 0; i < AICAST_MAX_ATTRIBUTES; i++ ) {
 			if( !Q_strcasecmp( s, castAttributeStrings[i] ) ) {
 				// found a match, read in the value
 				s = COM_Parse( ppStr );
+
 				if( !s[0] ) { // end of attributes
 					break;
 				}
+
 				// set the attribute
 				cs->attributes[i] = atof( s );
 				break;
@@ -327,9 +338,11 @@ void AICast_SetAASIndex( cast_state_t* cs )
 	if( aiDefaults[cs->aiCharacter].bboxType == BBOX_SMALL ) {
 		cs->aasWorldIndex = AASWORLD_STANDARD;
 		cs->travelflags	  = AICAST_TFL_DEFAULT;
+
 	} else if( aiDefaults[cs->aiCharacter].bboxType == BBOX_LARGE ) {
 		cs->aasWorldIndex = AASWORLD_LARGE;
 		cs->travelflags	  = AICAST_TFL_DEFAULT & ~TFL_DONOTENTER_LARGE;
+
 	} else {
 		Com_Error( ERR_DROP, "AICast_SetAASIndex: unsupported bounds size (%i)", aiDefaults[cs->aiCharacter].bboxType );
 	}
@@ -357,11 +370,13 @@ gentity_t* AICast_CreateCharacter( gentity_t* ent, float* attributes, cast_weapo
 	if( g_gametype.integer != GT_SINGLE_PLAYER ) { // no cast AI in multiplayer
 		return NULL;
 	}
+
 	// are bots enabled?
 	if( !sys->Cvar_VariableIntegerValue( "bot_enable" ) ) {
 		G_Printf( S_COLOR_RED "ERROR: Unable to spawn %s, 'bot_enable' is not set\n", ent->classname );
 		return NULL;
 	}
+
 	//
 	// make sure we have a free slot for them
 	//
@@ -369,6 +384,7 @@ gentity_t* AICast_CreateCharacter( gentity_t* ent, float* attributes, cast_weapo
 		G_Error( "Exceeded sv_maxclients (%d), unable to create %s\n", aicast_maxclients, ent->classname );
 		return NULL;
 	}
+
 	//
 	// add it to the list (only do this if everything else passed)
 	//
@@ -378,6 +394,7 @@ gentity_t* AICast_CreateCharacter( gentity_t* ent, float* attributes, cast_weapo
 	if( !newent ) {
 		return NULL;
 	}
+
 	client = newent->client;
 	//
 	// setup the character..
@@ -394,10 +411,12 @@ gentity_t* AICast_CreateCharacter( gentity_t* ent, float* attributes, cast_weapo
 	AICast_SetAASIndex( cs );
 	// make sure they face the right direction
 	VectorCopy( ent->s.angles, cs->ideal_viewangles );
+
 	// factor in the delta_angles
 	for( j = 0; j < 3; j++ ) {
 		cs->viewangles[j] = AngleMod( newent->s.angles[j] - SHORT2ANGLE( newent->client->ps.delta_angles[j] ) );
 	}
+
 	VectorCopy( ent->s.angles, newent->s.angles );
 	VectorCopy( ent->s.origin, cs->startOrigin );
 	//
@@ -428,13 +447,16 @@ gentity_t* AICast_CreateCharacter( gentity_t* ent, float* attributes, cast_weapo
 	client->ps.weapon = 0;
 	memcpy( client->ps.weapons, weaponInfo->startingWeapons, sizeof( weaponInfo->startingWeapons ) );
 	memcpy( client->ps.ammo, weaponInfo->startingAmmo, sizeof( client->ps.ammo ) );
+
 	//
 	// starting health
 	if( ent->health ) {
 		newent->health = client->ps.stats[STAT_HEALTH] = client->ps.stats[STAT_MAX_HEALTH] = ent->health;
+
 	} else {
 		newent->health = client->ps.stats[STAT_HEALTH] = client->ps.stats[STAT_MAX_HEALTH] = cs->attributes[STARTING_HEALTH];
 	}
+
 	//
 	cs->weaponInfo = weaponInfo;
 	//
@@ -451,6 +473,7 @@ gentity_t* AICast_CreateCharacter( gentity_t* ent, float* attributes, cast_weapo
 	for( j = 0; j < WP_NUM_WEAPONS; j++ ) {
 		Fill_Clip( &client->ps, j );
 	}
+
 	//----(SA)	end
 
 	// select a weapon
@@ -506,6 +529,7 @@ void	   AICast_Init()
 
 	caststates = ( cast_state_t* )G_Alloc( aicast_maxclients * sizeof( cast_state_t ) );
 	memset( caststates, 0, sizeof( caststates ) );
+
 	for( i = 0; i < MAX_CLIENTS; i++ ) {
 		caststates[i].entityNum = i;
 	}
@@ -534,17 +558,22 @@ gentity_t* AICast_FindEntityForName( char* name )
 		if( !trav->inuse ) {
 			continue;
 		}
+
 		if( !trav->client ) {
 			continue;
 		}
+
 		if( !trav->aiName ) {
 			continue;
 		}
+
 		if( strcmp( trav->aiName, name ) ) {
 			continue;
 		}
+
 		return trav;
 	}
+
 	return NULL;
 }
 
@@ -559,6 +588,7 @@ gentity_t* AICast_TravEntityForName( gentity_t* startent, char* name )
 
 	if( !startent ) {
 		trav = g_entities;
+
 	} else {
 		trav = startent + 1;
 	}
@@ -567,17 +597,22 @@ gentity_t* AICast_TravEntityForName( gentity_t* startent, char* name )
 		if( !trav->inuse ) {
 			continue;
 		}
+
 		if( !trav->client ) {
 			continue;
 		}
+
 		if( !trav->aiName ) {
 			continue;
 		}
+
 		if( strcmp( trav->aiName, name ) ) {
 			continue;
 		}
+
 		return trav;
 	}
+
 	return NULL;
 }
 
@@ -616,6 +651,7 @@ void AIChar_AIScript_AlertEntity( gentity_t* ent )
 				break;
 			}
 		}
+
 		if( i == numTouch ) {
 			numTouch = 0;
 		}
@@ -656,9 +692,11 @@ void AICast_DelayedSpawnCast( gentity_t* ent, int castType )
 	if( !ent->aiSkin ) {
 		G_SpawnString( "skin", "", &ent->aiSkin );
 	}
+
 	if( !ent->aihSkin ) {
 		G_SpawnString( "head", "default", &ent->aihSkin );
 	}
+
 	G_SpawnInt( "aiteam", "-1", &ent->aiTeam );
 	// ............................
 
@@ -666,6 +704,7 @@ void AICast_DelayedSpawnCast( gentity_t* ent, int castType )
 	for( i = 0; aiDefaults[ent->aiCharacter].weapons[i]; i++ ) {
 		RegisterItem( BG_FindItemForWeapon( ( weapon_t )aiDefaults[ent->aiCharacter].weapons[i] ) );
 	}
+
 	//----(SA)	end
 
 	// we have to wait a bit before spawning it, otherwise the server will just delete it, since it's treated like a client
@@ -704,12 +743,15 @@ void AICast_CastScriptThink()
 		if( !ent->inuse ) {
 			continue;
 		}
+
 		if( !cs->bs ) {
 			continue;
 		}
+
 		if( ent->health <= 0 ) {
 			continue;
 		}
+
 		AICast_ScriptRun( cs, qfalse );
 	}
 }
@@ -767,10 +809,13 @@ void AICast_CheckLoadGame()
 		}
 
 		ready = qtrue;
+
 		if( numSpawningCast != numcast ) {
 			ready = qfalse;
+
 		} else if( !( ent = AICast_FindEntityForName( "player" ) ) ) {
 			ready = qfalse;
+
 		} else if( !ent->client || ent->client->pers.connected != CON_CONNECTED ) {
 			ready = qfalse;
 		}
@@ -796,12 +841,16 @@ void AICast_CheckLoadGame()
 
 			AICast_CastScriptThink();
 		}
+
 	} else {
 		ready = qtrue;
+
 		if( numSpawningCast != numcast ) {
 			ready = qfalse;
+
 		} else if( !( ent = AICast_FindEntityForName( "player" ) ) ) {
 			ready = qfalse;
+
 		} else if( !ent->client || ent->client->pers.connected != CON_CONNECTED ) {
 			ready = qfalse;
 		}
@@ -856,8 +905,10 @@ qboolean AICast_SolidsInBBox( vec3_t pos, vec3_t mins, vec3_t maxs, int entnum, 
 	}
 
 	sys->Trace( &tr, pos, mins, maxs, pos, entnum, mask );
+
 	if( tr.startsolid || tr.allsolid ) {
 		return qtrue;
+
 	} else {
 		return qfalse;
 	}
@@ -873,6 +924,7 @@ void AICast_Activate( int activatorNum, int entNum )
 	cast_state_t* cs;
 
 	cs = AICast_GetCastState( entNum );
+
 	if( cs->activate ) {
 		cs->activate( entNum, activatorNum );
 	}
@@ -924,6 +976,7 @@ void AICast_SetFlameDamage( int entNum, qboolean status )
 
 	if( status ) {
 		cs->aiFlags |= AIFL_NO_FLAME_DAMAGE;
+
 	} else {
 		cs->aiFlags &= ~AIFL_NO_FLAME_DAMAGE;
 	}
@@ -962,20 +1015,24 @@ AICast_AgePlayTime
 void AICast_AgePlayTime( int entnum )
 {
 	cast_state_t* cs = AICast_GetCastState( entnum );
+
 	//
 	if( saveGamePending ) {
 		return;
 	}
+
 	//	if (reloading)
 	if( g_reloading.integer ) {
 		return;
 	}
+
 	//
 	if( ( level.time - cs->lastLoadTime ) > 1000 ) {
 		if( /*(level.time - cs->lastLoadTime) < 2000 &&*/ ( level.time - cs->lastLoadTime ) > 0 ) {
 			cs->totalPlayTime += level.time - cs->lastLoadTime;
 			sys->Cvar_Set( "g_totalPlayTime", va( "%i", cs->totalPlayTime ) );
 		}
+
 		//
 		cs->lastLoadTime = level.time;
 	}
@@ -1018,6 +1075,7 @@ int AICast_NumAttempts( int entnum )
 void AICast_RegisterPain( int entnum )
 {
 	cast_state_t* cs = AICast_GetCastState( entnum );
+
 	if( cs ) {
 		cs->lastPain = level.time;
 	}

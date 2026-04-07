@@ -231,6 +231,7 @@ void SP_props_box_64( gentity_t* self )
 	self->think		= DropToFloor;
 	self->nextthink = level.time + FRAMETIME;
 }
+
 // END JOSEPH
 
 // Rafael
@@ -303,9 +304,11 @@ void Psparks_think( gentity_t* ent )
 
 	if( ent->spawnflags & 1 ) {
 		tent = G_TempEntity( ent->r.currentOrigin, EV_SPARKS_ELECTRIC );
+
 	} else {
 		tent = G_TempEntity( ent->r.currentOrigin, EV_SPARKS );
 	}
+
 	VectorCopy( ent->r.currentOrigin, tent->s.origin );
 	VectorCopy( ent->r.currentAngles, tent->s.angles );
 	tent->s.density	   = ent->health;
@@ -328,6 +331,7 @@ void sparks_angles_think( gentity_t* ent )
 
 	if( !target ) {
 		VectorSet( ent->r.currentAngles, 0, 0, 1 );
+
 	} else {
 		VectorSubtract( ent->s.origin, target->s.origin, vec );
 		VectorNormalize( vec );
@@ -337,8 +341,10 @@ void sparks_angles_think( gentity_t* ent )
 	sys->LinkEntity( ent );
 
 	ent->nextthink = level.time + FRAMETIME;
+
 	if( !Q_stricmp( ent->classname, "props_sparks" ) ) {
 		ent->think = Psparks_think;
+
 	} else {
 		ent->use = PGUNsparks_use;
 	}
@@ -364,6 +370,7 @@ void SP_props_sparks( gentity_t* ent )
 
 	if( !ent->wait ) {
 		ent->wait = 1200;
+
 	} else {
 		ent->wait *= 1000;
 	}
@@ -443,6 +450,7 @@ void SP_SmokeDust( gentity_t* ent )
 	if( !ent->health ) {
 		ent->health = 16;
 	}
+
 	sys->LinkEntity( ent );
 }
 
@@ -460,15 +468,18 @@ void dust_use( gentity_t* ent, gentity_t* self, gentity_t* activator )
 		tent = G_TempEntity( ent->r.currentOrigin, EV_DUST );
 		VectorCopy( ent->r.currentOrigin, tent->s.origin );
 		VectorCopy( ent->r.currentAngles, tent->s.angles );
+
 		if( ent->spawnflags & 1 ) {
 			tent->s.density = 1;
 		}
+
 	} else {
 		AngleVectors( ent->r.currentAngles, forward, NULL, NULL );
 
 		tent = G_TempEntity( ent->r.currentOrigin, EV_DUST );
 		VectorCopy( ent->r.currentOrigin, tent->s.origin );
 		VectorCopy( forward, tent->s.angles );
+
 		if( ent->spawnflags & 1 ) {
 			tent->s.density = 1;
 		}
@@ -572,18 +583,25 @@ void InitProp( gentity_t* ent )
 
 	if( !Q_stricmp( ent->classname, "props_bench" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/furniture/bench/bench_sm.md3" );
+
 	} else if( !Q_stricmp( ent->classname, "props_radio" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/mapobjects/electronics/radio1.md3" );
+
 	} else if( !Q_stricmp( ent->classname, "props_locker_tall" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/furniture/storage/lockertall.md3" );
+
 	} else if( !Q_stricmp( ent->classname, "props_flippy_table" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/furniture/table/woodflip.md3" );
+
 	} else if( !Q_stricmp( ent->classname, "props_crate_32x64" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/furniture/crate/crate32x64.md3" );
+
 	} else if( !Q_stricmp( ent->classname, "props_58x112tablew" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/furniture/table/56x112tablew.md3" );
+
 	} else if( !Q_stricmp( ent->classname, "props_castlebed" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/furniture/bed/castlebed.md3" );
+
 	} else if( !Q_stricmp( ent->classname, "props_radioSEVEN" ) ) {
 		ent->s.modelindex2 = G_ModelIndex( "models/mapobjects/electronics/radios.md3" );
 	}
@@ -596,25 +614,34 @@ void InitProp( gentity_t* ent )
 	// if the "color" or "light" keys are set, setup constantLight
 	lightSet = G_SpawnFloat( "light", "100", &light );
 	colorSet = G_SpawnVector( "color", "1 1 1", color );
+
 	if( lightSet || colorSet ) {
 		int r, g, b, i;
 
 		r = color[0] * 255;
+
 		if( r > 255 ) {
 			r = 255;
 		}
+
 		g = color[1] * 255;
+
 		if( g > 255 ) {
 			g = 255;
 		}
+
 		b = color[2] * 255;
+
 		if( b > 255 ) {
 			b = 255;
 		}
+
 		i = light / 4;
+
 		if( i > 255 ) {
 			i = 255;
 		}
+
 		ent->s.constantLight = r | ( g << 8 ) | ( b << 16 ) | ( i << 24 );
 	}
 
@@ -633,6 +660,7 @@ void props_bench_think( gentity_t* ent )
 
 	if( ent->s.frame < 28 ) {
 		ent->nextthink = level.time + ( FRAMETIME / 2 );
+
 	} else {
 		ent->clipmask	= 0;
 		ent->r.contents = 0;
@@ -916,6 +944,7 @@ void Just_Got_Thrown( gentity_t* self )
 		}
 
 		return;
+
 	} else {
 		// RF, alert AI of sound event
 		//		AICast_AudibleEvent( self->s.number, self->r.currentOrigin, 384 );
@@ -974,6 +1003,7 @@ void Just_Got_Thrown( gentity_t* self )
 
 					sys->LinkEntity( self );
 					return;
+
 				} else {
 					len = 9999;
 				}
@@ -1107,11 +1137,13 @@ void Props_Activated( gentity_t* self )
 		G_FreeEntity( self );
 
 		return;
+
 	} else {
 		if( !Q_stricmp( self->classname, "props_chair_hiback" ) || !Q_stricmp( self->classname, "props_chair_chat" ) || !Q_stricmp( self->classname, "props_chair_chatarm" ) ||
 			!Q_stricmp( self->classname, "props_chair_side" ) ) {
 			self->s.frame	= 23;
 			self->s.density = 1;
+
 		} else if( !Q_stricmp( self->classname, "props_chair" ) ) {
 			self->s.frame	= 28;
 			self->s.density = 1;
@@ -1158,6 +1190,7 @@ void Props_Chair_Think( gentity_t* self )
 		VectorClear( self->s.pos.trDelta );
 		self->s.pos.trDuration = 0;
 		self->s.pos.trType	   = TR_STATIONARY;
+
 	} else {
 		vec3_t mins, maxs;
 
@@ -1170,6 +1203,7 @@ void Props_Chair_Think( gentity_t* self )
 
 		if( tr.fraction == 1 ) {
 			VectorCopy( self->s.pos.trBase, self->r.currentOrigin );
+
 		} else {
 			VectorCopy( self->r.currentOrigin, self->s.pos.trBase );
 			VectorClear( self->s.pos.trDelta );
@@ -1269,6 +1303,7 @@ void Prop_Check_Ground( gentity_t* self )
 
 	if( tr.fraction == 1 ) {
 		self->s.groundEntityNum = -1;
+
 	} else {
 		self->s.groundEntityNum = tr.entityNum;
 	}
@@ -1336,9 +1371,11 @@ void Props_Chair_Animate( gentity_t* ent )
 			ent->s.time	   = level.time;
 			ent->s.time2   = level.time + 2000;
 			return;
+
 		} else {
 			ent->nextthink = level.time + ( FRAMETIME / 2 );
 		}
+
 	} else if( ( !Q_stricmp( ent->classname, "props_chair_side" ) ) || ( !Q_stricmp( ent->classname, "props_chair_chat" ) ) || ( !Q_stricmp( ent->classname, "props_chair_chatarm" ) ) ||
 			   ( !Q_stricmp( ent->classname, "props_chair_hiback" ) ) ) {
 		if( ent->s.frame >= 20 ) {
@@ -1349,9 +1386,11 @@ void Props_Chair_Animate( gentity_t* ent )
 			ent->s.time	   = level.time;
 			ent->s.time2   = level.time + 2000;
 			return;
+
 		} else {
 			ent->nextthink = level.time + ( FRAMETIME / 2 );
 		}
+
 	} else if( !Q_stricmp( ent->classname, "props_desklamp" ) ) {
 		if( ent->s.frame >= 11 ) {
 			// player may have picked it up before
@@ -1364,6 +1403,7 @@ void Props_Chair_Animate( gentity_t* ent )
 			ent->s.time	   = level.time;
 			ent->s.time2   = level.time + 2000;
 			return;
+
 		} else {
 			ent->nextthink = level.time + ( FRAMETIME / 2 );
 		}
@@ -1393,10 +1433,12 @@ void Spawn_Shard( gentity_t* ent, gentity_t* inflictor, int quantity, int type )
 		start[1] += crandom() * 32;
 		VectorSubtract( inflictor->r.currentOrigin, ent->r.currentOrigin, dir );
 		VectorNormalize( dir );
+
 	} else if( inflictor ) {
 		VectorSubtract( inflictor->r.currentOrigin, ent->r.currentOrigin, dir );
 		VectorNormalize( dir );
 		VectorNegate( dir, dir );
+
 	} else {
 		VectorSet( dir, 0, 0, 1 );
 	}
@@ -1429,12 +1471,15 @@ void Prop_Break_Sound( gentity_t* ent )
 		case shard_wood:
 			G_AddEvent( ent, EV_GENERAL_SOUND, snd_boardbreak );
 			break;
+
 		case shard_glass:
 			G_AddEvent( ent, EV_GENERAL_SOUND, snd_glassbreak );
 			break;
+
 		case shard_metal:
 			G_AddEvent( ent, EV_GENERAL_SOUND, snd_metalbreak );
 			break;
+
 		case shard_ceramic:
 			G_AddEvent( ent, EV_GENERAL_SOUND, snd_ceramicbreak );
 			break;
@@ -1482,9 +1527,11 @@ void Props_Chair_Die( gentity_t* ent, gentity_t* inflictor, gentity_t* attacker,
 		case shard_wood:
 			deathSound = snd_boardbreak;
 			break;
+
 		case shard_metal:
 			deathSound = chair_metalbreak;
 			break;
+
 		default:
 			deathSound = 0;
 			break;
@@ -1513,6 +1560,7 @@ void Props_Chair_Skyboxtouch( gentity_t* ent )
 		player->melee  = NULL;
 		player->active = qfalse;
 		player->client->ps.eFlags &= ~EF_MELEE_ACTIVE;
+
 	} else if( player && player->s.number == ent->r.ownerNum ) {
 		player->active = qfalse;
 		player->melee  = NULL;
@@ -1532,6 +1580,7 @@ void SP_Props_Chair( gentity_t* ent )
 
 	if( G_SpawnInt( "mass", "5", &mass ) ) {
 		ent->wait = mass;
+
 	} else {
 		ent->wait = 5;
 	}
@@ -1558,6 +1607,7 @@ void SP_Props_Chair( gentity_t* ent )
 		//		ent->count = 1;
 		ent->count = shard_metal; // metal break sound
 	}
+
 	ent->think	   = Props_Chair_Think;
 	ent->nextthink = level.time + FRAMETIME;
 
@@ -1591,6 +1641,7 @@ void SP_Props_GenericChair( gentity_t* ent )
 
 	if( G_SpawnInt( "mass", "5", &mass ) ) {
 		ent->wait = mass;
+
 	} else {
 		ent->wait = 5;
 	}
@@ -1644,6 +1695,7 @@ void SP_Props_ChairChat( gentity_t* ent )
 	if( !ent->model ) {
 		ent->model = "models/furniture/chair/chair_chat.md3";
 	}
+
 	SP_Props_GenericChair( ent );
 
 	ent->count = shard_wood; // wood break sound
@@ -1659,6 +1711,7 @@ void SP_Props_ChairChatArm( gentity_t* ent )
 	if( !ent->model ) {
 		ent->model = "models/furniture/chair/chair_chatarm.md3";
 	}
+
 	SP_Props_GenericChair( ent );
 
 	ent->count = shard_wood; // wood break sound
@@ -1674,6 +1727,7 @@ void SP_Props_ChairSide( gentity_t* ent )
 	if( !ent->model ) {
 		ent->model = "models/furniture/chair/sidechair3.md3";
 	}
+
 	SP_Props_GenericChair( ent );
 
 	ent->count = shard_wood; // wood break sound
@@ -1689,6 +1743,7 @@ void SP_Props_ChairHiback( gentity_t* ent )
 	if( !ent->model ) {
 		ent->model = "models/furniture/chair/hiback5.md3";
 	}
+
 	SP_Props_GenericChair( ent );
 
 	ent->count = shard_wood; // wood break sound
@@ -1701,9 +1756,11 @@ void Use_DamageInflictor( gentity_t* ent, gentity_t* other, gentity_t* activator
 	gentity_t* daent;
 
 	daent = NULL;
+
 	while( ( daent = G_Find( daent, FOFS( targetname ), daent->target ) ) != NULL ) {
 		if( daent == ent ) {
 			G_Printf( "Use_DamageInflictor damaging self.\n" );
+
 		} else {
 			G_Damage( daent, ent, ent, NULL, NULL, 9999, 0, MOD_CRUSH );
 		}
@@ -1794,6 +1851,7 @@ void SP_Props_Desklamp( gentity_t* ent )
 
 	if( G_SpawnInt( "mass", "5", &mass ) ) {
 		ent->wait = mass;
+
 	} else {
 		ent->wait = 2;
 	}
@@ -1864,6 +1922,7 @@ void Props_Barrel_Animate( gentity_t* ent )
 			ent->think	   = G_FreeEntity;
 			ent->nextthink = level.time + 25000;
 			return;
+
 		} else {
 			//	G_UseTargets (ent, NULL);
 			ent->think	   = G_FreeEntity;
@@ -1872,6 +1931,7 @@ void Props_Barrel_Animate( gentity_t* ent )
 			// ent->s.time2 = level.time + 2000;
 			return;
 		}
+
 	} else {
 		ent->nextthink = level.time + ( FRAMETIME / 2 );
 	}
@@ -1908,6 +1968,7 @@ void smoker_think( gentity_t* ent )
 
 	if( !ent->count ) {
 		G_FreeEntity( ent );
+
 	} else {
 		barrel_smoke( ent );
 		ent->nextthink = level.time + FRAMETIME;
@@ -1927,6 +1988,7 @@ void SP_OilSlick( gentity_t* ent )
 	if( target ) {
 		VectorCopy( target->s.origin, point );
 		point[2] = ent->r.currentOrigin[2]; // just in case
+
 	} else {
 		VectorCopy( ent->r.currentOrigin, point );
 	}
@@ -1954,6 +2016,7 @@ void OilParticles_think( gentity_t* ent )
 		tent->s.time	= ent->count2;
 		tent->s.density = ent->s.density;
 		VectorCopy( ent->rotate, tent->s.origin2 );
+
 	} else {
 		G_FreeEntity( ent );
 	}
@@ -2160,12 +2223,15 @@ void Props_OilSlickSlippery( gentity_t* ent )
 					int t;
 
 					t = 32 * 2;
+
 					if( t < 50 ) {
 						t = 50;
 					}
+
 					if( t > 200 ) {
 						t = 200;
 					}
+
 					player->client->ps.pm_time = t;
 					player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 				}
@@ -2190,8 +2256,10 @@ void SP_Props_Flamebarrel( gentity_t* ent )
 
 	if( ent->spawnflags & 4 ) {
 		ent->s.modelindex = G_ModelIndex( "models/furniture/barrel/barrel_c.md3" );
+
 	} else if( ent->spawnflags & 1 ) {
 		ent->s.modelindex = G_ModelIndex( "models/furniture/barrel/barrel_d.md3" );
+
 	} else {
 		ent->s.modelindex = G_ModelIndex( "models/furniture/barrel/barrel_b.md3" );
 	}
@@ -2200,6 +2268,7 @@ void SP_Props_Flamebarrel( gentity_t* ent )
 
 	if( G_SpawnInt( "mass", "5", &mass ) ) {
 		ent->wait = mass;
+
 	} else {
 		ent->wait = 10;
 	}
@@ -2433,6 +2502,7 @@ void props_crate32x64_think( gentity_t* ent )
 
 	if( ent->s.frame < 17 ) {
 		ent->nextthink = level.time + ( FRAMETIME / 2 );
+
 	} else {
 		ent->clipmask	= 0;
 		ent->r.contents = 0;
@@ -2524,6 +2594,7 @@ void flippy_table_use( gentity_t* ent, gentity_t* other, gentity_t* activator )
 		}
 
 		sys->UnlinkEntity( ent );
+
 	} else {
 		Use_BinaryMover( ent, other, other );
 	}
@@ -2537,6 +2608,7 @@ void flippy_table_animate( gentity_t* ent )
 		G_UseTargets( ent, NULL );
 		ent->think	   = G_FreeEntity;
 		ent->nextthink = level.time + 2000;
+
 	} else {
 		ent->s.frame++;
 		ent->nextthink = level.time + ( FRAMETIME / 2 );
@@ -2574,6 +2646,7 @@ void props_flippy_blocked( gentity_t* ent, gentity_t* other )
 
 		VectorScale( velocity, 32, kvel );
 		VectorAdd( other->client->ps.velocity, kvel, other->client->ps.velocity );
+
 	} else if( other->s.eType == ET_ITEM ) {
 		VectorCopy( ent->s.apos.trBase, angles );
 		angles[YAW] += angle;
@@ -2589,6 +2662,7 @@ void props_flippy_blocked( gentity_t* ent, gentity_t* other )
 		VectorCopy( kvel, other->s.pos.trDelta );
 
 		other->s.eFlags |= EF_BOUNCE;
+
 	} else {
 		// just delete it or destroy it
 		G_TempEntity( other->s.origin, EV_ITEM_POP );
@@ -2618,8 +2692,10 @@ void SP_Props_Flipping_Table( gentity_t* ent )
 
 	if( ent->spawnflags & 4 ) {
 		ent->rotate[2] = 1;
+
 	} else if( ent->spawnflags & 8 ) {
 		ent->rotate[0] = 1;
+
 	} else {
 		ent->rotate[1] = 1;
 	}
@@ -2675,6 +2751,7 @@ void props_58x112tablew_think( gentity_t* ent )
 
 	if( ent->s.frame < 16 ) {
 		ent->nextthink = level.time + ( FRAMETIME / 2 );
+
 	} else {
 		ent->clipmask	= 0;
 		ent->r.contents = 0;
@@ -2754,6 +2831,7 @@ void props_castlebed_animate( gentity_t* ent )
 
 	if( ent->s.frame < 8 ) {
 		ent->nextthink = level.time + ( FRAMETIME / 2 );
+
 	} else {
 		ent->clipmask	= 0;
 		ent->r.contents = 0;
@@ -2837,6 +2915,7 @@ void props_snowGenerator_think( gentity_t* ent )
 
 	if( ent->spawnflags & 2 ) {
 		ent->nextthink = level.time + FRAMETIME;
+
 	} else if( ent->wait < level.time ) {
 		ent->nextthink = level.time + FRAMETIME;
 	}
@@ -2849,6 +2928,7 @@ void props_snowGenerator_use( gentity_t* ent, gentity_t* other, gentity_t* activ
 		ent->think	   = props_snowGenerator_think;
 		ent->nextthink = level.time + FRAMETIME;
 		ent->wait	   = level.time + ent->duration;
+
 	} else {
 		ent->spawnflags &= ~1;
 	}
@@ -2869,8 +2949,10 @@ void SP_props_snowGenerator( gentity_t* ent )
 	if( !ent->target ) {
 		G_Printf( "snowGenerator at loc %s does not have a target\n", vtos( center ) );
 		return;
+
 	} else {
 		target = G_Find( target, FOFS( targetname ), ent->target );
+
 		if( !target ) {
 			G_Printf( "error snowGenerator at loc %s does cant find target %s\n", vtos( center ), ent->target );
 			return;
@@ -2896,6 +2978,7 @@ void SP_props_snowGenerator( gentity_t* ent )
 
 	if( !( ent->delay ) ) {
 		ent->delay = 100;
+
 	} else {
 		ent->delay *= 100;
 	}
@@ -2954,14 +3037,17 @@ void propsFireColumnUse( gentity_t* ent, gentity_t* other, gentity_t* activator 
 
 	if( ent->spawnflags & 2 ) {
 		tent->s.eType = ET_FIRE_COLUMN_SMOKE;
+
 	} else {
 		tent->s.eType = ET_FIRE_COLUMN;
 	}
 
 	if( ent->spawnflags & 4 ) {
 		tent->s.pos.trType = TR_GRAVITY;
+
 	} else if( ent->spawnflags & 8 ) {
 		tent->s.pos.trType = TR_GRAVITY_LOW;
+
 	} else {
 		tent->s.pos.trType = TR_LINEAR;
 	}
@@ -3013,6 +3099,7 @@ void propsFireColumnInit( gentity_t* ent )
 		VectorSubtract( target->s.origin, ent->s.origin, vec );
 		vectoangles( vec, angles );
 		G_SetAngle( ent, angles );
+
 	} else {
 		// ok then just up
 		VectorSet( vec, 0, 0, 1 );
@@ -3061,6 +3148,7 @@ void props_ExploPartUse( gentity_t* ent, gentity_t* other, gentity_t* activator 
 	if( ent->s.modelindex ) {
 		part			   = fire_flamebarrel( ent, start, dir );
 		part->s.modelindex = ent->s.modelindex;
+
 	} else {
 		G_Printf( "props_ExploPartUse has not been assigned a model\n" );
 		return;
@@ -3093,6 +3181,7 @@ void props_ExploPartInit( gentity_t* ent )
 		VectorSubtract( target->s.origin, ent->s.origin, vec );
 		vectoangles( vec, angles );
 		G_SetAngle( ent, angles );
+
 	} else {
 		// ok then just up
 		VectorSet( vec, 0, 0, 1 );
@@ -3116,17 +3205,23 @@ void SP_props_ExploPart( gentity_t* ent )
 	if( !Q_stricmp( type, "wood" ) ) {
 		if( ent->count == 64 ) {
 			ent->s.modelindex = G_ModelIndex( "models/shards/2x4a.md3" );
+
 		} else if( ent->count == 48 ) {
 			ent->s.modelindex = G_ModelIndex( "models/shards/2x4b.md3" );
+
 		} else if( ent->count == 32 ) {
 			ent->s.modelindex = G_ModelIndex( "models/shards/2x4c.md3" );
+
 		} else if( ent->count == 24 ) {
 			ent->s.modelindex = G_ModelIndex( "models/shards/2x4d.md3" );
+
 		} else if( ent->count == 16 ) {
 			ent->s.modelindex = G_ModelIndex( "models/shards/2x4e.md3" );
+
 		} else if( ent->count == 8 ) {
 			ent->s.modelindex = G_ModelIndex( "models/shards/2x4f.md3" );
 		}
+
 	} else if( !Q_stricmp( type, "concrete" ) ) {
 	} else if( !Q_stricmp( type, "stone" ) ) {
 	}
@@ -3170,6 +3265,7 @@ void props_decoration_animate( gentity_t* ent )
 			if( !( ent->spawnflags & 64 ) ) {
 				ent->takedamage = qfalse;
 			}
+
 		} else {
 			ent->s.frame	= ent->count2;
 			ent->takedamage = qfalse;
@@ -3212,9 +3308,11 @@ void Use_props_decoration( gentity_t* ent, gentity_t* self, gentity_t* activator
 	if( ent->spawnflags & 1 ) {
 		sys->LinkEntity( ent );
 		ent->spawnflags &= ~1;
+
 	} else if( ent->spawnflags & 4 ) {
 		ent->nextthink = level.time + 50;
 		ent->think	   = props_decoration_animate;
+
 	} else {
 		sys->UnlinkEntity( ent );
 		ent->spawnflags |= 1;
@@ -3265,25 +3363,34 @@ void SP_props_decoration( gentity_t* ent )
 	// if the "color" or "light" keys are set, setup constantLight
 	lightSet = G_SpawnFloat( "light", "100", &light );
 	colorSet = G_SpawnVector( "color", "1 1 1", color );
+
 	if( lightSet || colorSet ) {
 		int r, g, b, i;
 
 		r = color[0] * 255;
+
 		if( r > 255 ) {
 			r = 255;
 		}
+
 		g = color[1] * 255;
+
 		if( g > 255 ) {
 			g = 255;
 		}
+
 		b = color[2] * 255;
+
 		if( b > 255 ) {
 			b = 255;
 		}
+
 		i = light / 4;
+
 		if( i > 255 ) {
 			i = 255;
 		}
+
 		ent->s.constantLight = r | ( g << 8 ) | ( b << 16 ) | ( i << 24 );
 	}
 
@@ -3293,14 +3400,19 @@ void SP_props_decoration( gentity_t* ent )
 		ent->die		= props_decoration_death;
 
 		G_SpawnString( "type", "wood", &type );
+
 		if( !Q_stricmp( type, "wood" ) ) {
 			ent->key = 1;
+
 		} else if( !Q_stricmp( type, "glass" ) ) {
 			ent->key = 0;
+
 		} else if( !Q_stricmp( type, "metal" ) ) {
 			ent->key = 2;
+
 		} else if( !Q_stricmp( type, "ceramic" ) ) {
 			ent->key = 3;
+
 		} else if( !Q_stricmp( type, "rubble" ) ) {
 			ent->key = 4;
 		}
@@ -3359,6 +3471,7 @@ void SP_props_decoration( gentity_t* ent )
 
 	if( !( ent->spawnflags & 1 ) ) {
 		sys->LinkEntity( ent );
+
 	} else {
 		ent->use = Use_props_decoration;
 	}
@@ -3534,12 +3647,15 @@ void props_statue_blocked( gentity_t* ent )
 			int t;
 
 			t = grav * 2;
+
 			if( t < 50 ) {
 				t = 50;
 			}
+
 			if( t > 200 ) {
 				t = 200;
 			}
+
 			traceEnt->client->ps.pm_time = t;
 			traceEnt->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 		}
@@ -3563,9 +3679,11 @@ void props_statue_animate( gentity_t* ent )
 
 	if( ( ( ent->delay * 1000 ) + ent->timestamp ) > level.time ) {
 		ent->count = 0;
+
 	} else if( ent->count == 5 ) {
 		takeashot  = qtrue;
 		ent->count = 0;
+
 	} else {
 		ent->count++;
 	}
@@ -3639,25 +3757,34 @@ void SP_props_statue( gentity_t* ent )
 	// if the "color" or "light" keys are set, setup constantLight
 	lightSet = G_SpawnFloat( "light", "100", &light );
 	colorSet = G_SpawnVector( "color", "1 1 1", color );
+
 	if( lightSet || colorSet ) {
 		int r, g, b, i;
 
 		r = color[0] * 255;
+
 		if( r > 255 ) {
 			r = 255;
 		}
+
 		g = color[1] * 255;
+
 		if( g > 255 ) {
 			g = 255;
 		}
+
 		b = color[2] * 255;
+
 		if( b > 255 ) {
 			b = 255;
 		}
+
 		i = light / 4;
+
 		if( i > 255 ) {
 			i = 255;
 		}
+
 		ent->s.constantLight = r | ( g << 8 ) | ( b << 16 ) | ( i << 24 );
 	}
 
@@ -3666,20 +3793,26 @@ void SP_props_statue( gentity_t* ent )
 	ent->die		= props_statue_death;
 
 	G_SpawnString( "type", "wood", &type );
+
 	if( !Q_stricmp( type, "wood" ) ) {
 		ent->key = 1;
+
 	} else if( !Q_stricmp( type, "glass" ) ) {
 		ent->key = 0;
+
 	} else if( !Q_stricmp( type, "metal" ) ) {
 		ent->key = 2;
+
 	} else if( !Q_stricmp( type, "ceramic" ) ) {
 		ent->key = 3;
+
 	} else if( !Q_stricmp( type, "rubble" ) ) {
 		ent->key = 4;
 	}
 
 	G_SpawnString( "high", "0", &high );
 	height = atof( high );
+
 	if( !height ) {
 		height = 4;
 	}
@@ -3815,6 +3948,7 @@ void props_locker_use( gentity_t* ent, gentity_t* other, gentity_t* activator )
 	if( !ent->delay ) {
 		ent->s.frame = 1; // rattle when pain starts
 	}
+
 	ent->delay	   = 1;
 	ent->think	   = props_locker_endrattle;
 	ent->nextthink = level.time + 1000; // rattle a sec
@@ -3968,6 +4102,7 @@ void SP_props_footlocker( gentity_t* self )
 	if( self->s.angles[1] == 90 || self->s.angles[1] == 270 ) {
 		VectorSet( self->r.mins, -21, -12, 0 );
 		VectorSet( self->r.maxs, 21, 12, 24 );
+
 	} else {
 		VectorSet( self->r.mins, -12, -21, 0 );
 		VectorSet( self->r.maxs, 12, 21, 24 );
@@ -3985,12 +4120,14 @@ void SP_props_footlocker( gentity_t* self )
 
 	if( !( self->wait ) ) {
 		self->wait = 1000;
+
 	} else {
 		self->wait *= 1000;
 	}
 
 	if( G_SpawnInt( "mass", "75", &mass ) ) {
 		self->count = mass;
+
 	} else {
 		self->count = 75;
 	}
@@ -3998,19 +4135,26 @@ void SP_props_footlocker( gentity_t* self )
 	if( G_SpawnString( "type", "wood", &type ) ) {
 		if( !Q_stricmp( type, "wood" ) ) {
 			self->key = 0;
+
 		} else if( !Q_stricmp( type, "glass" ) ) {
 			self->key = 1;
+
 		} else if( !Q_stricmp( type, "metal" ) ) {
 			self->key = 2;
+
 		} else if( !Q_stricmp( type, "gibs" ) ) {
 			self->key = 3;
+
 		} else if( !Q_stricmp( type, "brick" ) ) {
 			self->key = 4;
+
 		} else if( !Q_stricmp( type, "rock" ) ) {
 			self->key = 5;
+
 		} else if( !Q_stricmp( type, "fabric" ) ) {
 			self->key = 6;
 		}
+
 	} else {
 		self->key = 0;
 	}
@@ -4042,6 +4186,7 @@ void props_flamethrower_think( gentity_t* ent )
 		if( !target ) {
 			//			VectorSet (ent->r.currentAngles, 0, 0, 1);	// (SA) wasn't working
 			VectorSet( ent->s.apos.trBase, 0, 0, 1 );
+
 		} else {
 			VectorSubtract( target->s.origin, ent->s.origin, vec );
 			VectorNormalize( vec );
@@ -4064,6 +4209,7 @@ void props_flamethrower_think( gentity_t* ent )
 			if( ent->random ) {
 				rval = ent->random * 1000;
 				rnd	 = rand() % rval;
+
 			} else {
 				rnd = 0;
 			}
@@ -4071,6 +4217,7 @@ void props_flamethrower_think( gentity_t* ent )
 			ent->timestamp = level.time + rnd;
 			ent->nextthink = ent->timestamp + 50;
 		}
+
 	} else {
 		ent->s.eFlags &= ~EF_FIRING;
 	}
@@ -4087,6 +4234,7 @@ void props_flamethrower_use( gentity_t* ent, gentity_t* other, gentity_t* activa
 		ent->think	   = NULL; // (SA) wasn't working
 		ent->nextthink = 0;
 		return;
+
 	} else {
 		ent->spawnflags |= 2;
 	}
@@ -4094,6 +4242,7 @@ void props_flamethrower_use( gentity_t* ent, gentity_t* other, gentity_t* activa
 	if( ent->random ) {
 		rval = ent->random * 1000;
 		rnd	 = rand() % rval;
+
 	} else {
 		rnd = 0;
 	}
@@ -4117,6 +4266,7 @@ void props_flamethrower_init( gentity_t* ent )
 	if( !target ) {
 		//		VectorSet (ent->r.currentAngles, 0, 0, 1);	//----(SA)
 		VectorSet( ent->s.apos.trBase, 0, 0, 1 );
+
 	} else {
 		VectorSubtract( target->s.origin, ent->s.origin, vec );
 		VectorNormalize( vec );
@@ -4142,15 +4292,18 @@ void SP_props_flamethrower( gentity_t* ent )
 
 	if( !( ent->duration ) ) {
 		ent->duration = 1000;
+
 	} else {
 		ent->duration *= 1000;
 	}
 
 	G_SpawnString( "size", "0", &size );
 	dsize = atof( size );
+
 	if( !dsize ) {
 		dsize = 1;
 	}
+
 	ent->accuracy = dsize;
 
 	if( ent->spawnflags & 2 ) { // SILENT

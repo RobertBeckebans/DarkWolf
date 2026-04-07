@@ -78,6 +78,7 @@ void				   AAS_Error( char* fmt, ... )
 
 	Error( text );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -88,6 +89,7 @@ int Sys_MilliSeconds()
 {
 	return clock() * 1000 / CLOCKS_PER_SEC;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -97,6 +99,7 @@ int Sys_MilliSeconds()
 void AAS_DebugLine( vec3_t start, vec3_t end, int color )
 {
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -106,6 +109,7 @@ void AAS_DebugLine( vec3_t start, vec3_t end, int color )
 void AAS_ClearShownDebugLines()
 {
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -116,6 +120,7 @@ char* BotImport_BSPEntityData()
 {
 	return CM_EntityString();
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -142,6 +147,7 @@ void BotImport_Trace( bsp_trace_t* bsptrace, vec3_t start, vec3_t mins, vec3_t m
 	bsptrace->startsolid	 = result.startsolid;
 	bsptrace->surface.flags	 = result.surfaceFlags;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -152,6 +158,7 @@ int BotImport_PointContents( vec3_t p )
 {
 	return CM_PointContents( p, worldmodel );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -162,6 +169,7 @@ void* BotImport_GetMemory( int size )
 {
 	return GetMemory( size );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -176,11 +184,14 @@ void BotImport_Print( int type, char* fmt, ... )
 	va_start( argptr, fmt );
 	vsprintf( buf, fmt, argptr );
 	printf( buf );
+
 	if( buf[0] != '\r' ) {
 		Log_Write( buf );
 	}
+
 	va_end( argptr );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -196,25 +207,31 @@ void BotImport_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t outmi
 
 	h = CM_InlineModel( modelnum );
 	CM_ModelBounds( h, mins, maxs );
+
 	// if the model is rotated
 	if( ( angles[0] || angles[1] || angles[2] ) ) { // expand for rotation
 
 		max = RadiusFromBounds( mins, maxs );
+
 		for( i = 0; i < 3; i++ ) {
 			mins[i] = ( mins[i] + maxs[i] ) * 0.5 - max;
 			maxs[i] = ( mins[i] + maxs[i] ) * 0.5 + max;
 		}
 	}
+
 	if( outmins ) {
 		VectorCopy( mins, outmins );
 	}
+
 	if( outmaxs ) {
 		VectorCopy( maxs, outmaxs );
 	}
+
 	if( origin ) {
 		VectorClear( origin );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -229,11 +246,14 @@ void Com_DPrintf( char* fmt, ... )
 	va_start( argptr, fmt );
 	vsprintf( buf, fmt, argptr );
 	printf( buf );
+
 	if( buf[0] != '\r' ) {
 		Log_Write( buf );
 	}
+
 	va_end( argptr );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -244,6 +264,7 @@ int COM_Compress( char* data_p )
 {
 	return strlen( data_p );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -254,6 +275,7 @@ void Com_Memset( void* dest, const int val, const size_t count )
 {
 	memset( dest, val, count );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -264,6 +286,7 @@ void Com_Memcpy( void* dest, const void* src, const size_t count )
 {
 	memcpy( dest, src, count );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -280,6 +303,7 @@ void AAS_InitBotImport()
 	botimport.Print					 = BotImport_Print;
 	botimport.BSPModelMinsMaxsOrigin = BotImport_BSPModelMinsMaxsOrigin;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -292,10 +316,12 @@ void AAS_CalcReachAndClusters( struct quakefile_s* qf )
 	float time;
 
 	Log_Print( "loading collision map...\n" );
+
 	//
 	if( !qf->pakfile[0] ) {
 		strcpy( qf->pakfile, qf->filename );
 	}
+
 	// load the map
 	CM_LoadMap( ( char* )qf, qfalse, &( *aasworld ).bspchecksum );
 	// get a handle to the world model
@@ -318,9 +344,11 @@ void AAS_CalcReachAndClusters( struct quakefile_s* qf )
 	// calculate reachabilities
 	AAS_InitReachability();
 	time = 0;
+
 	while( AAS_ContinueInitReachability( time ) ) {
 		time++;
 	}
+
 	// calculate clusters
 	AAS_InitClustering();
 }
@@ -330,4 +358,5 @@ void AAS_SetWorldPointer( aas_t* newaasworld )
 {
 	aasworld = newaasworld;
 }
+
 // done.

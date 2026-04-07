@@ -108,6 +108,7 @@ void Com_BeginRedirect( char* buffer, int buffersize, void ( *flush )( char* ) )
 	if( !buffer || !buffersize || !flush ) {
 		return;
 	}
+
 	rd_buffer	  = buffer;
 	rd_buffersize = buffersize;
 	rd_flush	  = flush;
@@ -151,6 +152,7 @@ void QDECL Com_Printf( const char* fmt, ... )
 			rd_flush( rd_buffer );
 			*rd_buffer = 0;
 		}
+
 		Q_strcat( rd_buffer, rd_buffersize, msg );
 		// show_bug.cgi?id=51
 		// only flush the rcon buffer when it's necessary, avoid fragmenting
@@ -186,9 +188,11 @@ void QDECL Com_Printf( const char* fmt, ... )
 				_ftype	  = 'TEXT';
 				_fcreator = 'R*ch';
 			}
+
 #endif
 			logfile = FS_FOpenFileWrite( "rtcwconsole.log" ); //----(SA)	changed name for Wolf
 			Com_Printf( "logfile opened on %s\n", asctime( newtime ) );
+
 			if( com_logfile->integer > 1 ) {
 				// force it to not buffer so we get valid
 				// data even if we are crashing
@@ -197,6 +201,7 @@ void QDECL Com_Printf( const char* fmt, ... )
 
 			opening_qconsole = qfalse;
 		}
+
 		if( logfile && FS_Initialized() ) {
 			FS_Write( msg, strlen( msg ), logfile );
 		}
@@ -242,6 +247,7 @@ void QDECL Com_Error( int code, const char* fmt, ... )
 	int		   currentTime;
 
 #if 0 // #if defined(_WIN32) && defined(_DEBUG)
+
 	if( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
 		if( !com_noErrorInterrupt->integer ) {
 			__asm {
@@ -249,6 +255,7 @@ void QDECL Com_Error( int code, const char* fmt, ... )
 			}
 		}
 	}
+
 #endif
 
 	// when we are running automated scripts, make sure we
@@ -265,18 +272,22 @@ void QDECL Com_Error( int code, const char* fmt, ... )
 
 	// if we are getting a solid stream of ERR_DROP, do an ERR_FATAL
 	currentTime = Sys_Milliseconds();
+
 	if( currentTime - lastErrorTime < 100 ) {
 		if( ++errorCount > 3 ) {
 			code = ERR_FATAL;
 		}
+
 	} else {
 		errorCount = 0;
 	}
+
 	lastErrorTime = currentTime;
 
 	if( com_errorEntered ) {
 		Sys_Error( "recursive error after: %s", com_errorMessage );
 	}
+
 	com_errorEntered = qtrue;
 
 	va_start( argptr, fmt );
@@ -292,15 +303,19 @@ void QDECL Com_Error( int code, const char* fmt, ... )
 		CL_FlushMemory();
 		com_errorEntered = qfalse;
 		longjmp( abortframe, -1 );
+
 	} else if( code == ERR_ENDGAME ) { //----(SA)	added
 		SV_Shutdown( "endgame" );
+
 		if( com_cl_running && com_cl_running->integer ) {
 			CL_Disconnect( qtrue );
 			CL_FlushMemory();
 			com_errorEntered = qfalse;
 			CL_EndgameMenu();
 		}
+
 		longjmp( abortframe, -1 );
+
 	} else if( code == ERR_DROP || code == ERR_DISCONNECT ) {
 		Com_Printf( "********************\nERROR: %s\n********************\n", com_errorMessage );
 		SV_Shutdown( va( "Server crashed: %s\n", com_errorMessage ) );
@@ -308,17 +323,22 @@ void QDECL Com_Error( int code, const char* fmt, ... )
 		CL_FlushMemory();
 		com_errorEntered = qfalse;
 		longjmp( abortframe, -1 );
+
 	} else if( code == ERR_NEED_CD ) {
 		SV_Shutdown( "Server didn't have CD\n" );
+
 		if( com_cl_running && com_cl_running->integer ) {
 			CL_Disconnect( qtrue );
 			CL_FlushMemory();
 			com_errorEntered = qfalse;
 			CL_CDDialog();
+
 		} else {
 			Com_Printf( "Server didn't have CD\n" );
 		}
+
 		longjmp( abortframe, -1 );
+
 	} else {
 		CL_Shutdown();
 		SV_Shutdown( va( "Server fatal crashed: %s\n", com_errorMessage ) );
@@ -346,6 +366,7 @@ void Com_Quit_f()
 		Com_Shutdown();
 		FS_Shutdown( qtrue );
 	}
+
 	Sys_Quit();
 }
 
@@ -389,10 +410,12 @@ void  Com_ParseCommandLine( char* commandLine )
 			if( com_numConsoleLines == MAX_CONSOLE_LINES ) {
 				return;
 			}
+
 			com_consoleLines[com_numConsoleLines] = commandLine + 1;
 			com_numConsoleLines++;
 			*commandLine = 0;
 		}
+
 		commandLine++;
 	}
 }
@@ -411,11 +434,13 @@ qboolean Com_SafeMode()
 
 	for( i = 0; i < com_numConsoleLines; i++ ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
+
 		if( !Q_stricmp( Cmd_Argv( 0 ), "safe" ) || !Q_stricmp( Cmd_Argv( 0 ), "cvar_restart" ) ) {
 			com_consoleLines[i][0] = 0;
 			return qtrue;
 		}
 	}
+
 	return qfalse;
 }
 
@@ -438,11 +463,13 @@ void Com_StartupVariable( const char* match )
 
 	for( i = 0; i < com_numConsoleLines; i++ ) {
 		Cmd_TokenizeString( com_consoleLines[i] );
+
 		if( strcmp( Cmd_Argv( 0 ), "set" ) ) {
 			continue;
 		}
 
 		s = Cmd_Argv( 1 );
+
 		if( !match || !strcmp( s, match ) ) {
 			Cvar_Set( s, Cmd_Argv( 2 ) );
 			cv = Cvar_Get( s, "", 0 );
@@ -469,6 +496,7 @@ qboolean Com_AddStartupCommands()
 	qboolean added;
 
 	added = qfalse;
+
 	// quote every token, so args with semicolons can work
 	for( i = 0; i < com_numConsoleLines; i++ ) {
 		if( !com_consoleLines[i] || !com_consoleLines[i][0] ) {
@@ -479,6 +507,7 @@ qboolean Com_AddStartupCommands()
 		if( Q_stricmpn( com_consoleLines[i], "set", 3 ) ) {
 			added = qtrue;
 		}
+
 		Cbuf_AddText( com_consoleLines[i] );
 		Cbuf_AddText( "\n" );
 	}
@@ -498,19 +527,24 @@ void Info_Print( const char* s )
 	if( *s == '\\' ) {
 		s++;
 	}
+
 	while( *s ) {
 		o = key;
+
 		while( *s && *s != '\\' ) {
 			*o++ = *s++;
 		}
 
 		l = o - key;
+
 		if( l < 20 ) {
 			memset( o, ' ', 20 - l );
 			key[20] = 0;
+
 		} else {
 			*o = 0;
 		}
+
 		Com_Printf( "%s", key );
 
 		if( !*s ) {
@@ -520,14 +554,17 @@ void Info_Print( const char* s )
 
 		o = value;
 		s++;
+
 		while( *s && *s != '\\' ) {
 			*o++ = *s++;
 		}
+
 		*o = 0;
 
 		if( *s ) {
 			s++;
 		}
+
 		Com_Printf( "%s\n", value );
 	}
 }
@@ -542,22 +579,26 @@ char* Com_StringContains( char* str1, char* str2, int casesensitive )
 	int len, i, j;
 
 	len = strlen( str1 ) - strlen( str2 );
+
 	for( i = 0; i <= len; i++, str1++ ) {
 		for( j = 0; str2[j]; j++ ) {
 			if( casesensitive ) {
 				if( str1[j] != str2[j] ) {
 					break;
 				}
+
 			} else {
 				if( toupper( str1[j] ) != toupper( str2[j] ) ) {
 					break;
 				}
 			}
 		}
+
 		if( !str2[j] ) {
 			return str1;
 		}
 	}
+
 	return NULL;
 }
 
@@ -575,82 +616,106 @@ int Com_Filter( char* filter, char* name, int casesensitive )
 	while( *filter ) {
 		if( *filter == '*' ) {
 			filter++;
+
 			for( i = 0; *filter; i++ ) {
 				if( *filter == '*' || *filter == '?' ) {
 					break;
 				}
+
 				buf[i] = *filter;
 				filter++;
 			}
+
 			buf[i] = '\0';
+
 			if( strlen( buf ) ) {
 				ptr = Com_StringContains( name, buf, casesensitive );
+
 				if( !ptr ) {
 					return qfalse;
 				}
+
 				name = ptr + strlen( buf );
 			}
+
 		} else if( *filter == '?' ) {
 			filter++;
 			name++;
+
 		} else if( *filter == '[' && *( filter + 1 ) == '[' ) {
 			filter++;
+
 		} else if( *filter == '[' ) {
 			filter++;
 			found = qfalse;
+
 			while( *filter && !found ) {
 				if( *filter == ']' && *( filter + 1 ) != ']' ) {
 					break;
 				}
+
 				if( *( filter + 1 ) == '-' && *( filter + 2 ) && ( *( filter + 2 ) != ']' || *( filter + 3 ) == ']' ) ) {
 					if( casesensitive ) {
 						if( *name >= *filter && *name <= *( filter + 2 ) ) {
 							found = qtrue;
 						}
+
 					} else {
 						if( toupper( *name ) >= toupper( *filter ) && toupper( *name ) <= toupper( *( filter + 2 ) ) ) {
 							found = qtrue;
 						}
 					}
+
 					filter += 3;
+
 				} else {
 					if( casesensitive ) {
 						if( *filter == *name ) {
 							found = qtrue;
 						}
+
 					} else {
 						if( toupper( *filter ) == toupper( *name ) ) {
 							found = qtrue;
 						}
 					}
+
 					filter++;
 				}
 			}
+
 			if( !found ) {
 				return qfalse;
 			}
+
 			while( *filter ) {
 				if( *filter == ']' && *( filter + 1 ) != ']' ) {
 					break;
 				}
+
 				filter++;
 			}
+
 			filter++;
 			name++;
+
 		} else {
 			if( casesensitive ) {
 				if( *filter != *name ) {
 					return qfalse;
 				}
+
 			} else {
 				if( toupper( *filter ) != toupper( *name ) ) {
 					return qfalse;
 				}
 			}
+
 			filter++;
 			name++;
 		}
 	}
+
 	return qtrue;
 }
 
@@ -668,18 +733,23 @@ int Com_FilterPath( char* filter, char* name, int casesensitive )
 	for( i = 0; i < MAX_QPATH - 1 && filter[i]; i++ ) {
 		if( filter[i] == '\\' || filter[i] == ':' ) {
 			new_filter[i] = '/';
+
 		} else {
 			new_filter[i] = filter[i];
 		}
 	}
+
 	new_filter[i] = '\0';
+
 	for( i = 0; i < MAX_QPATH - 1 && name[i]; i++ ) {
 		if( name[i] == '\\' || name[i] == ':' ) {
 			new_name[i] = '/';
+
 		} else {
 			new_name[i] = name[i];
 		}
 	}
+
 	new_name[i] = '\0';
 	return Com_Filter( new_filter, new_name, casesensitive );
 }
@@ -694,9 +764,11 @@ int Com_HashKey( char* string, int maxlen )
 	int register hash, i;
 
 	hash = 0;
+
 	for( i = 0; i < maxlen && string[i] != '\0'; i++ ) {
 		hash += string[i] * ( 119 + i );
 	}
+
 	hash = ( hash ^ ( hash >> 10 ) ^ ( hash >> 20 ) );
 	return hash;
 }
@@ -712,10 +784,13 @@ int Com_RealTime( qtime_t* qtime )
 	struct tm* tms;
 
 	t = time( NULL );
+
 	if( !qtime ) {
 		return t;
 	}
+
 	tms = localtime( &t );
+
 	if( tms ) {
 		qtime->tm_sec	= tms->tm_sec;
 		qtime->tm_min	= tms->tm_min;
@@ -727,6 +802,7 @@ int Com_RealTime( qtime_t* qtime )
 		qtime->tm_yday	= tms->tm_yday;
 		qtime->tm_isdst = tms->tm_isdst;
 	}
+
 	return t;
 }
 
@@ -757,6 +833,7 @@ void			  Com_InitJournaling()
 {
 	Com_StartupVariable( "journal" );
 	com_journal = Cvar_Get( "journal", "0", CVAR_INIT );
+
 	if( !com_journal->integer ) {
 		return;
 	}
@@ -769,9 +846,11 @@ void			  Com_InitJournaling()
 			_ftype	  = 'WlfB';
 			_fcreator = 'WlfS';
 		}
+
 #endif
 		com_journalFile		= FS_FOpenFileWrite( "journal.dat" );
 		com_journalDataFile = FS_FOpenFileWrite( "journaldata.dat" );
+
 	} else if( com_journal->integer == 2 ) {
 		Com_Printf( "Replaying journaled events\n" );
 		FS_FOpenFileRead( "journal.dat", &com_journalFile, qtrue );
@@ -799,27 +878,34 @@ sysEvent_t Com_GetRealEvent()
 	// either get an event from the system or the journal file
 	if( com_journal->integer == 2 ) {
 		r = FS_Read( &ev, sizeof( ev ), com_journalFile );
+
 		if( r != sizeof( ev ) ) {
 			Com_Error( ERR_FATAL, "Error reading from journal file" );
 		}
+
 		if( ev.evPtrLength ) {
 			ev.evPtr = Z_Malloc( ev.evPtrLength );
 			r		 = FS_Read( ev.evPtr, ev.evPtrLength, com_journalFile );
+
 			if( r != ev.evPtrLength ) {
 				Com_Error( ERR_FATAL, "Error reading from journal file" );
 			}
 		}
+
 	} else {
 		ev = Sys_GetEvent();
 
 		// write the journal value out if needed
 		if( com_journal->integer == 1 ) {
 			r = FS_Write( &ev, sizeof( ev ), com_journalFile );
+
 			if( r != sizeof( ev ) ) {
 				Com_Error( ERR_FATAL, "Error writing to journal file" );
 			}
+
 			if( ev.evPtrLength ) {
 				r = FS_Write( ev.evPtr, ev.evPtrLength, com_journalFile );
+
 				if( r != ev.evPtrLength ) {
 					Com_Error( ERR_FATAL, "Error writing to journal file" );
 				}
@@ -869,7 +955,9 @@ void Com_PushEvent( sysEvent_t* event )
 		if( ev->evPtr ) {
 			Z_Free( ev->evPtr );
 		}
+
 		com_pushedEventsTail++;
+
 	} else {
 		printedWarning = qfalse;
 	}
@@ -889,6 +977,7 @@ sysEvent_t Com_GetEvent()
 		com_pushedEventsTail++;
 		return com_pushedEvents[( com_pushedEventsTail - 1 ) & ( MAX_PUSHED_EVENTS - 1 )];
 	}
+
 	return Com_GetRealEvent();
 }
 
@@ -912,6 +1001,7 @@ void Com_RunAndTimeServerPacket( netadr_t* evFrom, msg_t* buf )
 	if( com_speeds->integer ) {
 		t2	 = Sys_Milliseconds();
 		msec = t2 - t1;
+
 		if( com_speeds->integer == 3 ) {
 			Com_Printf( "SV_PacketEvent time: %i\n", msec );
 		}
@@ -959,25 +1049,33 @@ int Com_EventLoop()
 				// bk001129 - was ev.evTime
 				Com_Error( ERR_FATAL, "Com_EventLoop: bad event type %i", ev.evType );
 				break;
+
 			case SE_NONE:
 				break;
+
 			case SE_KEY:
 				CL_KeyEvent( ev.evValue, ev.evValue2, ev.evTime );
 				break;
+
 			case SE_CHAR:
 				CL_CharEvent( ev.evValue );
 				break;
+
 			case SE_MOUSE:
 				CL_MouseEvent( ev.evValue, ev.evValue2, ev.evTime );
 				break;
+
 			case SE_JOYSTICK_AXIS:
 				CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
 				break;
+
 			case SE_CONSOLE:
 				Cbuf_AddText( ( char* )ev.evPtr );
 				Cbuf_AddText( "\n" );
 				break;
+
 			case SE_PACKET:
+
 				// this cvar allows simulation of connections that
 				// drop a lot of packets.  Note that loopback connections
 				// don't go through here at all.
@@ -1000,12 +1098,16 @@ int Com_EventLoop()
 					Com_Printf( "Com_EventLoop: oversize packet\n" );
 					continue;
 				}
+
 				memcpy( buf.data, ( byte* )( ( netadr_t* )ev.evPtr + 1 ), buf.cursize );
+
 				if( com_sv_running->integer ) {
 					Com_RunAndTimeServerPacket( &evFrom, &buf );
+
 				} else {
 					CL_PacketEvent( evFrom, &buf );
 				}
+
 				break;
 		}
 
@@ -1032,6 +1134,7 @@ int Com_Milliseconds()
 	// get events and push them until we get a null event with the current time
 	do {
 		ev = Com_GetRealEvent();
+
 		if( ev.evType != SE_NONE ) {
 			Com_PushEvent( &ev );
 		}
@@ -1054,6 +1157,7 @@ static void Com_Error_f()
 {
 	if( Cmd_Argc() > 1 ) {
 		Com_Error( ERR_DROP, "Testing drop error" );
+
 	} else {
 		Com_Error( ERR_FATAL, "Testing fatal error" );
 	}
@@ -1076,12 +1180,14 @@ static void Com_Freeze_f()
 		Com_Printf( "freeze <seconds>\n" );
 		return;
 	}
+
 	s = atof( Cmd_Argv( 1 ) );
 
 	start = Com_Milliseconds();
 
 	while( 1 ) {
 		now = Com_Milliseconds();
+
 		if( ( now - start ) * 0.001 > s ) {
 			break;
 		}
@@ -1116,6 +1222,7 @@ void	 Com_ReadCDKey( const char* filename )
 	sprintf( fbuffer, "%s/rtcwkey", filename );
 
 	FS_SV_FOpenFileRead( fbuffer, &f );
+
 	if( !f ) {
 		Q_strncpyz( cl_cdkey, "                ", 17 );
 		return;
@@ -1128,6 +1235,7 @@ void	 Com_ReadCDKey( const char* filename )
 
 	if( CL_CDKeyValidate( buffer, NULL ) ) {
 		Q_strncpyz( cl_cdkey, buffer, 17 );
+
 	} else {
 		Q_strncpyz( cl_cdkey, "                ", 17 );
 	}
@@ -1147,6 +1255,7 @@ void Com_AppendCDKey( const char* filename )
 	sprintf( fbuffer, "%s/rtcwkey", filename );
 
 	FS_SV_FOpenFileRead( fbuffer, &f );
+
 	if( !f ) {
 		Q_strncpyz( &cl_cdkey[16], "                ", 17 );
 		return;
@@ -1159,6 +1268,7 @@ void Com_AppendCDKey( const char* filename )
 
 	if( CL_CDKeyValidate( buffer, NULL ) ) {
 		strcat( &cl_cdkey[16], buffer );
+
 	} else {
 		Q_strncpyz( &cl_cdkey[16], "                ", 17 );
 	}
@@ -1190,8 +1300,10 @@ static void Com_WriteCDKey( const char* filename, const char* ikey )
 		_ftype	  = 'TEXT';
 		_fcreator = 'WlfS';
 	}
+
 	#endif
 	f = FS_SV_FOpenFileWrite( fbuffer );
+
 	if( !f ) {
 		Com_Printf( "Couldn't write %s.\n", filename );
 		return;
@@ -1208,11 +1320,13 @@ static void Com_WriteCDKey( const char* filename, const char* ikey )
 	#endif
 	FS_FCloseFile( f );
 }
+
 #endif
 
 void Com_SetRecommended( qboolean vidrestart )
 {
 }
+
 void Com_InitHunkMemory();
 void Com_InitSmallZoneMemory();
 void Com_InitZoneMemory();
@@ -1335,6 +1449,7 @@ void Com_Init( char* commandLine )
 		Cmd_AddCommand( "crash", Com_Crash_f );
 		Cmd_AddCommand( "freeze", Com_Freeze_f );
 	}
+
 	Cmd_AddCommand( "quit", Com_Quit_f );
 	Cmd_AddCommand( "changeVectors", MSG_ReportChangeVectors_f );
 	Cmd_AddCommand( "writeconfig", Com_WriteConfig_f );
@@ -1347,6 +1462,7 @@ void Com_Init( char* commandLine )
 	SV_Init();
 
 	com_dedicated->modified = qfalse;
+
 	if( !com_dedicated->integer ) {
 		CL_Init();
 		Sys_ShowConsole( com_viewlog->integer, qfalse );
@@ -1406,8 +1522,10 @@ void Com_WriteConfigToFile( const char* filename )
 		_ftype	  = 'TEXT';
 		_fcreator = 'R*ch';
 	}
+
 #endif
 	f = FS_FOpenFileWrite( filename );
+
 	if( !f ) {
 		Com_Printf( "Couldn't write %s.\n", filename );
 		return;
@@ -1431,6 +1549,7 @@ void Com_WriteConfiguration()
 #ifndef DEDICATED // bk001204
 	cvar_t* fs;
 #endif
+
 	// if we are quiting without fully initializing, make sure
 	// we don't write out anything
 	if( !com_fullyInitialized ) {
@@ -1440,6 +1559,7 @@ void Com_WriteConfiguration()
 	if( !( cvar_modifiedFlags & CVAR_ARCHIVE ) ) {
 		return;
 	}
+
 	cvar_modifiedFlags &= ~CVAR_ARCHIVE;
 
 	Com_WriteConfigToFile( "wolfconfig.cfg" );
@@ -1447,11 +1567,14 @@ void Com_WriteConfiguration()
 	// bk001119 - tentative "not needed for dedicated"
 #ifndef DEDICATED
 	fs = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
+
 	if( UI_usesUniqueCDKey() && fs && fs->string[0] != 0 ) {
 		Com_WriteCDKey( fs->string, &cl_cdkey[16] );
+
 	} else {
 		Com_WriteCDKey( "main", cl_cdkey );
 	}
+
 #endif
 }
 
@@ -1491,6 +1614,7 @@ int Com_ModifyMsec( int msec )
 	//
 	if( com_fixedtime->integer ) {
 		msec = com_fixedtime->integer;
+
 	} else if( com_timescale->value ) {
 		msec *= com_timescale->value;
 		//	} else if (com_cameraMode->integer) {
@@ -1509,11 +1633,14 @@ int Com_ModifyMsec( int msec )
 		if( msec > 500 ) {
 			Com_Printf( "Hitch warning: %i msec frame time\n", msec );
 		}
+
 		clampTime = 5000;
+
 	} else if( !com_sv_running->integer ) {
 		// clients of remote servers do not want to clamp time, because
 		// it would skew their view of the server's time temporarily
 		clampTime = 5000;
+
 	} else {
 		// for local single player gaming
 		// we may want to clamp the time to prevent players from
@@ -1568,6 +1695,7 @@ void Com_Frame()
 		if( !com_dedicated->value ) {
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
 		}
+
 		com_viewlog->modified = qfalse;
 	}
 
@@ -1581,16 +1709,21 @@ void Com_Frame()
 	// we may want to spin here if things are going too fast
 	if( !com_dedicated->integer && com_maxfps->integer > 0 && !com_timedemo->integer ) {
 		minMsec = 1000 / com_maxfps->integer;
+
 	} else {
 		minMsec = 1;
 	}
+
 	do {
 		com_frameTime = Com_EventLoop();
+
 		if( lastTime > com_frameTime ) {
 			lastTime = com_frameTime; // possible on first frame
 		}
+
 		msec = com_frameTime - lastTime;
 	} while( msec < minMsec );
+
 	Cbuf_Execute();
 
 	lastTime = com_frameTime;
@@ -1616,9 +1749,11 @@ void Com_Frame()
 		// get the latched value
 		Cvar_Get( "dedicated", "0", 0 );
 		com_dedicated->modified = qfalse;
+
 		if( !com_dedicated->integer ) {
 			CL_Init();
 			Sys_ShowConsole( com_viewlog->integer, qfalse );
+
 		} else {
 			CL_Shutdown();
 			Sys_ShowConsole( 1, qtrue );
@@ -1636,6 +1771,7 @@ void Com_Frame()
 		if( com_speeds->integer ) {
 			timeBeforeEvents = Sys_Milliseconds();
 		}
+
 		Com_EventLoop();
 		Cbuf_Execute();
 
@@ -1957,16 +2093,20 @@ qboolean Com_Memcmp( const void* src0, const void* src1, const unsigned int coun
 		unsigned int* sw = ( unsigned int* )( src1 );
 
 		unsigned int  nm2 = count / 16;
+
 		for( i = 0; i < nm2; i += 4 ) {
 			unsigned int tmp = ( dw[i + 0] - sw[i + 0] ) | ( dw[i + 1] - sw[i + 1] ) | ( dw[i + 2] - sw[i + 2] ) | ( dw[i + 3] - sw[i + 3] );
+
 			if( tmp ) {
 				return qfalse;
 			}
 		}
 	}
+
 	if( count & 15 ) {
 		byte* d = ( byte* )src0;
 		byte* s = ( byte* )src1;
+
 		for( i = count & 0xfffffff0; i < count; i++ )
 			if( d[i] != s[i] ) {
 				return qfalse;
@@ -1985,6 +2125,7 @@ void Com_Prefetch( const void* s, const unsigned int bytes, e_prefetch type )
 	switch( type ) {
 		case PRE_WRITE:
 			break;
+
 		case PRE_READ:
 		case PRE_READ_WRITE:
 
@@ -2039,9 +2180,11 @@ float Q_acos( float c )
 	if( angle > M_PI ) {
 		return ( float )M_PI;
 	}
+
 	if( angle < -M_PI ) {
 		return ( float )M_PI;
 	}
+
 	return angle;
 }
 
@@ -2082,7 +2225,9 @@ static void		   FindMatches( const char* s )
 	if( Q_stricmpn( s, completionString, strlen( completionString ) ) ) {
 		return;
 	}
+
 	matchCount++;
+
 	if( matchCount == 1 ) {
 		Q_strncpyz( shortestMatch, s, sizeof( shortestMatch ) );
 		return;
@@ -2117,14 +2262,18 @@ static void keyConcatArgs()
 	for( i = 1; i < Cmd_Argc(); i++ ) {
 		Q_strcat( completionField->buffer, sizeof( completionField->buffer ), " " );
 		arg = Cmd_Argv( i );
+
 		while( *arg ) {
 			if( *arg == ' ' ) {
 				Q_strcat( completionField->buffer, sizeof( completionField->buffer ), "\"" );
 				break;
 			}
+
 			arg++;
 		}
+
 		Q_strcat( completionField->buffer, sizeof( completionField->buffer ), Cmd_Argv( i ) );
+
 		if( *arg == ' ' ) {
 			Q_strcat( completionField->buffer, sizeof( completionField->buffer ), "\"" );
 		}
@@ -2136,6 +2285,7 @@ static void ConcatRemaining( const char* src, const char* start )
 	char* str;
 
 	str = ( char* )strstr( src, start );
+
 	if( !str ) {
 		keyConcatArgs();
 		return;
@@ -2163,9 +2313,11 @@ void Field_CompleteCommand( field_t* field )
 	Cmd_TokenizeString( completionField->buffer );
 
 	completionString = Cmd_Argv( 0 );
+
 	if( completionString[0] == '\\' || completionString[0] == '/' ) {
 		completionString++;
 	}
+
 	matchCount		 = 0;
 	shortestMatch[0] = 0;
 
@@ -2184,11 +2336,14 @@ void Field_CompleteCommand( field_t* field )
 
 	if( matchCount == 1 ) {
 		Com_sprintf( completionField->buffer, sizeof( completionField->buffer ), "\\%s", shortestMatch );
+
 		if( Cmd_Argc() == 1 ) {
 			Q_strcat( completionField->buffer, sizeof( completionField->buffer ), " " );
+
 		} else {
 			ConcatRemaining( temp.buffer, completionString );
 		}
+
 		completionField->cursor = strlen( completionField->buffer );
 		return;
 	}

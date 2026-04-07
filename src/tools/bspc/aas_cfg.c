@@ -130,6 +130,7 @@ void DefaultCfg()
 			*( float* )( ( ( char* )&cfg ) + cfg_fields[i].offset ) = FLT_MAX;
 		}
 	}
+
 	//
 	cfg.numbboxes = 2;
 	//bbox 0
@@ -159,6 +160,7 @@ void DefaultCfg()
 
 	//	cfg.phys_maxbarrier			= -999;//32;	// RIDAH: this is calculated at run-time now, from the gravity and jump velocity settings
 }
+
 #else
 //===========================================================================
 // the default Q3A configuration
@@ -177,6 +179,7 @@ void DefaultCfg()
 			*( float* )( ( ( char* )&cfg ) + cfg_fields[i].offset ) = FLT_MAX;
 		}
 	}
+
 	//
 	cfg.numbboxes = 2;
 	// bbox 0
@@ -206,6 +209,7 @@ void DefaultCfg()
 
 	//	cfg.phys_maxbarrier			= -999;//32;	// RIDAH: this is calculated at run-time now, from the gravity and jump velocity settings
 }
+
 #endif
 
 //===========================================================================
@@ -230,6 +234,7 @@ char* QDECL va( char* format, ... )
 
 	return buf;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -244,12 +249,14 @@ void SetCfgLibVars()
 	for( i = 0; cfg_fields[i].name; i++ ) {
 		if( ( cfg_fields[i].type & FT_TYPE ) == FT_FLOAT ) {
 			value = *( float* )( ( ( char* )&cfg ) + cfg_fields[i].offset );
+
 			if( value != FLT_MAX ) {
 				LibVarSet( cfg_fields[i].name, va( "%f", value ) );
 			}
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -263,6 +270,7 @@ int LoadCfgFile( char* filename )
 	int		  settingsdefined;
 
 	source = LoadSourceFile( filename );
+
 	if( !source ) {
 		Log_Print( "couldn't open cfg file %s\n", filename );
 		return false;
@@ -276,29 +284,37 @@ int LoadCfgFile( char* filename )
 			if( cfg.numbboxes >= AAS_MAX_BBOXES ) {
 				SourceError( source, "too many bounding box volumes defined" );
 			}
+
 			if( !ReadStructure( source, &bbox_struct, ( char* )&cfg.bboxes[cfg.numbboxes] ) ) {
 				FreeSource( source );
 				return false;
 			}
+
 			cfg.allpresencetypes |= cfg.bboxes[cfg.numbboxes].presencetype;
 			cfg.numbboxes++;
+
 		} else if( !stricmp( token.string, "settings" ) ) {
 			if( settingsdefined ) {
 				SourceWarning( source, "settings already defined\n" );
 			}
+
 			settingsdefined = true;
+
 			if( !ReadStructure( source, &cfg_struct, ( char* )&cfg ) ) {
 				FreeSource( source );
 				return false;
 			}
 		}
 	}
+
 	if( VectorLength( cfg.phys_gravitydirection ) < 0.9 || VectorLength( cfg.phys_gravitydirection ) > 1.1 ) {
 		SourceError( source, "invalid gravity direction specified" );
 	}
+
 	if( cfg.numbboxes <= 0 ) {
 		SourceError( source, "no bounding volumes specified" );
 	}
+
 	FreeSource( source );
 	SetCfgLibVars();
 	Log_Print( "using cfg file %s\n", filename );

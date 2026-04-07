@@ -52,15 +52,19 @@ void   SP_info_player_deathmatch( gentity_t* ent )
 	vec3_t dir;
 
 	G_SpawnInt( "nobots", "0", &i );
+
 	if( i ) {
 		ent->flags |= FL_NO_BOTS;
 	}
+
 	G_SpawnInt( "nohumans", "0", &i );
+
 	if( i ) {
 		ent->flags |= FL_NO_HUMANS;
 	}
 
 	ent->enemy = G_PickTarget( ent->target );
+
 	if( ent->enemy ) {
 		VectorSubtract( ent->enemy->s.origin, ent->s.origin, dir );
 		vectoangles( dir, ent->s.angles );
@@ -110,6 +114,7 @@ qboolean SpotWouldTelefrag( gentity_t* spot )
 
 	for( i = 0; i < num; i++ ) {
 		hit = &g_entities[touch[i]];
+
 		if( hit->client && hit->client->ps.stats[STAT_HEALTH] > 0 ) {
 			return qtrue;
 		}
@@ -140,6 +145,7 @@ gentity_t* SelectNearestDeathmatchSpawnPoint( vec3_t from )
 	while( ( spot = G_Find( spot, FOFS( classname ), "info_player_deathmatch" ) ) != NULL ) {
 		VectorSubtract( spot->s.origin, from, delta );
 		dist = VectorLength( delta );
+
 		if( dist < nearestDist ) {
 			nearestDist = dist;
 			nearestSpot = spot;
@@ -171,6 +177,7 @@ gentity_t* SelectRandomDeathmatchSpawnPoint()
 		if( SpotWouldTelefrag( spot ) ) {
 			continue;
 		}
+
 		spots[count] = spot;
 		count++;
 	}
@@ -198,9 +205,11 @@ gentity_t* SelectSpawnPoint( vec3_t avoidPoint, vec3_t origin, vec3_t angles )
 	nearestSpot = SelectNearestDeathmatchSpawnPoint( avoidPoint );
 
 	spot = SelectRandomDeathmatchSpawnPoint();
+
 	if( spot == nearestSpot ) {
 		// roll again if it would be real close to point of death
 		spot = SelectRandomDeathmatchSpawnPoint();
+
 		if( spot == nearestSpot ) {
 			// last try
 			spot = SelectRandomDeathmatchSpawnPoint();
@@ -232,6 +241,7 @@ gentity_t* SelectInitialSpawnPoint( vec3_t origin, vec3_t angles )
 	gentity_t* spot;
 
 	spot = NULL;
+
 	while( ( spot = G_Find( spot, FOFS( classname ), "info_player_deathmatch" ) ) != NULL ) {
 		if( spot->spawnflags & 1 ) {
 			break;
@@ -284,6 +294,7 @@ void InitBodyQue()
 	gentity_t* ent;
 
 	level.bodyQueIndex = 0;
+
 	for( i = 0; i < BODY_QUEUE_SIZE; i++ ) {
 		ent				 = G_Spawn();
 		ent->classname	 = "bodyque";
@@ -307,6 +318,7 @@ void BodySink( gentity_t* ent )
 		ent->physicsObject = qfalse;
 		return;
 	}
+
 	ent->nextthink = level.time + 100;
 	ent->s.pos.trBase[2] -= 1;
 }
@@ -328,6 +340,7 @@ void CopyToBodyQue( gentity_t* ent )
 
 	// if client is in a nodrop area, don't leave the body
 	contents = sys->PointContents( ent->s.origin, -1 );
+
 	if( contents & CONTENTS_NODROP ) {
 		return;
 	}
@@ -344,25 +357,30 @@ void CopyToBodyQue( gentity_t* ent )
 	if( ent->client->ps.eFlags & EF_HEADSHOT ) {
 		body->s.eFlags |= EF_HEADSHOT; // make sure the dead body draws no head (if killed that way)
 	}
+
 	body->s.powerups	= 0; // clear powerups
 	body->s.loopSound	= 0; // clear lava burning
 	body->s.number		= body - g_entities;
 	body->timestamp		= level.time;
 	body->physicsObject = qtrue;
 	body->physicsBounce = 0; // don't bounce
+
 	if( body->s.groundEntityNum == ENTITYNUM_NONE ) {
 		body->s.pos.trType = TR_GRAVITY;
 		body->s.pos.trTime = level.time;
 		VectorCopy( ent->client->ps.velocity, body->s.pos.trDelta );
+
 	} else {
 		body->s.pos.trType = TR_STATIONARY;
 	}
+
 	body->s.event = 0;
 
 	// DHM - Clear out event system
 	for( i = 0; i < MAX_EVENTS; i++ ) {
 		body->s.events[i] = 0;
 	}
+
 	body->s.eventSequence = 0;
 
 	// DHM - Nerve
@@ -374,10 +392,12 @@ void CopyToBodyQue( gentity_t* ent )
 			case BOTH_DEAD1:
 				body->s.torsoAnim = body->s.legsAnim = BOTH_DEAD1;
 				break;
+
 			case BOTH_DEATH2:
 			case BOTH_DEAD2:
 				body->s.torsoAnim = body->s.legsAnim = BOTH_DEAD2;
 				break;
+
 			case BOTH_DEATH3:
 			case BOTH_DEAD3:
 			default:
@@ -385,6 +405,7 @@ void CopyToBodyQue( gentity_t* ent )
 				break;
 		}
 	}
+
 	// dhm
 
 	body->r.svFlags = ent->r.svFlags;
@@ -405,6 +426,7 @@ void CopyToBodyQue( gentity_t* ent )
 	// don't take more damage if already gibbed
 	if( ent->health <= GIB_HEALTH ) {
 		body->takedamage = qfalse;
+
 	} else {
 		body->takedamage = qtrue;
 	}
@@ -432,6 +454,7 @@ void SetClientViewAngle( gentity_t* ent, vec3_t angle )
 		cmdAngle						= ANGLE2SHORT( angle[i] );
 		ent->client->ps.delta_angles[i] = cmdAngle - ent->client->pers.cmd.angles[i];
 	}
+
 	VectorCopy( angle, ent->s.angles );
 	VectorCopy( ent->s.angles, ent->client->ps.viewangles );
 }
@@ -451,11 +474,13 @@ void limbo( gentity_t* ent )
 		G_Printf( "FIXME: limbo called from single player game.  Shouldn't see this\n" );
 		return;
 	}
+
 	if( !( ent->client->ps.pm_flags & PMF_LIMBO ) ) {
 		// DHM - Nerve :: First save off persistant info we'll need for respawn
 		for( i = 0; i < MAX_PERSISTANT; i++ ) {
 			ent->client->saved_persistant[i] = ent->client->ps.persistant[i];
 		}
+
 		// dhm
 
 		ent->client->ps.pm_flags |= PMF_LIMBO;
@@ -467,6 +492,7 @@ void limbo( gentity_t* ent )
 		ent->r.currentOrigin[2] += 8;
 		contents	  = sys->PointContents( ent->r.currentOrigin, -1 ); // drop stuff
 		ent->s.weapon = ent->client->limboDropWeapon;					// stored in player_die()
+
 		if( !( contents & CONTENTS_NODROP ) ) {
 			TossClientItems( ent );
 		}
@@ -477,14 +503,17 @@ void limbo( gentity_t* ent )
 		if( ent->client->sess.spectatorClient == startclient ) {
 			// No one to follow, so just stay put
 			ent->client->sess.spectatorState = SPECTATOR_FREE;
+
 		} else {
 			ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
 		}
 
 		ClientUserinfoChanged( ent->client - level.clients );
+
 		if( ent->client->sess.sessionTeam == TEAM_RED ) {
 			ent->client->deployQueueNumber = level.redNumWaiting;
 			level.redNumWaiting++;
+
 		} else if( ent->client->sess.sessionTeam == TEAM_BLUE ) {
 			ent->client->deployQueueNumber = level.blueNumWaiting;
 			level.blueNumWaiting++;
@@ -511,10 +540,12 @@ void reinforce( gentity_t* ent )
 		G_Printf( "FIXME: reinforce called from single player game.  Shouldn't see this\n" );
 		return;
 	}
+
 	if( !( ent->client->ps.pm_flags & PMF_LIMBO ) ) {
 		G_Printf( "player already deployed, skipping\n" );
 		return;
 	}
+
 	// get team to deploy from passed entity
 
 	for( i = 0; i < level.maxclients; i++ ) {
@@ -529,23 +560,28 @@ void reinforce( gentity_t* ent )
 		if( level.clients[i].pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		// skip if not in limbo
 		if( !( level.clients[i].ps.pm_flags & PMF_LIMBO ) ) {
 			continue;
 		}
+
 		// skip if not on same team
 		if( level.clients[i].sess.sessionTeam != team ) {
 			continue;
 		}
+
 		// still here? add to list
 		deployable[numDeployable] = i;
 		numDeployable++;
 	}
+
 	G_Printf( "numDeployable=%d\n", numDeployable );
 
 	// bubble sort list on time-based death order
 	while( !finished ) {
 		finished = 1; // if nothing bad happens, bail out after this pass
+
 		for( i = 1; i < numDeployable; i++ )
 			if( level.clients[deployable[i]].deployQueueNumber < level.clients[deployable[i - 1]].deployQueueNumber ) {
 				G_Printf(
@@ -559,16 +595,20 @@ void reinforce( gentity_t* ent )
 
 	// sanity check
 	G_Printf( "sorted " );
+
 	for( i = 0; i < numDeployable; i++ ) {
 		G_Printf( "%d ", level.clients[deployable[i]] );
 	}
+
 	G_Printf( "\n" );
 
 	// find number active team spawnpoints
 	if( team == TEAM_RED ) {
 		classname = "team_CTF_redspawn";
+
 	} else if( team == TEAM_BLUE ) {
 		classname = "team_CTF_bluespawn";
+
 	} else {
 		assert( 0 );
 	}
@@ -581,14 +621,17 @@ void reinforce( gentity_t* ent )
 		if( SpotWouldTelefrag( spot ) ) {
 			continue;
 		}
+
 		if( spot->spawnflags & 2 ) { // spawnpoint is active
 			finished++;
 		}
 	}
+
 	G_Printf( "found %d active spawnpoints\n", finished );
 
 	if( finished < numDeployable ) {
 		j = finished;
+
 	} else {
 		j = numDeployable;
 	}
@@ -597,9 +640,11 @@ void reinforce( gentity_t* ent )
 	for( i = 0; i < j; i++ ) {
 		// DHM - Nerve :: restore persistant data now that we're out of Limbo
 		rclient = g_entities[deployable[i]].client;
+
 		for( p = 0; p < MAX_PERSISTANT; p++ ) {
 			rclient->ps.persistant[p] = rclient->saved_persistant[p];
 		}
+
 		// dhm```
 
 		respawn( &g_entities[deployable[i]] );
@@ -609,30 +654,37 @@ void reinforce( gentity_t* ent )
 	// reset next sort value
 	if( team == TEAM_RED ) {
 		level.redNumWaiting = 0;
+
 	} else if( team == TEAM_BLUE ) {
 		level.blueNumWaiting = 0;
 	}
 
 	if( finished < numDeployable ) {
 		G_Printf( "more deployable are waiting in queue\n" );
+
 		for( i = finished, j = 0; i < numDeployable; i++, j++ ) {
 			level.clients[deployable[i]].deployQueueNumber = j;
 		}
+
 		// reset next sort value
 		if( team == TEAM_RED ) {
 			level.redNumWaiting = j;
+
 		} else if( team == TEAM_BLUE ) {
 			level.blueNumWaiting = j;
 		}
 
 		// sanity check
 		G_Printf( "second sanity check sorted " );
+
 		for( i = finished; i < numDeployable; i++ ) {
 			G_Printf( "%d ", level.clients[deployable[i]].deployQueueNumber );
 		}
+
 		G_Printf( "\n" );
 	}
 }
+
 // jpw
 
 /*
@@ -700,11 +752,14 @@ team_t PickTeam( int ignoreClientNum )
 		if( i == ignoreClientNum ) {
 			continue;
 		}
+
 		if( level.clients[i].pers.connected == CON_DISCONNECTED ) {
 			continue;
 		}
+
 		if( level.clients[i].sess.sessionTeam == TEAM_BLUE ) {
 			counts[TEAM_BLUE]++;
+
 		} else if( level.clients[i].sess.sessionTeam == TEAM_RED ) {
 			counts[TEAM_RED]++;
 		}
@@ -713,13 +768,16 @@ team_t PickTeam( int ignoreClientNum )
 	if( counts[TEAM_BLUE] > counts[TEAM_RED] ) {
 		return TEAM_RED;
 	}
+
 	if( counts[TEAM_RED] > counts[TEAM_BLUE] ) {
 		return TEAM_BLUE;
 	}
+
 	// equal team count, so join the team with the lowest score
 	if( level.teamScores[TEAM_BLUE] > level.teamScores[TEAM_RED] ) {
 		return TEAM_RED;
 	}
+
 	return TEAM_BLUE;
 }
 
@@ -759,9 +817,11 @@ void SetWolfSkin( gclient_t* client, char* model )
 		case TEAM_RED:
 			Q_strcat( model, MAX_QPATH, "red" );
 			break;
+
 		case TEAM_BLUE:
 			Q_strcat( model, MAX_QPATH, "blue" );
 			break;
+
 		default:
 			Q_strcat( model, MAX_QPATH, "red" );
 			break;
@@ -771,15 +831,19 @@ void SetWolfSkin( gclient_t* client, char* model )
 		case PC_SOLDIER:
 			Q_strcat( model, MAX_QPATH, "soldier" );
 			break;
+
 		case PC_MEDIC:
 			Q_strcat( model, MAX_QPATH, "medic" );
 			break;
+
 		case PC_ENGINEER:
 			Q_strcat( model, MAX_QPATH, "engineer" );
 			break;
+
 		case PC_LT:
 			Q_strcat( model, MAX_QPATH, "lieutenant" );
 			break;
+
 		default:
 			Q_strcat( model, MAX_QPATH, "soldier" );
 			break;
@@ -790,12 +854,15 @@ void SetWolfSkin( gclient_t* client, char* model )
 		case 1:
 			Q_strcat( model, MAX_QPATH, "1" );
 			break;
+
 		case 2:
 			Q_strcat( model, MAX_QPATH, "2" );
 			break;
+
 		case 3:
 			Q_strcat( model, MAX_QPATH, "3" );
 			break;
+
 		default:
 			Q_strcat( model, MAX_QPATH, "1" );
 			break;
@@ -866,6 +933,7 @@ void SetWolfSpawnWeapons( gclient_t* client )
 			client->ps.ammo[BG_FindAmmoForWeapon( WP_LUGER )] += 24;
 			client->ps.weapon = WP_LUGER;
 			break;
+
 		default: // '0' // TEAM_BLUE
 			COM_BitSet( client->ps.weapons, WP_COLT );
 			client->ps.ammoclip[BG_FindClipForWeapon( WP_COLT )] += 8;
@@ -884,11 +952,13 @@ void SetWolfSpawnWeapons( gclient_t* client )
 				client->ps.ammo[BG_FindAmmoForWeapon( WP_GRENADE_PINEAPPLE )]	  = 4;
 				client->ps.ammoclip[BG_FindClipForWeapon( WP_GRENADE_PINEAPPLE )] = 1;
 				break;
+
 			case TEAM_RED:
 				COM_BitSet( client->ps.weapons, WP_GRENADE_LAUNCHER );
 				client->ps.ammo[BG_FindAmmoForWeapon( WP_GRENADE_LAUNCHER )]	 = 4;
 				client->ps.ammoclip[BG_FindClipForWeapon( WP_GRENADE_LAUNCHER )] = 1;
 				break;
+
 			default:
 				COM_BitSet( client->ps.weapons, WP_GRENADE_PINEAPPLE );
 				client->ps.ammo[BG_FindAmmoForWeapon( WP_GRENADE_PINEAPPLE )]	  = 4;
@@ -903,42 +973,53 @@ void SetWolfSpawnWeapons( gclient_t* client )
 		if( ( pc == PC_LT ) && ( client->sess.playerWeapon > 5 ) ) {
 			if( client->sess.sessionTeam == TEAM_RED ) {
 				client->sess.playerWeapon = 3;
+
 			} else {
 				client->sess.playerWeapon = 4;
 			}
 		}
+
 		// jpw
 		switch( client->sess.playerWeapon ) {
 			case 3: // WP_MP40
 				COM_BitSet( client->ps.weapons, WP_MP40 );
 				client->ps.ammoclip[BG_FindClipForWeapon( WP_MP40 )] += 32;
+
 				if( pc == PC_SOLDIER ) {
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_MP40 )] += 64;
+
 				} else {
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_MP40 )] += 32;
 				}
+
 				client->ps.weapon = WP_MP40;
 				break;
 
 			case 4: // WP_THOMPSON
 				COM_BitSet( client->ps.weapons, WP_THOMPSON );
 				client->ps.ammoclip[BG_FindClipForWeapon( WP_THOMPSON )] += 30;
+
 				if( pc == PC_SOLDIER ) {
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_THOMPSON )] += 60;
+
 				} else {
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_THOMPSON )] += 30;
 				}
+
 				client->ps.weapon = WP_THOMPSON;
 				break;
 
 			case 5: // WP_STEN
 				COM_BitSet( client->ps.weapons, WP_STEN );
 				client->ps.ammoclip[BG_FindClipForWeapon( WP_STEN )] += 32;
+
 				if( pc == PC_SOLDIER ) {
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_STEN )] += 64;
+
 				} else {
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_STEN )] += 32;
 				}
+
 				client->ps.weapon = WP_STEN;
 				break;
 
@@ -989,6 +1070,7 @@ void SetWolfSpawnWeapons( gclient_t* client )
 				if( pc != PC_SOLDIER ) {
 					return;
 				}
+
 				// JPW NERVE may not keep this, but put it in to test
 				COM_BitSet( client->ps.weapons, WP_VENOM );
 				client->ps.ammoclip[BG_FindClipForWeapon( WP_VENOM )] = 200;
@@ -1012,55 +1094,69 @@ void SetWolfSpawnWeapons( gclient_t* client )
 					client->ps.ammoclip[BG_FindClipForWeapon( WP_MP40 )] += 32;
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_MP40 )] += 64;
 					client->ps.weapon = WP_MP40;
+
 				} else { // TEAM_BLUE
 					COM_BitSet( client->ps.weapons, WP_THOMPSON );
 					client->ps.ammoclip[BG_FindClipForWeapon( WP_THOMPSON )] += 30;
 					client->ps.ammo[BG_FindAmmoForWeapon( WP_THOMPSON )] += 60;
 					client->ps.weapon = WP_THOMPSON;
 				}
+
 				break;
 		}
+
 	} else {										 // medic or engineer gets assigned MP40 or Thompson with one magazine ammo
 		if( client->sess.sessionTeam == TEAM_RED ) { // axis
 			COM_BitSet( client->ps.weapons, WP_MP40 );
 			client->ps.ammoclip[BG_FindClipForWeapon( WP_MP40 )] += 32;
 			client->ps.weapon = WP_MP40;
+
 		} else { // allied
 			COM_BitSet( client->ps.weapons, WP_THOMPSON );
 			client->ps.ammoclip[BG_FindClipForWeapon( WP_THOMPSON )] += 30;
 			client->ps.weapon = WP_THOMPSON;
 		}
 	}
+
 	// JPW NERVE -- medics on each team make cumulative health bonus -- this gets overridden for "revived" players
 	// count up # of medics on team
 	for( i = 0; i < level.maxclients; i++ ) {
 		if( level.clients[i].pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		if( level.clients[i].sess.sessionTeam != client->sess.sessionTeam ) {
 			continue;
 		}
+
 		if( level.clients[i].ps.stats[STAT_PLAYER_CLASS] != PC_MEDIC ) {
 			continue;
 		}
+
 		numMedics++;
 	}
+
 	// compute health mod
 	starthealth = 100 + 10 * numMedics;
+
 	if( starthealth > 125 ) {
 		starthealth = 125;
 	}
+
 	// give everybody health mod in stat_max_health
 	for( i = 0; i < level.maxclients; i++ ) {
 		if( level.clients[i].pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		if( level.clients[i].sess.sessionTeam == client->sess.sessionTeam ) {
 			client->ps.stats[STAT_MAX_HEALTH] = starthealth;
 		}
 	}
+
 	// jpw
 }
+
 // dhm - end
 
 /*
@@ -1086,6 +1182,7 @@ static void ClientCleanName( const char* in, char* out, int outSize )
 
 	while( 1 ) {
 		ch = *in++;
+
 		if( !ch ) {
 			break;
 		}
@@ -1122,9 +1219,11 @@ static void ClientCleanName( const char* in, char* out, int outSize )
 		// don't allow too many consecutive spaces
 		if( ch == ' ' ) {
 			spaces++;
+
 			if( spaces > 3 ) {
 				continue;
 			}
+
 		} else {
 			spaces = 0;
 		}
@@ -1132,10 +1231,12 @@ static void ClientCleanName( const char* in, char* out, int outSize )
 		*out++ = ch;
 		colorlessLen++;
 		len++;
+
 		if( len == outSize - 1 ) {
 			break;
 		}
 	}
+
 	*out = 0;
 
 	// don't allow empty names
@@ -1161,6 +1262,7 @@ qboolean G_CheckForExistingModelInfo( gclient_t* cl, char* modelName, animModelI
 
 	for( i = 0; i < MAX_ANIMSCRIPT_MODELS; i++ ) {
 		trav = level.animScriptData.modelInfo[i];
+
 		if( trav && trav->modelname[0] ) {
 			if( !Q_stricmp( trav->modelname, modelName ) ) {
 				// found a match, use this modelinfo
@@ -1168,6 +1270,7 @@ qboolean G_CheckForExistingModelInfo( gclient_t* cl, char* modelName, animModelI
 				level.animScriptData.clientModels[cl->ps.clientNum] = i + 1;
 				return qtrue;
 			}
+
 		} else {
 			level.animScriptData.modelInfo[i] = ( animModelInfo_t* )G_Alloc( sizeof( animModelInfo_t ) );
 			*modelInfo						  = level.animScriptData.modelInfo[i];
@@ -1193,6 +1296,7 @@ qboolean G_GetModelInfo( int clientNum, char* modelName, animModelInfo_t** model
 {
 	if( !G_CheckForExistingModelInfo( &level.clients[clientNum], modelName, modelInfo ) ) {
 		level.clients[clientNum].modelInfo = *modelInfo;
+
 		if( !G_ParseAnimationFiles( modelName, &level.clients[clientNum] ) ) {
 			G_Error( "Failed to load animation scripts for model %s\n", modelName );
 		}
@@ -1219,14 +1323,17 @@ qboolean G_ParseAnimationFiles( char* modelname, gclient_t* cl )
 	// load the cfg file
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/wolfanim.cfg", modelname );
 	len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 	if( len <= 0 ) {
 		G_Printf( "G_ParseAnimationFiles(): file '%s' not found\n", filename ); //----(SA)	added
 		return qfalse;
 	}
+
 	if( len >= sizeof( text ) - 1 ) {
 		G_Printf( "File %s too long\n", filename );
 		return qfalse;
 	}
+
 	sys->FS_Read( text, len, f );
 	text[len] = 0;
 	sys->FS_FCloseFile( f );
@@ -1237,21 +1344,26 @@ qboolean G_ParseAnimationFiles( char* modelname, gclient_t* cl )
 	// load the script file
 	Com_sprintf( filename, sizeof( filename ), "models/players/%s/wolfanim.script", modelname );
 	len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 	if( len <= 0 ) {
 		if( cl->modelInfo->version > 1 ) {
 			return qfalse;
 		}
+
 		// try loading the default script for old legacy models
 		Com_sprintf( filename, sizeof( filename ), "models/players/default.script", modelname );
 		len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 		if( len <= 0 ) {
 			return qfalse;
 		}
 	}
+
 	if( len >= sizeof( text ) - 1 ) {
 		G_Printf( "File %s too long\n", filename );
 		return qfalse;
 	}
+
 	sys->FS_Read( text, len, f );
 	text[len] = 0;
 	sys->FS_FCloseFile( f );
@@ -1306,30 +1418,37 @@ void ClientUserinfoChanged( int clientNum )
 
 	// check for local client
 	s = Info_ValueForKey( userinfo, "ip" );
+
 	if( !strcmp( s, "localhost" ) ) {
 		client->pers.localClient = qtrue;
 	}
 
 	// check the item prediction
 	s = Info_ValueForKey( userinfo, "cg_predictItems" );
+
 	if( !atoi( s ) ) {
 		client->pers.predictItemPickup = qfalse;
+
 	} else {
 		client->pers.predictItemPickup = qtrue;
 	}
 
 	// check the auto activation
 	s = Info_ValueForKey( userinfo, "cg_autoactivate" );
+
 	if( !atoi( s ) ) {
 		client->pers.autoActivate = PICKUP_ACTIVATE;
+
 	} else {
 		client->pers.autoActivate = PICKUP_TOUCH;
 	}
 
 	// check the auto empty weapon switching
 	s = Info_ValueForKey( userinfo, "cg_emptyswitch" );
+
 	if( !atoi( s ) ) {
 		client->pers.emptySwitch = 0;
+
 	} else {
 		client->pers.emptySwitch = 1;
 	}
@@ -1353,15 +1472,18 @@ void ClientUserinfoChanged( int clientNum )
 
 	// set max health
 	client->pers.maxHealth = atoi( Info_ValueForKey( userinfo, "handicap" ) );
+
 	if( client->pers.maxHealth < 1 || client->pers.maxHealth > 100 ) {
 		client->pers.maxHealth = 100;
 	}
+
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;
 
 	// set model
 	if( g_forceModel.integer ) {
 		Q_strncpyz( model, DEFAULT_MODEL, sizeof( model ) );
 		Q_strcat( model, sizeof( model ), "/default" );
+
 	} else {
 		Q_strncpyz( model, Info_ValueForKey( userinfo, "model" ), sizeof( model ) );
 	}
@@ -1386,8 +1508,10 @@ void ClientUserinfoChanged( int clientNum )
 
 	// strip the skin name
 	Q_strncpyz( modelname, model, sizeof( modelname ) );
+
 	if( strstr( modelname, "/" ) ) {
 		modelname[strstr( modelname, "/" ) - modelname] = 0;
+
 	} else if( strstr( modelname, "\\" ) ) {
 		modelname[strstr( modelname, "\\" ) - modelname] = 0;
 	}
@@ -1405,6 +1529,7 @@ void ClientUserinfoChanged( int clientNum )
 		// set head
 		if( g_forceModel.integer ) {
 			Q_strncpyz( head, DEFAULT_HEAD, sizeof( head ) );
+
 		} else {
 			Q_strncpyz( head, Info_ValueForKey( userinfo, "head" ), sizeof( head ) );
 		}
@@ -1415,17 +1540,21 @@ void ClientUserinfoChanged( int clientNum )
 			case TEAM_RED:
 				ForceClientSkin( client, model, "red" );
 				break;
+
 			case TEAM_BLUE:
 				ForceClientSkin( client, model, "blue" );
 				break;
+
 			default:
 				break;
 		}
+
 		if( g_gametype.integer >= GT_TEAM && client->sess.sessionTeam == TEAM_SPECTATOR ) {
 			// don't ever use a default skin in teamplay, it would just waste memory
 			ForceClientSkin( client, model, "red" );
 		}
 	}
+
 	// dhm - end
 
 	// colors
@@ -1447,6 +1576,7 @@ void ClientUserinfoChanged( int clientNum )
 			client->sess.wins,
 			client->sess.losses,
 			Info_ValueForKey( userinfo, "skill" ) );
+
 	} else {
 		s = va( "n\\%s\\t\\%i\\model\\%s\\head\\%s\\c1\\%s\\hc\\%i\\w\\%i\\l\\%i",
 			client->pers.netname,
@@ -1502,6 +1632,7 @@ char* ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
 	// check for a password
 	value = Info_ValueForKey( userinfo, "password" );
+
 	if( g_password.string[0] && strcmp( g_password.string, value ) != 0 ) {
 		return "Invalid password";
 	}
@@ -1518,11 +1649,13 @@ char* ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 	if( firstTime || level.newSession ) {
 		G_InitSessionData( client, userinfo );
 	}
+
 	G_ReadSessionData( client );
 
 	if( isBot ) {
 		ent->r.svFlags |= SVF_BOT;
 		ent->inuse = qtrue;
+
 		if( !G_BotConnect( clientNum, ( qboolean )!firstTime ) ) {
 			return "BotConnectfailed";
 		}
@@ -1577,6 +1710,7 @@ void ClientBegin( int clientNum )
 	if( ent->r.linked ) {
 		sys->UnlinkEntity( ent );
 	}
+
 	G_InitGentity( ent );
 	ent->touch	= 0;
 	ent->pain	= 0;
@@ -1624,6 +1758,7 @@ void ClientBegin( int clientNum )
 			}
 		}
 	}
+
 	G_LogPrintf( "ClientBegin: %i\n", clientNum );
 
 	// count current clients and rank for scoreboard
@@ -1666,6 +1801,7 @@ void ClientSpawn( gentity_t* ent )
 		VectorCopy( ent->s.origin, spawn_origin );
 		spawn_origin[2] += 9; // spawns seem to be sunk into ground?
 		VectorCopy( ent->s.angles, spawn_angles );
+
 	} else {
 		ent->aiName				= "player"; // needed for script AI
 		ent->aiTeam				= 1;		// member of allies
@@ -1675,14 +1811,17 @@ void ClientSpawn( gentity_t* ent )
 
 		if( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 			spawnPoint = SelectSpectatorSpawnPoint( spawn_origin, spawn_angles );
+
 		} else if( g_gametype.integer >= GT_TEAM ) {
 			spawnPoint = SelectCTFSpawnPoint( client->sess.sessionTeam, client->pers.teamState.state, spawn_origin, spawn_angles );
+
 		} else {
 			do {
 				// the first spawn should be at a good looking spot
 				if( !client->pers.initialSpawn && client->pers.localClient ) {
 					client->pers.initialSpawn = qtrue;
 					spawnPoint				  = SelectInitialSpawnPoint( spawn_origin, spawn_angles );
+
 				} else {
 					// don't spawn near existing origin if possible
 					spawnPoint = SelectSpawnPoint( client->ps.origin, spawn_origin, spawn_angles );
@@ -1693,6 +1832,7 @@ void ClientSpawn( gentity_t* ent )
 				if( ( spawnPoint->flags & FL_NO_BOTS ) && ( ent->r.svFlags & SVF_BOT ) ) {
 					continue; // try again
 				}
+
 				// just to be symetric, we have a nohumans option...
 				if( ( spawnPoint->flags & FL_NO_HUMANS ) && !( ent->r.svFlags & SVF_BOT ) ) {
 					continue; // try again
@@ -1705,6 +1845,7 @@ void ClientSpawn( gentity_t* ent )
 
 		// Ridah
 	}
+
 	// done.
 
 	client->pers.teamState.state = TEAM_ACTIVE;
@@ -1719,15 +1860,18 @@ void ClientSpawn( gentity_t* ent )
 	savedSess = client->sess;
 	savedPing = client->ps.ping;
 	savedTeam = client->ps.teamNum;
+
 	for( i = 0; i < MAX_PERSISTANT; i++ ) {
 		persistant[i] = client->ps.persistant[i];
 	}
+
 	memset( client, 0, sizeof( *client ) );
 
 	client->pers	   = saved;
 	client->sess	   = savedSess;
 	client->ps.ping	   = savedPing;
 	client->ps.teamNum = savedTeam;
+
 	for( i = 0; i < MAX_PERSISTANT; i++ ) {
 		client->ps.persistant[i] = persistant[i];
 	}
@@ -1748,14 +1892,17 @@ void ClientSpawn( gentity_t* ent )
 	ent->client			   = &level.clients[index];
 	ent->takedamage		   = qtrue;
 	ent->inuse			   = qtrue;
+
 	if( !( ent->r.svFlags & SVF_CASTAI ) ) {
 		ent->classname = "player";
 	}
+
 	ent->r.contents = CONTENTS_BODY;
 
 	// RF, AI should be clipped by monsterclip brushes
 	if( ent->r.svFlags & SVF_CASTAI ) {
 		ent->clipmask = MASK_PLAYERSOLID | CONTENTS_MONSTERCLIP;
+
 	} else {
 		ent->clipmask = MASK_PLAYERSOLID;
 	}
@@ -1796,6 +1943,7 @@ void ClientSpawn( gentity_t* ent )
 	if( g_gametype.integer == GT_WOLF ) {
 		SetWolfSpawnWeapons( client ); // JPW NERVE -- increases stats[STAT_MAX_HEALTH] based on # of medics in game
 	}
+
 	// dhm - end
 
 	// Note to Ryan:
@@ -1869,6 +2017,7 @@ void ClientSpawn( gentity_t* ent )
 
 	if( level.intermissiontime ) {
 		MoveClientToIntermission( ent );
+
 	} else {
 		// fire the targets of the spawn point
 		G_UseTargets( spawnPoint, ent );
@@ -1923,6 +2072,7 @@ void ClientDisconnect( int clientNum )
 	int		   i;
 
 	ent = g_entities + clientNum;
+
 	if( !ent->client ) {
 		return;
 	}
@@ -1952,6 +2102,7 @@ void ClientDisconnect( int clientNum )
 
 		// Ridah
 	}
+
 	// done.
 
 	// if we are playing in tourney mode and losing, give a win to the other player
@@ -1992,6 +2143,7 @@ void G_RetrieveMoveSpeedsFromClient( int entnum, char* text )
 
 	// get the model name
 	token = COM_Parse( &text_p );
+
 	if( !token || !token[0] ) {
 		G_Error( "G_RetrieveMoveSpeedsFromClient: internal error" );
 	}
@@ -2005,28 +2157,34 @@ void G_RetrieveMoveSpeedsFromClient( int entnum, char* text )
 
 	while( 1 ) {
 		token = COM_Parse( &text_p );
+
 		if( !token || !token[0] ) {
 			break;
 		}
 
 		// this is a name
 		anim = BG_AnimationForString( token, modelInfo );
+
 		if( anim->moveSpeed == 0 ) {
 			G_Error( "G_RetrieveMoveSpeedsFromClient: trying to set movespeed for non-moving animation" );
 		}
 
 		// get the movespeed
 		token = COM_Parse( &text_p );
+
 		if( !token || !token[0] ) {
 			G_Error( "G_RetrieveMoveSpeedsFromClient: missing movespeed" );
 		}
+
 		anim->moveSpeed = atoi( token );
 
 		// get the stepgap
 		token = COM_Parse( &text_p );
+
 		if( !token || !token[0] ) {
 			G_Error( "G_RetrieveMoveSpeedsFromClient: missing stepGap" );
 		}
+
 		anim->stepGap = atoi( token );
 	}
 }

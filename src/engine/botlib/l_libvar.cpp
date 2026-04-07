@@ -57,21 +57,27 @@ float	  LibVarStringValue( char* string )
 		if( *string < '0' || *string > '9' ) {
 			if( dotfound || *string != '.' ) {
 				return 0;
+
 			} else {
 				dotfound = 10;
 				string++;
 			}
 		}
+
 		if( dotfound ) {
 			value = value + ( float )( *string - '0' ) / ( float )dotfound;
 			dotfound *= 10;
+
 		} else {
 			value = value * 10.0 + ( float )( *string - '0' );
 		}
+
 		string++;
 	}
+
 	return value;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -91,6 +97,7 @@ libvar_t* LibVarAlloc( char* var_name )
 	libvarlist = v;
 	return v;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -102,8 +109,10 @@ void LibVarDeAlloc( libvar_t* v )
 	if( v->string ) {
 		FreeMemory( v->string );
 	}
+
 	FreeMemory( v );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -118,8 +127,10 @@ void LibVarDeAllocAll()
 		libvarlist = libvarlist->next;
 		LibVarDeAlloc( v );
 	}
+
 	libvarlist = NULL;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -135,8 +146,10 @@ libvar_t* LibVarGet( char* var_name )
 			return v;
 		}
 	}
+
 	return NULL;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -148,12 +161,15 @@ char* LibVarGetString( char* var_name )
 	libvar_t* v;
 
 	v = LibVarGet( var_name );
+
 	if( v ) {
 		return v->string;
+
 	} else {
 		return "";
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -165,12 +181,15 @@ float LibVarGetValue( char* var_name )
 	libvar_t* v;
 
 	v = LibVarGet( var_name );
+
 	if( v ) {
 		return v->value;
+
 	} else {
 		return 0;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -181,9 +200,11 @@ libvar_t* LibVar( char* var_name, char* value )
 {
 	libvar_t* v;
 	v = LibVarGet( var_name );
+
 	if( v ) {
 		return v;
 	}
+
 	// create new variable
 	v = LibVarAlloc( var_name );
 	// variable string
@@ -196,6 +217,7 @@ libvar_t* LibVar( char* var_name, char* value )
 	//
 	return v;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -209,6 +231,7 @@ char* LibVarString( char* var_name, char* value )
 	v = LibVar( var_name, value );
 	return v->string;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -222,6 +245,7 @@ float LibVarValue( char* var_name, char* value )
 	v = LibVar( var_name, value );
 	return v->value;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -233,11 +257,14 @@ void LibVarSet( char* var_name, char* value )
 	libvar_t* v;
 
 	v = LibVarGet( var_name );
+
 	if( v ) {
 		FreeMemory( v->string );
+
 	} else {
 		v = LibVarAlloc( var_name );
 	}
+
 	// variable string
 	v->string = ( char* )GetMemory( strlen( value ) + 1 );
 	strcpy( v->string, value );
@@ -246,6 +273,7 @@ void LibVarSet( char* var_name, char* value )
 	// variable is modified
 	v->modified = qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -257,12 +285,15 @@ qboolean LibVarChanged( char* var_name )
 	libvar_t* v;
 
 	v = LibVarGet( var_name );
+
 	if( v ) {
 		return v->modified;
+
 	} else {
 		return qfalse;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -274,6 +305,7 @@ void LibVarSetNotModified( char* var_name )
 	libvar_t* v;
 
 	v = LibVarGet( var_name );
+
 	if( v ) {
 		v->modified = qfalse;
 	}

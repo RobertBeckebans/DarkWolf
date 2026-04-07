@@ -47,6 +47,7 @@ char*			 idStr::tolower( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = ::tolower( *s );
 		s++;
@@ -60,6 +61,7 @@ char* idStr::toupper( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = ::toupper( *s );
 		s++;
@@ -94,6 +96,7 @@ int idStr::icmpn( const char* s1, const char* s2, int n )
 			if( c1 < c2 ) {
 				// strings less than
 				return -1;
+
 			} else if( c1 > c2 ) {
 				// strings greater than
 				return 1;
@@ -126,6 +129,7 @@ int idStr::icmp( const char* s1, const char* s2 )
 			if( c1 < c2 ) {
 				// strings less than
 				return -1;
+
 			} else if( c1 > c2 ) {
 				// strings greater than
 				return 1;
@@ -154,6 +158,7 @@ int idStr::cmpn( const char* s1, const char* s2, int n )
 		if( c1 < c2 ) {
 			// strings less than
 			return -1;
+
 		} else if( c1 > c2 ) {
 			// strings greater than
 			return 1;
@@ -176,6 +181,7 @@ int idStr::cmp( const char* s1, const char* s2 )
 		if( c1 < c2 ) {
 			// strings less than
 			return -1;
+
 		} else if( c1 > c2 ) {
 			// strings greater than
 			return 1;
@@ -205,12 +211,14 @@ bool idStr::isNumeric( const char* str )
 
 	dot = false;
 	len = strlen( str );
+
 	for( i = 0; i < len; i++ ) {
 		if( !isdigit( str[i] ) ) {
 			if( ( str[i] == '.' ) && !dot ) {
 				dot = true;
 				continue;
 			}
+
 			return false;
 		}
 	}
@@ -337,20 +345,26 @@ void idStr::EnsureAlloced( int amount, bool keepold )
 	}
 
 	assert( amount );
+
 	if( amount == 1 ) {
 		m_data->alloced = 1;
+
 	} else {
 		int newsize, mod;
 		mod = amount % STR_ALLOC_GRAN;
+
 		if( !mod ) {
 			newsize = amount;
+
 		} else {
 			newsize = amount + STR_ALLOC_GRAN - mod;
 		}
+
 		m_data->alloced = newsize;
 	}
 
 	newbuffer = new char[m_data->alloced];
+
 	if( wasalloced && keepold ) {
 		strcpy( newbuffer, m_data->data );
 	}
@@ -358,6 +372,7 @@ void idStr::EnsureAlloced( int amount, bool keepold )
 	if( m_data->data ) {
 		delete[] m_data->data;
 	}
+
 	m_data->data = newbuffer;
 }
 

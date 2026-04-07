@@ -57,6 +57,7 @@ void toQuat( mat3_t& src, quat_t& dst )
 	static int next[3] = { 1, 2, 0 };
 
 	trace = src[0][0] + src[1][1] + src[2][2];
+
 	if( trace > 0.0f ) {
 		s	  = ( float )sqrt( trace + 1.0f );
 		dst.w = s * 0.5f;
@@ -65,11 +66,14 @@ void toQuat( mat3_t& src, quat_t& dst )
 		dst.x = ( src[2][1] - src[1][2] ) * s;
 		dst.y = ( src[0][2] - src[2][0] ) * s;
 		dst.z = ( src[1][0] - src[0][1] ) * s;
+
 	} else {
 		i = 0;
+
 		if( src[1][1] > src[0][0] ) {
 			i = 1;
 		}
+
 		if( src[2][2] > src[i][i] ) {
 			i = 2;
 		}

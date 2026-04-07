@@ -55,11 +55,13 @@ void   AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t u
 		forward[1] = cp * sy;
 		forward[2] = -sp;
 	}
+
 	if( right ) {
 		right[0] = ( -1 * sr * sp * cy + -1 * cr * -sy );
 		right[1] = ( -1 * sr * sp * sy + -1 * cr * cy );
 		right[2] = -1 * sr * cp;
 	}
+
 	if( up ) {
 		up[0] = ( cr * sp * cy + -sr * -sy );
 		up[1] = ( cr * sp * sy + -sr * cy );
@@ -124,9 +126,11 @@ double VectorLength( vec3_t v )
 	double length;
 
 	length = 0;
+
 	for( i = 0; i < 3; i++ ) {
 		length += v[i] * v[i];
 	}
+
 	length = sqrt( length ); // FIXME
 
 	return length;
@@ -206,6 +210,7 @@ vec_t VectorNormalize( vec3_t inout )
 	vec_t length, ilength;
 
 	length = sqrt( inout[0] * inout[0] + inout[1] * inout[1] + inout[2] * inout[2] );
+
 	if( length == 0 ) {
 		VectorClear( inout );
 		return 0;
@@ -224,6 +229,7 @@ vec_t VectorNormalize2( const vec3_t in, vec3_t out )
 	vec_t length, ilength;
 
 	length = sqrt( in[0] * in[0] + in[1] * in[1] + in[2] * in[2] );
+
 	if( length == 0 ) {
 		VectorClear( out );
 		return 0;
@@ -242,9 +248,11 @@ vec_t ColorNormalize( vec3_t in, vec3_t out )
 	float max, scale;
 
 	max = in[0];
+
 	if( in[1] > max ) {
 		max = in[1];
 	}
+
 	if( in[2] > max ) {
 		max = in[2];
 	}
@@ -280,9 +288,11 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs )
 
 	for( i = 0; i < 3; i++ ) {
 		val = v[i];
+
 		if( val < mins[i] ) {
 			mins[i] = val;
 		}
+
 		if( val > maxs[i] ) {
 			maxs[i] = val;
 		}

@@ -43,6 +43,7 @@ void	 toAngles( mat3_t& src, angles_t& dst )
 	// cap off our sin value so that we don't get any NANs
 	if( sp > 1.0 ) {
 		sp = 1.0;
+
 	} else if( sp < -1.0 ) {
 		sp = -1.0;
 	}
@@ -54,6 +55,7 @@ void	 toAngles( mat3_t& src, angles_t& dst )
 		dst.pitch = theta * 180 / M_PI;
 		dst.yaw	  = atan2( src[0][1], src[0][0] ) * 180 / M_PI;
 		dst.roll  = atan2( src[1][2], src[2][2] ) * 180 / M_PI;
+
 	} else {
 		dst.pitch = theta * 180 / M_PI;
 		dst.yaw	  = -atan2( src[1][0], src[1][1] ) * 180 / M_PI;
@@ -160,5 +162,6 @@ angles_t& angles_t::Normalize180()
 	if( roll > 180.0 ) {
 		roll -= 360.0;
 	}
+
 	return *this;
 }

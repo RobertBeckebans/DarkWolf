@@ -59,6 +59,7 @@ void		  AddRemap( const char* oldShader, const char* newShader, float timeOffset
 			return;
 		}
 	}
+
 	if( remapCount < MAX_SHADER_REMAPS ) {
 		strcpy( remappedShaders[remapCount].newShader, newShader );
 		strcpy( remappedShaders[remapCount].oldShader, oldShader );
@@ -74,10 +75,12 @@ const char* BuildShaderStateConfig()
 	int			i;
 
 	memset( buff, 0, MAX_STRING_CHARS );
+
 	for( i = 0; i < remapCount; i++ ) {
 		Com_sprintf( out, ( MAX_QPATH * 2 ) + 5, "%s=%s:%5.2f@", remappedShaders[i].oldShader, remappedShaders[i].newShader, remappedShaders[i].timeOffset );
 		Q_strcat( buff, sizeof( buff ), out );
 	}
+
 	return buff;
 }
 
@@ -106,9 +109,11 @@ int G_FindConfigstringIndex( const char* name, int start, int max, qboolean crea
 
 	for( i = 1; i < max; i++ ) {
 		sys->GetConfigstring( start + i, s, sizeof( s ) );
+
 		if( !s[0] ) {
 			break;
 		}
+
 		if( !strcmp( s, name ) ) {
 			return i;
 		}
@@ -177,6 +182,7 @@ gentity_t* G_Find( gentity_t* from, int fieldofs, const char* match )
 
 	if( !from ) {
 		from = g_entities;
+
 	} else {
 		from++;
 	}
@@ -185,10 +191,13 @@ gentity_t* G_Find( gentity_t* from, int fieldofs, const char* match )
 		if( !from->inuse ) {
 			continue;
 		}
+
 		s = *( char** )( ( byte* )from + fieldofs );
+
 		if( !s ) {
 			continue;
 		}
+
 		if( !Q_stricmp( s, match ) ) {
 			return from;
 		}
@@ -219,10 +228,13 @@ gentity_t* G_PickTarget( char* targetname )
 
 	while( 1 ) {
 		ent = G_Find( ent, FOFS( targetname ), targetname );
+
 		if( !ent ) {
 			break;
 		}
+
 		choice[num_choices++] = ent;
+
 		if( num_choices == MAXCHOICES ) {
 			break;
 		}
@@ -266,9 +278,11 @@ void G_UseTargets( gentity_t* ent, gentity_t* activator )
 	}
 
 	t = NULL;
+
 	while( ( t = G_Find( t, FOFS( targetname ), ent->target ) ) != NULL ) {
 		if( t == ent ) {
 			G_Printf( "WARNING: Entity used itself.\n" );
+
 		} else {
 			if( t->use ) {
 				// G_Printf ("ent->classname %s ent->targetname %s t->targetname %s t->s.number %d\n", ent->classname, ent->targetname, t->targetname, t->s.number);
@@ -283,11 +297,13 @@ void G_UseTargets( gentity_t* ent, gentity_t* activator )
 				if( activator && ( ( Q_stricmp( t->classname, "func_door" ) == 0 ) || ( Q_stricmp( t->classname, "func_door_rotating" ) == 0 ) ) ) {
 					// check door usage rules before allowing any entity to trigger a door open
 					G_TryDoor( t, ent, activator ); // (door,other,activator)
+
 				} else {
 					t->use( t, ent, activator );
 				}
 			}
 		}
+
 		if( !ent->inuse ) {
 			G_Printf( "entity was removed while using targets\n" );
 			return;
@@ -344,6 +360,7 @@ char* vtos( const vec3_t v )
 
 	return s;
 }
+
 char* vtosf( const vec3_t v )
 {
 	static int	index;
@@ -378,11 +395,14 @@ void G_SetMovedir( vec3_t angles, vec3_t movedir )
 
 	if( VectorCompare( angles, VEC_UP ) ) {
 		VectorCopy( MOVEDIR_UP, movedir );
+
 	} else if( VectorCompare( angles, VEC_DOWN ) ) {
 		VectorCopy( MOVEDIR_DOWN, movedir );
+
 	} else {
 		AngleVectors( angles, movedir, NULL, NULL );
 	}
+
 	VectorClear( angles );
 }
 
@@ -423,10 +443,12 @@ gentity_t* G_Spawn()
 
 	e = NULL; // shut up warning
 	i = 0;	  // shut up warning
+
 	for( force = 0; force < 2; force++ ) {
 		// if we go through all entities and can't find one to free,
 		// override the normal minimum times before use
 		e = &g_entities[MAX_CLIENTS];
+
 		for( i = MAX_CLIENTS; i < level.num_entities; i++, e++ ) {
 			if( e->inuse ) {
 				continue;
@@ -442,14 +464,17 @@ gentity_t* G_Spawn()
 			G_InitGentity( e );
 			return e;
 		}
+
 		if( i != MAX_GENTITIES ) {
 			break;
 		}
 	}
+
 	if( i == ENTITYNUM_MAX_NORMAL ) {
 		for( i = 0; i < MAX_GENTITIES; i++ ) {
 			G_Printf( "%4i: %s\n", i, g_entities[i].classname );
 		}
+
 		G_Error( "G_Spawn: no free entities" );
 	}
 
@@ -474,13 +499,16 @@ qboolean G_EntitiesFree()
 	gentity_t* e;
 
 	e = &g_entities[MAX_CLIENTS];
+
 	for( i = MAX_CLIENTS; i < level.num_entities; i++, e++ ) {
 		if( e->inuse ) {
 			continue;
 		}
+
 		// slot available
 		return qtrue;
 	}
+
 	return qfalse;
 }
 
@@ -566,9 +594,11 @@ void G_KillBox( gentity_t* ent )
 
 	for( i = 0; i < num; i++ ) {
 		hit = &g_entities[touch[i]];
+
 		if( !hit->client ) {
 			continue;
 		}
+
 		if( !hit->r.linked ) { // RF, inactive AI shouldn't be gibbed
 			continue;
 		}
@@ -594,6 +624,7 @@ void G_AddPredictableEvent( gentity_t* ent, int event, int eventParm )
 	if( !ent->client ) {
 		return;
 	}
+
 	BG_AddPredictableEventToPlayerstate( event, eventParm, &ent->client->ps );
 }
 
@@ -628,6 +659,7 @@ void G_AddEvent( gentity_t* ent, int event, int eventParm )
 		//		ent->client->ps.externalEventParm = eventParm;
 		//		ent->client->ps.externalEventTime = level.time;
 		// -NERVE - SMF
+
 	} else {
 		// NERVE - SMF - commented in - externalEvents not being handled properly in Wolf right now
 		ent->s.events[ent->s.eventSequence & ( MAX_EVENTS - 1 )]	 = event;
@@ -642,6 +674,7 @@ void G_AddEvent( gentity_t* ent, int event, int eventParm )
 		//		ent->s.eventParm = eventParm;
 		// -NERVE - SMF
 	}
+
 	ent->eventTime	 = level.time;
 	ent->r.eventTime = level.time;
 }
@@ -726,6 +759,7 @@ qboolean infront( gentity_t* self, gentity_t* other )
 
 	if( self->client ) {
 		AngleVectors( self->client->ps.viewangles, forward, NULL, NULL );
+
 	} else {
 		AngleVectors( self->s.angles, forward, NULL, NULL );
 	}
@@ -735,6 +769,7 @@ qboolean infront( gentity_t* self, gentity_t* other )
 		VectorCopy( other->r.currentOrigin, otherOrigin );
 		otherOrigin[2] = self->r.currentOrigin[2];
 		VectorSubtract( otherOrigin, self->r.currentOrigin, vec );
+
 	} else {
 		VectorSubtract( other->r.currentOrigin, self->r.currentOrigin, vec );
 	}
@@ -746,8 +781,10 @@ qboolean infront( gentity_t* self, gentity_t* other )
 	if( !other->aiCharacter && self->activateArc ) { //----(SA)	make sure ai's aren't constrained to the grabarc of an mg42
 		float angle;
 		angle = RAD2DEG( M_PI - acos( dot ) );
+
 		if( angle < ( self->activateArc * 2.0 ) ) { // arc is 'half arc' since that's the way the other angles in the mg42 were done
 			return qfalse;
+
 		} else {
 			return qtrue;
 		}
@@ -756,6 +793,7 @@ qboolean infront( gentity_t* self, gentity_t* other )
 	if( dot > 0.0 ) {
 		return qtrue;
 	}
+
 	return qfalse;
 }
 
@@ -770,9 +808,11 @@ void G_ProcessTagConnect( gentity_t* ent, qboolean clearAngles )
 	if( !ent->tagName ) {
 		G_Error( "G_ProcessTagConnect: NULL ent->tagName\n" );
 	}
+
 	if( !ent->tagParent ) {
 		G_Error( "G_ProcessTagConnect: NULL ent->tagParent\n" );
 	}
+
 	G_FindConfigstringIndex( va( "%i %i %s", ent->s.number, ent->tagParent->s.number, ent->tagName ), CS_TAGCONNECTS, MAX_TAGCONNECTS, qtrue );
 	ent->s.eFlags |= EF_TAGCONNECT;
 
@@ -811,8 +851,10 @@ int DebugLine( vec3_t start, vec3_t end, int color )
 	VectorSubtract( end, start, dir );
 	VectorNormalize( dir );
 	dot = DotProduct( dir, up );
+
 	if( dot > 0.99 || dot < -0.99 ) {
 		VectorSet( cross, 1, 0, 0 );
+
 	} else {
 		CrossProduct( dir, up, cross );
 	}

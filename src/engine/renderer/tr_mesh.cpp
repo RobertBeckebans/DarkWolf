@@ -115,12 +115,15 @@ static int R_CullModel( md3Header_t* header, trRefEntity_t* ent )
 					tr.pc.c_sphere_cull_md3_clip++;
 					break;
 			}
+
 		} else {
 			int sphereCull, sphereCullB;
 
 			sphereCull = R_CullLocalPointAndRadius( newFrame->localOrigin, newFrame->radius * radScale );
+
 			if( newFrame == oldFrame ) {
 				sphereCullB = sphereCull;
+
 			} else {
 				sphereCullB = R_CullLocalPointAndRadius( oldFrame->localOrigin, oldFrame->radius * radScale );
 			}
@@ -129,9 +132,11 @@ static int R_CullModel( md3Header_t* header, trRefEntity_t* ent )
 				if( sphereCull == CULL_OUT ) {
 					tr.pc.c_sphere_cull_md3_out++;
 					return CULL_OUT;
+
 				} else if( sphereCull == CULL_IN ) {
 					tr.pc.c_sphere_cull_md3_in++;
 					return CULL_IN;
+
 				} else {
 					tr.pc.c_sphere_cull_md3_clip++;
 				}
@@ -152,9 +157,11 @@ static int R_CullModel( md3Header_t* header, trRefEntity_t* ent )
 		case CULL_IN:
 			tr.pc.c_box_cull_md3_in++;
 			return CULL_IN;
+
 		case CULL_CLIP:
 			tr.pc.c_box_cull_md3_clip++;
 			return CULL_CLIP;
+
 		case CULL_OUT:
 		default:
 			tr.pc.c_box_cull_md3_out++;
@@ -179,6 +186,7 @@ int R_ComputeLOD( trRefEntity_t* ent )
 	if( tr.currentModel->numLods < 2 ) {
 		// model has only 1 LOD level, skip computations and bias
 		lod = 0;
+
 	} else {
 		// multiple LODs exist, so compute projected bounding sphere
 		// and use that as a criteria for selecting LOD
@@ -201,14 +209,18 @@ int R_ComputeLOD( trRefEntity_t* ent )
 			// terrain level that has loads of trees
 			//			radius = radius/2.0f;
 		}
+
 		//----(SA)	end
 
 		if( ( projectedRadius = ProjectRadius( radius, ent->e.origin ) ) != 0 ) {
 			lodscale = r_lodscale->value;
+
 			if( lodscale > 20 ) {
 				lodscale = 20;
 			}
+
 			flod = 1.0f - projectedRadius * lodscale;
+
 		} else {
 			// object intersects near view plane, e.g. view weapon
 			flod = 0;
@@ -219,6 +231,7 @@ int R_ComputeLOD( trRefEntity_t* ent )
 
 		if( lod < 0 ) {
 			lod = 0;
+
 		} else if( lod >= tr.currentModel->numLods ) {
 			lod = tr.currentModel->numLods - 1;
 		}
@@ -229,6 +242,7 @@ int R_ComputeLOD( trRefEntity_t* ent )
 	if( lod >= tr.currentModel->numLods ) {
 		lod = tr.currentModel->numLods - 1;
 	}
+
 	if( lod < 0 ) {
 		lod = 0;
 	}
@@ -256,16 +270,20 @@ static int R_ComputeFogNum( md3Header_t* header, trRefEntity_t* ent )
 	// FIXME: non-normalized axis issues
 	md3Frame = ( md3Frame_t* )( ( byte* )header + header->ofsFrames ) + ent->e.frame;
 	VectorAdd( ent->e.origin, md3Frame->localOrigin, localOrigin );
+
 	for( i = 1; i < tr.world->numfogs; i++ ) {
 		fog = &tr.world->fogs[i];
+
 		for( j = 0; j < 3; j++ ) {
 			if( localOrigin[j] - md3Frame->radius >= fog->bounds[1][j] ) {
 				break;
 			}
+
 			if( localOrigin[j] + md3Frame->radius <= fog->bounds[0][j] ) {
 				break;
 			}
 		}
+
 		if( j == 3 ) {
 			return i;
 		}
@@ -324,6 +342,7 @@ void R_AddMD3Surfaces( trRefEntity_t* ent )
 	// is outside the view frustum.
 	//
 	cull = R_CullModel( header, ent );
+
 	if( cull == CULL_OUT ) {
 		return;
 	}
@@ -344,6 +363,7 @@ void R_AddMD3Surfaces( trRefEntity_t* ent )
 	// draw all surfaces
 	//
 	surface = ( md3Surface_t* )( ( byte* )header + header->ofsSurfaces );
+
 	for( i = 0; i < header->numSurfaces; i++ ) {
 		int j;
 
@@ -357,10 +377,12 @@ void R_AddMD3Surfaces( trRefEntity_t* ent )
 				continue;
 			}
 		}
+
 		//----(SA)	end
 
 		if( ent->e.customShader ) {
 			shader = R_GetShaderByHandle( ent->e.customShader );
+
 		} else if( ent->e.customSkin > 0 && ent->e.customSkin < tr.numSkins ) {
 			skin_t* skin;
 
@@ -368,6 +390,7 @@ void R_AddMD3Surfaces( trRefEntity_t* ent )
 
 			// match the surface name to something in the skin file
 			shader = tr.defaultShader;
+
 			for( j = 0; j < skin->numSurfaces; j++ ) {
 				// the names have both been lowercased
 				if( !strcmp( skin->surfaces[j]->name, surface->name ) ) {
@@ -378,11 +401,14 @@ void R_AddMD3Surfaces( trRefEntity_t* ent )
 
 			if( shader == tr.defaultShader ) {
 				ri.Printf( PRINT_DEVELOPER, "WARNING: no shader for surface %s in skin %s\n", surface->name, skin->name );
+
 			} else if( shader->defaultShader ) {
 				ri.Printf( PRINT_DEVELOPER, "WARNING: shader %s in skin %s not found\n", shader->name, skin->name );
 			}
+
 		} else if( surface->numShaders <= 0 ) {
 			shader = tr.defaultShader;
+
 		} else {
 			md3Shader = ( md3Shader_t* )( ( byte* )surface + surface->ofsShaders );
 			md3Shader += ent->e.skinNum % surface->numShaders;

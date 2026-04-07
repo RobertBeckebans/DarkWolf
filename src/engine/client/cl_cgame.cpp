@@ -148,6 +148,7 @@ qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t* snapshot )
 
 	// if the frame is not valid, we can't return it
 	clSnap = &cl.snapshots[snapshotNumber & PACKET_MASK];
+
 	if( !clSnap->valid ) {
 		return qfalse;
 	}
@@ -166,11 +167,14 @@ qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t* snapshot )
 	memcpy( snapshot->areamask, clSnap->areamask, sizeof( snapshot->areamask ) );
 	snapshot->ps = clSnap->ps;
 	count		 = clSnap->numEntities;
+
 	if( count > MAX_ENTITIES_IN_SNAPSHOT ) {
 		Com_DPrintf( "CL_GetSnapshot: truncated %i entities to %i\n", count, MAX_ENTITIES_IN_SNAPSHOT );
 		count = MAX_ENTITIES_IN_SNAPSHOT;
 	}
+
 	snapshot->numEntities = count;
+
 	for( i = 0; i < count; i++ ) {
 		snapshot->entities[i] = cl.parseEntities[( clSnap->parseEntitiesNum + i ) & ( MAX_PARSE_ENTITIES - 1 )];
 	}
@@ -227,14 +231,17 @@ void CL_ConfigstringModified()
 	int			len;
 
 	index = atoi( Cmd_Argv( 1 ) );
+
 	if( index < 0 || index >= MAX_CONFIGSTRINGS ) {
 		Com_Error( ERR_DROP, "configstring > MAX_CONFIGSTRINGS" );
 	}
+
 	//	s = Cmd_Argv(2);
 	// get everything after "cs <num>"
 	s = Cmd_ArgsFrom( 2 );
 
 	old = cl.gameState.stringData + cl.gameState.stringOffsets[index];
+
 	if( !strcmp( old, s ) ) {
 		return; // unchanged
 	}
@@ -250,9 +257,11 @@ void CL_ConfigstringModified()
 	for( i = 0; i < MAX_CONFIGSTRINGS; i++ ) {
 		if( i == index ) {
 			dup = s;
+
 		} else {
 			dup = oldGs.stringData + oldGs.stringOffsets[i];
 		}
+
 		if( !dup[0] ) {
 			continue; // leave with the default empty string
 		}
@@ -295,6 +304,7 @@ qboolean CL_GetServerCommand( int serverCommandNumber )
 		if( clc.demoplaying ) {
 			return qfalse;
 		}
+
 		Com_Error( ERR_DROP, "CL_GetServerCommand: a reliable command was cycled out" );
 		return qfalse;
 	}
@@ -324,18 +334,22 @@ rescan:
 
 	if( !strcmp( cmd, "bcs1" ) ) {
 		s = Cmd_Argv( 2 );
+
 		if( strlen( bigConfigString ) + strlen( s ) >= BIG_INFO_STRING ) {
 			Com_Error( ERR_DROP, "bcs exceeded BIG_INFO_STRING" );
 		}
+
 		strcat( bigConfigString, s );
 		return qfalse;
 	}
 
 	if( !strcmp( cmd, "bcs2" ) ) {
 		s = Cmd_Argv( 2 );
+
 		if( strlen( bigConfigString ) + strlen( s ) + 1 >= BIG_INFO_STRING ) {
 			Com_Error( ERR_DROP, "bcs exceeded BIG_INFO_STRING" );
 		}
+
 		strcat( bigConfigString, s );
 		strcat( bigConfigString, "\"" );
 		s = bigConfigString;
@@ -378,6 +392,7 @@ rescan:
 		if( !com_sv_running->integer ) {
 			return qfalse;
 		}
+
 		// close the console
 		Con_Close();
 		// take a special screenshot next frame
@@ -425,6 +440,7 @@ void CL_ShutdownCGame()
 	vmHandle = NULL;
 	cgvm	 = NULL;
 }
+
 class idCGSystemCallsLocal : public idCGSystemCalls
 {
 public:
@@ -608,6 +624,7 @@ public:
 
 		if( killall == 1 ) {
 			::S_ClearSounds( qtrue, qfalse );
+
 		} else if( killall == 2 ) {
 			::S_ClearSounds( qtrue, qtrue );
 		}
@@ -862,6 +879,7 @@ public:
 		if( camNum == 0 ) {
 			cl.cameraMode = qtrue;
 		}
+
 		::startCamera( camNum, time );
 	}
 
@@ -990,22 +1008,30 @@ public:
 			// NERVE - SMF
 			if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_PICKTEAM" ) ) {
 				uivm->SetActiveMenu( UIMENU_WM_PICKTEAM );
+
 			} else if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_PICKPLAYER" ) ) {
 				uivm->SetActiveMenu( UIMENU_WM_PICKPLAYER );
+
 			} else if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_QUICKMESSAGE" ) ) {
 				uivm->SetActiveMenu( UIMENU_WM_QUICKMESSAGE );
+
 			} else if( arg0 && !Q_stricmp( arg0, "UIMENU_WM_LIMBO" ) ) {
 				uivm->SetActiveMenu( UIMENU_WM_LIMBO );
 			}
+
 			// -NERVE - SMF
 			else if( arg0 && !Q_stricmp( arg0, "hbook1" ) ) { //----(SA)
 				uivm->SetActiveMenu( UIMENU_BOOK1 );
+
 			} else if( arg0 && !Q_stricmp( arg0, "hbook2" ) ) { //----(SA)
 				uivm->SetActiveMenu( UIMENU_BOOK2 );
+
 			} else if( arg0 && !Q_stricmp( arg0, "hbook3" ) ) { //----(SA)
 				uivm->SetActiveMenu( UIMENU_BOOK3 );
+
 			} else if( arg0 && !Q_stricmp( arg0, "pregame" ) ) { //----(SA) added
 				uivm->SetActiveMenu( UIMENU_PREGAME );
+
 			} else {
 				uivm->SetActiveMenu( UIMENU_CLIPBOARD );
 			}
@@ -1039,6 +1065,7 @@ void CL_UpdateLevelHunkUsage()
 	memusage = Cvar_VariableIntegerValue( "com_hunkused" ) + Cvar_VariableIntegerValue( "hunk_soundadjust" );
 
 	len = FS_FOpenFileByMode( memlistfile, &handle, FS_READ );
+
 	if( len >= 0 ) { // the file exists, so read it in, strip out the current entry for this map, and save it out, so we can append the new value
 
 		buf = ( char* )Z_Malloc( len + 1 );
@@ -1053,10 +1080,12 @@ void CL_UpdateLevelHunkUsage()
 		buftrav		  = buf;
 		outbuftrav	  = outbuf;
 		outbuftrav[0] = '\0';
+
 		while( ( token = COM_Parse( &buftrav ) ) && token[0] ) {
 			if( !Q_strcasecmp( token, cl.mapname ) ) {
 				// found a match
 				token = COM_Parse( &buftrav ); // read the size
+
 				if( token && token[0] ) {
 					if( atoi( token ) == memusage ) { // if it is the same, abort this process
 						Z_Free( buf );
@@ -1064,13 +1093,16 @@ void CL_UpdateLevelHunkUsage()
 						return;
 					}
 				}
+
 			} else { // send it to the outbuf
 				Q_strcat( outbuftrav, len + 1, token );
 				Q_strcat( outbuftrav, len + 1, " " );
 				token = COM_Parse( &buftrav ); // read the size
+
 				if( token && token[0] ) {
 					Q_strcat( outbuftrav, len + 1, token );
 					Q_strcat( outbuftrav, len + 1, "\n" );
+
 				} else {
 					Com_Error( ERR_DROP, "hunkusage.dat file is corrupt\n" );
 				}
@@ -1083,32 +1115,41 @@ void CL_UpdateLevelHunkUsage()
 			_ftype	  = 'WlfB';
 			_fcreator = 'WlfS';
 		}
+
 #endif
 		handle = FS_FOpenFileWrite( memlistfile );
+
 		if( handle < 0 ) {
 			Com_Error( ERR_DROP, "cannot create %s\n", memlistfile );
 		}
+
 		// input file is parsed, now output to the new file
 		len = strlen( outbuf );
+
 		if( FS_Write( ( void* )outbuf, len, handle ) != len ) {
 			Com_Error( ERR_DROP, "cannot write to %s\n", memlistfile );
 		}
+
 		FS_FCloseFile( handle );
 
 		Z_Free( buf );
 		Z_Free( outbuf );
 	}
+
 	// now append the current map to the current file
 	FS_FOpenFileByMode( memlistfile, &handle, FS_APPEND );
+
 	if( handle < 0 ) {
 		Com_Error( ERR_DROP, "cannot write to hunkusage.dat, check disk full\n" );
 	}
+
 	Com_sprintf( outstr, sizeof( outstr ), "%s %i\n", cl.mapname, memusage );
 	FS_Write( outstr, strlen( outstr ), handle );
 	FS_FCloseFile( handle );
 
 	// now just open it and close it, so it gets copied to the pak dir
 	len = FS_FOpenFileByMode( memlistfile, &handle, FS_READ );
+
 	if( len >= 0 ) {
 		FS_FCloseFile( handle );
 	}
@@ -1140,9 +1181,11 @@ void CL_InitCGame()
 
 	// load the dll or bytecode
 	vmHandle = ( dllhandle_t )Sys_LoadDll( "cgame", CGAME_IMPORT_API_VERSION, &cgImports, ( void** )&cgvm );
+
 	if( !cgvm || !vmHandle ) {
 		Com_Error( ERR_DROP, "VM_Create on cgame failed" );
 	}
+
 	cls.state = CA_LOADING;
 
 	// init for this gamestate
@@ -1239,6 +1282,7 @@ void CL_AdjustTimeDelta()
 	// if the current time is WAY off, just correct to the current value
 	if( com_sv_running->integer ) {
 		resetTime = 100;
+
 	} else {
 		resetTime = RESET_TIME;
 	}
@@ -1250,15 +1294,19 @@ void CL_AdjustTimeDelta()
 		cl.serverTimeDelta = newDelta;
 		cl.oldServerTime   = cl.snap.serverTime; // FIXME: is this a problem for cgame?
 		cl.serverTime	   = cl.snap.serverTime;
+
 		if( cl_showTimeDelta->integer ) {
 			Com_Printf( "<RESET> " );
 		}
+
 	} else if( deltaDelta > 100 ) {
 		// fast adjust, cut the difference in half
 		if( cl_showTimeDelta->integer ) {
 			Com_Printf( "<FAST> " );
 		}
+
 		cl.serverTimeDelta = ( cl.serverTimeDelta + newDelta ) >> 1;
+
 	} else {
 		// slow drift adjust, only move 1 or 2 msec
 
@@ -1269,6 +1317,7 @@ void CL_AdjustTimeDelta()
 			if( cl.extrapolatedSnapshot ) {
 				cl.extrapolatedSnapshot = qfalse;
 				cl.serverTimeDelta -= 2;
+
 			} else {
 				// otherwise, move our sense of time forward to minimize total latency
 				cl.serverTimeDelta++;
@@ -1292,6 +1341,7 @@ void CL_FirstSnapshot()
 	if( cl.snap.snapFlags & SNAPFLAG_NOT_ACTIVE ) {
 		return;
 	}
+
 	cls.state = CA_ACTIVE;
 
 	// set the timedelta so we are exactly on this first frame
@@ -1324,6 +1374,7 @@ void CL_SetCGameTime()
 		if( cls.state != CA_PRIMED ) {
 			return;
 		}
+
 		if( clc.demoplaying ) {
 			// we shouldn't get the first snapshot on the same frame
 			// as the gamestate, because it causes a bad time skip
@@ -1331,12 +1382,15 @@ void CL_SetCGameTime()
 				clc.firstDemoFrameSkipped = qtrue;
 				return;
 			}
+
 			CL_ReadDemoMessage();
 		}
+
 		if( cl.newSnapshots ) {
 			cl.newSnapshots = qfalse;
 			CL_FirstSnapshot();
 		}
+
 		if( cls.state != CA_ACTIVE ) {
 			return;
 		}
@@ -1358,10 +1412,12 @@ void CL_SetCGameTime()
 		if( !Q_stricmp( cls.servername, "localhost" ) ) {
 			// do nothing?
 			CL_FirstSnapshot();
+
 		} else {
 			Com_Error( ERR_DROP, "cl.snap.serverTime < cl.oldFrameServerTime" );
 		}
 	}
+
 	cl.oldFrameServerTime = cl.snap.serverTime;
 
 	// get our current view of time
@@ -1376,8 +1432,10 @@ void CL_SetCGameTime()
 		int tn;
 
 		tn = cl_timeNudge->integer;
+
 		if( tn < -30 ) {
 			tn = -30;
+
 		} else if( tn > 30 ) {
 			tn = 30;
 		}
@@ -1389,6 +1447,7 @@ void CL_SetCGameTime()
 		if( cl.serverTime < cl.oldServerTime ) {
 			cl.serverTime = cl.oldServerTime;
 		}
+
 		cl.oldServerTime = cl.serverTime;
 
 		// note if we are almost past the latest frame (without timeNudge),
@@ -1421,6 +1480,7 @@ void CL_SetCGameTime()
 		if( !clc.timeDemoStart ) {
 			clc.timeDemoStart = Sys_Milliseconds();
 		}
+
 		clc.timeDemoFrames++;
 		cl.serverTime = clc.timeDemoBaseTime + clc.timeDemoFrames * 50;
 	}
@@ -1429,6 +1489,7 @@ void CL_SetCGameTime()
 		// feed another messag, which should change
 		// the contents of cl.snap
 		CL_ReadDemoMessage();
+
 		if( cls.state != CA_ACTIVE ) {
 			return; // end of demo
 		}

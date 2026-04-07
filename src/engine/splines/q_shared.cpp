@@ -93,6 +93,7 @@ void* Com_GrowListElement( const growList_t* list, int index )
 	if( index < 0 || index >= list->currentElements ) {
 		Com_Error( ERR_DROP, "Com_GrowListElement: %i out of range of %i", index, list->currentElements );
 	}
+
 	return list->elements[index];
 }
 
@@ -105,6 +106,7 @@ int Com_IndexForGrowListElement( const growList_t* list, const void* element )
 			return i;
 		}
 	}
+
 	return -1;
 }
 
@@ -115,9 +117,11 @@ float Com_Clamp( float min, float max, float value )
 	if( value < min ) {
 		return min;
 	}
+
 	if( value > max ) {
 		return max;
 	}
+
 	return value;
 }
 
@@ -131,22 +135,26 @@ const char* Com_StringContains( const char* str1, const char* str2, int casesens
 	int len, i, j;
 
 	len = strlen( str1 ) - strlen( str2 );
+
 	for( i = 0; i <= len; i++, str1++ ) {
 		for( j = 0; str2[j]; j++ ) {
 			if( casesensitive ) {
 				if( str1[j] != str2[j] ) {
 					break;
 				}
+
 			} else {
 				if( toupper( str1[j] ) != toupper( str2[j] ) ) {
 					break;
 				}
 			}
 		}
+
 		if( !str2[j] ) {
 			return str1;
 		}
 	}
+
 	return NULL;
 }
 
@@ -164,82 +172,106 @@ int Com_Filter( const char* filter, const char* name, int casesensitive )
 	while( *filter ) {
 		if( *filter == '*' ) {
 			filter++;
+
 			for( i = 0; *filter; i++ ) {
 				if( *filter == '*' || *filter == '?' ) {
 					break;
 				}
+
 				buf[i] = *filter;
 				filter++;
 			}
+
 			buf[i] = '\0';
+
 			if( strlen( buf ) ) {
 				ptr = Com_StringContains( name, buf, casesensitive );
+
 				if( !ptr ) {
 					return qfalse;
 				}
+
 				name = ptr + strlen( buf );
 			}
+
 		} else if( *filter == '?' ) {
 			filter++;
 			name++;
+
 		} else if( *filter == '[' && *( filter + 1 ) == '[' ) {
 			filter++;
+
 		} else if( *filter == '[' ) {
 			filter++;
 			found = qfalse;
+
 			while( *filter && !found ) {
 				if( *filter == ']' && *( filter + 1 ) != ']' ) {
 					break;
 				}
+
 				if( *( filter + 1 ) == '-' && *( filter + 2 ) && ( *( filter + 2 ) != ']' || *( filter + 3 ) == ']' ) ) {
 					if( casesensitive ) {
 						if( *name >= *filter && *name <= *( filter + 2 ) ) {
 							found = qtrue;
 						}
+
 					} else {
 						if( toupper( *name ) >= toupper( *filter ) && toupper( *name ) <= toupper( *( filter + 2 ) ) ) {
 							found = qtrue;
 						}
 					}
+
 					filter += 3;
+
 				} else {
 					if( casesensitive ) {
 						if( *filter == *name ) {
 							found = qtrue;
 						}
+
 					} else {
 						if( toupper( *filter ) == toupper( *name ) ) {
 							found = qtrue;
 						}
 					}
+
 					filter++;
 				}
 			}
+
 			if( !found ) {
 				return qfalse;
 			}
+
 			while( *filter ) {
 				if( *filter == ']' && *( filter + 1 ) != ']' ) {
 					break;
 				}
+
 				filter++;
 			}
+
 			filter++;
 			name++;
+
 		} else {
 			if( casesensitive ) {
 				if( *filter != *name ) {
 					return qfalse;
 				}
+
 			} else {
 				if( toupper( *filter ) != toupper( *name ) ) {
 					return qfalse;
 				}
 			}
+
 			filter++;
 			name++;
 		}
 	}
+
 	return qtrue;
 }
 
@@ -257,17 +289,22 @@ int Com_HashString( const char* fname )
 
 	hash = 0;
 	i	 = 0;
+
 	while( fname[i] != '\0' ) {
 		letter = tolower( fname[i] );
+
 		if( letter == '.' ) {
 			break; // don't include extension
 		}
+
 		if( letter == '\\' ) {
 			letter = '/'; // damn path names
 		}
+
 		hash += ( long )( letter ) * ( i + 119 );
 		i++;
 	}
+
 	hash &= ( FILE_HASH_SIZE - 1 );
 	return hash;
 }
@@ -282,12 +319,15 @@ char* Com_SkipPath( char* pathname )
 	char* last;
 
 	last = pathname;
+
 	while( *pathname ) {
 		if( *pathname == '/' ) {
 			last = pathname + 1;
 		}
+
 		pathname++;
 	}
+
 	return last;
 }
 
@@ -301,6 +341,7 @@ void Com_StripExtension( const char* in, char* out )
 	while( *in && *in != '.' ) {
 		*out++ = *in++;
 	}
+
 	*out = 0;
 }
 
@@ -324,6 +365,7 @@ void Com_DefaultExtension( char* path, int maxSize, const char* extension )
 		if( *src == '.' ) {
 			return; // it has an extension
 		}
+
 		src--;
 	}
 
@@ -352,22 +394,27 @@ short BigShort( short l )
 {
 	return _BigShort( l );
 }
+
 short LittleShort( short l )
 {
 	return _LittleShort( l );
 }
+
 int BigLong( int l )
 {
 	return _BigLong( l );
 }
+
 int LittleLong( int l )
 {
 	return _LittleLong( l );
 }
+
 float BigFloat( float l )
 {
 	return _BigFloat( l );
 }
+
 float LittleFloat( float l )
 {
 	return _LittleFloat( l );
@@ -442,6 +489,7 @@ void Swap_Init()
 		_LittleLong	 = LongNoSwap;
 		_BigFloat	 = FloatSwap;
 		_LittleFloat = FloatNoSwap;
+
 	} else {
 		_BigShort	 = ShortNoSwap;
 		_LittleShort = ShortSwap;
@@ -467,9 +515,11 @@ int Com_ParseInfos( const char* buf, int max, char infos[][MAX_INFO_STRING] )
 
 	while( 1 ) {
 		token = Com_Parse( &buf );
+
 		if( !token[0] ) {
 			break;
 		}
+
 		if( strcmp( token, "{" ) ) {
 			Com_Printf( "Missing { in info file\n" );
 			break;
@@ -481,23 +531,30 @@ int Com_ParseInfos( const char* buf, int max, char infos[][MAX_INFO_STRING] )
 		}
 
 		infos[count][0] = 0;
+
 		while( 1 ) {
 			token = Com_Parse( &buf );
+
 			if( !token[0] ) {
 				Com_Printf( "Unexpected end of info file\n" );
 				break;
 			}
+
 			if( !strcmp( token, "}" ) ) {
 				break;
 			}
+
 			Q_strncpyz( key, token, sizeof( key ) );
 
 			token = Com_ParseOnLine( &buf );
+
 			if( !token[0] ) {
 				token = "<NULL>";
 			}
+
 			Info_SetValueForKey( infos[count], key, token );
 		}
+
 		count++;
 	}
 
@@ -517,6 +574,7 @@ int Q_isprint( int c )
 	if( c >= 0x20 && c <= 0x7E ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -525,6 +583,7 @@ int Q_islower( int c )
 	if( c >= 'a' && c <= 'z' ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -533,6 +592,7 @@ int Q_isupper( int c )
 	if( c >= 'A' && c <= 'Z' ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -541,6 +601,7 @@ int Q_isalpha( int c )
 	if( ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) ) {
 		return ( 1 );
 	}
+
 	return ( 0 );
 }
 
@@ -556,8 +617,10 @@ char* Q_strrchr( const char* string, int c )
 		if( *s == cc ) {
 			sp = s;
 		}
+
 		s++;
 	}
+
 	if( cc == 0 ) {
 		sp = s;
 	}
@@ -577,6 +640,7 @@ void Q_strncpyz( char* dest, const char* src, int destsize )
 	if( !src ) {
 		Com_Error( ERR_FATAL, "Q_strncpyz: NULL src" );
 	}
+
 	if( destsize < 1 ) {
 		Com_Error( ERR_FATAL, "Q_strncpyz: destsize < 1" );
 	}
@@ -601,9 +665,11 @@ int Q_stricmpn( const char* s1, const char* s2, int n )
 			if( c1 >= 'a' && c1 <= 'z' ) {
 				c1 -= ( 'a' - 'A' );
 			}
+
 			if( c2 >= 'a' && c2 <= 'z' ) {
 				c2 -= ( 'a' - 'A' );
 			}
+
 			if( c1 != c2 ) {
 				return c1 < c2 ? -1 : 1;
 			}
@@ -643,10 +709,12 @@ char* Q_strlwr( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = tolower( *s );
 		s++;
 	}
+
 	return s1;
 }
 
@@ -655,10 +723,12 @@ char* Q_strupr( char* s1 )
 	char* s;
 
 	s = s1;
+
 	while( *s ) {
 		*s = toupper( *s );
 		s++;
 	}
+
 	return s1;
 }
 
@@ -668,9 +738,11 @@ void Q_strcat( char* dest, int size, const char* src )
 	int l1;
 
 	l1 = strlen( dest );
+
 	if( l1 >= size ) {
 		Com_Error( ERR_FATAL, "Q_strcat: already overflowed" );
 	}
+
 	Q_strncpyz( dest + l1, src, size - l1 );
 }
 
@@ -685,11 +757,13 @@ int Q_PrintStrlen( const char* string )
 
 	len = 0;
 	p	= string;
+
 	while( *p ) {
 		if( Q_IsColorString( p ) ) {
 			p += 2;
 			continue;
 		}
+
 		p++;
 		len++;
 	}
@@ -705,14 +779,18 @@ char* Q_CleanStr( char* string )
 
 	s = string;
 	d = string;
+
 	while( ( c = *s ) != 0 ) {
 		if( Q_IsColorString( s ) ) {
 			s++;
+
 		} else if( c >= 0x20 && c <= 0x7E ) {
 			*d++ = c;
 		}
+
 		s++;
 	}
+
 	*d = '\0';
 
 	return string;
@@ -727,12 +805,15 @@ void QDECL Com_sprintf( char* dest, int size, const char* fmt, ... )
 	va_start( argptr, fmt );
 	len = vsprintf( bigbuffer, fmt, argptr );
 	va_end( argptr );
+
 	if( len >= sizeof( bigbuffer ) ) {
 		Com_Error( ERR_FATAL, "Com_sprintf: overflowed bigbuffer" );
 	}
+
 	if( len >= ( unsigned int )size ) {
 		Com_Printf( "Com_sprintf: overflow of %i in %i\n", len, size );
 	}
+
 	Q_strncpyz( dest, bigbuffer, size );
 }
 
@@ -796,17 +877,22 @@ char* Info_ValueForKey( const char* s, const char* key )
 	}
 
 	valueindex ^= 1;
+
 	if( *s == '\\' ) {
 		s++;
 	}
+
 	while( 1 ) {
 		o = pkey;
+
 		while( *s != '\\' ) {
 			if( !*s ) {
 				return "";
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 		s++;
 
@@ -815,6 +901,7 @@ char* Info_ValueForKey( const char* s, const char* key )
 		while( *s != '\\' && *s ) {
 			*o++ = *s++;
 		}
+
 		*o = 0;
 
 		if( !Q_stricmp( key, pkey ) ) {
@@ -824,6 +911,7 @@ char* Info_ValueForKey( const char* s, const char* key )
 		if( !*s ) {
 			break;
 		}
+
 		s++;
 	}
 
@@ -847,25 +935,31 @@ void Info_NextPair( const char*( *head ), char key[MAX_INFO_KEY], char value[MAX
 	if( *s == '\\' ) {
 		s++;
 	}
+
 	key[0]	 = 0;
 	value[0] = 0;
 
 	o = key;
+
 	while( *s != '\\' ) {
 		if( !*s ) {
 			*o	  = 0;
 			*head = s;
 			return;
 		}
+
 		*o++ = *s++;
 	}
+
 	*o = 0;
 	s++;
 
 	o = value;
+
 	while( *s != '\\' && *s ) {
 		*o++ = *s++;
 	}
+
 	*o = 0;
 
 	*head = s;
@@ -893,26 +987,34 @@ void Info_RemoveKey( char* s, const char* key )
 
 	while( 1 ) {
 		start = s;
+
 		if( *s == '\\' ) {
 			s++;
 		}
+
 		o = pkey;
+
 		while( *s != '\\' ) {
 			if( !*s ) {
 				return;
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 		s++;
 
 		o = value;
+
 		while( *s != '\\' && *s ) {
 			if( !*s ) {
 				return;
 			}
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 
 		if( !strcmp( key, pkey ) ) {
@@ -939,9 +1041,11 @@ qboolean Info_Validate( const char* s )
 	if( strchr( s, '\"' ) ) {
 		return qfalse;
 	}
+
 	if( strchr( s, ';' ) ) {
 		return qfalse;
 	}
+
 	return qtrue;
 }
 
@@ -976,6 +1080,7 @@ void Info_SetValueForKey( char* s, const char* key, const char* value )
 	}
 
 	Info_RemoveKey( s, key );
+
 	if( !value || !strlen( value ) ) {
 		return;
 	}
@@ -1003,15 +1108,18 @@ int ParseHex( const char* text )
 	int c;
 
 	value = 0;
+
 	while( ( c = *text++ ) != 0 ) {
 		if( c >= '0' && c <= '9' ) {
 			value = value * 16 + c - '0';
 			continue;
 		}
+
 		if( c >= 'a' && c <= 'f' ) {
 			value = value * 16 + 10 + c - 'a';
 			continue;
 		}
+
 		if( c >= 'A' && c <= 'F' ) {
 			value = value * 16 + 10 + c - 'A';
 			continue;

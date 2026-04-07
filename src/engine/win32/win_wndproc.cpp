@@ -59,11 +59,13 @@ static void		WIN_DisableAltTab()
 
 	if( !Q_stricmp( Cvar_VariableString( "arch" ), "winnt" ) ) {
 		RegisterHotKey( 0, 0, MOD_ALT, VK_TAB );
+
 	} else {
 		BOOL old;
 
 		SystemParametersInfo( SPI_SCREENSAVERRUNNING, 1, &old, 0 );
 	}
+
 	s_alttab_disabled = qtrue;
 }
 
@@ -72,6 +74,7 @@ static void WIN_EnableAltTab()
 	if( s_alttab_disabled ) {
 		if( !Q_stricmp( Cvar_VariableString( "arch" ), "winnt" ) ) {
 			UnregisterHotKey( 0, 0 );
+
 		} else {
 			BOOL old;
 
@@ -98,6 +101,7 @@ static void VID_AppActivate( BOOL fActive, BOOL minimize )
 	// we don't want to act like we're active if we're minimized
 	if( fActive && !g_wv.isMinimized ) {
 		g_wv.activeApp = qtrue;
+
 	} else {
 		g_wv.activeApp = qfalse;
 	}
@@ -105,6 +109,7 @@ static void VID_AppActivate( BOOL fActive, BOOL minimize )
 	// minimize/restore mouse-capture on demand
 	if( !g_wv.activeApp ) {
 		IN_Activate( qfalse );
+
 	} else {
 		IN_Activate( qtrue );
 	}
@@ -799,17 +804,22 @@ static int MapKey( int key )
 
 	if( key & ( 1 << 24 ) ) {
 		is_extended = qtrue;
+
 	} else {
 		is_extended = qfalse;
 	}
 
 	result = s_scantokey[modified];
+
 	if( cl_language->integer - 1 == LANGUAGE_FRENCH ) {
 		result = s_scantokey_french[modified];
+
 	} else if( cl_language->integer - 1 == LANGUAGE_GERMAN ) {
 		result = s_scantokey_german[modified];
+
 	} else if( cl_language->integer - 1 == LANGUAGE_ITALIAN ) {
 		result = s_scantokey_italian[modified];
+
 	} else if( cl_language->integer - 1 == LANGUAGE_SPANISH ) {
 		result = s_scantokey_spanish[modified];
 	}
@@ -818,38 +828,53 @@ static int MapKey( int key )
 		switch( result ) {
 			case K_HOME:
 				return K_KP_HOME;
+
 			case K_UPARROW:
 				return K_KP_UPARROW;
+
 			case K_PGUP:
 				return K_KP_PGUP;
+
 			case K_LEFTARROW:
 				return K_KP_LEFTARROW;
+
 			case K_RIGHTARROW:
 				return K_KP_RIGHTARROW;
+
 			case K_END:
 				return K_KP_END;
+
 			case K_DOWNARROW:
 				return K_KP_DOWNARROW;
+
 			case K_PGDN:
 				return K_KP_PGDN;
+
 			case K_INS:
 				return K_KP_INS;
+
 			case K_DEL:
 				return K_KP_DEL;
+
 			default:
 				return result;
 		}
+
 	} else {
 		switch( result ) {
 			case K_PAUSE:
 				return K_KP_NUMLOCK;
+
 			case 0x0D:
 				return K_KP_ENTER;
+
 			case 0x2F:
 				return K_KP_SLASH;
+
 			case 0xAF:
 				return K_KP_PLUS;
 		}
+
 		return result;
 	}
 }
@@ -867,15 +892,18 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		if( ( ( int )wParam ) > 0 ) {
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
+
 		} else {
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
 		}
+
 		return DefWindowProc( hWnd, uMsg, wParam, lParam );
 	}
 
 	switch( uMsg ) {
 		case WM_MOUSEWHEEL:
+
 			//
 			//
 			// this chunk of code theoretically only works under NT4 and Win98
@@ -884,10 +912,12 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			if( ( short )HIWORD( wParam ) > 0 ) {
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
+
 			} else {
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
 				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
 			}
+
 			break;
 
 		case WM_CREATE:
@@ -899,16 +929,20 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			r_fullscreen = Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
 
 			MSH_MOUSEWHEEL = RegisterWindowMessage( "MSWHEEL_ROLLMSG" );
+
 			if( r_fullscreen->integer ) {
 				WIN_DisableAltTab();
+
 			} else {
 				WIN_EnableAltTab();
 			}
 
 			break;
 #if 0
+
 		case WM_DISPLAYCHANGE:
 			Com_DPrintf( "WM_DISPLAYCHANGE\n" );
+
 			// we need to force a vid_restart if the user has changed
 			// their desktop resolution while the game is running,
 			// but don't do anything if the message is a result of
@@ -916,16 +950,20 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			if( com_insideVidInit ) {
 				break;      // we did this on purpose
 			}
+
 			// something else forced a mode change, so restart all our gl stuff
 			Cbuf_AddText( "vid_restart\n" );
 			break;
 #endif
+
 		case WM_DESTROY:
 			// let sound and input know about this?
 			g_wv.hWnd = NULL;
+
 			if( r_fullscreen->integer ) {
 				WIN_EnableAltTab();
 			}
+
 			break;
 
 		case WM_CLOSE:
@@ -965,6 +1003,7 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 				Cvar_SetValue( "vid_ypos", yPos + r.top );
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
+
 				if( g_wv.activeApp ) {
 					IN_Activate( qtrue );
 				}
@@ -1003,6 +1042,7 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			if( wParam == SC_SCREENSAVE ) {
 				return 0;
 			}
+
 			break;
 
 		case WM_SYSKEYDOWN:
@@ -1011,8 +1051,10 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 					Cvar_SetValue( "r_fullscreen", !r_fullscreen->integer );
 					Cbuf_AddText( "vid_restart\n" );
 				}
+
 				return 0;
 			}
+
 		// fall through
 		case WM_KEYDOWN:
 			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( lParam ), qtrue, 0, NULL );

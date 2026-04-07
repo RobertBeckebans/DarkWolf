@@ -86,12 +86,14 @@ void		 CG_ClearTrails()
 
 		if( i > 0 ) {
 			trailJuncs[i].prevGlobal = &trailJuncs[i - 1];
+
 		} else {
 			trailJuncs[i].prevGlobal = NULL;
 		}
 
 		trailJuncs[i].inuse = qfalse;
 	}
+
 	trailJuncs[MAX_TRAILJUNCS - 1].nextGlobal = NULL;
 
 	initTrails	   = qtrue;
@@ -118,14 +120,17 @@ trailJunc_t* CG_SpawnTrailJunc( trailJunc_t* headJunc )
 	// select the first free trail, and remove it from the list
 	j		   = freeTrails;
 	freeTrails = j->nextGlobal;
+
 	if( freeTrails ) {
 		freeTrails->prevGlobal = NULL;
 	}
 
 	j->nextGlobal = activeTrails;
+
 	if( activeTrails ) {
 		activeTrails->prevGlobal = j;
 	}
+
 	activeTrails  = j;
 	j->prevGlobal = NULL;
 	j->inuse	  = qtrue;
@@ -136,24 +141,30 @@ trailJunc_t* CG_SpawnTrailJunc( trailJunc_t* headJunc )
 		// remove the headJunc from the list of heads
 		if( headJunc == headTrails ) {
 			headTrails = headJunc->nextHead;
+
 			if( headTrails ) {
 				headTrails->prevHead = NULL;
 			}
+
 		} else {
 			if( headJunc->nextHead ) {
 				headJunc->nextHead->prevHead = headJunc->prevHead;
 			}
+
 			if( headJunc->prevHead ) {
 				headJunc->prevHead->nextHead = headJunc->nextHead;
 			}
 		}
+
 		headJunc->prevHead = NULL;
 		headJunc->nextHead = NULL;
 	}
+
 	// make us the headTrail
 	if( headTrails ) {
 		headTrails->prevHead = j;
 	}
+
 	j->nextHead = headTrails;
 	j->prevHead = NULL;
 	headTrails	= j;
@@ -201,11 +212,13 @@ int CG_AddTrailJunc( int headJuncIndex,
 		if( !headJunc->inuse ) {
 			headJunc = NULL;
 		}
+
 	} else {
 		headJunc = NULL;
 	}
 
 	j = CG_SpawnTrailJunc( headJunc );
+
 	if( !j ) {
 		//		CG_Printf("couldnt spawn trail junc\n");
 		return 0;
@@ -214,12 +227,15 @@ int CG_AddTrailJunc( int headJuncIndex,
 	if( alphaStart > 1.0 ) {
 		alphaStart = 1.0;
 	}
+
 	if( alphaStart < 0.0 ) {
 		alphaStart = 0.0;
 	}
+
 	if( alphaEnd > 1.0 ) {
 		alphaEnd = 1.0;
 	}
+
 	if( alphaEnd < 0.0 ) {
 		alphaEnd = 0.0;
 	}
@@ -245,6 +261,7 @@ int CG_AddTrailJunc( int headJuncIndex,
 	if( sType == STYPE_REPEAT ) {
 		if( headJunc ) {
 			j->sTex = headJunc->sTex + ( ( Distance( headJunc->pos, pos ) / sRatio ) / j->widthEnd );
+
 		} else {
 			// FIXME: need a way to specify offset timing
 			j->sTex = ( animSpeed * ( 1.0 - ( ( float )( cg.time % 1000 ) / 1000.0 ) ) ) / ( sRatio );
@@ -272,11 +289,13 @@ int CG_AddSparkJunc( int headJuncIndex, qhandle_t shader, vec3_t pos, int trailL
 		if( !headJunc->inuse ) {
 			headJunc = NULL;
 		}
+
 	} else {
 		headJunc = NULL;
 	}
 
 	j = CG_SpawnTrailJunc( headJunc );
+
 	if( !j ) {
 		return 0;
 	}
@@ -324,11 +343,13 @@ int CG_AddSmokeJunc( int headJuncIndex, qhandle_t shader, vec3_t pos, int trailL
 		if( !headJunc->inuse ) {
 			headJunc = NULL;
 		}
+
 	} else {
 		headJunc = NULL;
 	}
 
 	j = CG_SpawnTrailJunc( headJunc );
+
 	if( !j ) {
 		return 0;
 	}
@@ -355,6 +376,7 @@ int CG_AddSmokeJunc( int headJuncIndex, qhandle_t shader, vec3_t pos, int trailL
 
 	if( headJunc ) {
 		j->sTex = headJunc->sTex + ( ( Distance( headJunc->pos, pos ) / ST_RATIO ) / j->widthEnd );
+
 	} else {
 		// first junction, so this will become the "tail" very soon, make it fade out
 		j->sTex		  = 0;
@@ -382,12 +404,15 @@ void CG_FreeTrailJunc( trailJunc_t* junc )
 	// make it non-active
 	junc->inuse = qfalse;
 	junc->freed = qtrue;
+
 	if( junc->nextGlobal ) {
 		junc->nextGlobal->prevGlobal = junc->prevGlobal;
 	}
+
 	if( junc->prevGlobal ) {
 		junc->prevGlobal->nextGlobal = junc->nextGlobal;
 	}
+
 	if( junc == activeTrails ) {
 		activeTrails = junc->nextGlobal;
 	}
@@ -396,21 +421,26 @@ void CG_FreeTrailJunc( trailJunc_t* junc )
 	if( junc == headTrails ) {
 		headTrails = junc->nextHead;
 	}
+
 	if( junc->nextHead ) {
 		junc->nextHead->prevHead = junc->prevHead;
 	}
+
 	if( junc->prevHead ) {
 		junc->prevHead->nextHead = junc->nextHead;
 	}
+
 	junc->nextHead = NULL;
 	junc->prevHead = NULL;
 
 	// stick it in the free list
 	junc->prevGlobal = NULL;
 	junc->nextGlobal = freeTrails;
+
 	if( freeTrails ) {
 		freeTrails->prevGlobal = junc;
 	}
+
 	freeTrails = junc;
 
 	numTrailsInuse--;
@@ -520,12 +550,14 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 		j		 = trail;
 		numJuncs = 0;
 		sInc	 = 0;
+
 		while( j ) {
 			numJuncs++;
 
 			// check for a dead next junc
 			if( !j->inuse && j->nextJunc && !j->nextJunc->inuse ) {
 				CG_KillTrail( j );
+
 			} else if( j->nextJunc && j->nextJunc->freed ) {
 				// not sure how this can happen, but it does, and causes infinite loops
 				j->nextJunc = NULL;
@@ -547,6 +579,7 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 		// sInc = ((1.0 - 0.1) / (float)(numJuncs));	// hack, the end of funnel shows a bit of the start (looping)
 		s = 0.05;
 		// s = 0.05;
+
 	} else if( trail->sType == STYPE_REPEAT ) {
 		s = trail->sTex;
 	}
@@ -555,6 +588,7 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 	j	  = trail;
 	jNext = j->nextJunc;
 	i	  = 0;
+
 	while( jNext ) {
 		// first get the directional vectors to the next junc
 		VectorSubtract( jNext->pos, j->pos, fwd );
@@ -569,25 +603,32 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 
 				if( iteration == 1 ) {
 					VectorMA( up, 0.3, v, up );
+
 				} else {
 					VectorMA( up, -0.3, v, up );
 				}
+
 				VectorNormalize( up );
 			}
 		}
+
 		// do fading when moving towards the projection point onto the trail segment vector
 		else if( !( j->flags & TJFL_NOCULL ) && ( j->widthEnd > 4 || jNext->widthEnd > 4 ) ) {
 			ProjectPointOntoVector( cg.refdef.vieworg, j->pos, jNext->pos, viewProj );
 			viewDist = Distance( viewProj, cg.refdef.vieworg );
+
 			if( viewDist < ( TRAIL_FADE_CLOSE_DIST * TRAIL_FADE_FAR_SCALE ) ) {
 				if( viewDist < TRAIL_FADE_CLOSE_DIST ) {
 					fadeAlpha = 0.0;
+
 				} else {
 					fadeAlpha = ( viewDist - TRAIL_FADE_CLOSE_DIST ) / ( TRAIL_FADE_CLOSE_DIST * TRAIL_FADE_FAR_SCALE );
 				}
+
 				if( fadeAlpha < j->alpha ) {
 					j->alpha = fadeAlpha;
 				}
+
 				if( fadeAlpha < jNext->alpha ) {
 					jNext->alpha = fadeAlpha;
 				}
@@ -601,9 +642,11 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 		VectorCopy( p, verts[i].xyz );
 		verts[i].st[0] = s;
 		verts[i].st[1] = 1.0;
+
 		for( k = 0; k < 3; k++ ) {
 			verts[i].modulate[k] = ( unsigned char )( j->color[k] * 255.0 );
 		}
+
 		verts[i].modulate[3] = ( unsigned char )( j->alpha * 255.0 );
 
 		// blend this with the previous junc
@@ -611,6 +654,7 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 			VectorAdd( verts[i].xyz, verts[i - 1].xyz, verts[i].xyz );
 			VectorScale( verts[i].xyz, 0.5, verts[i].xyz );
 			VectorCopy( verts[i].xyz, verts[i - 1].xyz );
+
 		} else if( j->flags & TJFL_FADEIN ) {
 			verts[i].modulate[3] = 0; // fade in
 		}
@@ -622,9 +666,11 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 		VectorCopy( p, verts[i].xyz );
 		verts[i].st[0] = s;
 		verts[i].st[1] = 0.0;
+
 		for( k = 0; k < 3; k++ ) {
 			verts[i].modulate[k] = ( unsigned char )( j->color[k] * 255.0 );
 		}
+
 		verts[i].modulate[3] = ( unsigned char )( j->alpha * 255.0 );
 
 		// blend this with the previous junc
@@ -632,6 +678,7 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 			VectorAdd( verts[i].xyz, verts[i - 3].xyz, verts[i].xyz );
 			VectorScale( verts[i].xyz, 0.5, verts[i].xyz );
 			VectorCopy( verts[i].xyz, verts[i - 3].xyz );
+
 		} else if( j->flags & TJFL_FADEIN ) {
 			verts[i].modulate[3] = 0; // fade in
 		}
@@ -640,9 +687,11 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 
 		if( trail->sType == STYPE_REPEAT ) {
 			s = jNext->sTex;
+
 		} else {
 			// s += sInc;
 			s += VectorDistance( j->pos, jNext->pos ) / sInc;
+
 			if( s > 1.0 ) {
 				s = 1.0;
 			}
@@ -653,9 +702,11 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 		VectorCopy( p, verts[i].xyz );
 		verts[i].st[0] = s;
 		verts[i].st[1] = 0.0;
+
 		for( k = 0; k < 3; k++ ) {
 			verts[i].modulate[k] = ( unsigned char )( jNext->color[k] * 255.0 );
 		}
+
 		verts[i].modulate[3] = ( unsigned char )( jNext->alpha * 255.0 );
 		i++;
 
@@ -664,9 +715,11 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 		VectorCopy( p, verts[i].xyz );
 		verts[i].st[0] = s;
 		verts[i].st[1] = 1.0;
+
 		for( k = 0; k < 3; k++ ) {
 			verts[i].modulate[k] = ( unsigned char )( jNext->color[k] * 255.0 );
 		}
+
 		verts[i].modulate[3] = ( unsigned char )( jNext->alpha * 255.0 );
 		i++;
 
@@ -685,20 +738,25 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 			VectorCopy( verts[k].xyz, mid.xyz );
 			mid.st[0] = verts[k].st[0];
 			mid.st[1] = verts[k].st[1];
+
 			for( l = 0; l < 4; l++ ) {
 				mod[l] = ( float )verts[k].modulate[l];
 			}
+
 			for( n = 1; n < 4; n++ ) {
 				VectorAdd( verts[k + n].xyz, mid.xyz, mid.xyz );
 				mid.st[0] += verts[k + n].st[0];
 				mid.st[1] += verts[k + n].st[1];
+
 				for( l = 0; l < 4; l++ ) {
 					mod[l] += ( float )verts[k + n].modulate[l];
 				}
 			}
+
 			VectorScale( mid.xyz, 0.25, mid.xyz );
 			mid.st[0] *= 0.25;
 			mid.st[1] *= 0.25;
+
 			for( l = 0; l < 4; l++ ) {
 				mid.modulate[l] = ( unsigned char )( mod[l] / 4.0 );
 			}
@@ -707,8 +765,10 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 			for( n = 0; n < 4; n++ ) {
 				outVerts[numOutVerts++] = verts[k + n];
 				outVerts[numOutVerts++] = mid;
+
 				if( n < 3 ) {
 					outVerts[numOutVerts++] = verts[k + n + 1];
+
 				} else {
 					outVerts[numOutVerts++] = verts[k];
 				}
@@ -717,19 +777,24 @@ void		  CG_AddTrailToScene( trailJunc_t* trail, int iteration, int numJuncs )
 
 		if( !( trail->flags & TJFL_NOPOLYMERGE ) ) {
 			sys->R_AddPolysToScene( trail->shader, 3, &outVerts[0], numOutVerts / 3 );
+
 		} else {
 			int k;
+
 			for( k = 0; k < numOutVerts / 3; k++ ) {
 				sys->R_AddPolyToScene( trail->shader, 3, &outVerts[k * 3] );
 			}
 		}
+
 	} else {
 		// send the polygons
 		// FIXME: is it possible to send a GL_STRIP here? We are actually sending 2x the verts we really need to
 		if( !( trail->flags & TJFL_NOPOLYMERGE ) ) {
 			sys->R_AddPolysToScene( trail->shader, 4, &verts[0], i / 4 );
+
 		} else {
 			int k;
+
 			for( k = 0; k < i / 4; k++ ) {
 				sys->R_AddPolyToScene( trail->shader, 4, &verts[k * 4] );
 			}
@@ -765,26 +830,35 @@ void CG_AddTrails()
 
 	// update the settings for each junc
 	j = activeTrails;
+
 	while( j ) {
 		lifeFrac = ( float )( cg.time - j->spawnTime ) / ( float )( j->endTime - j->spawnTime );
+
 		if( lifeFrac >= 1.0 ) {
 			j->inuse = qfalse; // flag it as dead
 			j->width = j->widthEnd;
 			j->alpha = j->alphaEnd;
+
 			if( j->alpha > 1.0 ) {
 				j->alpha = 1.0;
+
 			} else if( j->alpha < 0.0 ) {
 				j->alpha = 0.0;
 			}
+
 			VectorCopy( j->colorEnd, j->color );
+
 		} else {
 			j->width = j->widthStart + ( j->widthEnd - j->widthStart ) * lifeFrac;
 			j->alpha = j->alphaStart + ( j->alphaEnd - j->alphaStart ) * lifeFrac;
+
 			if( j->alpha > 1.0 ) {
 				j->alpha = 1.0;
+
 			} else if( j->alpha < 0.0 ) {
 				j->alpha = 0.0;
 			}
+
 			VectorSubtract( j->colorEnd, j->colorStart, j->color );
 			VectorMA( j->colorStart, lifeFrac, j->color, j->color );
 		}
@@ -794,13 +868,17 @@ void CG_AddTrails()
 
 	// draw the trailHeads
 	j = headTrails;
+
 	while( j ) {
 		jNext = j->nextHead; // in case it gets removed
+
 		if( !j->inuse ) {
 			CG_FreeTrailJunc( j );
+
 		} else {
 			CG_AddTrailToScene( j, 0, 0 );
 		}
+
 		j = jNext;
 	}
 }

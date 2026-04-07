@@ -60,6 +60,7 @@ void  Cmd_Wait_f()
 {
 	if( Cmd_Argc() == 2 ) {
 		cmd_wait = atoi( Cmd_Argv( 1 ) );
+
 	} else {
 		cmd_wait = 1;
 	}
@@ -102,6 +103,7 @@ void Cbuf_AddText( const char* text )
 		Com_Printf( "Cbuf_AddText: overflow\n" );
 		return;
 	}
+
 	memcpy( &cmd_text.data[cmd_text.cmdsize], text, l );
 	cmd_text.cmdsize += l;
 }
@@ -120,6 +122,7 @@ void Cbuf_InsertText( const char* text )
 	int i;
 
 	len = strlen( text ) + 1;
+
 	if( len + cmd_text.cmdsize > cmd_text.maxsize ) {
 		Com_Printf( "Cbuf_InsertText overflowed\n" );
 		return;
@@ -150,16 +153,21 @@ void Cbuf_ExecuteText( int exec_when, const char* text )
 		case EXEC_NOW:
 			if( text && strlen( text ) > 0 ) {
 				Cmd_ExecuteString( text );
+
 			} else {
 				Cbuf_Execute();
 			}
+
 			break;
+
 		case EXEC_INSERT:
 			Cbuf_InsertText( text );
 			break;
+
 		case EXEC_APPEND:
 			Cbuf_AddText( text );
 			break;
+
 		default:
 			Com_Error( ERR_FATAL, "Cbuf_ExecuteText: bad exec_when" );
 	}
@@ -189,13 +197,16 @@ void Cbuf_Execute()
 		text = ( char* )cmd_text.data;
 
 		quotes = 0;
+
 		for( i = 0; i < cmd_text.cmdsize; i++ ) {
 			if( text[i] == '"' ) {
 				quotes++;
 			}
+
 			if( !( quotes & 1 ) && text[i] == ';' ) {
 				break; // don't break if inside a quoted string
 			}
+
 			if( text[i] == '\n' || text[i] == '\r' ) {
 				break;
 			}
@@ -214,6 +225,7 @@ void Cbuf_Execute()
 
 		if( i == cmd_text.cmdsize ) {
 			cmd_text.cmdsize = 0;
+
 		} else {
 			i++;
 			cmd_text.cmdsize -= i;
@@ -253,10 +265,12 @@ void Cmd_Exec_f()
 	Q_strncpyz( filename, Cmd_Argv( 1 ), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
 	len = FS_ReadFile( filename, ( void** )&f );
+
 	if( !f ) {
 		Com_Printf( "couldn't exec %s\n", Cmd_Argv( 1 ) );
 		return;
 	}
+
 	Com_Printf( "execing %s\n", Cmd_Argv( 1 ) );
 
 	Cbuf_InsertText( f );
@@ -298,6 +312,7 @@ void Cmd_Echo_f()
 	for( i = 1; i < Cmd_Argc(); i++ ) {
 		Com_Printf( "%s ", Cmd_Argv( i ) );
 	}
+
 	Com_Printf( "\n" );
 }
 
@@ -341,6 +356,7 @@ char* Cmd_Argv( int arg )
 	if( ( unsigned )arg >= cmd_argc ) {
 		return "";
 	}
+
 	return cmd_argv[arg];
 }
 
@@ -370,8 +386,10 @@ char* Cmd_Args()
 	int			i;
 
 	cmd_args[0] = 0;
+
 	for( i = 1; i < cmd_argc; i++ ) {
 		strcat( cmd_args, cmd_argv[i] );
+
 		if( i != cmd_argc - 1 ) {
 			strcat( cmd_args, " " );
 		}
@@ -393,11 +411,14 @@ char* Cmd_ArgsFrom( int arg )
 	int			i;
 
 	cmd_args[0] = 0;
+
 	if( arg < 0 ) {
 		arg = 0;
 	}
+
 	for( i = arg; i < cmd_argc; i++ ) {
 		strcat( cmd_args, cmd_argv[i] );
+
 		if( i != cmd_argc - 1 ) {
 			strcat( cmd_args, " " );
 		}
@@ -454,6 +475,7 @@ void Cmd_TokenizeString( const char* text_in )
 			while( *text && *text <= ' ' ) {
 				text++;
 			}
+
 			if( !*text ) {
 				return; // all tokens parsed
 			}
@@ -468,10 +490,13 @@ void Cmd_TokenizeString( const char* text_in )
 				while( *text && ( text[0] != '*' || text[1] != '/' ) ) {
 					text++;
 				}
+
 				if( !*text ) {
 					return; // all tokens parsed
 				}
+
 				text += 2;
+
 			} else {
 				break; // we are ready to parse a token
 			}
@@ -482,13 +507,17 @@ void Cmd_TokenizeString( const char* text_in )
 			cmd_argv[cmd_argc] = textOut;
 			cmd_argc++;
 			text++;
+
 			while( *text && *text != '"' ) {
 				*textOut++ = *text++;
 			}
+
 			*textOut++ = 0;
+
 			if( !*text ) {
 				return; // all tokens parsed
 			}
+
 			text++;
 			continue;
 		}
@@ -539,6 +568,7 @@ void Cmd_AddCommand( const char* cmd_name, xcommand_t function )
 			if( function != NULL ) {
 				Com_Printf( "Cmd_AddCommand: %s already defined\n", cmd_name );
 			}
+
 			return;
 		}
 	}
@@ -561,20 +591,26 @@ void Cmd_RemoveCommand( const char* cmd_name )
 	cmd_function_t *cmd, **back;
 
 	back = &cmd_functions;
+
 	while( 1 ) {
 		cmd = *back;
+
 		if( !cmd ) {
 			// command wasn't active
 			return;
 		}
+
 		if( !strcmp( cmd_name, cmd->name ) ) {
 			*back = cmd->next;
+
 			if( cmd->name ) {
 				Z_Free( cmd->name );
 			}
+
 			Z_Free( cmd );
 			return;
 		}
+
 		back = &cmd->next;
 	}
 }
@@ -606,6 +642,7 @@ void Cmd_ExecuteString( const char* text )
 
 	// execute the command line
 	Cmd_TokenizeString( text );
+
 	if( !Cmd_Argc() ) {
 		return; // no tokens
 	}
@@ -613,6 +650,7 @@ void Cmd_ExecuteString( const char* text )
 	// check registered command functions
 	for( prev = &cmd_functions; *prev; prev = &cmd->next ) {
 		cmd = *prev;
+
 		if( !Q_stricmp( cmd_argv[0], cmd->name ) ) {
 			// rearrange the links so that the command will be
 			// near the head of the list next time it is used
@@ -624,9 +662,11 @@ void Cmd_ExecuteString( const char* text )
 			if( !cmd->function ) {
 				// let the cgame or game handle it
 				break;
+
 			} else {
 				cmd->function();
 			}
+
 			return;
 		}
 	}
@@ -669,11 +709,13 @@ void Cmd_List_f()
 
 	if( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );
+
 	} else {
 		match = NULL;
 	}
 
 	i = 0;
+
 	for( cmd = cmd_functions; cmd; cmd = cmd->next ) {
 		if( match && !Com_Filter( match, cmd->name, qfalse ) ) {
 			continue;
@@ -682,6 +724,7 @@ void Cmd_List_f()
 		Com_Printf( "%s\n", cmd->name );
 		i++;
 	}
+
 	Com_Printf( "%i commands\n", i );
 }
 

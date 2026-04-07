@@ -116,9 +116,11 @@ static void Netchan_ScramblePacket( msg_t* buf )
 
 	seed = ( LittleLong( *( unsigned* )buf->data ) * 3 ) ^ ( buf->cursize * 123 );
 	c	 = buf->cursize;
+
 	if( c <= SCRAMBLE_START ) {
 		return;
 	}
+
 	if( c > MAX_PACKETLEN ) {
 		Com_Error( ERR_DROP, "MAX_PACKETLEN" );
 	}
@@ -132,7 +134,9 @@ static void Netchan_ScramblePacket( msg_t* buf )
 	// transpose each character
 	for( mask = 1; mask < c - SCRAMBLE_START; mask = ( mask << 1 ) + 1 ) {
 	}
+
 	mask >>= 1;
+
 	for( i = SCRAMBLE_START; i < c; i++ ) {
 		j			 = SCRAMBLE_START + ( seq[i] & mask );
 		temp		 = buf->data[j];
@@ -154,9 +158,11 @@ static void Netchan_UnScramblePacket( msg_t* buf )
 
 	seed = ( LittleLong( *( unsigned* )buf->data ) * 3 ) ^ ( buf->cursize * 123 );
 	c	 = buf->cursize;
+
 	if( c <= SCRAMBLE_START ) {
 		return;
 	}
+
 	if( c > MAX_PACKETLEN ) {
 		Com_Error( ERR_DROP, "MAX_PACKETLEN" );
 	}
@@ -175,7 +181,9 @@ static void Netchan_UnScramblePacket( msg_t* buf )
 	// transpose each character in reverse order
 	for( mask = 1; mask < c - SCRAMBLE_START; mask = ( mask << 1 ) + 1 ) {
 	}
+
 	mask >>= 1;
+
 	for( i = c - 1; i >= SCRAMBLE_START; i-- ) {
 		j			 = SCRAMBLE_START + ( seq[i] & mask );
 		temp		 = buf->data[j];
@@ -183,6 +191,7 @@ static void Netchan_UnScramblePacket( msg_t* buf )
 		buf->data[i] = temp;
 	}
 }
+
 #endif // DO_NET_ENCODE
 
 /*
@@ -210,6 +219,7 @@ void Netchan_TransmitNextFragment( netchan_t* chan )
 
 	// copy the reliable message to the packet first
 	fragmentLength = FRAGMENT_SIZE;
+
 	if( chan->unsentFragmentStart + fragmentLength > chan->unsentLength ) {
 		fragmentLength = chan->unsentLength - chan->unsentFragmentStart;
 	}
@@ -256,6 +266,7 @@ void Netchan_Transmit( netchan_t* chan, int length, const byte* data )
 	if( length > MAX_MSGLEN ) {
 		Com_Error( ERR_DROP, "Netchan_Transmit: length = %i", length );
 	}
+
 	chan->unsentFragmentStart = 0;
 
 	// fragment large reliable messages
@@ -324,6 +335,7 @@ qboolean Netchan_Process( netchan_t* chan, msg_t* msg )
 	if( sequence & FRAGMENT_BIT ) {
 		sequence &= ~FRAGMENT_BIT;
 		fragmented = qtrue;
+
 	} else {
 		fragmented = qfalse;
 	}
@@ -337,6 +349,7 @@ qboolean Netchan_Process( netchan_t* chan, msg_t* msg )
 	if( fragmented ) {
 		fragmentStart  = MSG_ReadShort( msg );
 		fragmentLength = MSG_ReadShort( msg );
+
 	} else {
 		fragmentStart  = 0; // stop warning message
 		fragmentLength = 0;
@@ -345,6 +358,7 @@ qboolean Netchan_Process( netchan_t* chan, msg_t* msg )
 	if( showpackets->integer ) {
 		if( fragmented ) {
 			Com_Printf( "%s recv %4i : s=%i fragment=%i,%i\n", netsrcString[chan->sock], msg->cursize, sequence, fragmentStart, fragmentLength );
+
 		} else {
 			Com_Printf( "%s recv %4i : s=%i\n", netsrcString[chan->sock], msg->cursize, sequence );
 		}
@@ -357,6 +371,7 @@ qboolean Netchan_Process( netchan_t* chan, msg_t* msg )
 		if( showdrop->integer || showpackets->integer ) {
 			Com_Printf( "%s:Out of order packet %i at %i\n", NET_AdrToString( chan->remoteAddress ), sequence, chan->incomingSequence );
 		}
+
 		return qfalse;
 	}
 
@@ -364,6 +379,7 @@ qboolean Netchan_Process( netchan_t* chan, msg_t* msg )
 	// dropped packets don't keep the message from being used
 	//
 	chan->dropped = sequence - ( chan->incomingSequence + 1 );
+
 	if( chan->dropped > 0 ) {
 		if( showdrop->integer || showpackets->integer ) {
 			Com_Printf( "%s:Dropped %i packets at %i\n", NET_AdrToString( chan->remoteAddress ), chan->dropped, sequence );
@@ -386,6 +402,7 @@ qboolean Netchan_Process( netchan_t* chan, msg_t* msg )
 			if( showdrop->integer || showpackets->integer ) {
 				Com_Printf( "%s:Dropped a message fragment\n", NET_AdrToString( chan->remoteAddress ), sequence );
 			}
+
 			// we can still keep the part that we have so far,
 			// so we don't need to clear chan->fragmentLength
 			return qfalse;
@@ -396,6 +413,7 @@ qboolean Netchan_Process( netchan_t* chan, msg_t* msg )
 			if( showdrop->integer || showpackets->integer ) {
 				Com_Printf( "%s:illegal fragment length\n", NET_AdrToString( chan->remoteAddress ) );
 			}
+
 			return qfalse;
 		}
 
@@ -458,6 +476,7 @@ qboolean NET_CompareBaseAdr( netadr_t a, netadr_t b )
 		if( a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] ) {
 			return qtrue;
 		}
+
 		return qfalse;
 	}
 
@@ -465,6 +484,7 @@ qboolean NET_CompareBaseAdr( netadr_t a, netadr_t b )
 		if( ( memcmp( a.ipx, b.ipx, 10 ) == 0 ) ) {
 			return qtrue;
 		}
+
 		return qfalse;
 	}
 
@@ -478,10 +498,13 @@ const char* NET_AdrToString( netadr_t a )
 
 	if( a.type == NA_LOOPBACK ) {
 		Com_sprintf( s, sizeof( s ), "loopback" );
+
 	} else if( a.type == NA_BOT ) {
 		Com_sprintf( s, sizeof( s ), "bot" );
+
 	} else if( a.type == NA_IP ) {
 		Com_sprintf( s, sizeof( s ), "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], BigShort( a.port ) );
+
 	} else {
 		Com_sprintf(
 			s, sizeof( s ), "%02x%02x%02x%02x.%02x%02x%02x%02x%02x%02x:%i", a.ipx[0], a.ipx[1], a.ipx[2], a.ipx[3], a.ipx[4], a.ipx[5], a.ipx[6], a.ipx[7], a.ipx[8], a.ipx[9], BigShort( a.port ) );
@@ -504,6 +527,7 @@ qboolean NET_CompareAdr( netadr_t a, netadr_t b )
 		if( a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port ) {
 			return qtrue;
 		}
+
 		return qfalse;
 	}
 
@@ -511,6 +535,7 @@ qboolean NET_CompareAdr( netadr_t a, netadr_t b )
 		if( ( memcmp( a.ipx, b.ipx, 10 ) == 0 ) && a.port == b.port ) {
 			return qtrue;
 		}
+
 		return qfalse;
 	}
 
@@ -599,9 +624,11 @@ void NET_SendPacket( netsrc_t sock, int length, const void* data, netadr_t to )
 		NET_SendLoopPacket( sock, length, data, to );
 		return;
 	}
+
 	if( to.type == NA_BOT ) {
 		return;
 	}
+
 	if( to.type == NA_BAD ) {
 		return;
 	}
@@ -657,6 +684,7 @@ qboolean NET_StringToAdr( const char* s, netadr_t* a )
 	// look for a port number
 	Q_strncpyz( base, s, sizeof( base ) );
 	port = strstr( base, ":" );
+
 	if( port ) {
 		*port = 0;
 		port++;
@@ -677,6 +705,7 @@ qboolean NET_StringToAdr( const char* s, netadr_t* a )
 
 	if( port ) {
 		a->port = BigShort( ( short )atoi( port ) );
+
 	} else {
 		a->port = BigShort( PORT_SERVER );
 	}

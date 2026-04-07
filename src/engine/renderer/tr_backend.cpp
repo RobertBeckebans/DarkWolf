@@ -63,6 +63,7 @@ void GL_Bind( image_t* image )
 	if( !image ) {
 		ri.Printf( PRINT_WARNING, "GL_Bind: NULL image\n" );
 		texnum = tr.defaultImage->texnum;
+
 	} else {
 		texnum = image->texnum;
 	}
@@ -92,11 +93,13 @@ void GL_SelectTexture( int unit )
 		GLimp_LogComment( "glActiveTextureARB( GL_TEXTURE0_ARB )\n" );
 		glClientActiveTextureARB( GL_TEXTURE0_ARB );
 		GLimp_LogComment( "glClientActiveTextureARB( GL_TEXTURE0_ARB )\n" );
+
 	} else if( unit == 1 ) {
 		glActiveTextureARB( GL_TEXTURE1_ARB );
 		GLimp_LogComment( "glActiveTextureARB( GL_TEXTURE1_ARB )\n" );
 		glClientActiveTextureARB( GL_TEXTURE1_ARB );
 		GLimp_LogComment( "glClientActiveTextureARB( GL_TEXTURE1_ARB )\n" );
+
 	} else {
 		ri.Error( ERR_DROP, "GL_SelectTexture: unit = %i", unit );
 	}
@@ -124,6 +127,7 @@ void GL_BindMultitexture( image_t* image0, GLuint env0, image_t* image1, GLuint 
 		glState.currenttextures[1] = texnum1;
 		glBindTexture( GL_TEXTURE_2D, texnum1 );
 	}
+
 	if( glState.currenttextures[0] != texnum0 ) {
 		GL_SelectTexture( 0 );
 		image0->frameUsed		   = tr.frameCount;
@@ -145,18 +149,22 @@ void GL_Cull( int cullType )
 
 	if( cullType == CT_TWO_SIDED ) {
 		glDisable( GL_CULL_FACE );
+
 	} else {
 		glEnable( GL_CULL_FACE );
 
 		if( cullType == CT_BACK_SIDED ) {
 			if( backEnd.viewParms.isMirror ) {
 				glCullFace( GL_FRONT );
+
 			} else {
 				glCullFace( GL_BACK );
 			}
+
 		} else {
 			if( backEnd.viewParms.isMirror ) {
 				glCullFace( GL_BACK );
+
 			} else {
 				glCullFace( GL_FRONT );
 			}
@@ -179,15 +187,19 @@ void GL_TexEnv( int env )
 		case GL_MODULATE:
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 			break;
+
 		case GL_REPLACE:
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 			break;
+
 		case GL_DECAL:
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
 			break;
+
 		case GL_ADD:
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
 			break;
+
 		default:
 			ri.Error( ERR_DROP, "GL_TexEnv: invalid env '%d' passed\n", env );
 			break;
@@ -214,6 +226,7 @@ void GL_State( unsigned long stateBits )
 	if( diff & GLS_DEPTHFUNC_EQUAL ) {
 		if( stateBits & GLS_DEPTHFUNC_EQUAL ) {
 			glDepthFunc( GL_EQUAL );
+
 		} else {
 			glDepthFunc( GL_LEQUAL );
 		}
@@ -230,30 +243,39 @@ void GL_State( unsigned long stateBits )
 				case GLS_SRCBLEND_ZERO:
 					srcFactor = GL_ZERO;
 					break;
+
 				case GLS_SRCBLEND_ONE:
 					srcFactor = GL_ONE;
 					break;
+
 				case GLS_SRCBLEND_DST_COLOR:
 					srcFactor = GL_DST_COLOR;
 					break;
+
 				case GLS_SRCBLEND_ONE_MINUS_DST_COLOR:
 					srcFactor = GL_ONE_MINUS_DST_COLOR;
 					break;
+
 				case GLS_SRCBLEND_SRC_ALPHA:
 					srcFactor = GL_SRC_ALPHA;
 					break;
+
 				case GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA:
 					srcFactor = GL_ONE_MINUS_SRC_ALPHA;
 					break;
+
 				case GLS_SRCBLEND_DST_ALPHA:
 					srcFactor = GL_DST_ALPHA;
 					break;
+
 				case GLS_SRCBLEND_ONE_MINUS_DST_ALPHA:
 					srcFactor = GL_ONE_MINUS_DST_ALPHA;
 					break;
+
 				case GLS_SRCBLEND_ALPHA_SATURATE:
 					srcFactor = GL_SRC_ALPHA_SATURATE;
 					break;
+
 				default:
 					srcFactor = GL_ONE; // to get warning to shut up
 					ri.Error( ERR_DROP, "GL_State: invalid src blend state bits\n" );
@@ -264,27 +286,35 @@ void GL_State( unsigned long stateBits )
 				case GLS_DSTBLEND_ZERO:
 					dstFactor = GL_ZERO;
 					break;
+
 				case GLS_DSTBLEND_ONE:
 					dstFactor = GL_ONE;
 					break;
+
 				case GLS_DSTBLEND_SRC_COLOR:
 					dstFactor = GL_SRC_COLOR;
 					break;
+
 				case GLS_DSTBLEND_ONE_MINUS_SRC_COLOR:
 					dstFactor = GL_ONE_MINUS_SRC_COLOR;
 					break;
+
 				case GLS_DSTBLEND_SRC_ALPHA:
 					dstFactor = GL_SRC_ALPHA;
 					break;
+
 				case GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA:
 					dstFactor = GL_ONE_MINUS_SRC_ALPHA;
 					break;
+
 				case GLS_DSTBLEND_DST_ALPHA:
 					dstFactor = GL_DST_ALPHA;
 					break;
+
 				case GLS_DSTBLEND_ONE_MINUS_DST_ALPHA:
 					dstFactor = GL_ONE_MINUS_DST_ALPHA;
 					break;
+
 				default:
 					dstFactor = GL_ONE; // to get warning to shut up
 					ri.Error( ERR_DROP, "GL_State: invalid dst blend state bits\n" );
@@ -293,6 +323,7 @@ void GL_State( unsigned long stateBits )
 
 			glEnable( GL_BLEND );
 			glBlendFunc( srcFactor, dstFactor );
+
 		} else {
 			glDisable( GL_BLEND );
 		}
@@ -304,6 +335,7 @@ void GL_State( unsigned long stateBits )
 	if( diff & GLS_DEPTHMASK_TRUE ) {
 		if( stateBits & GLS_DEPTHMASK_TRUE ) {
 			glDepthMask( GL_TRUE );
+
 		} else {
 			glDepthMask( GL_FALSE );
 		}
@@ -315,6 +347,7 @@ void GL_State( unsigned long stateBits )
 	if( diff & GLS_POLYMODE_LINE ) {
 		if( stateBits & GLS_POLYMODE_LINE ) {
 			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
 		} else {
 			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		}
@@ -326,6 +359,7 @@ void GL_State( unsigned long stateBits )
 	if( diff & GLS_DEPTHTEST_DISABLE ) {
 		if( stateBits & GLS_DEPTHTEST_DISABLE ) {
 			glDisable( GL_DEPTH_TEST );
+
 		} else {
 			glEnable( GL_DEPTH_TEST );
 		}
@@ -339,18 +373,22 @@ void GL_State( unsigned long stateBits )
 			case 0:
 				glDisable( GL_ALPHA_TEST );
 				break;
+
 			case GLS_ATEST_GT_0:
 				glEnable( GL_ALPHA_TEST );
 				glAlphaFunc( GL_GREATER, 0.0f );
 				break;
+
 			case GLS_ATEST_LT_80:
 				glEnable( GL_ALPHA_TEST );
 				glAlphaFunc( GL_LESS, 0.5f );
 				break;
+
 			case GLS_ATEST_GE_80:
 				glEnable( GL_ALPHA_TEST );
 				glAlphaFunc( GL_GEQUAL, 0.5f );
 				break;
+
 			default:
 				assert( 0 );
 				break;
@@ -412,6 +450,7 @@ void RB_BeginDrawingView()
 		glFinish();
 		glState.finishCalled = qtrue;
 	}
+
 	if( r_finish->integer == 0 ) {
 		glState.finishCalled = qtrue;
 	}
@@ -448,14 +487,18 @@ void RB_BeginDrawingView()
 
 				// try clearing first with the portal sky fog color, then the world fog color, then finally a default
 				clearBits |= GL_COLOR_BUFFER_BIT;
+
 				if( glfogsettings[FOG_PORTALVIEW].registered ) {
 					glClearColor( glfogsettings[FOG_PORTALVIEW].color[0], glfogsettings[FOG_PORTALVIEW].color[1], glfogsettings[FOG_PORTALVIEW].color[2], glfogsettings[FOG_PORTALVIEW].color[3] );
+
 				} else if( glfogNum > FOG_NONE && glfogsettings[FOG_CURRENT].registered ) {
 					glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
+
 				} else {
 					//					glClearColor ( 1.0, 0.0, 0.0, 1.0 );	// red clear for testing portal sky clear
 					glClearColor( 0.5, 0.5, 0.5, 1.0 );
 				}
+
 			} else { // rendered sky (either clear color or draw quake sky)
 				if( glfogsettings[FOG_PORTALVIEW].registered ) {
 					glClearColor( glfogsettings[FOG_PORTALVIEW].color[0], glfogsettings[FOG_PORTALVIEW].color[1], glfogsettings[FOG_PORTALVIEW].color[2], glfogsettings[FOG_PORTALVIEW].color[3] );
@@ -465,6 +508,7 @@ void RB_BeginDrawingView()
 					}
 				}
 			}
+
 		} else { // world scene with portal sky, don't clear any buffers, just set the fog color if there is one
 
 			clearBits |= GL_DEPTH_BUFFER_BIT; // this will go when I get the portal sky rendering way out in the zbuffer (or not writing to zbuffer at all)
@@ -482,6 +526,7 @@ void RB_BeginDrawingView()
 				glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
 			}
 		}
+
 	} else { // world scene with no portal sky
 		clearBits |= GL_DEPTH_BUFFER_BIT;
 
@@ -489,6 +534,7 @@ void RB_BeginDrawingView()
 		if( backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) {
 			clearBits &= ~GL_COLOR_BUFFER_BIT;
 		}
+
 		// -NERVE - SMF
 		// (SA) well, this is silly then
 		else if( r_fastsky->integer ) { //  || backEnd.refdef.rdflags & RDF_NOWORLDMODEL
@@ -497,10 +543,12 @@ void RB_BeginDrawingView()
 
 			if( glfogsettings[FOG_CURRENT].registered ) { // try to clear fastsky with current fog color
 				glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
+
 			} else {
 				//				glClearColor ( 0.0, 0.0, 1.0, 1.0 );	// blue clear for testing world sky clear
 				glClearColor( 0.5, 0.5, 0.5, 1.0 );
 			}
+
 		} else {										  // world scene, no portal sky, not fastsky, clear color if fog says to, otherwise, just set the clearcolor
 			if( glfogsettings[FOG_CURRENT].registered ) { // try to clear fastsky with current fog color
 				glClearColor( glfogsettings[FOG_CURRENT].color[0], glfogsettings[FOG_CURRENT].color[1], glfogsettings[FOG_CURRENT].color[2], glfogsettings[FOG_CURRENT].color[3] );
@@ -521,6 +569,7 @@ void RB_BeginDrawingView()
 	if( ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) ) {
 		RB_Hyperspace();
 		return;
+
 	} else {
 		backEnd.isHyperspace = qfalse;
 	}
@@ -548,6 +597,7 @@ void RB_BeginDrawingView()
 		glLoadMatrixf( s_flipMatrix );
 		glClipPlane( GL_CLIP_PLANE0, plane2 );
 		glEnable( GL_CLIP_PLANE0 );
+
 	} else {
 		glDisable( GL_CLIP_PLANE0 );
 	}
@@ -584,6 +634,7 @@ typedef struct {
 	vec3_t		   newHitPos[ZOMBIEFX_MAX_NEWHITS];
 	vec3_t		   newHitDir[ZOMBIEFX_MAX_NEWHITS];
 } trZombieFleshHitverts_t;
+
 //
 trZombieFleshHitverts_t zombieFleshHitVerts[MAX_SP_CLIENTS][2]; // one for upper, one for lower
 
@@ -614,14 +665,17 @@ void RB_ZombieFXAddNewHit( int entityNum, const vec3_t hitPos, const vec3_t hitD
 		Com_Printf( "RB_ZombieFXAddNewHit: entityNum (%i) outside allowable range (%i)\n", entityNum, MAX_SP_CLIENTS );
 		return;
 	}
+
 	if( zombieFleshHitVerts[entityNum][part].numHits + zombieFleshHitVerts[entityNum][part].numNewHits >= ZOMBIEFX_MAX_HITS ) {
 		// already full of hits
 		return;
 	}
+
 	if( zombieFleshHitVerts[entityNum][part].numNewHits >= ZOMBIEFX_MAX_NEWHITS ) {
 		// just ignore this hit
 		return;
 	}
+
 	// add it to the list
 	VectorCopy( hitPos, zombieFleshHitVerts[entityNum][part].newHitPos[zombieFleshHitVerts[entityNum][part].numNewHits] );
 	VectorCopy( hitDir, zombieFleshHitVerts[entityNum][part].newHitDir[zombieFleshHitVerts[entityNum][part].numNewHits] );
@@ -643,6 +697,7 @@ void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t* fleshHitVerts, int oldN
 
 	// first build the hitCount list
 	memset( hitCounts, 0, sizeof( hitCounts ) );
+
 	for( i = 0, hitTrav = fleshHitVerts->vertHits; i < fleshHitVerts->numHits; i++, hitTrav++ ) {
 		hitCounts[*hitTrav]++;
 	}
@@ -666,25 +721,31 @@ void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t* fleshHitVerts, int oldN
 			if( hitCounts[j] > ZOMBIEFX_MAX_HITS_PER_VERT ) {
 				continue;
 			}
+
 			// if this normal faces the wrong way, reject it
 			if( DotProduct( normTrav, hitDir ) > 0 ) {
 				continue;
 			}
+
 			// get the diff vector
 			VectorSubtract( xyzTrav, hitPos, testDir );
 			// check for distance within range
 			thisDist = VectorLengthSquared( testDir );
+
 			if( thisDist < ZOMBIEFX_HIT_OKRANGE_SQR ) {
 				goto hitCheckDone;
 			}
+
 			thisDist = sqrt( thisDist );
 			// check for the projection being inside range
 			VectorMA( hitPos, thisDist, hitDir, v );
 			VectorSubtract( xyzTrav, v, testDir );
 			thisDist = VectorLengthSquared( testDir );
+
 			if( thisDist < ZOMBIEFX_HIT_OKRANGE_SQR ) {
 				goto hitCheckDone;
 			}
+
 			// if we are still struggling to find a hit, then pick the closest outside the OK range
 			if( !foundHit ) {
 				if( thisDist < ZOMBIEFX_HIT_MAXRANGE_SQR && ( bestHitDist < 0 || thisDist < bestHitDist ) ) {
@@ -703,6 +764,7 @@ void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t* fleshHitVerts, int oldN
 			// set the appropriate bit-flag
 			fleshHitVerts->isHit							  = qtrue;
 			fleshHitVerts->vertHits[fleshHitVerts->numHits++] = ( unsigned short )j;
+
 			// if (fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS)
 			//	break;	// only find one close match per shot
 			if( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
@@ -719,6 +781,7 @@ void RB_ZombieFXProcessNewHits( trZombieFleshHitverts_t* fleshHitVerts, int oldN
 			// set the appropriate bit-flag
 			fleshHitVerts->isHit							  = qtrue;
 			fleshHitVerts->vertHits[fleshHitVerts->numHits++] = ( unsigned short )bestHit;
+
 			if( fleshHitVerts->numHits == ZOMBIEFX_MAX_HITS ) {
 				break;
 			}
@@ -745,6 +808,7 @@ void RB_ZombieFXShowFleshHits( trZombieFleshHitverts_t* fleshHitVerts, int oldNu
 	for( i = 0; i < fleshHitVerts->numHits; i++, vertHits++ ) {
 		if( vertColors[( *vertHits ) * 4 + 3] < ZOMBIEFX_PERHIT_TAKEALPHA ) {
 			vertColors[( *vertHits ) * 4 + 3] = 0;
+
 		} else {
 			vertColors[( *vertHits ) * 4 + 3] -= ZOMBIEFX_PERHIT_TAKEALPHA;
 		}
@@ -767,11 +831,14 @@ void RB_ZombieFXDecompose( int oldNumVerts, int numSurfVerts, float deltaTimeSca
 
 	for( i = 0; i < numSurfVerts; i++, vertColors += 4, xyz += 4, norm += 4 ) {
 		alpha = 255.0 * ( ( float )( 1 + i % 3 ) / 3.0 ) * deltaTimeScale * 2;
+
 		if( alpha > 255.0 ) {
 			alpha = 255.0;
 		}
+
 		if( ( float )vertColors[3] - alpha < 0 ) {
 			vertColors[3] = 0;
+
 		} else {
 			vertColors[3] -= ( byte )alpha;
 		}
@@ -807,8 +874,10 @@ void RB_ZombieFX( int part, drawSurf_t* drawSurf, int oldNumVerts, int oldNumInd
 
 	if( drawSurf->surface->surfaceType == SF_MD3 ) {
 		surfName = ( ( md3Surface_t* )drawSurf->surface )->name;
+
 	} else if( drawSurf->surface->surfaceType == SF_MDC ) {
 		surfName = ( ( mdcSurface_t* )drawSurf->surface )->name;
+
 	} else {
 		Com_Printf( "RB_ZombieFX: unknown surface type\n" );
 		return;
@@ -818,10 +887,12 @@ void RB_ZombieFX( int part, drawSurf_t* drawSurf, int oldNumVerts, int oldNumInd
 	if( !Q_strncmp( surfName, "u_sk", 4 ) ) {
 		return;
 	}
+
 	// legs
 	if( !Q_strncmp( surfName, "l_sk", 4 ) ) {
 		return;
 	}
+
 	// head
 	if( !Q_strncmp( surfName, "h_sk", 4 ) ) {
 		return;
@@ -835,6 +906,7 @@ void RB_ZombieFX( int part, drawSurf_t* drawSurf, int oldNumVerts, int oldNumInd
 	}
 
 	deltaTime = backEnd.currentEntity->e.shaderTime;
+
 	if( ZOMBIEFX_FADEOUT_TIME_SEC < deltaTime ) {
 		// nothing to do, it's done fading out
 		tess.numVertexes = oldNumVerts;
@@ -927,6 +999,7 @@ void RB_UpdateDXRInstance( trDXRMesh_t* mesh, int surfaceId, uint32_t instanceID
 
 	if( !surf->dxrInstanceHandle ) {
 		surf->dxrInstanceHandle = glRaytracingCreateInstance( &desc );
+
 	} else {
 		if( !glRaytracingUpdateInstance( surf->dxrInstanceHandle, &desc ) ) {
 			glRaytracingDeleteInstance( surf->dxrInstanceHandle );
@@ -1001,6 +1074,7 @@ void RB_UpdateDXRMesh( trDXRMesh_t* mesh, int currentFrame, int surfaceId, int s
 	if( startVertex < 0 ) {
 		startVertex = 0;
 	}
+
 	if( endVertex > tess.numVertexes ) {
 		endVertex = tess.numVertexes;
 	}
@@ -1008,6 +1082,7 @@ void RB_UpdateDXRMesh( trDXRMesh_t* mesh, int currentFrame, int surfaceId, int s
 	if( startIndex < 0 ) {
 		startIndex = 0;
 	}
+
 	if( endIndex > tess.numIndexes ) {
 		endIndex = tess.numIndexes;
 	}
@@ -1044,6 +1119,7 @@ void RB_UpdateDXRMesh( trDXRMesh_t* mesh, int currentFrame, int surfaceId, int s
 
 	if( !surf->dxrMeshHandle ) {
 		surf->dxrMeshHandle = glRaytracingCreateMesh( &desc );
+
 	} else {
 		if( !glRaytracingUpdateMesh( surf->dxrMeshHandle, &desc ) ) {
 			glRaytracingDeleteMesh( surf->dxrMeshHandle );
@@ -1135,6 +1211,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 
 	orientationr_t entityMatrix;
 	trDXRMesh_t*   dxrMesh = NULL;
+
 	for( i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++ ) {
 		if( drawSurf->sort == oldSort ) {
 			// fast path, same as previous sort
@@ -1147,6 +1224,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 				RB_UpdateDXRMesh( dxrMesh, backEnd.currentEntity->e.frame, drawSurf->dxrSurfaceId, oldNumVerts, tess.numVertexes, oldNumIndex, tess.numIndexes );
 				RB_UpdateDXRInstance( dxrMesh, drawSurf->dxrSurfaceId, 0, entityMatrix.modelMatrix );
 			}
+
 			/*
 						// RF, convert the newly created vertexes into dust particles, and overwrite
 						if (backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX) {
@@ -1158,6 +1236,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 			*/
 			continue;
 		}
+
 		oldSort = drawSurf->sort;
 		// GR - also extract tesselation flag
 		R_DecomposeSort( drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted, &atiTess );
@@ -1175,10 +1254,12 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 				int t;
 
 				t = ri.Milliseconds();
+
 				if( t > macEventTime ) {
 					macEventTime = t + MAC_EVENT_PUMP_MSEC;
 					Sys_PumpEvents();
 				}
+
 #endif
 				// GR - pass tessellation flag to the shader command
 				//		make sure to use oldAtiTess!!!
@@ -1186,6 +1267,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 
 				RB_EndSurface();
 			}
+
 			RB_BeginSurface( shader, fogNum );
 			RB_UpdateDrawSurfFlags( drawSurf, shader );
 
@@ -1203,6 +1285,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 			glLightScene();
 			glRaytracingLightingClearLights( false );
 		}
+
 		// jmarshall end
 		//
 		// change the modelview matrix if needed
@@ -1232,6 +1315,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 				}
 
 				R_RotateForEntity( backEnd.currentEntity, NULL, &entityMatrix );
+
 			} else {
 				backEnd.currentEntity	 = &tr.worldEntity;
 				backEnd.refdef.floatTime = originalTime;
@@ -1255,9 +1339,11 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 			if( oldDepthRange != depthRange ) {
 				if( depthRange ) {
 					glDepthRange( 0, 0.3 );
+
 				} else {
 					glDepthRange( 0, 1 );
 				}
+
 				oldDepthRange = depthRange;
 			}
 
@@ -1273,6 +1359,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 		rb_surfaceTable[drawSurf->surface->surfaceType]( drawSurf->surface );
 
 		dxrMesh = drawSurf->dxrMesh;
+
 		if( dxrMesh ) {
 			RB_UpdateDXRMesh( dxrMesh, backEnd.currentEntity->e.frame, drawSurf->dxrSurfaceId, oldNumVerts, tess.numVertexes, oldNumIndex, tess.numIndexes );
 			RB_UpdateDXRInstance( dxrMesh, drawSurf->dxrSurfaceId, 0, entityMatrix.modelMatrix );
@@ -1281,6 +1368,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 		// RF, convert the newly created vertexes into dust particles, and overwrite
 		if( backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX ) {
 			RB_ZombieFX( 0, drawSurf, oldNumVerts, oldNumIndex );
+
 		} else if( backEnd.currentEntity->e.reFlags & REFLAG_ZOMBIEFX2 ) {
 			RB_ZombieFX( 1, drawSurf, oldNumVerts, oldNumIndex );
 		}
@@ -1304,6 +1392,7 @@ void RB_RenderDrawSurfList( drawSurf_t* drawSurfs, int numDrawSurfs )
 	R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 
 	glLoadMatrixf( backEnd.viewParms.world.modelMatrix );
+
 	if( depthRange ) {
 		glDepthRange( 0, 1 );
 	}
@@ -1378,9 +1467,11 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte* 
 	if( !tr.registered ) {
 		return;
 	}
+
 	R_SyncRenderThread();
 
 	start = end = 0;
+
 	if( r_speeds->integer ) {
 		start = ri.Milliseconds();
 	}
@@ -1388,8 +1479,10 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte* 
 	// make sure rows and cols are powers of 2
 	for( i = 0; ( 1 << i ) < cols; i++ ) {
 	}
+
 	for( j = 0; ( 1 << j ) < rows; j++ ) {
 	}
+
 	if( ( 1 << i ) != cols || ( 1 << j ) != rows ) {
 		ri.Error( ERR_DROP, "Draw_StretchRaw: size not a power of 2: %i by %i", cols, rows );
 	}
@@ -1405,6 +1498,7 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte* 
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+
 	} else {
 		if( dirty ) {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
@@ -1447,6 +1541,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte* data, int
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
 		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+
 	} else {
 		if( dirty ) {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
@@ -1455,6 +1550,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte* data, int
 		}
 	}
 }
+
 /*
 =============
 RB_Raytrace
@@ -1513,10 +1609,12 @@ const void* RB_StretchPic( const void* data )
 	}
 
 	shader = cmd->shader;
+
 	if( shader != tess.shader ) {
 		if( tess.numIndexes ) {
 			RB_EndSurface();
 		}
+
 		backEnd.currentEntity = &backEnd.entity2D;
 		RB_BeginSurface( shader, 0 );
 	}
@@ -1586,10 +1684,12 @@ const void* RB_StretchPicGradient( const void* data )
 	}
 
 	shader = cmd->shader;
+
 	if( shader != tess.shader ) {
 		if( tess.numIndexes ) {
 			RB_EndSurface();
 		}
+
 		backEnd.currentEntity = &backEnd.entity2D;
 		RB_BeginSurface( shader, 0 );
 	}
@@ -1818,6 +1918,7 @@ void RB_ExecuteRenderCommands( const void* data )
 
 	if( !r_smp->integer || data == backEndData[0]->commands.cmds ) {
 		backEnd.smpFrame = 0;
+
 	} else {
 		backEnd.smpFrame = 1;
 	}
@@ -1829,21 +1930,27 @@ void RB_ExecuteRenderCommands( const void* data )
 			case RC_RAYTRACE:
 				data = RB_Raytrace( data );
 				break;
+
 			case RC_SET_COLOR:
 				data = RB_SetColor( data );
 				break;
+
 			case RC_STRETCH_PIC:
 				data = RB_StretchPic( data );
 				break;
+
 			case RC_STRETCH_PIC_GRADIENT:
 				data = RB_StretchPicGradient( data );
 				break;
+
 			case RC_DRAW_SURFS:
 				data = RB_DrawSurfs( data );
 				break;
+
 			case RC_DRAW_BUFFER:
 				data = RB_DrawBuffer( data );
 				break;
+
 			case RC_SWAP_BUFFERS:
 				data = RB_SwapBuffers( data );
 				break;

@@ -51,10 +51,13 @@ static const char*		   DSoundError( int error )
 	switch( error ) {
 		case DSERR_BUFFERLOST:
 			return "DSERR_BUFFERLOST";
+
 		case DSERR_INVALIDCALL:
 			return "DSERR_INVALIDCALLS";
+
 		case DSERR_INVALIDPARAM:
 			return "DSERR_INVALIDPARAM";
+
 		case DSERR_PRIOLEVELNEEDED:
 			return "DSERR_PRIOLEVELNEEDED";
 	}
@@ -105,6 +108,7 @@ void		   FreeSound()
 
 		if( lpWaveHdr ) {
 			Com_DPrintf( "...unpreparing headers\n" );
+
 			for( i = 0; i < WAV_BUFFERS; i++ ) {
 				waveOutUnprepareHeader( hWaveOut, lpWaveHdr + i, sizeof( WAVEHDR ) );
 			}
@@ -158,8 +162,10 @@ qboolean SNDDMA_InitWav()
 	if( s_khz->value == 44 ) {
 		dma.speed = 44100;
 	}
+
 	if( s_khz->value == 22 ) {
 		dma.speed = 22050;
+
 	} else {
 		dma.speed = 11025;
 	}
@@ -175,6 +181,7 @@ qboolean SNDDMA_InitWav()
 
 	/* Open a waveform device for output using window callback. */
 	Com_DPrintf( "...opening waveform device: " );
+
 	while( ( hr = waveOutOpen( ( LPHWAVEOUT )&hWaveOut, WAVE_MAPPER, &format, 0, 0L, CALLBACK_NULL ) ) != MMSYSERR_NOERROR ) {
 		if( hr != MMSYSERR_ALLOCATED ) {
 			Com_Printf( "failed\n" );
@@ -190,6 +197,7 @@ qboolean SNDDMA_InitWav()
 			return qfalse;
 		}
 	}
+
 	Com_DPrintf( "ok\n" );
 
 	/*
@@ -201,20 +209,24 @@ qboolean SNDDMA_InitWav()
 	Com_DPrintf( "...allocating waveform buffer: " );
 	gSndBufSize = WAV_BUFFERS * WAV_BUFFER_SIZE;
 	hData		= GlobalAlloc( GMEM_MOVEABLE | GMEM_SHARE, gSndBufSize );
+
 	if( !hData ) {
 		Com_Printf( " failed\n" );
 		FreeSound();
 		return qfalse;
 	}
+
 	Com_DPrintf( "ok\n" );
 
 	Com_DPrintf( "...locking waveform buffer: " );
 	lpData = GlobalLock( hData );
+
 	if( !lpData ) {
 		Com_Printf( " failed\n" );
 		FreeSound();
 		return qfalse;
 	}
+
 	memset( lpData, 0, gSndBufSize );
 	Com_DPrintf( "ok\n" );
 
@@ -231,6 +243,7 @@ qboolean SNDDMA_InitWav()
 		FreeSound();
 		return qfalse;
 	}
+
 	Com_DPrintf( "ok\n" );
 
 	Com_DPrintf( "...locking waveform header: " );
@@ -241,11 +254,13 @@ qboolean SNDDMA_InitWav()
 		FreeSound();
 		return qfalse;
 	}
+
 	memset( lpWaveHdr, 0, sizeof( WAVEHDR ) * WAV_BUFFERS );
 	Com_DPrintf( "ok\n" );
 
 	/* After allocation, set up and prepare headers. */
 	Com_DPrintf( "...preparing headers: " );
+
 	for( i = 0; i < WAV_BUFFERS; i++ ) {
 		lpWaveHdr[i].dwBufferLength = WAV_BUFFER_SIZE;
 		lpWaveHdr[i].lpData			= lpData + i * WAV_BUFFER_SIZE;
@@ -256,6 +271,7 @@ qboolean SNDDMA_InitWav()
 			return qfalse;
 		}
 	}
+
 	Com_DPrintf( "ok\n" );
 
 	dma.samples			 = gSndBufSize / ( dma.samplebits / 8 );
@@ -286,6 +302,7 @@ void SNDDMA_Shutdown()
 
 	if( pDS ) {
 		Com_DPrintf( "Destroying DS buffers\n" );
+
 		if( pDS ) {
 			Com_DPrintf( "...setting NORMAL coop level\n" );
 			pDS->lpVtbl->SetCooperativeLevel( pDS, g_wv.hWnd, DSSCL_NORMAL );
@@ -302,6 +319,7 @@ void SNDDMA_Shutdown()
 			Com_DPrintf( "...releasing primary buffer\n" );
 			pDSPBuf->lpVtbl->Release( pDSPBuf );
 		}
+
 		pDSBuf	= NULL;
 		pDSPBuf = NULL;
 
@@ -362,6 +380,7 @@ int SNDDMA_InitDS()
 		if( snd_iswave ) {
 			Com_Printf( "Wave sound init succeeded\n" );
 		}
+
 		return 1;
 	}
 
@@ -388,6 +407,7 @@ int SNDDMA_InitDS()
 
 	Com_DPrintf( "...creating DS object: " );
 	pauseTried = qfalse;
+
 	while( ( hresult = iDirectSoundCreate( NULL, &pDS, NULL ) ) != DS_OK ) {
 		if( hresult != DSERR_ALLOCATED ) {
 			Com_Printf( "failed\n" );
@@ -398,6 +418,7 @@ int SNDDMA_InitDS()
 			Com_Printf( "failed, hardware already in use\n" );
 			return 0;
 		}
+
 		// first try just waiting five seconds and trying again
 		// this will handle the case of a sysyem beep playing when the
 		// game starts
@@ -405,6 +426,7 @@ int SNDDMA_InitDS()
 		Sleep( 3000 );
 		pauseTried = qtrue;
 	}
+
 	Com_DPrintf( "ok\n" );
 
 	Com_DPrintf( "...setting DSSCL_NORMAL coop level: " );
@@ -414,6 +436,7 @@ int SNDDMA_InitDS()
 		SNDDMA_Shutdown();
 		return qfalse;
 	}
+
 	Com_DPrintf( "ok\n" );
 
 	// create the secondary buffer we'll actually work with
@@ -422,8 +445,10 @@ int SNDDMA_InitDS()
 
 	if( s_khz->integer == 44 ) {
 		dma.speed = 44100;
+
 	} else if( s_khz->integer == 22 ) {
 		dma.speed = 22050;
+
 	} else {
 		dma.speed = 11025;
 	}
@@ -452,16 +477,20 @@ int SNDDMA_InitDS()
 	dsbcaps.dwSize = sizeof( dsbcaps );
 
 	Com_DPrintf( "...creating secondary buffer: " );
+
 	if( DS_OK == pDS->lpVtbl->CreateSoundBuffer( pDS, &dsbuf, &pDSBuf, NULL ) ) {
 		Com_Printf( "locked hardware.  ok\n" );
+
 	} else {
 		// Couldn't get hardware, fallback to software.
 		dsbuf.dwFlags = DSBCAPS_LOCSOFTWARE; // DSBCAPS_CTRLFREQUENCY | DSBCAPS_LOCSOFTWARE;
+
 		if( DS_OK != pDS->lpVtbl->CreateSoundBuffer( pDS, &dsbuf, &pDSBuf, NULL ) ) {
 			Com_Printf( "failed\n" );
 			SNDDMA_Shutdown();
 			return qfalse;
 		}
+
 		Com_DPrintf( "forced to software.  ok\n" );
 	}
 
@@ -491,6 +520,7 @@ int SNDDMA_InitDS()
 	sample16 = ( dma.samplebits / 8 ) - 1;
 	return 1;
 }
+
 /*
 ==============
 SNDDMA_GetDMAPos
@@ -573,6 +603,7 @@ void SNDDMA_BeginPainting()
 			Com_Printf( "SNDDMA_BeginPainting: Lock failed with error '%s'\n", DSoundError( hresult ) );
 			S_Shutdown();
 			return;
+
 		} else {
 			pDSBuf->lpVtbl->Restore( pDSBuf );
 		}
@@ -581,6 +612,7 @@ void SNDDMA_BeginPainting()
 			return;
 		}
 	}
+
 	dma.buffer = ( unsigned char* )pbuf;
 }
 
@@ -601,6 +633,7 @@ void SNDDMA_Submit()
 	if( pDSBuf ) {
 		pDSBuf->lpVtbl->Unlock( pDSBuf, dma.buffer, locksize, NULL, 0 );
 	}
+
 	if( !wav_init ) {
 		return;
 	}
@@ -625,9 +658,11 @@ void SNDDMA_Submit()
 	//
 	while( ( ( snd_sent - snd_completed ) >> sample16 ) < 8 ) {
 		h = lpWaveHdr + ( snd_sent & WAV_MASK );
+
 		if( s_paintedtime / 256 <= snd_sent ) {
 			break; //	Com_Printf ("submit overrun\n");
 		}
+
 		snd_sent++;
 		/*
 		 * Now the data block can be sent to the output device. The

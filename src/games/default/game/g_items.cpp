@@ -75,6 +75,7 @@ int Pickup_Powerup( gentity_t* ent, gentity_t* other )
 	// if an amount was specified in the ent, use it
 	if( ent->count ) {
 		quantity = ent->count;
+
 	} else {
 		quantity = ent->item->quantity;
 	}
@@ -85,9 +86,11 @@ int Pickup_Powerup( gentity_t* ent, gentity_t* other )
 	if( ent->item->giTag == PW_NOFATIGUE ) {
 		if( Q_stricmp( ent->item->classname, "item_stamina_brandy" ) == 0 ) {
 			other->health += 10;
+
 			if( other->health > other->client->ps.stats[STAT_MAX_HEALTH] ) {
 				other->health = other->client->ps.stats[STAT_MAX_HEALTH];
 			}
+
 			other->client->ps.stats[STAT_HEALTH] = other->health;
 		}
 
@@ -108,12 +111,15 @@ int Pickup_Powerup( gentity_t* ent, gentity_t* other )
 			trace_t tr;
 
 			client = &level.clients[i];
+
 			if( client == other->client ) {
 				continue;
 			}
+
 			if( client->pers.connected == CON_DISCONNECTED ) {
 				continue;
 			}
+
 			if( client->ps.stats[STAT_HEALTH] <= 0 ) {
 				continue;
 			}
@@ -121,18 +127,21 @@ int Pickup_Powerup( gentity_t* ent, gentity_t* other )
 			// if too far away, no sound
 			VectorSubtract( ent->s.pos.trBase, client->ps.origin, delta );
 			len = VectorNormalize( delta );
+
 			if( len > 192 ) {
 				continue;
 			}
 
 			// if not facing, no sound
 			AngleVectors( client->ps.viewangles, forward, NULL, NULL );
+
 			if( DotProduct( delta, forward ) < 0.4 ) {
 				continue;
 			}
 
 			// if not line of sight, no sound
 			sys->Trace( &tr, client->ps.origin, NULL, NULL, ent->s.pos.trBase, ENTITYNUM_NONE, CONTENTS_SOLID );
+
 			if( tr.fraction != 1.0 ) {
 				continue;
 			}
@@ -141,12 +150,15 @@ int Pickup_Powerup( gentity_t* ent, gentity_t* other )
 			client->ps.persistant[PERS_REWARD_COUNT]++;
 			client->ps.persistant[PERS_REWARD] = REWARD_DENIED;
 		}
+
 		// Ridah
 	}
+
 	// done.
 
 	if( ent->s.density == 2 ) { // multi-stage health first stage
 		return RESPAWN_PARTIAL;
+
 	} else if( ent->s.density == 1 ) { // last stage, leave the plate
 		return RESPAWN_PARTIAL_DONE;
 	}
@@ -166,6 +178,7 @@ int Pickup_Powerup( gentity_t* ent, gentity_t* other )
 int Pickup_Key( gentity_t* ent, gentity_t* other )
 {
 	other->client->ps.stats[STAT_KEYS] |= ( 1 << ent->item->giTag );
+
 	if( g_gametype.integer == GT_SINGLE_PLAYER ) {
 		if( !( ent->spawnflags & 8 ) ) {
 			return RESPAWN_SP;
@@ -185,6 +198,7 @@ int Pickup_Clipboard( gentity_t* ent, gentity_t* other )
 	if( ent->spawnflags & 4 ) {
 		return 0; // leave in world
 	}
+
 	return -1;
 }
 
@@ -212,9 +226,11 @@ void UseHoldableItem( gentity_t* ent, int item )
 	switch( item ) {
 		case HI_WINE: // 1921 Chateu Lafite - gives 25 pts health up to max health
 			ent->health += 25;
+
 			if( ent->health > ent->client->ps.stats[STAT_MAX_HEALTH] ) {
 				ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
 			}
+
 			break;
 
 		case HI_STAMINA: // restores fatigue bar and sets "nofatigue" for a time period (currently forced to 60 sec)
@@ -243,9 +259,11 @@ int Pickup_Holdable( gentity_t* ent, gentity_t* other )
 
 	if( item->gameskillnumber[0] ) { // if the item specifies an amount, give it
 		other->client->ps.holdable[item->giTag] += item->gameskillnumber[0];
+
 	} else {
 		other->client->ps.holdable[item->giTag] += 1; // add default of 1
 	}
+
 	other->client->ps.holding = item->giTag;
 
 	other->client->ps.stats[STAT_HOLDABLE_ITEM] |= ( 1 << ent->item->giTag ); //----(SA)	added
@@ -294,6 +312,7 @@ void Fill_Clip( playerState_t* ps, int weapon )
 		if( !ps->aiChar || ps->ammo[ammoweap] < 999 ) { // RF, dont take ammo away if they need unlimited supplies
 			ps->ammo[ammoweap] -= ammomove;
 		}
+
 		ps->ammoclip[BG_FindClipForWeapon( ( weapon_t )weapon )] += ammomove;
 	}
 }
@@ -326,6 +345,7 @@ void Add_Ammo( gentity_t* ent, int weapon, int count, qboolean fillClip )
 		case WP_FLAMETHROWER:
 			noPack = qtrue;
 			break;
+
 		default:
 			break;
 	}
@@ -337,9 +357,11 @@ void Add_Ammo( gentity_t* ent, int weapon, int count, qboolean fillClip )
 	if( ent->aiCharacter ) {
 		noPack = qfalse; // let AI's deal with their own clip/ammo handling
 	}
+
 	// cap to max ammo
 	if( noPack ) {
 		ent->client->ps.ammo[ammoweap] = 0;
+
 	} else {
 		if( ent->client->ps.ammo[ammoweap] > ammoTable[ammoweap].maxammo ) {
 			ent->client->ps.ammo[ammoweap] = ammoTable[ammoweap].maxammo;
@@ -366,6 +388,7 @@ int Pickup_Ammo( gentity_t* ent, gentity_t* other )
 
 	if( ent->count ) {
 		quantity = ent->count;
+
 	} else {
 		// quantity = ent->item->quantity;
 
@@ -401,9 +424,11 @@ int Pickup_Weapon( gentity_t* ent, gentity_t* other )
 
 	if( ent->count < 0 ) {
 		quantity = 0; // None for you, sir!
+
 	} else {
 		if( ent->count ) {
 			quantity = ent->count;
+
 		} else {
 			//----(SA) modified
 			//			quantity = ent->item->quantity;
@@ -431,6 +456,7 @@ int Pickup_Weapon( gentity_t* ent, gentity_t* other )
 			weapon = WP_AKIMBO;
 		}
 	}
+
 	//----(SA)	end
 
 	// check if player already had the weapon
@@ -443,14 +469,18 @@ int Pickup_Weapon( gentity_t* ent, gentity_t* other )
 	// snooper/garand
 	if( weapon == WP_SNOOPERSCOPE ) {
 		COM_BitSet( other->client->ps.weapons, WP_GARAND );
+
 	} else if( weapon == WP_GARAND ) {
 		COM_BitSet( other->client->ps.weapons, WP_SNOOPERSCOPE );
 	}
+
 	// fg42/scope
 	else if( weapon == WP_FG42SCOPE ) {
 		COM_BitSet( other->client->ps.weapons, WP_FG42 );
+
 	} else if( weapon == WP_FG42 ) {
 		COM_BitSet( other->client->ps.weapons, WP_FG42SCOPE );
+
 	} else if( weapon == WP_SNIPERRIFLE ) {
 		COM_BitSet( other->client->ps.weapons, WP_MAUSER );
 	}
@@ -492,19 +522,23 @@ int Pickup_Health( gentity_t* ent, gentity_t* other )
 	// small and mega healths will go over the max
 	if( ent->item->quantity != 5 && ent->item->quantity != 100 ) {
 		max = other->client->ps.stats[STAT_MAX_HEALTH];
+
 	} else {
 		max = other->client->ps.stats[STAT_MAX_HEALTH] * 2;
 	}
 
 	if( ent->count ) {
 		quantity = ent->count;
+
 	} else {
 		if( ent->s.density ) {			// multi-stage health
 			if( ent->s.density == 2 ) { // first stage (it counts down)
 				quantity = ent->item->gameskillnumber[g_gameskill.integer];
+
 			} else if( ent->s.density == 1 ) { // second stage
 				quantity = ent->item->quantity;
 			}
+
 		} else {
 			quantity = ent->item->gameskillnumber[g_gameskill.integer];
 		}
@@ -515,10 +549,12 @@ int Pickup_Health( gentity_t* ent, gentity_t* other )
 	if( other->health > max ) {
 		other->health = max;
 	}
+
 	other->client->ps.stats[STAT_HEALTH] = other->health;
 
 	if( ent->s.density == 2 ) { // multi-stage health first stage
 		return RESPAWN_PARTIAL;
+
 	} else if( ent->s.density == 1 ) { // last stage, leave the plate
 		return RESPAWN_PARTIAL_DONE;
 	}
@@ -540,6 +576,7 @@ int Pickup_Health( gentity_t* ent, gentity_t* other )
 int Pickup_Armor( gentity_t* ent, gentity_t* other )
 {
 	other->client->ps.stats[STAT_ARMOR] += ent->item->quantity;
+
 	//	if ( other->client->ps.stats[STAT_ARMOR] > other->client->ps.stats[STAT_MAX_HEALTH] * 2 ) {
 	//		other->client->ps.stats[STAT_ARMOR] = other->client->ps.stats[STAT_MAX_HEALTH] * 2;
 	if( other->client->ps.stats[STAT_ARMOR] > 100 ) {
@@ -572,6 +609,7 @@ void RespawnItem( gentity_t* ent )
 		if( !ent->teammaster ) {
 			G_Error( "RespawnItem: bad teammaster" );
 		}
+
 		master = ent->teammaster;
 
 		for( count = 0, ent = master; ent; ent = ent->teamchain, count++ )
@@ -641,6 +679,7 @@ void Touch_Item( gentity_t* ent, gentity_t* other, trace_t* trace )
 	// only activated items can be picked up
 	if( !ent->active ) {
 		return;
+
 	} else {
 		// need to set active to false if player is maxed out
 		ent->active = qfalse;
@@ -649,9 +688,11 @@ void Touch_Item( gentity_t* ent, gentity_t* other, trace_t* trace )
 	if( !other->client ) {
 		return;
 	}
+
 	if( other->health < 1 ) {
 		return; // dead people can't pickup
 	}
+
 	// the same pickup rules are used for client side and server side
 	if( !BG_CanItemBeGrabbed( &ent->s, &other->client->ps ) ) {
 		return;
@@ -664,39 +705,51 @@ void Touch_Item( gentity_t* ent, gentity_t* other, trace_t* trace )
 		case IT_WEAPON:
 			respawn = Pickup_Weapon( ent, other );
 			break;
+
 		case IT_AMMO:
 			respawn = Pickup_Ammo( ent, other );
 			break;
+
 		case IT_ARMOR:
 			respawn = Pickup_Armor( ent, other );
 			break;
+
 		case IT_HEALTH:
 			respawn = Pickup_Health( ent, other );
 			break;
+
 		case IT_POWERUP:
 			respawn = Pickup_Powerup( ent, other );
 			break;
+
 		case IT_TEAM:
 			respawn = Pickup_Team( ent, other );
 			break;
+
 		case IT_HOLDABLE:
 			respawn = Pickup_Holdable( ent, other );
 			break;
+
 		case IT_KEY:
 			respawn = Pickup_Key( ent, other );
 			break;
+
 		case IT_TREASURE:
 			respawn = Pickup_Treasure( ent, other );
 			break;
+
 		case IT_CLIPBOARD:
 			respawn = Pickup_Clipboard( ent, other );
 			// send the event to the client to request that the UI draw a popup
 			// (specified by the configstring in ent->s.density).
 			G_AddEvent( other, EV_POPUP, ent->s.density );
+
 			if( ent->key ) {
 				G_AddEvent( other, EV_GIVEPAGE, ent->key );
 			}
+
 			break;
+
 		default:
 			return;
 	}
@@ -717,6 +770,7 @@ void Touch_Item( gentity_t* ent, gentity_t* other, trace_t* trace )
 	// send the pickup event
 	if( other->client->pers.predictItemPickup ) {
 		G_AddPredictableEvent( other, makenoise, ent->s.modelindex );
+
 	} else {
 		G_AddEvent( other, makenoise, ent->s.modelindex );
 	}
@@ -759,6 +813,7 @@ void Touch_Item( gentity_t* ent, gentity_t* other, trace_t* trace )
 
 	if( respawn == RESPAWN_PARTIAL ) { // multi-stage health
 		ent->s.density--;
+
 		if( ent->s.density ) {	 // still not completely used up ( (SA) this will change to == 0 and stage 1 will be a destroyable item (plate/etc.) )
 			ent->active = qtrue; // re-activate
 			sys->LinkEntity( ent );
@@ -774,6 +829,7 @@ void Touch_Item( gentity_t* ent, gentity_t* other, trace_t* trace )
 	// random can be used to vary the respawn time
 	if( ent->random ) {
 		respawn += crandom() * ent->random;
+
 		if( respawn < 1 ) {
 			respawn = 1;
 		}
@@ -799,10 +855,12 @@ void Touch_Item( gentity_t* ent, gentity_t* other, trace_t* trace )
 	if( respawn <= 0 ) {
 		ent->nextthink = 0;
 		ent->think	   = 0;
+
 	} else {
 		ent->nextthink = level.time + respawn * 1000;
 		ent->think	   = RespawnItem;
 	}
+
 	sys->LinkEntity( ent );
 }
 
@@ -850,6 +908,7 @@ gentity_t* LaunchItem( gitem_t* item, vec3_t origin, vec3_t velocity )
 	if( item->giType == IT_TEAM ) { // Special case for CTF flags
 		dropped->think	   = Team_DroppedFlagThink;
 		dropped->nextthink = level.time + 30000;
+
 	} else { // auto-remove after 30 seconds
 		dropped->think	   = G_FreeEntity;
 		dropped->nextthink = level.time + 30000;
@@ -880,6 +939,7 @@ gentity_t* Drop_Item( gentity_t* ent, gitem_t* item, float angle, qboolean novel
 
 	if( novelocity ) {
 		VectorClear( velocity );
+
 	} else {
 		AngleVectors( angles, velocity, NULL, NULL );
 		VectorScale( velocity, 150, velocity );
@@ -921,6 +981,7 @@ void FinishSpawningItem( gentity_t* ent )
 		VectorSet( ent->r.mins, -ITEM_RADIUS, -ITEM_RADIUS, -ITEM_RADIUS );
 		VectorSet( ent->r.maxs, ITEM_RADIUS, ITEM_RADIUS, ITEM_RADIUS );
 		VectorCopy( ent->r.maxs, maxs );
+
 	} else {
 		// Rafael
 		// had to modify this so that items would spawn in shelves
@@ -936,6 +997,7 @@ void FinishSpawningItem( gentity_t* ent )
 	ent->s.modelindex = ent->item - bg_itemlist; // store item number in modelindex
 
 	ent->s.otherEntityNum2 = 0; // DHM - Nerve :: takes modelindex2's place in signaling a dropped item
+
 	//----(SA)	we don't use this (yet, anyway) so I'm taking it so you can specify a model for treasure items and clipboards
 	//	ent->s.modelindex2 = 0; // zero indicates this isn't a dropped item
 	if( ent->model ) {
@@ -946,15 +1008,18 @@ void FinishSpawningItem( gentity_t* ent )
 	if( ent->item->giType == IT_CLIPBOARD ) {
 		if( !ent->message ) {
 			ent->s.density = G_FindConfigstringIndex( "clip_test", CS_CLIPBOARDS, MAX_CLIPBOARD_CONFIGSTRINGS, qtrue );
+
 		} else {
 			ent->s.density = G_FindConfigstringIndex( ent->message, CS_CLIPBOARDS, MAX_CLIPBOARD_CONFIGSTRINGS, qtrue );
 		}
 
 		ent->touch = Touch_Item; // no auto-pickup, only activate
+
 	} else if( ent->item->giType == IT_HOLDABLE ) {
 		if( ent->item->giTag >= HI_BOOK1 && ent->item->giTag <= HI_BOOK3 ) {
 			G_FindConfigstringIndex( va( "hbook%d", ent->item->giTag - HI_BOOK1 ), CS_CLIPBOARDS, MAX_CLIPBOARD_CONFIGSTRINGS, qtrue );
 		}
+
 		//		ent->touch = Touch_Item;	// no auto-pickup, only activate
 	}
 
@@ -966,6 +1031,7 @@ void FinishSpawningItem( gentity_t* ent )
 
 	if( ent->spawnflags & 1 ) { // suspended
 		G_SetOrigin( ent, ent->s.origin );
+
 	} else {
 		VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
 		sys->Trace( &tr, ent->s.origin, ent->r.mins, maxs, dest, ent->s.number, MASK_SOLID );
@@ -985,6 +1051,7 @@ void FinishSpawningItem( gentity_t* ent )
 		VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
 		sys->Trace( &tr, ent->s.origin, ent->r.mins, maxs, dest, ent->s.number, MASK_SOLID );
 #endif
+
 		if( tr.startsolid ) {
 			G_Printf( "FinishSpawningItem: %s startsolid at %s\n", ent->classname, vtos( ent->s.origin ) );
 			G_FreeEntity( ent );
@@ -1018,6 +1085,7 @@ void FinishSpawningItem( gentity_t* ent )
 		// was:
 		// for(i=0;i<4,ent->item->world_model[i];i++) {}
 		i = 0;
+
 		while( i < 4 && ent->item->world_model[i] ) {
 			i++;
 		}
@@ -1055,10 +1123,13 @@ void	 G_CheckTeamItems()
 
 		// make sure we actually have two flags...
 		item = BG_FindItem( "Red Flag" );
+
 		if( !item || !itemRegistered[item - bg_itemlist] ) {
 			G_Error( "No team_CTF_redflag in map" );
 		}
+
 		item = BG_FindItem( "Blue Flag" );
+
 		if( !item || !itemRegistered[item - bg_itemlist] ) {
 			G_Error( "No team_CTF_blueflag in map" );
 		}
@@ -1095,6 +1166,7 @@ void RegisterItem( gitem_t* item )
 	if( !item ) {
 		G_Error( "RegisterItem: NULL" );
 	}
+
 	itemRegistered[item - bg_itemlist] = qtrue;
 }
 
@@ -1113,19 +1185,23 @@ void SaveRegisteredItems()
 	int	 count;
 
 	count = 0;
+
 	for( i = 0; i < bg_numItems; i++ ) {
 		if( itemRegistered[i] ) {
 			count++;
 			string[i] = '1';
+
 		} else {
 			string[i] = '0';
 		}
 	}
+
 	string[bg_numItems] = 0;
 
 	if( sys->Cvar_VariableIntegerValue( "g_gametype" ) != GT_SINGLE_PLAYER ) {
 		G_Printf( "%i items registered\n", count );
 	}
+
 	sys->SetConfigstring( CS_ITEMS, string );
 }
 
@@ -1251,6 +1327,7 @@ void G_RunItemProp( gentity_t* ent, vec3_t origin )
 		Prop_Break_Sound( ent );
 
 		return;
+
 	} else if( trace.surfaceFlags & SURF_NOIMPACT ) {
 		ent->takedamage = qfalse;
 
@@ -1293,9 +1370,11 @@ void G_RunItem( gentity_t* ent )
 	// trace a line from the previous position to the current position
 	if( ent->clipmask ) {
 		mask = ent->clipmask;
+
 	} else {
 		mask = MASK_SOLID | CONTENTS_MISSILECLIP;
 	}
+
 	sys->Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, ent->r.ownerNum, mask );
 
 	if( ent->isProp && ent->takedamage ) {
@@ -1319,12 +1398,15 @@ void G_RunItem( gentity_t* ent )
 
 	// if it is in a nodrop volume, remove it
 	contents = sys->PointContents( ent->r.currentOrigin, -1 );
+
 	if( contents & CONTENTS_NODROP ) {
 		if( ent->item && ent->item->giType == IT_TEAM ) {
 			Team_FreeEntity( ent );
+
 		} else {
 			G_FreeEntity( ent );
 		}
+
 		return;
 	}
 

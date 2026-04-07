@@ -107,6 +107,7 @@ int AAS_UpdateEntity( int entnum, bot_entitystate_t* state )
 
 	if( ( *defaultaasworld ).numframes == 1 ) {
 		relink = qtrue;
+
 	} else {
 		relink = qfalse;
 	}
@@ -118,9 +119,11 @@ int AAS_UpdateEntity( int entnum, bot_entitystate_t* state )
 			VectorCopy( state->angles, ent->i.angles );
 			relink = qtrue;
 		}
+
 		// get the mins and maxs of the model
 		// FIXME: rotate mins and maxs
 		AAS_BSPModelMinsMaxsOrigin( ent->i.modelindex, ent->i.angles, ent->i.mins, ent->i.maxs, NULL );
+
 	} else if( ent->i.solid == SOLID_BBOX ) {
 		// if the bounding box size changed
 		if( !VectorCompare( state->mins, ent->i.mins ) || !VectorCompare( state->maxs, ent->i.maxs ) ) {
@@ -129,11 +132,13 @@ int AAS_UpdateEntity( int entnum, bot_entitystate_t* state )
 			relink = qtrue;
 		}
 	}
+
 	// if the origin changed
 	if( !VectorCompare( state->origin, ent->i.origin ) ) {
 		VectorCopy( state->origin, ent->i.origin );
 		relink = qtrue;
 	}
+
 	// if the entity should be relinked
 	if( relink ) {
 		// don't link the world model
@@ -152,8 +157,10 @@ int AAS_UpdateEntity( int entnum, bot_entitystate_t* state )
 			ent->leaves = AAS_BSPLinkEntity( absmins, absmaxs, entnum, 0 );
 		}
 	}
+
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -176,6 +183,7 @@ void AAS_EntityInfo( int entnum, aas_entityinfo_t* info )
 
 	memcpy( info, &( *defaultaasworld ).entities[entnum].i, sizeof( aas_entityinfo_t ) );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -192,6 +200,7 @@ void AAS_EntityOrigin( int entnum, vec3_t origin )
 
 	VectorCopy( ( *defaultaasworld ).entities[entnum].i.origin, origin );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -204,8 +213,10 @@ int AAS_EntityModelindex( int entnum )
 		botimport.Print( PRT_FATAL, "AAS_EntityModelindex: entnum %d out of range\n", entnum );
 		return 0;
 	}
+
 	return ( *defaultaasworld ).entities[entnum].i.modelindex;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -222,8 +233,10 @@ int AAS_EntityType( int entnum )
 		botimport.Print( PRT_FATAL, "AAS_EntityType: entnum %d out of range\n", entnum );
 		return 0;
 	}
+
 	return ( *defaultaasworld ).entities[entnum].i.type;
 } // end of the AAS_EntityType
+
 //===========================================================================
 //
 // Parameter:				-
@@ -240,8 +253,10 @@ int AAS_EntityModelNum( int entnum )
 		botimport.Print( PRT_FATAL, "AAS_EntityModelNum: entnum %d out of range\n", entnum );
 		return 0;
 	}
+
 	return ( *defaultaasworld ).entities[entnum].i.modelindex;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -255,6 +270,7 @@ int AAS_OriginOfEntityWithModelNum( int modelnum, vec3_t origin )
 
 	for( i = 0; i < ( *defaultaasworld ).maxentities; i++ ) {
 		ent = &( *defaultaasworld ).entities[i];
+
 		if( ent->i.type == ET_MOVER ) {
 			if( ent->i.modelindex == modelnum ) {
 				VectorCopy( ent->i.origin, origin );
@@ -262,8 +278,10 @@ int AAS_OriginOfEntityWithModelNum( int modelnum, vec3_t origin )
 			}
 		}
 	}
+
 	return qfalse;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -287,6 +305,7 @@ void AAS_EntitySize( int entnum, vec3_t mins, vec3_t maxs )
 	VectorCopy( ent->i.mins, mins );
 	VectorCopy( ent->i.maxs, maxs );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -305,6 +324,7 @@ void AAS_EntityBSPData( int entnum, bsp_entdata_t* entdata )
 	entdata->solid	  = ent->i.solid;
 	entdata->modelnum = ent->i.modelindex - 1;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -314,11 +334,13 @@ void AAS_EntityBSPData( int entnum, bsp_entdata_t* entdata )
 void AAS_ResetEntityLinks()
 {
 	int i;
+
 	for( i = 0; i < ( *defaultaasworld ).maxentities; i++ ) {
 		( *defaultaasworld ).entities[i].areas	= NULL;
 		( *defaultaasworld ).entities[i].leaves = NULL;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -328,11 +350,13 @@ void AAS_ResetEntityLinks()
 void AAS_InvalidateEntities()
 {
 	int i;
+
 	for( i = 0; i < ( *defaultaasworld ).maxentities; i++ ) {
 		( *defaultaasworld ).entities[i].i.valid  = qfalse;
 		( *defaultaasworld ).entities[i].i.number = i;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -348,15 +372,20 @@ int AAS_NearestEntity( vec3_t origin, int modelindex )
 
 	bestentnum = 0;
 	bestdist   = 99999;
+
 	for( i = 0; i < ( *defaultaasworld ).maxentities; i++ ) {
 		ent = &( *defaultaasworld ).entities[i];
+
 		if( ent->i.modelindex != modelindex ) {
 			continue;
 		}
+
 		VectorSubtract( ent->i.origin, origin, dir );
+
 		if( fabs( dir[0] ) < 40 ) {
 			if( fabs( dir[1] ) < 40 ) {
 				dist = VectorLength( dir );
+
 				if( dist < bestdist ) {
 					bestdist   = dist;
 					bestentnum = i;
@@ -364,8 +393,10 @@ int AAS_NearestEntity( vec3_t origin, int modelindex )
 			}
 		}
 	}
+
 	return bestentnum;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -379,6 +410,7 @@ int AAS_BestReachableEntityArea( int entnum )
 	ent = &( *defaultaasworld ).entities[entnum];
 	return AAS_BestReachableLinkArea( ent->areas );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -394,11 +426,13 @@ int AAS_NextEntity( int entnum )
 	if( entnum < 0 ) {
 		entnum = -1;
 	}
+
 	while( ++entnum < ( *defaultaasworld ).maxentities ) {
 		if( ( *defaultaasworld ).entities[entnum].i.valid ) {
 			return entnum;
 		}
 	}
+
 	return 0;
 }
 
@@ -422,19 +456,25 @@ int AAS_IsEntityInArea( int entnumIgnore, int entnumIgnore2, int areanum )
 		if( link->entnum == entnumIgnore ) {
 			continue;
 		}
+
 		if( link->entnum == entnumIgnore2 ) {
 			continue;
 		}
+
 		//
 		ent = &( *defaultaasworld ).entities[link->entnum];
+
 		if( !ent->i.valid ) {
 			continue;
 		}
+
 		if( !ent->i.solid ) {
 			continue;
 		}
+
 		return qtrue;
 	}
+
 	/*
 		ent = (*defaultaasworld).entities;
 		for (i = 0; i < (*defaultaasworld).maxclients; i++, ent++)
@@ -469,32 +509,40 @@ void AAS_SetAASBlockingEntity( vec3_t absmin, vec3_t absmax, qboolean blocking )
 {
 	int areas[128];
 	int numareas, i, w;
+
 	//
 	// check for resetting AAS blocking
 	if( VectorCompare( absmin, absmax ) && blocking < 0 ) {
 		for( w = 0; w < MAX_AAS_WORLDS; w++ ) {
 			AAS_SetCurrentWorld( w );
+
 			//
 			if( !( *aasworld ).loaded ) {
 				continue;
 			}
+
 			// now clear blocking status
 			for( i = 1; i < ( *aasworld ).numareas; i++ ) {
 				AAS_EnableRoutingArea( i, qtrue );
 			}
 		}
+
 		//
 		return;
 	}
+
 	//
 	for( w = 0; w < MAX_AAS_WORLDS; w++ ) {
 		AAS_SetCurrentWorld( w );
+
 		//
 		if( !( *aasworld ).loaded ) {
 			continue;
 		}
+
 		// grab the list of areas
 		numareas = AAS_BBoxAreas( absmin, absmax, areas, 128 );
+
 		// now set their blocking status
 		for( i = 0; i < numareas; i++ ) {
 			AAS_EnableRoutingArea( areas[i], !blocking );

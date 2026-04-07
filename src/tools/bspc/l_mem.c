@@ -53,18 +53,23 @@ void PrintMemorySize( unsigned long size )
 	number1 = size >> 20;
 	number2 = ( size & 0xFFFFF ) >> 10;
 	number3 = ( size & 0x3FF );
+
 	if( number1 ) {
 		Log_Print( "%ld MB", number1 );
 	}
+
 	if( number1 && number2 ) {
 		Log_Print( " and " );
 	}
+
 	if( number2 ) {
 		Log_Print( "%ld KB", number2 );
 	}
+
 	if( number2 && number3 ) {
 		Log_Print( " and " );
 	}
+
 	if( number3 ) {
 		Log_Print( "%ld bytes", number3 );
 	}
@@ -90,6 +95,7 @@ int MemorySize( void* ptr )
 	return 0;
 	#endif
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -101,13 +107,16 @@ void* GetClearedMemory( int size )
 	void* ptr;
 
 	ptr = ( void* )malloc( size );
+
 	if( !ptr ) {
 		Error( "out of memory" );
 	}
+
 	memset( ptr, 0, size );
 	allocedmemory += MemorySize( ptr );
 	return ptr;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -118,12 +127,15 @@ void* GetMemory( unsigned long size )
 {
 	void* ptr;
 	ptr = malloc( size );
+
 	if( !ptr ) {
 		Error( "out of memory" );
 	}
+
 	allocedmemory += MemorySize( ptr );
 	return ptr;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -147,6 +159,7 @@ void FreeMemory( void* ptr )
 
 	free( ptr );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -189,11 +202,14 @@ void		   LinkMemoryBlock( memoryblock_t* block )
 {
 	block->prev = NULL;
 	block->next = memory;
+
 	if( memory ) {
 		memory->prev = block;
 	}
+
 	memory = block;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -204,13 +220,16 @@ void UnlinkMemoryBlock( memoryblock_t* block )
 {
 	if( block->prev ) {
 		block->prev->next = block->next;
+
 	} else {
 		memory = block->next;
 	}
+
 	if( block->next ) {
 		block->next->prev = block->prev;
 	}
 }
+
 	//===========================================================================
 	//
 	// Parameter:				-
@@ -241,6 +260,7 @@ void* GetMemory( unsigned long size )
 	numblocks++;
 	return block->ptr;
 }
+
 	//===========================================================================
 	//
 	// Parameter:				-
@@ -262,6 +282,7 @@ void* GetClearedMemory( unsigned long size )
 	memset( ptr, 0, size );
 	return ptr;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -272,6 +293,7 @@ void* GetClearedHunkMemory( unsigned long size )
 {
 	return GetClearedMemory( size );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -282,6 +304,7 @@ void* GetHunkMemory( unsigned long size )
 {
 	return GetMemory( size );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -300,15 +323,20 @@ memoryblock_t* BlockFromPointer( void* ptr, char* str )
 	#endif MEMDEBUG
 		return NULL;
 	}
+
 	block = ( memoryblock_t* )( ( char* )ptr - sizeof( memoryblock_t ) );
+
 	if( block->id != MEM_ID ) {
 		Error( "%s: invalid memory block\n", str );
 	}
+
 	if( block->ptr != ptr ) {
 		Error( "%s: memory block pointer invalid\n", str );
 	}
+
 	return block;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -320,15 +348,18 @@ void FreeMemory( void* ptr )
 	memoryblock_t* block;
 
 	block = BlockFromPointer( ptr, "FreeMemory" );
+
 	if( !block ) {
 		return;
 	}
+
 	UnlinkMemoryBlock( block );
 	totalmemorysize -= block->size;
 	numblocks--;
 	//
 	free( block );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -340,11 +371,14 @@ int MemoryByteSize( void* ptr )
 	memoryblock_t* block;
 
 	block = BlockFromPointer( ptr, "MemoryByteSize" );
+
 	if( !block ) {
 		return 0;
 	}
+
 	return block->size;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -355,6 +389,7 @@ int MemorySize( void* ptr )
 {
 	return MemoryByteSize( ptr );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -366,6 +401,7 @@ void PrintUsedMemorySize()
 	printf( "total botlib memory: %d KB\n", totalmemorysize >> 10 );
 	printf( "total memory blocks: %d\n", numblocks );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -379,6 +415,7 @@ void PrintMemoryLabels()
 
 	PrintUsedMemorySize();
 	i = 0;
+
 	for( block = memory; block; block = block->next ) {
 	#ifdef MEMDEBUG
 		Log_Write( "%6d, %p, %8d: %24s line %6d: %s", i, block->ptr, block->size, block->file, block->line, block->label );
@@ -386,6 +423,7 @@ void PrintMemoryLabels()
 		i++;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -399,8 +437,10 @@ void DumpMemory()
 	for( block = memory; block; block = memory ) {
 		FreeMemory( block->ptr );
 	}
+
 	totalmemorysize = 0;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -411,6 +451,7 @@ int TotalAllocatedMemory()
 {
 	return totalmemorysize;
 }
+
 #endif
 
 //===========================================================================
@@ -441,9 +482,11 @@ void	   Hunk_ClearHigh()
 		nexth = h->next;
 		FreeMemory( h );
 	}
+
 	memhunk_high	  = NULL;
 	memhunk_high_size = 16 * 1024 * 1024;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -457,6 +500,7 @@ void* Hunk_Alloc( int size )
 	if( !size ) {
 		return ( void* )memhunk_high_size;
 	}
+
 	//
 	h			 = GetClearedMemory( size + sizeof( memhunk_t ) );
 	h->ptr		 = ( char* )h + sizeof( memhunk_t );
@@ -465,6 +509,7 @@ void* Hunk_Alloc( int size )
 	memhunk_high_size -= size;
 	return h->ptr;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -475,6 +520,7 @@ void* Z_Malloc( int size )
 {
 	return GetClearedMemory( size );
 }
+
 //===========================================================================
 //
 // Parameter:				-

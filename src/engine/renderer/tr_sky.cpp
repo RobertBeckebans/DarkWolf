@@ -78,27 +78,35 @@ static void	  AddSkyPolygon( int nump, vec3_t vecs )
 
 	// decide which face it maps to
 	VectorCopy( vec3_origin, v );
+
 	for( i = 0, vp = vecs; i < nump; i++, vp += 3 ) {
 		VectorAdd( vp, v, v );
 	}
+
 	av[0] = fabs( v[0] );
 	av[1] = fabs( v[1] );
 	av[2] = fabs( v[2] );
+
 	if( av[0] > av[1] && av[0] > av[2] ) {
 		if( v[0] < 0 ) {
 			axis = 1;
+
 		} else {
 			axis = 0;
 		}
+
 	} else if( av[1] > av[2] && av[1] > av[0] ) {
 		if( v[1] < 0 ) {
 			axis = 3;
+
 		} else {
 			axis = 2;
 		}
+
 	} else {
 		if( v[2] < 0 ) {
 			axis = 5;
+
 		} else {
 			axis = 4;
 		}
@@ -107,23 +115,32 @@ static void	  AddSkyPolygon( int nump, vec3_t vecs )
 	// project new texture coords
 	for( i = 0; i < nump; i++, vecs += 3 ) {
 		j = vec_to_st[axis][2];
+
 		if( j > 0 ) {
 			dv = vecs[j - 1];
+
 		} else {
 			dv = -vecs[-j - 1];
 		}
+
 		if( dv < 0.001 ) {
 			continue; // don't divide by zero
 		}
+
 		j = vec_to_st[axis][0];
+
 		if( j < 0 ) {
 			s = -vecs[-j - 1] / dv;
+
 		} else {
 			s = vecs[j - 1] / dv;
 		}
+
 		j = vec_to_st[axis][1];
+
 		if( j < 0 ) {
 			t = -vecs[-j - 1] / dv;
+
 		} else {
 			t = vecs[j - 1] / dv;
 		}
@@ -131,12 +148,15 @@ static void	  AddSkyPolygon( int nump, vec3_t vecs )
 		if( s < sky_mins[0][axis] ) {
 			sky_mins[0][axis] = s;
 		}
+
 		if( t < sky_mins[1][axis] ) {
 			sky_mins[1][axis] = t;
 		}
+
 		if( s > sky_maxs[0][axis] ) {
 			sky_maxs[0][axis] = s;
 		}
+
 		if( t > sky_maxs[1][axis] ) {
 			sky_maxs[1][axis] = t;
 		}
@@ -165,6 +185,7 @@ static void ClipSkyPolygon( int nump, vec3_t vecs, int stage )
 	if( nump > MAX_CLIP_VERTS - 2 ) {
 		ri.Error( ERR_DROP, "ClipSkyPolygon: MAX_CLIP_VERTS" );
 	}
+
 	if( stage == 6 ) { // fully clipped, so draw it
 		AddSkyPolygon( nump, vecs );
 		return;
@@ -172,17 +193,22 @@ static void ClipSkyPolygon( int nump, vec3_t vecs, int stage )
 
 	front = back = qfalse;
 	norm		 = sky_clip[stage];
+
 	for( i = 0, v = vecs; i < nump; i++, v += 3 ) {
 		d = DotProduct( v, norm );
+
 		if( d > ON_EPSILON ) {
 			front	 = qtrue;
 			sides[i] = SIDE_FRONT;
+
 		} else if( d < -ON_EPSILON ) {
 			back	 = qtrue;
 			sides[i] = SIDE_BACK;
+
 		} else {
 			sides[i] = SIDE_ON;
 		}
+
 		dists[i] = d;
 	}
 
@@ -203,10 +229,12 @@ static void ClipSkyPolygon( int nump, vec3_t vecs, int stage )
 				VectorCopy( v, newv[0][newc[0]] );
 				newc[0]++;
 				break;
+
 			case SIDE_BACK:
 				VectorCopy( v, newv[1][newc[1]] );
 				newc[1]++;
 				break;
+
 			case SIDE_ON:
 				VectorCopy( v, newv[0][newc[0]] );
 				newc[0]++;
@@ -220,11 +248,13 @@ static void ClipSkyPolygon( int nump, vec3_t vecs, int stage )
 		}
 
 		d = dists[i] / ( dists[i] - dists[i + 1] );
+
 		for( j = 0; j < 3; j++ ) {
 			e					= v[j] + d * ( v[j + 3] - v[j] );
 			newv[0][newc[0]][j] = e;
 			newv[1][newc[1]][j] = e;
 		}
+
 		newc[0]++;
 		newc[1]++;
 	}
@@ -265,6 +295,7 @@ void RB_ClipSkyPolygons( shaderCommands_t* input )
 		for( j = 0; j < 3; j++ ) {
 			VectorSubtract( input->xyz[input->indexes[i + j]], backEnd.viewParms.or.origin, p[j] );
 		}
+
 		ClipSkyPolygon( 3, p[0], 0 );
 	}
 }
@@ -302,9 +333,11 @@ static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXY
 
 	if( glfogsettings[FOG_SKY].registered ) {
 		boxSize = glfogsettings[FOG_SKY].end;
+
 	} else {
 		boxSize = backEnd.viewParms.zFar / 1.75f;
 	}
+
 	// make sure the sky is not near clipped
 	if( boxSize < r_znear->value * 2.0f ) {
 		boxSize = r_znear->value * 2.0f;
@@ -316,8 +349,10 @@ static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXY
 
 	for( j = 0; j < 3; j++ ) {
 		k = st_to_vec[axis][j];
+
 		if( k < 0 ) {
 			outXYZ[j] = -b[-k - 1];
+
 		} else {
 			outXYZ[j] = b[k - 1];
 		}
@@ -336,12 +371,14 @@ static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXY
 
 	if( s < sky_min ) {
 		s = sky_min;
+
 	} else if( s > sky_max ) {
 		s = sky_max;
 	}
 
 	if( t < sky_min ) {
 		t = sky_min;
+
 	} else if( t > sky_max ) {
 		t = sky_max;
 	}
@@ -444,22 +481,28 @@ static void DrawSkyBox( shader_t* shader )
 
 		if( sky_mins_subd[0] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[0] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_mins_subd[0] > HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[0] = HALF_SKY_SUBDIVISIONS;
 		}
+
 		if( sky_mins_subd[1] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[1] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_mins_subd[1] > HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[1] = HALF_SKY_SUBDIVISIONS;
 		}
 
 		if( sky_maxs_subd[0] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[0] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_maxs_subd[0] > HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[0] = HALF_SKY_SUBDIVISIONS;
 		}
+
 		if( sky_maxs_subd[1] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[1] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_maxs_subd[1] > HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[1] = HALF_SKY_SUBDIVISIONS;
 		}
@@ -504,22 +547,28 @@ static void DrawSkyBoxInner( shader_t* shader )
 
 		if( sky_mins_subd[0] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[0] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_mins_subd[0] > HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[0] = HALF_SKY_SUBDIVISIONS;
 		}
+
 		if( sky_mins_subd[1] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[1] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_mins_subd[1] > HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[1] = HALF_SKY_SUBDIVISIONS;
 		}
 
 		if( sky_maxs_subd[0] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[0] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_maxs_subd[0] > HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[0] = HALF_SKY_SUBDIVISIONS;
 		}
+
 		if( sky_maxs_subd[1] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[1] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_maxs_subd[1] > HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[1] = HALF_SKY_SUBDIVISIONS;
 		}
@@ -599,6 +648,7 @@ static void FillCloudBox( const shader_t* shader, int stage )
 			if( i == 5 ) {
 				continue;
 			}
+
 		} else {
 			switch( i ) {
 				case 0:
@@ -607,9 +657,11 @@ static void FillCloudBox( const shader_t* shader, int stage )
 				case 3:
 					MIN_T = -1;
 					break;
+
 				case 5:
 					// don't draw clouds beneath you
 					continue;
+
 				case 4: // top
 				default:
 					MIN_T = -HALF_SKY_SUBDIVISIONS;
@@ -633,22 +685,28 @@ static void FillCloudBox( const shader_t* shader, int stage )
 
 		if( sky_mins_subd[0] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[0] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_mins_subd[0] > HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[0] = HALF_SKY_SUBDIVISIONS;
 		}
+
 		if( sky_mins_subd[1] < MIN_T ) {
 			sky_mins_subd[1] = MIN_T;
+
 		} else if( sky_mins_subd[1] > HALF_SKY_SUBDIVISIONS ) {
 			sky_mins_subd[1] = HALF_SKY_SUBDIVISIONS;
 		}
 
 		if( sky_maxs_subd[0] < -HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[0] = -HALF_SKY_SUBDIVISIONS;
+
 		} else if( sky_maxs_subd[0] > HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[0] = HALF_SKY_SUBDIVISIONS;
 		}
+
 		if( sky_maxs_subd[1] < MIN_T ) {
 			sky_maxs_subd[1] = MIN_T;
+
 		} else if( sky_maxs_subd[1] > HALF_SKY_SUBDIVISIONS ) {
 			sky_maxs_subd[1] = HALF_SKY_SUBDIVISIONS;
 		}
@@ -694,6 +752,7 @@ void R_BuildCloudData( shaderCommands_t* input )
 			if( !tess.xstages[i] ) {
 				break;
 			}
+
 			FillCloudBox( input->shader, i );
 		}
 	}
@@ -771,9 +830,11 @@ void RB_DrawSun()
 	if( !backEnd.skyRenderedThisView ) {
 		return;
 	}
+
 	if( !r_drawSun->integer ) {
 		return;
 	}
+
 	glLoadMatrixf( backEnd.viewParms.world.modelMatrix );
 	glTranslatef( backEnd.viewParms.or.origin[0], backEnd.viewParms.or.origin[1], backEnd.viewParms.or.origin[2] );
 
@@ -913,6 +974,7 @@ void		RB_StageIteratorSky()
 		if( !backEnd.viewParms.glFog.drawsky ) {
 			return;
 		}
+
 	} else if( glfogNum > FOG_NONE ) {
 		if( !glfogsettings[FOG_CURRENT].drawsky ) {
 			return;
@@ -931,6 +993,7 @@ void		RB_StageIteratorSky()
 	// much sky is getting sucked in
 	if( r_showsky->integer ) {
 		glDepthRange( 0.0, 0.0 );
+
 	} else {
 		glDepthRange( 1.0, 1.0 );
 	}
@@ -967,6 +1030,7 @@ void		RB_StageIteratorSky()
 
 		glPopMatrix();
 	}
+
 	// Rafael - end
 
 	// back to normal depth range

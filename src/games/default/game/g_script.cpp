@@ -158,6 +158,7 @@ qboolean				G_Script_EventMatch_StringEqual( g_script_event_t* event, char* even
 {
 	if( eventParm && !Q_strcasecmp( event->params, eventParm ) ) {
 		return qtrue;
+
 	} else {
 		return qfalse;
 	}
@@ -184,6 +185,7 @@ qboolean G_Script_EventMatch_IntInRange( g_script_event_t* event, char* eventPar
 
 	if( eventParm && eInt > int1 && eInt <= int2 ) {
 		return qtrue;
+
 	} else {
 		return qfalse;
 	}
@@ -222,6 +224,7 @@ g_script_stack_action_t* G_Script_ActionForString( char* string )
 				level.numSecrets++;
 				G_SendMissionStats();
 			}
+
 			return &gScriptActions[i];
 		}
 	}
@@ -248,11 +251,14 @@ void G_Script_ScriptLoad()
 	level.scriptEntity = NULL;
 
 	sys->Cvar_VariableStringBuffer( "g_scriptName", filename, sizeof( filename ) );
+
 	if( strlen( filename ) > 0 ) {
 		sys->Cvar_Register( &mapname, "g_scriptName", "", CVAR_ROM );
+
 	} else {
 		sys->Cvar_Register( &mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM );
 	}
+
 	Q_strncpyz( filename, "maps/", sizeof( filename ) );
 	Q_strcat( filename, sizeof( filename ), mapname.string );
 	Q_strcat( filename, sizeof( filename ), ".script" );
@@ -302,6 +308,7 @@ void G_Script_ScriptParse( gentity_t* ent )
 	if( !ent->scriptName ) {
 		return;
 	}
+
 	if( !level.scriptEntity ) {
 		return;
 	}
@@ -325,6 +332,7 @@ void G_Script_ScriptParse( gentity_t* ent )
 			if( !wantName ) {
 				G_Error( "G_Script_ScriptParse(), Error (line %d): '}' expected, end of script found.\n", COM_GetCurrentParseLine() );
 			}
+
 			break;
 		}
 
@@ -333,20 +341,26 @@ void G_Script_ScriptParse( gentity_t* ent )
 			if( inScript ) {
 				break;
 			}
+
 			if( wantName ) {
 				G_Error( "G_Script_ScriptParse(), Error (line %d): '}' found, but not expected.\n", COM_GetCurrentParseLine() );
 			}
+
 			wantName = qtrue;
+
 		} else if( token[0] == '{' ) {
 			if( wantName ) {
 				G_Error( "G_Script_ScriptParse(), Error (line %d): '{' found, NAME expected.\n", COM_GetCurrentParseLine() );
 			}
+
 		} else if( wantName ) {
 			if( !Q_strcasecmp( ent->scriptName, token ) ) {
 				inScript	  = qtrue;
 				numEventItems = 0;
 			}
+
 			wantName = qfalse;
+
 		} else if( inScript ) {
 			// if ( !Q_strcasecmp( token, "attributes" ) ) {
 			//	// read in all the attributes
@@ -354,9 +368,11 @@ void G_Script_ScriptParse( gentity_t* ent )
 			//	continue;
 			// }
 			eventNum = G_Script_EventForString( token );
+
 			if( eventNum < 0 ) {
 				G_Error( "G_Script_ScriptParse(), Error (line %d): unknown event: %s.\n", COM_GetCurrentParseLine(), token );
 			}
+
 			if( numEventItems >= MAX_SCRIPT_EVENTS ) {
 				G_Error( "G_Script_ScriptParse(), Error (line %d): MAX_SCRIPT_EVENTS reached (%d)\n", COM_GetCurrentParseLine(), MAX_SCRIPT_EVENTS );
 			}
@@ -374,6 +390,7 @@ void G_Script_ScriptParse( gentity_t* ent )
 				if( strlen( params ) ) { // add a space between each param
 					Q_strcat( params, sizeof( params ), " " );
 				}
+
 				Q_strcat( params, sizeof( params ), token );
 			}
 
@@ -389,6 +406,7 @@ void G_Script_ScriptParse( gentity_t* ent )
 				}
 
 				action = G_Script_ActionForString( token );
+
 				if( !action ) {
 					G_Error( "G_Script_ScriptParse(), Error (line %d): unknown action: %s.\n", COM_GetCurrentParseLine(), token );
 				}
@@ -397,6 +415,7 @@ void G_Script_ScriptParse( gentity_t* ent )
 
 				memset( params, 0, sizeof( params ) );
 				token = COM_ParseExt( &pScript, qfalse );
+
 				for( i = 0; token[0]; i++ ) {
 					if( strlen( params ) ) { // add a space between each param
 						Q_strcat( params, sizeof( params ), " " );
@@ -416,6 +435,7 @@ void G_Script_ScriptParse( gentity_t* ent )
 							}
 						}
 					}
+
 					//----(SA)	end
 
 					if( strrchr( token, ' ' ) ) { // need to wrap this param in quotes since it has more than one word
@@ -444,13 +464,16 @@ void G_Script_ScriptParse( gentity_t* ent )
 			}
 
 			numEventItems++;
+
 		} else { // skip this character completely
 			// TTimo: gcc: suggest parentheses around assignment used as truth value
 			while( ( token = COM_Parse( &pScript ) ) ) {
 				if( !token[0] ) {
 					G_Error( "G_Script_ScriptParse(), Error (line %d): '}' expected, end of script found.\n", COM_GetCurrentParseLine() );
+
 				} else if( token[0] == '{' ) {
 					bracketLevel++;
+
 				} else if( token[0] == '}' ) {
 					if( !--bracketLevel ) {
 						break;
@@ -519,6 +542,7 @@ void G_Script_ScriptEvent( gentity_t* ent, char* eventStr, char* params )
 		if( g_cheats.integer ) { // dev mode
 			G_Printf( "devmode-> G_Script_ScriptEvent(), unknown event: %s\n", eventStr );
 		}
+
 		return;
 	}
 
@@ -582,6 +606,7 @@ qboolean G_Script_ScriptRun( gentity_t* ent )
 		ent->scriptStatus.scriptEventIndex = -1;
 		return qtrue;
 	}
+
 	//
 	// show debugging info
 	if( g_scriptDebug.integer && ent->scriptStatus.scriptStackChangeTime == level.time ) {
@@ -593,15 +618,18 @@ qboolean G_Script_ScriptRun( gentity_t* ent )
 				( stack->items[ent->scriptStatus.scriptStackHead].params ? stack->items[ent->scriptStatus.scriptStackHead].params : "" ) );
 		}
 	}
+
 	//
 	while( ent->scriptStatus.scriptStackHead < stack->numItems ) {
 		if( !stack->items[ent->scriptStatus.scriptStackHead].action->actionFunc( ent, stack->items[ent->scriptStatus.scriptStackHead].params ) ) {
 			return qfalse;
 		}
+
 		// move to the next action in the script
 		ent->scriptStatus.scriptStackHead++;
 		// record the time that this new item became active
 		ent->scriptStatus.scriptStackChangeTime = level.time;
+
 		//
 		// show debugging info
 		if( g_scriptDebug.integer ) {
@@ -643,6 +671,7 @@ void script_mover_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacke
 			case MOD_ROCKET_SPLASH:
 			case MOD_AIRSTRIKE:
 				break;
+
 			default: // no death from this weapon
 				self->health += damage;
 				return;
@@ -666,11 +695,13 @@ void script_mover_spawn( gentity_t* ent )
 	if( ent->spawnflags & 2 ) {
 		ent->clipmask	= CONTENTS_SOLID;
 		ent->r.contents = CONTENTS_SOLID;
+
 	} else {
 		ent->s.eFlags |= EF_NONSOLID_BMODEL;
 		ent->clipmask	= 0;
 		ent->r.contents = 0;
 	}
+
 	// ent->s.eType = ET_GENERAL;
 
 	// ent->s.modelindex = G_ModelIndex (ent->model);
@@ -722,6 +753,7 @@ void SP_script_mover( gentity_t* ent )
 	if( !ent->model ) {
 		G_Error( "script_model_med must have a \"model\"\n" );
 	}
+
 	if( !ent->scriptName ) {
 		G_Error( "script_model_med must have a \"scriptname\"\n" );
 	}
@@ -748,6 +780,7 @@ void SP_script_mover( gentity_t* ent )
 	G_SetAngle( ent, ent->s.angles );
 
 	G_SpawnInt( "health", "0", &ent->health );
+
 	if( ent->health ) {
 		ent->takedamage = qtrue;
 	}
@@ -783,6 +816,7 @@ void script_model_med_spawn( gentity_t* ent )
 		ent->clipmask	= CONTENTS_SOLID;
 		ent->r.contents = CONTENTS_SOLID;
 	}
+
 	ent->s.eType = ET_GENERAL;
 
 	ent->s.modelindex = G_ModelIndex( ent->model );
@@ -811,6 +845,7 @@ void SP_script_model_med( gentity_t* ent )
 	if( !ent->model ) {
 		G_Error( "script_model_med %s must have a \"model\"\n", ent->scriptName );
 	}
+
 	if( !ent->scriptName ) {
 		G_Error( "script_model_med must have a \"scriptname\"\n" );
 	}

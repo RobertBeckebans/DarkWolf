@@ -64,6 +64,7 @@ void			 IN_MLookDown()
 void IN_MLookUp()
 {
 	kb[KB_MLOOK].active = qfalse;
+
 	if( !cl_freelook->integer ) {
 		IN_CenterView();
 	}
@@ -75,8 +76,10 @@ void IN_KeyDown( kbutton_t* b )
 	char* c;
 
 	c = Cmd_Argv( 1 );
+
 	if( c[0] ) {
 		k = atoi( c );
+
 	} else {
 		k = -1; // typed manually at the console for continuous down
 	}
@@ -87,8 +90,10 @@ void IN_KeyDown( kbutton_t* b )
 
 	if( !b->down[0] ) {
 		b->down[0] = k;
+
 	} else if( !b->down[1] ) {
 		b->down[1] = k;
+
 	} else {
 		Com_Printf( "Three keys down for a button!\n" );
 		return;
@@ -113,8 +118,10 @@ void IN_KeyUp( kbutton_t* b )
 	unsigned uptime;
 
 	c = Cmd_Argv( 1 );
+
 	if( c[0] ) {
 		k = atoi( c );
+
 	} else {
 		// typed manually at the console, assume for unsticking, so clear all
 		b->down[0] = b->down[1] = 0;
@@ -124,11 +131,14 @@ void IN_KeyUp( kbutton_t* b )
 
 	if( b->down[0] == k ) {
 		b->down[0] = 0;
+
 	} else if( b->down[1] == k ) {
 		b->down[1] = 0;
+
 	} else {
 		return; // key up without coresponding down (menu pass through)
 	}
+
 	if( b->down[0] || b->down[1] ) {
 		return; // some other key is still holding it down
 	}
@@ -138,8 +148,10 @@ void IN_KeyUp( kbutton_t* b )
 	// save timestamp for partial frame summing
 	c	   = Cmd_Argv( 2 );
 	uptime = atoi( c );
+
 	if( uptime ) {
 		b->msec += uptime - b->downtime;
+
 	} else {
 		b->msec += frame_msec / 2;
 	}
@@ -166,22 +178,28 @@ float CL_KeyState( kbutton_t* key )
 		// still down
 		if( !key->downtime ) {
 			msec = com_frameTime;
+
 		} else {
 			msec += com_frameTime - key->downtime;
 		}
+
 		key->downtime = com_frameTime;
 	}
 
 #if 0
+
 	if( msec ) {
 		Com_Printf( "%i ", msec );
 	}
+
 #endif
 
 	val = ( float )msec / frame_msec;
+
 	if( val < 0 ) {
 		val = 0;
 	}
+
 	if( val > 1 ) {
 		val = 1;
 	}
@@ -193,78 +211,97 @@ void IN_UpDown()
 {
 	IN_KeyDown( &kb[KB_UP] );
 }
+
 void IN_UpUp()
 {
 	IN_KeyUp( &kb[KB_UP] );
 }
+
 void IN_DownDown()
 {
 	IN_KeyDown( &kb[KB_DOWN] );
 }
+
 void IN_DownUp()
 {
 	IN_KeyUp( &kb[KB_DOWN] );
 }
+
 void IN_LeftDown()
 {
 	IN_KeyDown( &kb[KB_LEFT] );
 }
+
 void IN_LeftUp()
 {
 	IN_KeyUp( &kb[KB_LEFT] );
 }
+
 void IN_RightDown()
 {
 	IN_KeyDown( &kb[KB_RIGHT] );
 }
+
 void IN_RightUp()
 {
 	IN_KeyUp( &kb[KB_RIGHT] );
 }
+
 void IN_ForwardDown()
 {
 	IN_KeyDown( &kb[KB_FORWARD] );
 }
+
 void IN_ForwardUp()
 {
 	IN_KeyUp( &kb[KB_FORWARD] );
 }
+
 void IN_BackDown()
 {
 	IN_KeyDown( &kb[KB_BACK] );
 }
+
 void IN_BackUp()
 {
 	IN_KeyUp( &kb[KB_BACK] );
 }
+
 void IN_LookupDown()
 {
 	IN_KeyDown( &kb[KB_LOOKUP] );
 }
+
 void IN_LookupUp()
 {
 	IN_KeyUp( &kb[KB_LOOKUP] );
 }
+
 void IN_LookdownDown()
 {
 	IN_KeyDown( &kb[KB_LOOKDOWN] );
 }
+
 void IN_LookdownUp()
 {
 	IN_KeyUp( &kb[KB_LOOKDOWN] );
 }
+
 void IN_MoveleftDown()
 {
 	IN_KeyDown( &kb[KB_MOVELEFT] );
 }
+
 void IN_MoveleftUp()
 {
 	IN_KeyUp( &kb[KB_MOVELEFT] );
 }
+
 void IN_MoverightDown()
 {
 	IN_KeyDown( &kb[KB_MOVERIGHT] );
 }
+
 void IN_MoverightUp()
 {
 	IN_KeyUp( &kb[KB_MOVERIGHT] );
@@ -274,14 +311,17 @@ void IN_SpeedDown()
 {
 	IN_KeyDown( &kb[KB_SPEED] );
 }
+
 void IN_SpeedUp()
 {
 	IN_KeyUp( &kb[KB_SPEED] );
 }
+
 void IN_StrafeDown()
 {
 	IN_KeyDown( &kb[KB_STRAFE] );
 }
+
 void IN_StrafeUp()
 {
 	IN_KeyUp( &kb[KB_STRAFE] );
@@ -291,42 +331,52 @@ void IN_Button0Down()
 {
 	IN_KeyDown( &kb[KB_BUTTONS0] );
 }
+
 void IN_Button0Up()
 {
 	IN_KeyUp( &kb[KB_BUTTONS0] );
 }
+
 void IN_Button1Down()
 {
 	IN_KeyDown( &kb[KB_BUTTONS1] );
 }
+
 void IN_Button1Up()
 {
 	IN_KeyUp( &kb[KB_BUTTONS1] );
 }
+
 void IN_UseItemDown()
 {
 	IN_KeyDown( &kb[KB_BUTTONS2] );
 }
+
 void IN_UseItemUp()
 {
 	IN_KeyUp( &kb[KB_BUTTONS2] );
 }
+
 void IN_Button3Down()
 {
 	IN_KeyDown( &kb[KB_BUTTONS3] );
 }
+
 void IN_Button3Up()
 {
 	IN_KeyUp( &kb[KB_BUTTONS3] );
 }
+
 void IN_Button4Down()
 {
 	IN_KeyDown( &kb[KB_BUTTONS4] );
 }
+
 void IN_Button4Up()
 {
 	IN_KeyUp( &kb[KB_BUTTONS4] );
 }
+
 // void IN_Button5Down() {IN_KeyDown(&kb[KB_BUTTONS5]);}
 // void IN_Button5Up() {IN_KeyUp(&kb[KB_BUTTONS5]);}
 
@@ -338,10 +388,12 @@ void IN_ActivateDown()
 {
 	IN_KeyDown( &kb[KB_BUTTONS6] );
 }
+
 void IN_ActivateUp()
 {
 	IN_KeyUp( &kb[KB_BUTTONS6] );
 }
+
 // done.
 
 // Rafael Kick
@@ -349,16 +401,19 @@ void IN_KickDown()
 {
 	IN_KeyDown( &kb[KB_KICK] );
 }
+
 void IN_KickUp()
 {
 	IN_KeyUp( &kb[KB_KICK] );
 }
+
 // done.
 
 void IN_SprintDown()
 {
 	IN_KeyDown( &kb[KB_BUTTONS5] );
 }
+
 void IN_SprintUp()
 {
 	IN_KeyUp( &kb[KB_BUTTONS5] );
@@ -369,46 +424,57 @@ void IN_Wbutton0Down()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS0] ); //----(SA) secondary fire button
 }
+
 void IN_Wbutton0Up()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS0] );
 }
+
 void IN_ZoomDown()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS1] ); //----(SA)	zoom key
 }
+
 void IN_ZoomUp()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS1] );
 }
+
 void IN_QuickGrenDown()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS2] ); //----(SA)	"Quickgrenade"
 }
+
 void IN_QuickGrenUp()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS2] );
 }
+
 void IN_ReloadDown()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS3] ); //----(SA)	manual weapon re-load
 }
+
 void IN_ReloadUp()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS3] );
 }
+
 void IN_LeanLeftDown()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS4] ); //----(SA)	lean left
 }
+
 void IN_LeanLeftUp()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS4] );
 }
+
 void IN_LeanRightDown()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS5] ); //----(SA)	lean right
 }
+
 void IN_LeanRightUp()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS5] );
@@ -419,14 +485,17 @@ void IN_Wbutton6Down()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS6] );
 }
+
 void IN_Wbutton6Up()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS6] );
 }
+
 void IN_Wbutton7Down()
 {
 	IN_KeyDown( &kb[KB_WBUTTONS7] );
 }
+
 void IN_Wbutton7Up()
 {
 	IN_KeyUp( &kb[KB_WBUTTONS7] );
@@ -436,6 +505,7 @@ void IN_ButtonDown()
 {
 	IN_KeyDown( &kb[KB_BUTTONS1] );
 }
+
 void IN_ButtonUp()
 {
 	IN_KeyUp( &kb[KB_BUTTONS1] );
@@ -489,6 +559,7 @@ void	CL_AdjustAngles()
 
 	if( kb[KB_SPEED].active ) {
 		speed = 0.001 * cls.frametime * cl_anglespeedkey->value;
+
 	} else {
 		speed = 0.001 * cls.frametime;
 	}
@@ -525,6 +596,7 @@ void CL_KeyMove( usercmd_t* cmd )
 	if( kb[KB_SPEED].active ^ cl_run->integer ) {
 		movespeed = 127;
 		cmd->buttons &= ~BUTTON_WALKING;
+
 	} else {
 		cmd->buttons |= BUTTON_WALKING;
 		movespeed = 64;
@@ -533,6 +605,7 @@ void CL_KeyMove( usercmd_t* cmd )
 	forward = 0;
 	side	= 0;
 	up		= 0;
+
 	if( kb[KB_STRAFE].active ) {
 		side += movespeed * CL_KeyState( &kb[KB_RIGHT] );
 		side -= movespeed * CL_KeyState( &kb[KB_LEFT] );
@@ -545,12 +618,14 @@ void CL_KeyMove( usercmd_t* cmd )
 	if( cmd->buttons & BUTTON_ACTIVATE ) {
 		if( side > 0 ) {
 			cmd->wbuttons |= WBUTTON_LEANRIGHT;
+
 		} else if( side < 0 ) {
 			cmd->wbuttons |= WBUTTON_LEANLEFT;
 		}
 
 		side = 0; // disallow the strafe when holding 'activate'
 	}
+
 	//----(SA)	end
 
 	up += movespeed * CL_KeyState( &kb[KB_UP] );
@@ -583,8 +658,10 @@ void CL_MouseEvent( int dx, int dy, int time )
 {
 	if( cls.keyCatchers & KEYCATCH_UI ) {
 		uivm->MouseEvent( dx, dy );
+
 	} else if( cls.keyCatchers & KEYCATCH_CGAME ) {
 		cgvm->MouseEvent( dx, dy );
+
 	} else {
 		cl.mouseDx[cl.mouseIndex] += dx;
 		cl.mouseDy[cl.mouseIndex] += dy;
@@ -603,6 +680,7 @@ void CL_JoystickEvent( int axis, int value, int time )
 	if( axis < 0 || axis >= MAX_JOYSTICK_AXIS ) {
 		Com_Error( ERR_DROP, "CL_JoystickEvent: bad axis %i", axis );
 	}
+
 	cl.joystickAxis[axis] = value;
 }
 
@@ -618,6 +696,7 @@ void CL_JoystickMove( usercmd_t* cmd )
 
 	if( kb[KB_SPEED].active ^ cl_run->integer ) {
 		movespeed = 2;
+
 	} else {
 		movespeed = 1;
 		cmd->buttons |= BUTTON_WALKING;
@@ -625,6 +704,7 @@ void CL_JoystickMove( usercmd_t* cmd )
 
 	if( kb[KB_SPEED].active ) {
 		anglespeed = 0.001 * cls.frametime * cl_anglespeedkey->value;
+
 	} else {
 		anglespeed = 0.001 * cls.frametime;
 	}
@@ -632,14 +712,19 @@ void CL_JoystickMove( usercmd_t* cmd )
 #ifdef __MACOS__
 	cmd->rightmove = ClampChar( cmd->rightmove + cl.joystickAxis[AXIS_SIDE] );
 #else
+
 	if( !kb[KB_STRAFE].active ) {
 		cl.viewangles[YAW] += anglespeed * cl_yawspeed->value * cl.joystickAxis[AXIS_SIDE];
+
 	} else {
 		cmd->rightmove = ClampChar( cmd->rightmove + cl.joystickAxis[AXIS_SIDE] );
 	}
+
 #endif
+
 	if( kb[KB_MLOOK].active ) {
 		cl.viewangles[PITCH] += anglespeed * cl_pitchspeed->value * cl.joystickAxis[AXIS_FORWARD];
+
 	} else {
 		cmd->forwardmove = ClampChar( cmd->forwardmove + cl.joystickAxis[AXIS_FORWARD] );
 	}
@@ -662,10 +747,12 @@ void CL_MouseMove( usercmd_t* cmd )
 	if( m_filter->integer ) {
 		mx = ( cl.mouseDx[0] + cl.mouseDx[1] ) * 0.5;
 		my = ( cl.mouseDy[0] + cl.mouseDy[1] ) * 0.5;
+
 	} else {
 		mx = cl.mouseDx[cl.mouseIndex];
 		my = cl.mouseDy[cl.mouseIndex];
 	}
+
 	cl.mouseIndex ^= 1;
 	cl.mouseDx[cl.mouseIndex] = 0;
 	cl.mouseDy[cl.mouseIndex] = 0;
@@ -696,6 +783,7 @@ void CL_MouseMove( usercmd_t* cmd )
 	if( cl.snap.ps.persistant[PERS_HWEAPON_USE] ) {
 		mx *= 2.5; //(accelSensitivity * 0.1);
 		my *= 2;   //(accelSensitivity * 0.075);
+
 	} else {
 		mx *= accelSensitivity;
 		my *= accelSensitivity;
@@ -708,12 +796,14 @@ void CL_MouseMove( usercmd_t* cmd )
 	// add mouse X/Y movement to cmd
 	if( kb[KB_STRAFE].active ) {
 		cmd->rightmove = ClampChar( cmd->rightmove + m_side->value * mx );
+
 	} else {
 		cl.viewangles[YAW] -= m_yaw->value * mx;
 	}
 
 	if( ( kb[KB_MLOOK].active || cl_freelook->integer ) && !kb[KB_STRAFE].active ) {
 		cl.viewangles[PITCH] += m_pitch->value * my;
+
 	} else {
 		cmd->forwardmove = ClampChar( cmd->forwardmove - m_forward->value * my );
 	}
@@ -737,6 +827,7 @@ void CL_CmdButtons( usercmd_t* cmd )
 		if( kb[KB_BUTTONS0 + i].active || kb[KB_BUTTONS0 + i].wasPressed ) {
 			cmd->buttons |= 1 << i;
 		}
+
 		kb[KB_BUTTONS0 + i].wasPressed = qfalse;
 	}
 
@@ -744,6 +835,7 @@ void CL_CmdButtons( usercmd_t* cmd )
 		if( kb[KB_WBUTTONS0 + i].active || kb[KB_WBUTTONS0 + i].wasPressed ) {
 			cmd->wbuttons |= 1 << i;
 		}
+
 		kb[KB_WBUTTONS0 + i].wasPressed = qfalse;
 	}
 
@@ -813,15 +905,18 @@ usercmd_t CL_CreateCmd()
 	// check to make sure the angles haven't wrapped
 	if( cl.viewangles[PITCH] - oldAngles[PITCH] > 90 ) {
 		cl.viewangles[PITCH] = oldAngles[PITCH] + 90;
+
 	} else if( oldAngles[PITCH] - cl.viewangles[PITCH] > 90 ) {
 		cl.viewangles[PITCH] = oldAngles[PITCH] - 90;
 	}
 
 	// RF, set the kickAngles so aiming is effected
 	recoilAdd = cl_recoilPitch->value;
+
 	if( fabs( cl.viewangles[PITCH] + recoilAdd ) < 40 ) {
 		cl.viewangles[PITCH] += recoilAdd;
 	}
+
 	// the recoilPitch has been used, so clear it out
 	cl_recoilPitch->value = 0;
 
@@ -833,6 +928,7 @@ usercmd_t CL_CreateCmd()
 		if( cl_debugMove->integer == 1 ) {
 			SCR_DebugGraph( fabs( cl.viewangles[YAW] - oldAngles[YAW] ), 0 );
 		}
+
 		if( cl_debugMove->integer == 2 ) {
 			SCR_DebugGraph( fabs( cl.viewangles[PITCH] - oldAngles[PITCH] ), 0 );
 		}
@@ -867,6 +963,7 @@ void CL_CreateNewCommands()
 	if( frame_msec > 200 ) {
 		frame_msec = 200;
 	}
+
 	old_com_frameTime = com_frameTime;
 
 	// generate a command for this frame
@@ -921,11 +1018,14 @@ qboolean CL_ReadyToSendPacket()
 	// check for exceeding cl_maxpackets
 	if( cl_maxpackets->integer < 15 ) {
 		Cvar_Set( "cl_maxpackets", "15" );
+
 	} else if( cl_maxpackets->integer > 100 ) {
 		Cvar_Set( "cl_maxpackets", "100" );
 	}
+
 	oldPacketNum = ( clc.netchan.outgoingSequence - 1 ) & PACKET_MASK;
 	delta		 = cls.realtime - cl.outPackets[oldPacketNum].p_realtime;
+
 	if( delta < 1000 / cl_maxpackets->integer ) {
 		// the accumulated commands will go out in the next packet
 		return qfalse;
@@ -1001,15 +1101,19 @@ void CL_WritePacket()
 	// all the cmds will make it to the server
 	if( cl_packetdup->integer < 0 ) {
 		Cvar_Set( "cl_packetdup", "0" );
+
 	} else if( cl_packetdup->integer > 5 ) {
 		Cvar_Set( "cl_packetdup", "5" );
 	}
+
 	oldPacketNum = ( clc.netchan.outgoingSequence - 1 - cl_packetdup->integer ) & PACKET_MASK;
 	count		 = cl.cmdNumber - cl.outPackets[oldPacketNum].p_cmdNumber;
+
 	if( count > MAX_PACKET_USERCMDS ) {
 		count = MAX_PACKET_USERCMDS;
 		Com_Printf( "MAX_PACKET_USERCMDS\n" );
 	}
+
 	if( count >= 1 ) {
 		if( cl_showSend->integer ) {
 			Com_Printf( "(%i)", count );
@@ -1018,6 +1122,7 @@ void CL_WritePacket()
 		// begin a client move command
 		if( cl_nodelta->integer || !cl.snap.valid || clc.demowaiting || clc.serverMessageSequence != cl.snap.messageNum ) {
 			MSG_WriteByte( &buf, clc_moveNoDelta );
+
 		} else {
 			MSG_WriteByte( &buf, clc_move );
 		}
@@ -1053,6 +1158,7 @@ void CL_WritePacket()
 	if( cl_showSend->integer ) {
 		Com_Printf( "%i ", buf.cursize );
 	}
+
 	//	Netchan_Transmit (&clc.netchan, buf.cursize, buf.data);
 	CL_Netchan_Transmit( &clc.netchan, &buf );
 
@@ -1091,6 +1197,7 @@ void CL_SendCmd()
 		if( cl_showSend->integer ) {
 			Com_Printf( ". " );
 		}
+
 		return;
 	}
 

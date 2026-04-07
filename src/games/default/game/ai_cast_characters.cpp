@@ -977,12 +977,15 @@ void			   AIChar_SetBBox( gentity_t* ent, cast_state_t* cs, qboolean useHeadTag 
 		VectorCopy( ent->client->ps.maxs, ent->r.maxs );
 		ent->client->ps.crouchMaxZ = aiDefaults[cs->aiCharacter].crouchstandZ[0];
 		ent->s.density			   = cs->aasWorldIndex;
+
 	} else if( sys->GetTag( ent->s.number, "tag_head", & or ) ) { // if not found, then just leave it
 		or.origin[2] -= ent->client->ps.origin[2];				  // convert to local coordinates
 		or.origin[2] += 11;
+
 		if( or.origin[2] < 0 ) {
 			or.origin[2] = 0;
 		}
+
 		if( or.origin[2] > aiDefaults[cs->aiCharacter].crouchstandZ[1] + 30 ) {
 			or.origin[2] = aiDefaults[cs->aiCharacter].crouchstandZ[1] + 30;
 		}
@@ -1027,6 +1030,7 @@ void AIChar_Death( gentity_t* ent, gentity_t* attacker, int damage, int mod ) //
 	if( ent->health > GIB_HEALTH ) {
 		if( ent->client->ps.eFlags & EF_HEADSHOT ) {
 			G_AddEvent( ent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[ent->aiCharacter].soundScripts[QUIETDEATHSOUNDSCRIPT] ) );
+
 		} else {
 			switch( mod ) { //----(SA)	modified to add 'quiet' deaths
 				case MOD_KNIFE_STEALTH:
@@ -1034,9 +1038,11 @@ void AIChar_Death( gentity_t* ent, gentity_t* attacker, int damage, int mod ) //
 				case MOD_SNOOPERSCOPE:
 					G_AddEvent( ent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[ent->aiCharacter].soundScripts[QUIETDEATHSOUNDSCRIPT] ) );
 					break;
+
 				case MOD_FLAMETHROWER:
 					G_AddEvent( ent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[ent->aiCharacter].soundScripts[FLAMEDEATHSOUNDSCRIPT] ) ); //----(SA)	added
 					break;
+
 				default:
 					G_AddEvent( ent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[ent->aiCharacter].soundScripts[DEATHSOUNDSCRIPT] ) );
 					break;
@@ -1078,6 +1084,7 @@ int AIChar_GetPainLocation( gentity_t* ent, vec3_t point )
 		// grab the tag with this name
 		if( sys->GetTag( ent->s.number, painTagNames[tagIndex], & or ) ) {
 			dist = VectorDistance( or.origin, point );
+
 			if( !bestDist || dist < bestDist ) {
 				bestTag	 = tagIndex;
 				bestDist = dist;
@@ -1149,6 +1156,7 @@ void AIChar_Pain( gentity_t* ent, gentity_t* attacker, int damage, vec3_t point 
 
 	if( attacker->s.weapon == WP_TESLA ) {
 		damage *= 2;
+
 		if( cs->attributes[PAIN_THRESHOLD_SCALE] <= 1.0 ) {
 			damage = 99999;
 		}
@@ -1158,6 +1166,7 @@ void AIChar_Pain( gentity_t* ent, gentity_t* attacker, int damage, vec3_t point 
 	// first reduce the current damageQuota with time
 	if( cs->damageQuotaTime && cs->damageQuota > 0 ) {
 		cs->damageQuota -= ( int )( ( 1.0 + ( g_gameskill.value / GSKILL_MAX ) ) * ( ( float )( level.time - cs->damageQuotaTime ) / 1000 ) * ( 7.5 + cs->attributes[ATTACK_SKILL] * 10.0 ) );
+
 		if( cs->damageQuota < 0 ) {
 			cs->damageQuota = 0;
 		}
@@ -1167,9 +1176,11 @@ void AIChar_Pain( gentity_t* ent, gentity_t* attacker, int damage, vec3_t point 
 	if( cs->painSoundTime < level.time - 1000 ) {
 		float scale;
 		scale = ( float )( level.time - cs->painSoundTime - 1000 ) / 1000.0;
+
 		if( scale > 4.0 ) {
 			scale = 4.0;
 		}
+
 		damage = ( int )( ( float )damage * ( 1.0 + ( scale * ( 1.0 - 0.5 * g_gameskill.value / GSKILL_MAX ) ) ) );
 	}
 
@@ -1199,13 +1210,16 @@ void AIChar_Pain( gentity_t* ent, gentity_t* attacker, int damage, vec3_t point 
 		if( damage > stunnedThreshold && ( forceStun || ( rand() % 2 ) ) ) { // stunned
 			BG_UpdateConditionValue( ent->s.number, ANIM_COND_STUNNED, qtrue, qfalse );
 		}
+
 		// enemy weapon
 		if( attacker->client ) {
 			BG_UpdateConditionValue( ent->s.number, ANIM_COND_ENEMY_WEAPON, attacker->s.weapon, qtrue );
 		}
+
 		if( point ) {
 			// location
 			BG_UpdateConditionValue( ent->s.number, ANIM_COND_IMPACT_POINT, AIChar_GetPainLocation( ent, point ), qtrue );
+
 		} else {
 			BG_UpdateConditionValue( ent->s.number, ANIM_COND_IMPACT_POINT, 0, qfalse );
 		}
@@ -1226,6 +1240,7 @@ void AIChar_Pain( gentity_t* ent, gentity_t* attacker, int damage, vec3_t point 
 			cs->attackcrouch_time = 0;
 			// don't fire while in pain?
 			cs->triggerReleaseTime = cs->pauseTime;
+
 			// stay crouching if we were before the pain
 			if( cs->bs->cur_ps.viewheight == cs->bs->cur_ps.crouchViewHeight ) {
 				cs->attackcrouch_time = level.time + ( float )( cs->pauseTime - level.time ) + 500;
@@ -1260,6 +1275,7 @@ void AIChar_Sight( gentity_t* ent, gentity_t* other, int lastSight )
 	if( cs->castScriptStatus.scriptNoAttackTime >= level.time ) {
 		return;
 	}
+
 	if( cs->noAttackTime >= level.time ) {
 		return;
 	}
@@ -1273,6 +1289,7 @@ void AIChar_Sight( gentity_t* ent, gentity_t* other, int lastSight )
 		if( !cs->firstSightTime || cs->firstSightTime < ( level.time - 15000 ) ) {
 			// G_AddEvent( ent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[ent->aiCharacter].sightSoundScript ) );
 		}
+
 		cs->firstSightTime = level.time;
 	}
 }
@@ -1298,6 +1315,7 @@ void AIChar_AttackSound( cast_state_t* cs )
 	if( cs->castScriptStatus.scriptNoAttackTime >= level.time ) {
 		return;
 	}
+
 	if( cs->noAttackTime >= level.time ) {
 		return;
 	}
@@ -1310,12 +1328,14 @@ void AIChar_AttackSound( cast_state_t* cs )
 	cs->attackSNDtime = level.time + 5000 + ( 1000 * rand() % 10 );
 
 	AICast_ScriptEvent( cs, "attacksound", ent->aiName );
+
 	if( cs->aiFlags & AIFL_DENYACTION ) {
 		return;
 	}
 
 	if( cs->weaponNum == WP_LUGER ) {
 		G_AddEvent( ent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[ent->aiCharacter].soundScripts[ORDERSSOUNDSCRIPT] ) );
+
 	} else {
 		G_AddEvent( ent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[ent->aiCharacter].soundScripts[ATTACKSOUNDSCRIPT] ) );
 	}
@@ -1340,12 +1360,15 @@ void AIChar_spawn( gentity_t* ent )
 		if( !newent->inuse ) {
 			continue;
 		}
+
 		if( newent->think != AIChar_spawn ) {
 			continue;
 		}
+
 		if( newent == ent ) {
 			break; // we are the first in line
 		}
+
 		// still waiting for someone else
 		ent->nextthink = level.time + FRAMETIME;
 		return;
@@ -1362,9 +1385,11 @@ void AIChar_spawn( gentity_t* ent )
 			ent->nextthink = level.time + FRAMETIME;
 			return; // spawned enough this frame already
 		}
+
 	} else {
 		numCalls = 0;
 	}
+
 	lastCall = level.time;
 
 	aiCharDefaults = &aiDefaults[ent->aiCharacter];
@@ -1374,22 +1399,27 @@ void AIChar_spawn( gentity_t* ent )
 	//
 	// starting weapons/ammo
 	memset( &weaponInfo, 0, sizeof( weaponInfo ) );
+
 	for( i = 0; aiCharDefaults->weapons[i]; i++ ) {
 		// weaponInfo.startingWeapons[(aiCharDefaults->weapons[i] / 32)] |= ( 1 << aiCharDefaults->weapons[i] );
 		// weaponInfo.startingWeapons[0] |= ( 1 << aiCharDefaults->weapons[i] );
 
 		COM_BitSet( weaponInfo.startingWeapons, aiCharDefaults->weapons[i] );
+
 		if( aiCharDefaults->weapons[i] == WP_GRENADE_LAUNCHER ) { // give them a bunch of grenades, but not an unlimited supply
 			weaponInfo.startingAmmo[BG_FindAmmoForWeapon( ( weapon_t )aiCharDefaults->weapons[i] )] = 6;
+
 		} else {
 			weaponInfo.startingAmmo[BG_FindAmmoForWeapon( ( weapon_t )aiCharDefaults->weapons[i] )] = 999;
 		}
 	}
+
 	//
 	// use the default skin if nothing specified
 	if( !ent->aiSkin || !strlen( ent->aiSkin ) ) {
 		ent->aiSkin = aiCharDefaults->skin;
 	}
+
 	// ............................
 	//
 	// create the character
@@ -1401,6 +1431,7 @@ void AIChar_spawn( gentity_t* ent )
 		G_FreeEntity( ent );
 		return;
 	}
+
 	// copy any character-specific information to the new entity (like editor fields, etc)
 	//
 	// copy this across so killing ai can trigger a target
@@ -1412,9 +1443,11 @@ void AIChar_spawn( gentity_t* ent )
 	newent->client->ps.aiChar = ent->aiCharacter;
 	newent->spawnflags		  = ent->spawnflags;
 	newent->aiTeam			  = ent->aiTeam;
+
 	if( newent->aiTeam < 0 ) {
 		newent->aiTeam = aiCharDefaults->aiTeam;
 	}
+
 	newent->client->ps.teamNum = newent->aiTeam;
 	//
 	// kill the old entity
@@ -1436,29 +1469,36 @@ void AIChar_spawn( gentity_t* ent )
 	cs->aiState = aiCharDefaults->aiState;
 	//
 	cs->queryCountValidTime = -1;
+
 	//
 	// randomly choose idle animation
 	if( cs->aiFlags & AIFL_STAND_IDLE2 ) {
 		newent->client->ps.eFlags |= EF_STAND_IDLE2;
 	}
+
 	//
 	// attach any event specific functions (pain, death, etc)
 	//
 	// cs->getDeathAnim = AIChar_getDeathAnim;
 	cs->sightfunc = AIChar_Sight;
+
 	if( ent->aiTeam == AITEAM_ALLIES || ent->aiTeam == AITEAM_NEUTRAL ) { // friendly
 		cs->activate = AICast_ProcessActivate;
+
 	} else {
 		cs->activate = NULL;
 	}
+
 	cs->aifuncAttack1 = aiCharDefaults->aifuncAttack1;
 	cs->aifuncAttack2 = aiCharDefaults->aifuncAttack2;
 	cs->aifuncAttack3 = aiCharDefaults->aifuncAttack3;
+
 	//
 	// looping sound?
 	if( aiCharDefaults->loopingSound ) {
 		ent->s.loopSound = G_SoundIndex( aiCharDefaults->loopingSound );
 	}
+
 	//
 	// precache sounds for this character
 	for( i = 0; i < MAX_AI_EVENT_SOUNDS; i++ ) {
@@ -1466,15 +1506,18 @@ void AIChar_spawn( gentity_t* ent )
 			G_SoundIndex( aiDefaults[ent->aiCharacter].soundScripts[i] );
 		}
 	}
+
 	//
 	if( ent->aiCharacter == AICHAR_HEINRICH ) {
 		AICast_Heinrich_SoundPrecache();
 	}
+
 	//
 	// special spawnflag stuff
 	if( ent->spawnflags & 2 ) {
 		cs->secondDeadTime = qtrue;
 	}
+
 	//
 	// init scripting
 	cs->castScriptStatus.castScriptEventIndex = -1;
@@ -1482,26 +1525,32 @@ void AIChar_spawn( gentity_t* ent )
 	//
 	// set crouch move speed
 	ent->client->ps.crouchSpeedScale = cs->attributes[CROUCHING_SPEED] / cs->attributes[RUNNING_SPEED];
+
 	//
 	// check for some anims which we can use for special behaviours
 	if( BG_GetAnimScriptEvent( &ent->client->ps, ANIM_ET_ROLL ) >= 0 ) {
 		cs->aiFlags |= AIFL_ROLL_ANIM;
 	}
+
 	if( BG_GetAnimScriptEvent( &ent->client->ps, ANIM_ET_FLIP ) >= 0 ) {
 		cs->aiFlags |= AIFL_FLIP_ANIM;
 	}
+
 	if( BG_GetAnimScriptEvent( &ent->client->ps, ANIM_ET_DIVE ) >= 0 ) {
 		cs->aiFlags |= AIFL_DIVE_ANIM;
 	}
+
 	// HACK
 	if( ent->aiName && !Q_stricmp( ent->aiName, "deathshead" ) ) {
 		cs->aiFlags |= AIFL_NO_FLAME_DAMAGE;
 	}
+
 	//
 	// check for no headshot damage
 	if( cs->aiFlags & AIFL_NO_HEADSHOT_DMG ) {
 		ent->headshotDamageScale = 0.0;
 	}
+
 	// set these values now so scripting system isn't relying on a Think having been run prior to running a script
 	// origin of the cast
 	VectorCopy( ent->client->ps.origin, cs->bs->origin );
@@ -1509,10 +1558,12 @@ void AIChar_spawn( gentity_t* ent )
 	VectorCopy( ent->client->ps.velocity, cs->bs->velocity );
 	// playerstate
 	cs->bs->cur_ps = ent->client->ps;
+
 	//
 	if( !ent->aiInactive ) {
 		// trigger a spawn script event
 		AICast_ScriptEvent( cs, "spawn", "" );
+
 	} else {
 		sys->UnlinkEntity( ent );
 	}

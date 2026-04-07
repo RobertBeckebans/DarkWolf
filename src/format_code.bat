@@ -11,9 +11,9 @@ if not exist "%GIT_BASH%" (
 )
 
 :: Make sure if / else statements are wrapped with braces
-:: astyle.exe -v --formatted --options=astyle-header.ini --exclude="libs" --recursive *.h
-:: astyle.exe -v --formatted --options=astyle-cpp.ini --exclude="libs" --recursive *.c
-:: astyle.exe -v --formatted --options=astyle-cpp.ini --exclude="libs" --recursive *.cpp
+astyle.exe -v --formatted --options=astyle-header.ini --exclude="libs" --recursive *.h
+astyle.exe -v --formatted --options=astyle-cpp.ini --exclude="libs" --recursive *.c
+astyle.exe -v --formatted --options=astyle-cpp.ini --exclude="libs" --recursive *.cpp
 
 :: Run the shell script using Git Bash
 echo Running clang-format via format_code.sh...

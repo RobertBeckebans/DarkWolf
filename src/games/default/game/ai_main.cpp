@@ -89,22 +89,27 @@ void QDECL	 BotAI_Print( int type, char* fmt, ... )
 			G_Printf( "%s", str );
 			break;
 		}
+
 		case PRT_WARNING: {
 			G_Printf( S_COLOR_YELLOW "Warning: %s", str );
 			break;
 		}
+
 		case PRT_ERROR: {
 			G_Printf( S_COLOR_RED "Error: %s", str );
 			break;
 		}
+
 		case PRT_FATAL: {
 			G_Printf( S_COLOR_RED "Fatal: %s", str );
 			break;
 		}
+
 		case PRT_EXIT: {
 			G_Error( S_COLOR_RED "Exit: %s", str );
 			break;
 		}
+
 		default: {
 			G_Printf( "unknown print type\n" );
 			break;
@@ -148,9 +153,11 @@ int BotAI_GetClientState( int clientNum, playerState_t* state )
 	gentity_t* ent;
 
 	ent = &g_entities[clientNum];
+
 	if( !ent->inuse ) {
 		return qfalse;
 	}
+
 	if( !ent->client ) {
 		return qfalse;
 	}
@@ -170,15 +177,19 @@ int BotAI_GetEntityState( int entityNum, entityState_t* state )
 
 	ent = &g_entities[entityNum];
 	memset( state, 0, sizeof( entityState_t ) );
+
 	if( !ent->inuse ) {
 		return qfalse;
 	}
+
 	if( !ent->r.linked ) {
 		return qfalse;
 	}
+
 	if( ent->r.svFlags & SVF_NOCLIENT ) {
 		return qfalse;
 	}
+
 	memcpy( state, &ent->s, sizeof( entityState_t ) );
 	return qtrue;
 }
@@ -193,6 +204,7 @@ int BotAI_GetSnapshotEntity( int clientNum, int sequence, entityState_t* state )
 	int entNum;
 
 	entNum = sys->BotGetSnapshotEntity( clientNum, sequence );
+
 	if( entNum == -1 ) {
 		memset( state, 0, sizeof( entityState_t ) );
 		return -1;
@@ -218,18 +230,23 @@ void QDECL BotAI_BotInitialChat( bot_state_t* bs, char* type, ... )
 	memset( vars, 0, sizeof( vars ) );
 	va_start( ap, type );
 	p = va_arg( ap, char* );
+
 	for( i = 0; i < MAX_MATCHVARIABLES; i++ ) {
 		if( !p ) {
 			break;
 		}
+
 		vars[i] = p;
 		p		= va_arg( ap, char* );
 	}
+
 	va_end( ap );
 
 	mcontext = CONTEXT_NORMAL | CONTEXT_NEARBYITEM | CONTEXT_NAMES;
+
 	if( BotCTFTeam( bs ) == CTF_TEAM_RED ) {
 		mcontext |= CONTEXT_CTFREDTEAM;
+
 	} else {
 		mcontext |= CONTEXT_CTFBLUETEAM;
 	}
@@ -252,6 +269,7 @@ void BotInterbreeding()
 	for( i = 0; i < MAX_CLIENTS; i++ ) {
 		if( botstates[i] && botstates[i]->inuse ) {
 			ranks[i] = botstates[i]->num_kills * 2 - botstates[i]->num_deaths;
+
 		} else {
 			ranks[i] = -1;
 		}
@@ -261,6 +279,7 @@ void BotInterbreeding()
 		sys->BotInterbreedGoalFuzzyLogic( botstates[parent1]->gs, botstates[parent2]->gs, botstates[child]->gs );
 		sys->BotMutateGoalFuzzyLogic( botstates[child]->gs, 1 );
 	}
+
 	// reset the kills and deaths
 	for( i = 0; i < MAX_CLIENTS; i++ ) {
 		if( botstates[i] && botstates[i]->inuse ) {
@@ -300,15 +319,18 @@ float AngleDifference( float ang1, float ang2 )
 	float diff;
 
 	diff = ang1 - ang2;
+
 	if( ang1 > ang2 ) {
 		if( diff > 180.0 ) {
 			diff -= 360.0;
 		}
+
 	} else {
 		if( diff < -180.0 ) {
 			diff += 360.0;
 		}
 	}
+
 	return diff;
 }
 
@@ -323,28 +345,35 @@ float BotChangeViewAngle( float angle, float ideal_angle, float speed )
 
 	angle		= AngleMod( angle );
 	ideal_angle = AngleMod( ideal_angle );
+
 	if( angle == ideal_angle ) {
 		return angle;
 	}
+
 	move = ideal_angle - angle;
+
 	if( ideal_angle > angle ) {
 		if( move > 180.0 ) {
 			move -= 360.0;
 		}
+
 	} else {
 		if( move < -180.0 ) {
 			move += 360.0;
 		}
 	}
+
 	if( move > 0 ) {
 		if( move > speed ) {
 			move = speed;
 		}
+
 	} else {
 		if( move < -speed ) {
 			move = -speed;
 		}
 	}
+
 	return AngleMod( angle + move );
 }
 
@@ -361,28 +390,36 @@ void BotChangeViewAngles( bot_state_t* bs, float thinktime )
 	if( bs->ideal_viewangles[PITCH] > 180 ) {
 		bs->ideal_viewangles[PITCH] -= 360;
 	}
+
 	//
 	if( bs->enemy >= 0 ) {
 		factor	  = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_VIEW_FACTOR, 0.01, 1 );
 		maxchange = sys->Characteristic_BFloat( bs->character, CHARACTERISTIC_VIEW_MAXCHANGE, 1, 1800 );
+
 	} else {
 		factor	  = 0.25;
 		maxchange = 300;
 	}
+
 	maxchange *= thinktime;
+
 	for( i = 0; i < 2; i++ ) {
 		diff	   = fabs( AngleDifference( bs->viewangles[i], bs->ideal_viewangles[i] ) );
 		anglespeed = diff * factor;
+
 		if( anglespeed > maxchange ) {
 			anglespeed = maxchange;
 		}
+
 		bs->viewangles[i] = BotChangeViewAngle( bs->viewangles[i], bs->ideal_viewangles[i], anglespeed );
 		// BotAI_Print(PRT_MESSAGE, "ideal_angles %f %f\n", bs->ideal_viewangles[0], bs->ideal_viewangles[1], bs->ideal_viewangles[2]);`
 		// bs->viewangles[i] = bs->ideal_viewangles[i];
 	}
+
 	if( bs->viewangles[PITCH] > 180 ) {
 		bs->viewangles[PITCH] -= 360;
 	}
+
 	// elementary action: view
 	sys->EA_View( bs->client, bs->viewangles );
 }
@@ -404,36 +441,45 @@ void BotInputToUserCommand( bot_input_t* bi, usercmd_t* ucmd, int delta_angles[3
 	// Com_Printf("dir = %f %f %f speed = %f\n", bi->dir[0], bi->dir[1], bi->dir[2], bi->speed);
 	// the duration for the user command in milli seconds
 	ucmd->serverTime = time;
+
 	//
 	if( bi->actionflags & ACTION_DELAYEDJUMP ) {
 		bi->actionflags |= ACTION_JUMP;
 		bi->actionflags &= ~ACTION_DELAYEDJUMP;
 	}
+
 	// set the buttons
 	if( bi->actionflags & ACTION_RESPAWN ) {
 		ucmd->buttons = BUTTON_ATTACK;
 	}
+
 	if( bi->actionflags & ACTION_ATTACK ) {
 		ucmd->buttons |= BUTTON_ATTACK;
 	}
+
 	if( bi->actionflags & ACTION_TALK ) {
 		ucmd->buttons |= BUTTON_TALK;
 	}
+
 	if( bi->actionflags & ACTION_GESTURE ) {
 		ucmd->buttons |= BUTTON_GESTURE;
 	}
+
 	if( bi->actionflags & ACTION_USE ) {
 		ucmd->buttons |= BUTTON_USE_HOLDABLE;
 	}
+
 	if( bi->actionflags & ACTION_WALK ) {
 		ucmd->buttons |= BUTTON_WALKING;
 	}
+
 	ucmd->weapon = bi->weapon;
 	// set the view angles
 	// NOTE: the ucmd->angles are the angles WITHOUT the delta angles
 	ucmd->angles[PITCH] = ANGLE2SHORT( bi->viewangles[PITCH] );
 	ucmd->angles[YAW]	= ANGLE2SHORT( bi->viewangles[YAW] );
 	ucmd->angles[ROLL]	= ANGLE2SHORT( bi->viewangles[ROLL] );
+
 	// subtract the delta angles
 	for( j = 0; j < 3; j++ ) {
 		temp = ucmd->angles[j] - delta_angles[j];
@@ -446,14 +492,17 @@ void BotInputToUserCommand( bot_input_t* bi, usercmd_t* ucmd, int delta_angles[3
 		*/
 		ucmd->angles[j] = temp;
 	}
+
 	// NOTE: movement is relative to the REAL view angles
 	// get the horizontal forward and right vector
 	// get the pitch in the range [-180, 180]
 	if( bi->dir[2] ) {
 		angles[PITCH] = bi->viewangles[PITCH];
+
 	} else {
 		angles[PITCH] = 0;
 	}
+
 	angles[YAW]	 = bi->viewangles[YAW];
 	angles[ROLL] = 0;
 	AngleVectors( angles, forward, right, NULL );
@@ -463,27 +512,34 @@ void BotInputToUserCommand( bot_input_t* bi, usercmd_t* ucmd, int delta_angles[3
 	ucmd->forwardmove = DotProduct( forward, bi->dir ) * bi->speed;
 	ucmd->rightmove	  = DotProduct( right, bi->dir ) * bi->speed;
 	ucmd->upmove	  = fabs( forward[2] ) * bi->dir[2] * bi->speed;
+
 	// normal keyboard movement
 	if( bi->actionflags & ACTION_MOVEFORWARD ) {
 		ucmd->forwardmove += 127;
 	}
+
 	if( bi->actionflags & ACTION_MOVEBACK ) {
 		ucmd->forwardmove -= 127;
 	}
+
 	if( bi->actionflags & ACTION_MOVELEFT ) {
 		ucmd->rightmove -= 127;
 	}
+
 	if( bi->actionflags & ACTION_MOVERIGHT ) {
 		ucmd->rightmove += 127;
 	}
+
 	// jump/moveup
 	if( bi->actionflags & ACTION_JUMP ) {
 		ucmd->upmove += 127;
 	}
+
 	// crouch/movedown
 	if( bi->actionflags & ACTION_CROUCH ) {
 		ucmd->upmove -= 127;
 	}
+
 	//
 	// Com_Printf("forward = %d right = %d up = %d\n", ucmd.forwardmove, ucmd.rightmove, ucmd.upmove);
 	// Com_Printf("ucmd->serverTime = %d\n", ucmd->serverTime);
@@ -503,18 +559,22 @@ void BotUpdateInput( bot_state_t* bs, int time )
 	for( j = 0; j < 3; j++ ) {
 		bs->viewangles[j] = AngleMod( bs->viewangles[j] + SHORT2ANGLE( bs->cur_ps.delta_angles[j] ) );
 	}
+
 	//
 	BotChangeViewAngles( bs, ( float )time / 1000 );
 	sys->EA_GetInput( bs->client, ( float )time / 1000, &bi );
+
 	// respawn hack
 	if( bi.actionflags & ACTION_RESPAWN ) {
 		if( bs->lastucmd.buttons & BUTTON_ATTACK ) {
 			bi.actionflags &= ~( ACTION_RESPAWN | ACTION_ATTACK );
 		}
 	}
+
 	//
 	BotInputToUserCommand( &bi, &bs->lastucmd, bs->cur_ps.delta_angles, time );
 	bs->lastucmd.serverTime = time;
+
 	// subtract the delta angles
 	for( j = 0; j < 3; j++ ) {
 		bs->viewangles[j] = AngleMod( bs->viewangles[j] - SHORT2ANGLE( bs->cur_ps.delta_angles[j] ) );
@@ -548,6 +608,7 @@ int BotAI( int client, float thinktime )
 	sys->EA_ResetInput( client, NULL );
 	//
 	bs = botstates[client];
+
 	if( !bs || !bs->inuse ) {
 		BotAI_Print( PRT_FATAL, "client %d hasn't been setup\n", client );
 		return BLERR_AICLIENTNOTSETUP;
@@ -560,9 +621,11 @@ int BotAI( int client, float thinktime )
 	while( sys->BotGetServerCommand( client, buf, sizeof( buf ) ) ) {
 		// have buf point to the command and args to the command arguments
 		args = strchr( buf, ' ' );
+
 		if( !args ) {
 			continue;
 		}
+
 		*args++ = '\0';
 
 		// remove color espace sequences from the arguments
@@ -573,18 +636,23 @@ int BotAI( int client, float thinktime )
 		} else if( !Q_stricmp( buf, "cs" ) ) { /*ConfigStringModified*/
 		} else if( !Q_stricmp( buf, "print" ) ) {
 			sys->BotQueueConsoleMessage( bs->cs, CMS_NORMAL, args );
+
 		} else if( !Q_stricmp( buf, "chat" ) ) {
 			sys->BotQueueConsoleMessage( bs->cs, CMS_CHAT, args );
+
 		} else if( !Q_stricmp( buf, "tchat" ) ) {
 			sys->BotQueueConsoleMessage( bs->cs, CMS_CHAT, args );
+
 		} else if( !Q_stricmp( buf, "scores" ) ) {			/*FIXME: parse scores?*/
 		} else if( !Q_stricmp( buf, "clientLevelShot" ) ) { /*ignore*/
 		}
 	}
+
 	// add the delta angles to the bot's current view angles
 	for( j = 0; j < 3; j++ ) {
 		bs->viewangles[j] = AngleMod( bs->viewangles[j] + SHORT2ANGLE( bs->cur_ps.delta_angles[j] ) );
 	}
+
 	// increase the local time of the bot
 	bs->ltime += thinktime;
 	//
@@ -600,10 +668,12 @@ int BotAI( int client, float thinktime )
 	BotDeathmatchAI( bs, thinktime );
 	// set the weapon selection every AI frame
 	sys->EA_SelectWeapon( bs->client, bs->weaponnum );
+
 	// subtract the delta angles
 	for( j = 0; j < 3; j++ ) {
 		bs->viewangles[j] = AngleMod( bs->viewangles[j] - SHORT2ANGLE( bs->cur_ps.delta_angles[j] ) );
 	}
+
 	// everything was ok
 	return BLERR_NOERROR;
 }
@@ -623,6 +693,7 @@ void BotScheduleBotThink()
 		if( !botstates[i] || !botstates[i]->inuse ) {
 			continue;
 		}
+
 		// initialize the bot think residual time
 		botstates[i]->botthink_residual = bot_thinktime.integer * botnum / numbots;
 		botnum++;
@@ -643,6 +714,7 @@ int BotAISetupClient( int client, struct bot_settings_s* settings )
 	if( !botstates[client] ) {
 		botstates[client] = ( bot_state_t* )G_Alloc( sizeof( bot_state_t ) );
 	}
+
 	bs = botstates[client];
 
 	if( bs && bs->inuse ) {
@@ -657,10 +729,12 @@ int BotAISetupClient( int client, struct bot_settings_s* settings )
 
 	// load the bot character
 	bs->character = sys->BotLoadCharacter( settings->characterfile, settings->skill );
+
 	if( !bs->character ) {
 		BotAI_Print( PRT_FATAL, "couldn't load skill %d from %s\n", settings->skill, settings->characterfile );
 		return qfalse;
 	}
+
 	// copy the settings
 	memcpy( &bs->settings, settings, sizeof( bot_settings_t ) );
 	// allocate a goal state
@@ -668,39 +742,48 @@ int BotAISetupClient( int client, struct bot_settings_s* settings )
 	// load the item weights
 	sys->Characteristic_String( bs->character, CHARACTERISTIC_ITEMWEIGHTS, filename, MAX_PATH );
 	errnum = sys->BotLoadItemWeights( bs->gs, filename );
+
 	if( errnum != BLERR_NOERROR ) {
 		sys->BotFreeGoalState( bs->gs );
 		return qfalse;
 	}
+
 	// allocate a weapon state
 	bs->ws = sys->BotAllocWeaponState();
 	// load the weapon weights
 	sys->Characteristic_String( bs->character, CHARACTERISTIC_WEAPONWEIGHTS, filename, MAX_PATH );
 	errnum = sys->BotLoadWeaponWeights( bs->ws, filename );
+
 	if( errnum != BLERR_NOERROR ) {
 		sys->BotFreeGoalState( bs->gs );
 		sys->BotFreeWeaponState( bs->ws );
 		return qfalse;
 	}
+
 	// allocate a chat state
 	bs->cs = sys->BotAllocChatState();
 	// load the chat file
 	sys->Characteristic_String( bs->character, CHARACTERISTIC_CHAT_FILE, filename, MAX_PATH );
 	sys->Characteristic_String( bs->character, CHARACTERISTIC_CHAT_NAME, name, MAX_PATH );
 	errnum = sys->BotLoadChatFile( bs->cs, filename, name );
+
 	if( errnum != BLERR_NOERROR ) {
 		sys->BotFreeChatState( bs->cs );
 		sys->BotFreeGoalState( bs->gs );
 		sys->BotFreeWeaponState( bs->ws );
 		return qfalse;
 	}
+
 	// get the gender characteristic
 	sys->Characteristic_String( bs->character, CHARACTERISTIC_GENDER, gender, MAX_PATH );
+
 	// set the chat gender
 	if( *gender == 'f' || *gender == 'F' ) {
 		sys->BotSetChatGender( bs->cs, CHAT_GENDERFEMALE );
+
 	} else if( *gender == 'm' || *gender == 'M' ) {
 		sys->BotSetChatGender( bs->cs, CHAT_GENDERMALE );
+
 	} else {
 		sys->BotSetChatGender( bs->cs, CHAT_GENDERLESS );
 	}
@@ -718,6 +801,7 @@ int BotAISetupClient( int client, struct bot_settings_s* settings )
 		sys->BotLibVarSet( "bot_testichat", "1" );
 		BotChatTest( bs );
 	}
+
 	// NOTE: reschedule the bot thinking
 	BotScheduleBotThink();
 	//
@@ -738,9 +822,11 @@ int BotAIShutdownClient( int client )
 		AICast_ShutdownClient( client );
 		return BLERR_NOERROR;
 	}
+
 	// done.
 
 	bs = botstates[client];
+
 	if( !bs || !bs->inuse ) {
 		// BotAI_Print(PRT_ERROR, "client %d already shutdown\n", client);
 		return BLERR_AICLIENTALREADYSHUTDOWN;
@@ -818,19 +904,24 @@ void BotResetState( bot_state_t* bs )
 	bs->entitynum	   = entitynum;
 	bs->character	   = character;
 	bs->entergame_time = entergame_time;
+
 	// reset several states
 	if( bs->ms ) {
 		sys->BotResetMoveState( bs->ms );
 	}
+
 	if( bs->gs ) {
 		sys->BotResetGoalState( bs->gs );
 	}
+
 	if( bs->ws ) {
 		sys->BotResetWeaponState( bs->ws );
 	}
+
 	if( bs->gs ) {
 		sys->BotResetAvoidGoals( bs->gs );
 	}
+
 	if( bs->ms ) {
 		sys->BotResetAvoidReach( bs->ms );
 	}
@@ -912,6 +1003,7 @@ int BotAIStartFrame( int time )
 
 	if( elapsed_time > bot_thinktime.integer ) {
 		thinktime = elapsed_time;
+
 	} else {
 		thinktime = bot_thinktime.integer;
 	}
@@ -937,18 +1029,23 @@ int BotAIStartFrame( int time )
 			}
 
 			ent = &g_entities[i];
+
 			if( !ent->inuse ) {
 				continue;
 			}
+
 			if( !ent->r.linked ) {
 				continue;
 			}
+
 			if( ent->r.svFlags & SVF_NOCLIENT ) {
 				continue;
 			}
+
 			if( ent->aiInactive ) {
 				continue;
 			}
+
 			//
 			memset( &state, 0, sizeof( bot_entitystate_t ) );
 			//
@@ -959,11 +1056,14 @@ int BotAIStartFrame( int time )
 			VectorCopy( ent->r.maxs, state.maxs );
 			state.type	= ent->s.eType;
 			state.flags = ent->s.eFlags;
+
 			if( ent->r.bmodel ) {
 				state.solid = SOLID_BSP;
+
 			} else {
 				state.solid = SOLID_BBOX;
 			}
+
 			state.groundent	  = ent->s.groundEntityNum;
 			state.modelindex  = ent->s.modelindex;
 			state.modelindex2 = ent->s.modelindex2;
@@ -1017,13 +1117,16 @@ int BotAIStartFrame( int time )
 		if( !botstates[i] || !botstates[i]->inuse ) {
 			continue;
 		}
+
 		// Ridah
 		if( g_entities[i].r.svFlags & SVF_CASTAI ) {
 			continue;
 		}
+
 		// done.
 		//
 		botstates[i]->botthink_residual += elapsed_time;
+
 		//
 		if( botstates[i]->botthink_residual >= thinktime ) {
 			botstates[i]->botthink_residual -= thinktime;
@@ -1043,10 +1146,12 @@ int BotAIStartFrame( int time )
 		if( !botstates[i] || !botstates[i]->inuse ) {
 			continue;
 		}
+
 		// Ridah
 		if( g_entities[i].r.svFlags & SVF_CASTAI ) {
 			continue;
 		}
+
 		// done.
 		if( g_entities[i].client->pers.connected != CON_CONNECTED ) {
 			continue;
@@ -1070,110 +1175,148 @@ int BotInitLibrary()
 
 	// set the maxclients and maxentities library variables before calling BotSetupLibrary
 	sys->Cvar_VariableStringBuffer( "sv_maxclients", buf, sizeof( buf ) );
+
 	if( !strlen( buf ) ) {
 		strcpy( buf, "8" );
 	}
+
 	sys->BotLibVarSet( "maxclients", buf );
 	Com_sprintf( buf, sizeof( buf ), "%d", MAX_GENTITIES );
 	sys->BotLibVarSet( "maxentities", buf );
 	// bsp checksum
 	sys->Cvar_VariableStringBuffer( "sv_mapChecksum", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "sv_mapChecksum", buf );
 	}
+
 	// maximum number of aas links
 	sys->Cvar_VariableStringBuffer( "max_aaslinks", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "max_aaslinks", buf );
 	}
+
 	// maximum number of items in a level
 	sys->Cvar_VariableStringBuffer( "max_levelitems", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "max_levelitems", buf );
 	}
+
 	// automatically launch WinBSPC if AAS file not available
 	sys->Cvar_VariableStringBuffer( "autolaunchbspc", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "autolaunchbspc", "1" );
 	}
+
 	//
 	sys->Cvar_VariableStringBuffer( "g_gametype", buf, sizeof( buf ) );
+
 	if( !strlen( buf ) ) {
 		strcpy( buf, "0" );
 	}
+
 	sys->BotLibVarSet( "g_gametype", buf );
 	//
 	// Rafael gameskill
 	sys->Cvar_VariableStringBuffer( "g_gameskill", buf, sizeof( buf ) );
+
 	if( !strlen( buf ) ) {
 		strcpy( buf, "0" );
 	}
+
 	sys->BotLibVarSet( "g_gamekill", buf );
 	// done
 	//
 	sys->Cvar_VariableStringBuffer( "bot_developer", buf, sizeof( buf ) );
+
 	if( !strlen( buf ) ) {
 		strcpy( buf, "0" );
 	}
+
 	sys->BotLibVarSet( "bot_developer", buf );
 	// log file
 	sys->Cvar_VariableStringBuffer( "bot_developer", buf, sizeof( buf ) );
+
 	if( !strlen( buf ) ) {
 		strcpy( buf, "0" );
 	}
+
 	sys->BotLibVarSet( "log", buf );
 	// no chatting
 	sys->Cvar_VariableStringBuffer( "bot_nochat", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "nochat", "0" );
 	}
+
 	// forced clustering calculations
 	sys->Cvar_VariableStringBuffer( "forceclustering", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "forceclustering", buf );
 	}
+
 	// forced reachability calculations
 	sys->Cvar_VariableStringBuffer( "forcereachability", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "forcereachability", buf );
 	}
+
 	// force writing of AAS to file
 	sys->Cvar_VariableStringBuffer( "forcewrite", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "forcewrite", buf );
 	}
+
 	// no AAS optimization
 	sys->Cvar_VariableStringBuffer( "nooptimize", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "nooptimize", buf );
 	}
+
 	// number of reachabilities to calculate each frame
 	sys->Cvar_VariableStringBuffer( "framereachability", buf, sizeof( buf ) );
+
 	if( !strlen( buf ) ) {
 		strcpy( buf, "20" );
 	}
+
 	sys->BotLibVarSet( "framereachability", buf );
 	//
 	sys->Cvar_VariableStringBuffer( "bot_reloadcharacters", buf, sizeof( buf ) );
+
 	if( !strlen( buf ) ) {
 		strcpy( buf, "0" );
 	}
+
 	sys->BotLibVarSet( "bot_reloadcharacters", buf );
 	// base directory
 	sys->Cvar_VariableStringBuffer( "fs_basepath", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "basedir", buf );
 	}
+
 	// game directory
 	sys->Cvar_VariableStringBuffer( "fs_game", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "gamedir", buf );
 	}
+
 	// cd directory
 	sys->Cvar_VariableStringBuffer( "fs_cdpath", buf, sizeof( buf ) );
+
 	if( strlen( buf ) ) {
 		sys->BotLibVarSet( "cddir", buf );
 	}
+
 	// setup the bot library
 	return sys->BotLibSetup();
 }
@@ -1205,9 +1348,11 @@ int BotAISetup( int restart )
 	sys->Cvar_Register( &bot_thinktime, "bot_thinktime", "100", 0 );
 
 	errnum = BotInitLibrary();
+
 	if( errnum != BLERR_NOERROR ) {
 		return qfalse;
 	}
+
 	return BLERR_NOERROR;
 }
 
@@ -1228,9 +1373,12 @@ int BotAIShutdown( int restart )
 				BotAIShutdownClient( botstates[i]->client );
 			}
 		}
+
 		// don't shutdown the bot library
+
 	} else {
 		sys->BotLibShutdown();
 	}
+
 	return qtrue;
 }

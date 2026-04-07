@@ -133,19 +133,23 @@ static void LAN_ResetPings( int source )
 			servers = &cls.localServers[0];
 			count	= MAX_OTHER_SERVERS;
 			break;
+
 		case AS_MPLAYER:
 			servers = &cls.mplayerServers[0];
 			count	= MAX_OTHER_SERVERS;
 			break;
+
 		case AS_GLOBAL:
 			servers = &cls.globalServers[0];
 			count	= MAX_GLOBAL_SERVERS;
 			break;
+
 		case AS_FAVORITES:
 			servers = &cls.favoriteServers[0];
 			count	= MAX_OTHER_SERVERS;
 			break;
 	}
+
 	if( servers ) {
 		for( i = 0; i < count; i++ ) {
 			servers[i].ping = -1;
@@ -171,27 +175,33 @@ static int LAN_AddServer( int source, const char* name, const char* address )
 			count	= &cls.numlocalservers;
 			servers = &cls.localServers[0];
 			break;
+
 		case AS_MPLAYER:
 			count	= &cls.nummplayerservers;
 			servers = &cls.mplayerServers[0];
 			break;
+
 		case AS_GLOBAL:
 			max		= MAX_GLOBAL_SERVERS;
 			count	= &cls.numglobalservers;
 			servers = &cls.globalServers[0];
 			break;
+
 		case AS_FAVORITES:
 			count	= &cls.numfavoriteservers;
 			servers = &cls.favoriteServers[0];
 			break;
 	}
+
 	if( servers && *count < max ) {
 		NET_StringToAdr( address, &adr );
+
 		for( i = 0; i < *count; i++ ) {
 			if( NET_CompareAdr( servers[i].adr, adr ) ) {
 				break;
 			}
 		}
+
 		if( i >= *count ) {
 			servers[*count].adr = adr;
 			Q_strncpyz( servers[*count].hostName, name, sizeof( servers[*count].hostName ) );
@@ -199,8 +209,10 @@ static int LAN_AddServer( int source, const char* name, const char* address )
 			( *count )++;
 			return 1;
 		}
+
 		return 0;
 	}
+
 	return -1;
 }
 
@@ -214,34 +226,42 @@ static void LAN_RemoveServer( int source, const char* addr )
 	int *		  count, i;
 	serverInfo_t* servers = NULL;
 	count				  = 0;
+
 	switch( source ) {
 		case AS_LOCAL:
 			count	= &cls.numlocalservers;
 			servers = &cls.localServers[0];
 			break;
+
 		case AS_MPLAYER:
 			count	= &cls.nummplayerservers;
 			servers = &cls.mplayerServers[0];
 			break;
+
 		case AS_GLOBAL:
 			count	= &cls.numglobalservers;
 			servers = &cls.globalServers[0];
 			break;
+
 		case AS_FAVORITES:
 			count	= &cls.numfavoriteservers;
 			servers = &cls.favoriteServers[0];
 			break;
 	}
+
 	if( servers ) {
 		netadr_t comp;
 		NET_StringToAdr( addr, &comp );
+
 		for( i = 0; i < *count; i++ ) {
 			if( NET_CompareAdr( comp, servers[i].adr ) ) {
 				int j = i;
+
 				while( j < *count - 1 ) {
 					Com_Memcpy( &servers[j], &servers[j + 1], sizeof( servers[j] ) );
 					j++;
 				}
+
 				( *count )--;
 				break;
 			}
@@ -260,16 +280,20 @@ static int LAN_GetServerCount( int source )
 		case AS_LOCAL:
 			return cls.numlocalservers;
 			break;
+
 		case AS_MPLAYER:
 			return cls.nummplayerservers;
 			break;
+
 		case AS_GLOBAL:
 			return cls.numglobalservers;
 			break;
+
 		case AS_FAVORITES:
 			return cls.numfavoriteservers;
 			break;
 	}
+
 	return 0;
 }
 
@@ -286,26 +310,34 @@ static void LAN_GetServerAddressString( int source, int n, char* buf, int buflen
 				Q_strncpyz( buf, NET_AdrToString( cls.localServers[n].adr ), buflen );
 				return;
 			}
+
 			break;
+
 		case AS_MPLAYER:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				Q_strncpyz( buf, NET_AdrToString( cls.mplayerServers[n].adr ), buflen );
 				return;
 			}
+
 			break;
+
 		case AS_GLOBAL:
 			if( n >= 0 && n < MAX_GLOBAL_SERVERS ) {
 				Q_strncpyz( buf, NET_AdrToString( cls.globalServers[n].adr ), buflen );
 				return;
 			}
+
 			break;
+
 		case AS_FAVORITES:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				Q_strncpyz( buf, NET_AdrToString( cls.favoriteServers[n].adr ), buflen );
 				return;
 			}
+
 			break;
 	}
+
 	buf[0] = '\0';
 }
 
@@ -319,28 +351,37 @@ static void LAN_GetServerInfo( int source, int n, char* buf, int buflen )
 	char		  info[MAX_STRING_CHARS];
 	serverInfo_t* server = NULL;
 	info[0]				 = '\0';
+
 	switch( source ) {
 		case AS_LOCAL:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				server = &cls.localServers[n];
 			}
+
 			break;
+
 		case AS_MPLAYER:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				server = &cls.mplayerServers[n];
 			}
+
 			break;
+
 		case AS_GLOBAL:
 			if( n >= 0 && n < MAX_GLOBAL_SERVERS ) {
 				server = &cls.globalServers[n];
 			}
+
 			break;
+
 		case AS_FAVORITES:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				server = &cls.favoriteServers[n];
 			}
+
 			break;
 	}
+
 	if( server && buf ) {
 		buf[0] = '\0';
 		Info_SetValueForKey( info, "hostname", server->hostName );
@@ -356,6 +397,7 @@ static void LAN_GetServerInfo( int source, int n, char* buf, int buflen )
 		Info_SetValueForKey( info, "addr", NET_AdrToString( server->adr ) );
 		Info_SetValueForKey( info, "sv_allowAnonymous", va( "%i", server->allowAnonymous ) );
 		Q_strncpyz( buf, info, buflen );
+
 	} else {
 		if( buf ) {
 			buf[0] = '\0';
@@ -371,31 +413,41 @@ LAN_GetServerPing
 static int LAN_GetServerPing( int source, int n )
 {
 	serverInfo_t* server = NULL;
+
 	switch( source ) {
 		case AS_LOCAL:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				server = &cls.localServers[n];
 			}
+
 			break;
+
 		case AS_MPLAYER:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				server = &cls.mplayerServers[n];
 			}
+
 			break;
+
 		case AS_GLOBAL:
 			if( n >= 0 && n < MAX_GLOBAL_SERVERS ) {
 				server = &cls.globalServers[n];
 			}
+
 			break;
+
 		case AS_FAVORITES:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				server = &cls.favoriteServers[n];
 			}
+
 			break;
 	}
+
 	if( server ) {
 		return server->ping;
 	}
+
 	return -1;
 }
 
@@ -411,23 +463,31 @@ static serverInfo_t* LAN_GetServerPtr( int source, int n )
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				return &cls.localServers[n];
 			}
+
 			break;
+
 		case AS_MPLAYER:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				return &cls.mplayerServers[n];
 			}
+
 			break;
+
 		case AS_GLOBAL:
 			if( n >= 0 && n < MAX_GLOBAL_SERVERS ) {
 				return &cls.globalServers[n];
 			}
+
 			break;
+
 		case AS_FAVORITES:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				return &cls.favoriteServers[n];
 			}
+
 			break;
 	}
+
 	return NULL;
 }
 
@@ -443,11 +503,13 @@ static int LAN_CompareServers( int source, int sortKey, int sortDir, int s1, int
 
 	server1 = LAN_GetServerPtr( source, s1 );
 	server2 = LAN_GetServerPtr( source, s2 );
+
 	if( !server1 || !server2 ) {
 		return 0;
 	}
 
 	res = 0;
+
 	switch( sortKey ) {
 		case SORT_HOST:
 			res = Q_stricmp( server1->hostName, server2->hostName );
@@ -456,32 +518,44 @@ static int LAN_CompareServers( int source, int sortKey, int sortDir, int s1, int
 		case SORT_MAP:
 			res = Q_stricmp( server1->mapName, server2->mapName );
 			break;
+
 		case SORT_CLIENTS:
 			if( server1->clients < server2->clients ) {
 				res = -1;
+
 			} else if( server1->clients > server2->clients ) {
 				res = 1;
+
 			} else {
 				res = 0;
 			}
+
 			break;
+
 		case SORT_GAME:
 			if( server1->gameType < server2->gameType ) {
 				res = -1;
+
 			} else if( server1->gameType > server2->gameType ) {
 				res = 1;
+
 			} else {
 				res = 0;
 			}
+
 			break;
+
 		case SORT_PING:
 			if( server1->ping < server2->ping ) {
 				res = -1;
+
 			} else if( server1->ping > server2->ping ) {
 				res = 1;
+
 			} else {
 				res = 0;
 			}
+
 			break;
 	}
 
@@ -489,11 +563,14 @@ static int LAN_CompareServers( int source, int sortKey, int sortDir, int s1, int
 		if( res < 0 ) {
 			return 1;
 		}
+
 		if( res > 0 ) {
 			return -1;
 		}
+
 		return 0;
 	}
+
 	return res;
 }
 
@@ -547,21 +624,26 @@ static void LAN_MarkServerVisible( int source, int n, qboolean visible )
 	if( n == -1 ) {
 		int			  count	 = MAX_OTHER_SERVERS;
 		serverInfo_t* server = NULL;
+
 		switch( source ) {
 			case AS_LOCAL:
 				server = &cls.localServers[0];
 				break;
+
 			case AS_MPLAYER:
 				server = &cls.mplayerServers[0];
 				break;
+
 			case AS_GLOBAL:
 				server = &cls.globalServers[0];
 				count  = MAX_GLOBAL_SERVERS;
 				break;
+
 			case AS_FAVORITES:
 				server = &cls.favoriteServers[0];
 				break;
 		}
+
 		if( server ) {
 			for( n = 0; n < count; n++ ) {
 				server[n].visible = visible;
@@ -574,21 +656,28 @@ static void LAN_MarkServerVisible( int source, int n, qboolean visible )
 				if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 					cls.localServers[n].visible = visible;
 				}
+
 				break;
+
 			case AS_MPLAYER:
 				if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 					cls.mplayerServers[n].visible = visible;
 				}
+
 				break;
+
 			case AS_GLOBAL:
 				if( n >= 0 && n < MAX_GLOBAL_SERVERS ) {
 					cls.globalServers[n].visible = visible;
 				}
+
 				break;
+
 			case AS_FAVORITES:
 				if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 					cls.favoriteServers[n].visible = visible;
 				}
+
 				break;
 		}
 	}
@@ -606,23 +695,31 @@ static int LAN_ServerIsVisible( int source, int n )
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				return cls.localServers[n].visible;
 			}
+
 			break;
+
 		case AS_MPLAYER:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				return cls.mplayerServers[n].visible;
 			}
+
 			break;
+
 		case AS_GLOBAL:
 			if( n >= 0 && n < MAX_GLOBAL_SERVERS ) {
 				return cls.globalServers[n].visible;
 			}
+
 			break;
+
 		case AS_FAVORITES:
 			if( n >= 0 && n < MAX_OTHER_SERVERS ) {
 				return cls.favoriteServers[n].visible;
 			}
+
 			break;
 	}
+
 	return qfalse;
 }
 
@@ -697,8 +794,10 @@ static void Key_GetBindingBuf( int keynum, char* buf, int buflen )
 	char* value;
 
 	value = Key_GetBinding( keynum );
+
 	if( value ) {
 		Q_strncpyz( buf, value, buflen );
+
 	} else {
 		*buf = 0;
 	}
@@ -733,9 +832,11 @@ static void CLUI_GetCDKey( char* buf, int buflen )
 {
 	cvar_t* fs;
 	fs = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
+
 	if( UI_usesUniqueCDKey() && fs && fs->string[0] != 0 ) {
 		memcpy( buf, &cl_cdkey[16], 16 );
 		buf[16] = 0;
+
 	} else {
 		memcpy( buf, cl_cdkey, 16 );
 		buf[16] = 0;
@@ -751,11 +852,13 @@ static void CLUI_SetCDKey( char* buf )
 {
 	cvar_t* fs;
 	fs = Cvar_Get( "fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO );
+
 	if( UI_usesUniqueCDKey() && fs && fs->string[0] != 0 ) {
 		memcpy( &cl_cdkey[16], buf, 16 );
 		cl_cdkey[32] = 0;
 		// set the flag so the fle will be written at the next opportunity
 		cvar_modifiedFlags |= CVAR_ARCHIVE;
+
 	} else {
 		memcpy( cl_cdkey, buf, 16 );
 		// set the flag so the fle will be written at the next opportunity
@@ -777,10 +880,12 @@ static int GetConfigString( int index, char* buf, int size )
 	}
 
 	offset = cl.gameState.stringOffsets[index];
+
 	if( !offset ) {
 		if( size ) {
 			buf[0] = 0;
 		}
+
 		return qfalse;
 	}
 
@@ -788,6 +893,7 @@ static int GetConfigString( int index, char* buf, int size )
 
 	return qtrue;
 }
+
 class idClientUISystemCalls : public idUISystemCalls
 {
 public:
@@ -1284,9 +1390,11 @@ void CL_ShutdownUI()
 {
 	cls.keyCatchers &= ~KEYCATCH_UI;
 	cls.uiStarted = qfalse;
+
 	if( !uivm ) {
 		return;
 	}
+
 	uivm->Shutdown();
 	Sys_UnloadDll( ( void* )vmHandle );
 
@@ -1321,6 +1429,7 @@ qboolean UI_usesUniqueCDKey()
 {
 	if( uivm ) {
 		return uivm->HasUniqueCDKey();
+
 	} else {
 		return qfalse;
 	}

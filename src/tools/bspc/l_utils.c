@@ -69,19 +69,24 @@ void Vector2Angles( vec3_t value1, vec3_t angles )
 
 	if( value1[1] == 0 && value1[0] == 0 ) {
 		yaw = 0;
+
 		if( value1[2] > 0 ) {
 			pitch = 90;
+
 		} else {
 			pitch = 270;
 		}
+
 	} else {
 		yaw = ( int )( atan2( value1[1], value1[0] ) * 180 / M_PI );
+
 		if( yaw < 0 ) {
 			yaw += 360;
 		}
 
 		forward = sqrt( value1[0] * value1[0] + value1[1] * value1[1] );
 		pitch	= ( int )( atan2( value1[2], forward ) * 180 / M_PI );
+
 		if( pitch < 0 ) {
 			pitch += 360;
 		}
@@ -91,6 +96,7 @@ void Vector2Angles( vec3_t value1, vec3_t angles )
 	angles[YAW]	  = yaw;
 	angles[ROLL]  = 0;
 }
+
 #endif // BOTLIB
 //===========================================================================
 //
@@ -104,9 +110,11 @@ void ConvertPath( char* path )
 		if( *path == '/' || *path == '\\' ) {
 			*path = PATHSEPERATOR_CHAR;
 		}
+
 		path++;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -122,6 +130,7 @@ void AppendPathSeperator( char* path, int length )
 		path[pathlen + 1] = '\0';
 	}
 }
+
 //===========================================================================
 // returns pointer to file handle
 // sets offset to and length of 'filename' in the pak file
@@ -140,31 +149,38 @@ qboolean FindFileInPak( char* pakfile, char* filename, foundfile_t* file )
 
 	// open the pak file
 	fp = fopen( pakfile, "rb" );
+
 	if( !fp ) {
 		return false;
 	}
+
 	// read pak header, check for valid pak id and seek to the dir entries
 	if( ( fread( &packheader, 1, sizeof( dpackheader_t ), fp ) != sizeof( dpackheader_t ) ) || ( packheader.ident != IDPAKHEADER ) || ( fseek( fp, LittleLong( packheader.dirofs ), SEEK_SET ) ) ) {
 		fclose( fp );
 		return false;
 	}
+
 	// number of dir entries in the pak file
 	numdirs	  = LittleLong( packheader.dirlen ) / sizeof( dpackfile_t );
 	packfiles = ( dpackfile_t* )GetMemory( numdirs * sizeof( dpackfile_t ) );
+
 	// read the dir entry
 	if( fread( packfiles, sizeof( dpackfile_t ), numdirs, fp ) != numdirs ) {
 		fclose( fp );
 		FreeMemory( packfiles );
 		return false;
 	}
+
 	fclose( fp );
 	//
 	strcpy( path, filename );
 	ConvertPath( path );
+
 	// find the dir entry in the pak file
 	for( i = 0; i < numdirs; i++ ) {
 		// convert the dir entry name
 		ConvertPath( packfiles[i].name );
+
 		// compare the dir entry name with the filename
 		if( Q_strcasecmp( packfiles[i].name, path ) == 0 ) {
 			strcpy( file->filename, pakfile );
@@ -174,9 +190,11 @@ qboolean FindFileInPak( char* pakfile, char* filename, foundfile_t* file )
 			return true;
 		}
 	}
+
 	FreeMemory( packfiles );
 	return false;
 }
+
 //===========================================================================
 // find a Quake2 file
 // returns full path in 'filename'
@@ -197,57 +215,71 @@ qboolean FindQuakeFile2( char* basedir, char* gamedir, char* filename, foundfile
 	if( gamedir ) {
 		strncpy( gamedirs[0], gamedir, MAX_PATH );
 	}
+
 	strncpy( gamedirs[1], "baseq2", MAX_PATH );
+
 	//
 	// find the file in the two game directories
 	for( dir = 0; dir < 2; dir++ ) {
 		// check if the file is in a directory
 		filedir[0] = 0;
+
 		if( basedir && strlen( basedir ) ) {
 			strncpy( filedir, basedir, MAX_PATH );
 			AppendPathSeperator( filedir, MAX_PATH );
 		}
+
 		if( strlen( gamedirs[dir] ) ) {
 			strncat( filedir, gamedirs[dir], MAX_PATH - strlen( filedir ) );
 			AppendPathSeperator( filedir, MAX_PATH );
 		}
+
 		strncat( filedir, filename, MAX_PATH - strlen( filedir ) );
 		ConvertPath( filedir );
 		Log_Write( "accessing %s", filedir );
+
 		if( !access( filedir, 0x04 ) ) {
 			strcpy( file->filename, filedir );
 			file->length = 0;
 			file->offset = 0;
 			return true;
 		}
+
 		// check if the file is in a pak?.pak
 		for( i = 0; i < 10; i++ ) {
 			filedir[0] = 0;
+
 			if( basedir && strlen( basedir ) ) {
 				strncpy( filedir, basedir, MAX_PATH );
 				AppendPathSeperator( filedir, MAX_PATH );
 			}
+
 			if( strlen( gamedirs[dir] ) ) {
 				strncat( filedir, gamedirs[dir], MAX_PATH - strlen( filedir ) );
 				AppendPathSeperator( filedir, MAX_PATH );
 			}
+
 			// TTimo: huuuuh .. I suppose this means there needs to be two \0\0 at the end?
 			// sprintf(&filedir[strlen(filedir)], "pak%d.pak\0", i);
 			// doing it more 'clean'
 			sprintf( &filedir[strlen( filedir )], "pak%d.pak ", i );
 			filedir[strlen( filedir ) - 1] = '\0';
+
 			if( !access( filedir, 0x04 ) ) {
 				Log_Write( "searching %s in %s", filename, filedir );
+
 				if( FindFileInPak( filedir, filename, file ) ) {
 					return true;
 				}
 			}
 		}
 	}
+
 	file->offset = 0;
 	file->length = 0;
 	return false;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -259,9 +291,11 @@ qboolean FindQuakeFile( char* filename, foundfile_t* file )
 {
 	return FindQuakeFile2( LibVarGetString( "basedir" ), LibVarGetString( "gamedir" ), filename, file );
 }
-#else  // BOTLIB
+
+#else // BOTLIB
 qboolean FindQuakeFile( char* basedir, char* gamedir, char* filename, foundfile_t* file )
 {
 	return FindQuakeFile2( basedir, gamedir, filename, file );
 }
+
 #endif // BOTLIB

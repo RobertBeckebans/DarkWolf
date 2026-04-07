@@ -88,6 +88,7 @@ void AAS_SetCurrentWorld( int index )
 	// set the current world pointer
 	aasworld = &aasworlds[index];
 }
+
 // done.
 
 //===========================================================================
@@ -102,18 +103,23 @@ char* AAS_StringFromIndex( char* indexname, char* stringindex[], int numindexes,
 		botimport.Print( PRT_ERROR, "%s: index %d not setup\n", indexname, index );
 		return "";
 	}
+
 	if( index < 0 || index >= numindexes ) {
 		botimport.Print( PRT_ERROR, "%s: index %d out of range\n", indexname, index );
 		return "";
 	}
+
 	if( !stringindex[index] ) {
 		if( index ) {
 			botimport.Print( PRT_ERROR, "%s: reference to unused index %d\n", indexname, index );
 		}
+
 		return "";
 	}
+
 	return stringindex[index];
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -123,20 +129,25 @@ char* AAS_StringFromIndex( char* indexname, char* stringindex[], int numindexes,
 int AAS_IndexFromString( char* indexname, char* stringindex[], int numindexes, char* string )
 {
 	int i;
+
 	if( !( *aasworld ).indexessetup ) {
 		botimport.Print( PRT_ERROR, "%s: index not setup \"%s\"\n", indexname, string );
 		return 0;
 	}
+
 	for( i = 0; i < numindexes; i++ ) {
 		if( !stringindex[i] ) {
 			continue;
 		}
+
 		if( !Q_stricmp( stringindex[i], string ) ) {
 			return i;
 		}
 	}
+
 	return 0;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -148,6 +159,7 @@ char* AAS_ModelFromIndex( int index )
 	//	return AAS_StringFromIndex("ModelFromIndex", &(*aasworld).configstrings[CS_MODELS], MAX_MODELS, index);
 	return 0; // removed so the CS_ defines could be removed from be_aas_def.h
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -159,6 +171,7 @@ int AAS_IndexFromModel( char* modelname )
 	//	return AAS_IndexFromString("IndexFromModel", &(*aasworld).configstrings[CS_MODELS], MAX_MODELS, modelname);
 	return 0; // removed so the CS_ defines could be removed from be_aas_def.h
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -168,6 +181,7 @@ int AAS_IndexFromModel( char* modelname )
 void AAS_UpdateStringIndexes( int numconfigstrings, char* configstrings[] )
 {
 	int i;
+
 	// set string pointers and copy the strings
 	for( i = 0; i < numconfigstrings; i++ ) {
 		if( configstrings[i] ) {
@@ -176,8 +190,10 @@ void AAS_UpdateStringIndexes( int numconfigstrings, char* configstrings[] )
 			strcpy( ( *aasworld ).configstrings[i], configstrings[i] );
 		}
 	}
+
 	( *aasworld ).indexessetup = qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -188,6 +204,7 @@ int AAS_Loaded()
 {
 	return ( *aasworld ).loaded;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -198,6 +215,7 @@ int AAS_Initialized()
 {
 	return ( *aasworld ).initialized;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -219,6 +237,7 @@ void AAS_SetInitialized()
 	AAS_RT_BuildRouteTable();
 	// done.
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -231,16 +250,20 @@ void AAS_ContinueInit( float time )
 	if( !( *aasworld ).loaded ) {
 		return;
 	}
+
 	// if AAS is already initialized
 	if( ( *aasworld ).initialized ) {
 		return;
 	}
+
 	// calculate reachability, if not finished return
 	if( AAS_ContinueInitReachability( time ) ) {
 		return;
 	}
+
 	// initialize clustering for the new map
 	AAS_InitClustering();
+
 	// if reachability has been calculated and an AAS file should be written
 	// or there is a forced data optimization
 	if( ( *aasworld ).savefile || ( ( int )LibVarGetValue( "forcewrite" ) ) ) {
@@ -248,18 +271,22 @@ void AAS_ContinueInit( float time )
 		if( !( ( int )LibVarValue( "nooptimize", "1" ) ) ) {
 			AAS_Optimize();
 		}
+
 		// save the AAS file
 		if( AAS_WriteAASFile( ( *aasworld ).filename ) ) {
 			botimport.Print( PRT_MESSAGE, "%s written succesfully\n", ( *aasworld ).filename );
+
 		} else {
 			botimport.Print( PRT_ERROR, "couldn't write %s\n", ( *aasworld ).filename );
 		}
 	}
+
 	// initialize the routing
 	AAS_InitRouting();
 	// at this point AAS is initialized
 	AAS_SetInitialized();
 }
+
 //===========================================================================
 // called at the start of every frame
 //
@@ -301,9 +328,11 @@ int AAS_StartFrame( float time )
 		}
 		*/
 	}
+
 	( *aasworld ).numframes++;
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -314,6 +343,7 @@ float AAS_Time()
 {
 	return ( *aasworld ).time;
 }
+
 //===========================================================================
 // basedir	= Quake2 console basedir
 // gamedir	= Quake2 console gamedir
@@ -342,6 +372,7 @@ int AAS_LoadFiles( const char* mapname )
 	// load the aas file
 	Com_sprintf( aasfile, MAX_PATH, "maps/%s.aas", mapname );
 	errnum = AAS_LoadAASFile( aasfile );
+
 	if( errnum != BLERR_NOERROR ) {
 		return errnum;
 	}
@@ -350,6 +381,7 @@ int AAS_LoadFiles( const char* mapname )
 	strncpy( ( *aasworld ).filename, aasfile, MAX_PATH );
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 // called everytime a map changes
 //
@@ -380,6 +412,7 @@ int AAS_LoadMap( const char* mapname )
 		if( !mapname ) {
 			return 0;
 		}
+
 		//
 		( *aasworld ).initialized = qfalse;
 		// NOTE: free the routing caches before loading a new map because
@@ -388,6 +421,7 @@ int AAS_LoadMap( const char* mapname )
 		AAS_FreeRoutingCaches();
 		// load the map
 		errnum = AAS_LoadFiles( this_mapname );
+
 		if( errnum != BLERR_NOERROR ) {
 			( *aasworld ).loaded = qfalse;
 			// RF, we are allowed to skip one of the files, but not both
@@ -395,6 +429,7 @@ int AAS_LoadMap( const char* mapname )
 			missingErrNum = errnum;
 			continue;
 		}
+
 		//
 		loaded = qtrue;
 		//
@@ -433,10 +468,12 @@ int AAS_Setup()
 
 	( *aasworlds ).maxclients  = ( int )LibVarValue( "maxclients", "128" );
 	( *aasworlds ).maxentities = ( int )LibVarValue( "maxentities", "1024" );
+
 	// allocate memory for the entities
 	if( ( *aasworld ).entities ) {
 		FreeMemory( ( *aasworld ).entities );
 	}
+
 	( *aasworld ).entities = ( aas_entity_t* )GetClearedHunkMemory( ( *aasworld ).maxentities * sizeof( aas_entity_t ) );
 	// invalidate all the entities
 	AAS_InvalidateEntities();
@@ -447,6 +484,7 @@ int AAS_Setup()
 	( *aasworld ).numframes = 0;
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-

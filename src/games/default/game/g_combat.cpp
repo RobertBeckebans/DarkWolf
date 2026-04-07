@@ -48,6 +48,7 @@ void AddScore( gentity_t* ent, int score )
 	if( !ent->client ) {
 		return;
 	}
+
 	// no scoring during pre-match warmup
 	if( level.warmupTime ) {
 		return;
@@ -58,12 +59,15 @@ void AddScore( gentity_t* ent, int score )
 	if( g_gametype.integer == GT_SINGLE_PLAYER ) {
 		return;
 	}
+
 	// done.
 
 	ent->client->ps.persistant[PERS_SCORE] += score;
+
 	if( g_gametype.integer == GT_TEAM ) {
 		level.teamScores[ent->client->ps.persistant[PERS_TEAM]] += score;
 	}
+
 	CalculateRanks();
 }
 
@@ -93,6 +97,7 @@ void			TossClientItems( gentity_t* self )
 		case AICHAR_WARZOMBIE:
 		case AICHAR_LOPER:
 			return; //----(SA)	removed DK's special case
+
 		default:
 			break;
 	}
@@ -112,6 +117,7 @@ void			TossClientItems( gentity_t* self )
 		if( self->client->ps.weaponstate == WEAPON_DROPPING || self->client->ps.weaponstate == WEAPON_DROPPING_TORELOAD ) {
 			weapon = self->client->pers.cmd.weapon;
 		}
+
 		if( !( COM_BitCheck( self->client->ps.weapons, weapon ) ) ) {
 			weapon = WP_NONE;
 		}
@@ -121,12 +127,15 @@ void			TossClientItems( gentity_t* self )
 	if( weapon == WP_SNOOPERSCOPE ) {
 		weapon = WP_GARAND;
 	}
+
 	if( weapon == WP_FG42SCOPE ) {
 		weapon = WP_FG42;
 	}
+
 	if( weapon == WP_AKIMBO ) { //----(SA)	added
 		weapon = WP_COLT;
 	}
+
 	//----(SA)	end
 
 	if( weapon > WP_NONE && weapon < WP_MONSTER_ATTACK1 && self->client->ps.ammo[BG_FindAmmoForWeapon( ( weapon_t )weapon )] ) {
@@ -148,18 +157,23 @@ void			TossClientItems( gentity_t* self )
 
 	if( g_gametype.integer != GT_TEAM ) { // drop all the powerups if not in teamplay
 		angle = 45;
+
 		for( i = 1; i < PW_NUM_POWERUPS; i++ ) {
 			if( self->client->ps.powerups[i] > level.time ) {
 				item = BG_FindItemForPowerup( ( powerup_t )i );
+
 				if( !item ) {
 					continue;
 				}
+
 				drop = Drop_Item( self, item, angle, qfalse );
 				// decide how many seconds it has left
 				drop->count = ( self->client->ps.powerups[i] - level.time ) / 1000;
+
 				if( drop->count < 1 ) {
 					drop->count = 1;
 				}
+
 				drop->nextthink = 0; // stay forever
 				angle += 45;
 			}
@@ -179,8 +193,10 @@ void LookAtKiller( gentity_t* self, gentity_t* inflictor, gentity_t* attacker )
 
 	if( attacker && attacker != self ) {
 		VectorSubtract( attacker->s.pos.trBase, self->s.pos.trBase, dir );
+
 	} else if( inflictor && inflictor != self ) {
 		VectorSubtract( inflictor->s.pos.trBase, self->s.pos.trBase, dir );
+
 	} else {
 		self->client->ps.stats[STAT_DEAD_YAW] = self->s.angles[YAW];
 		return;
@@ -214,10 +230,12 @@ void GibEntity( gentity_t* self, int killer )
 	vec3_t	   dir;
 
 	VectorClear( dir );
+
 	if( other->inuse ) {
 		if( other->client ) {
 			VectorSubtract( self->r.currentOrigin, other->r.currentOrigin, dir );
 			VectorNormalize( dir );
+
 		} else if( !VectorCompare( other->s.pos.trDelta, vec3_origin ) ) {
 			VectorNormalize2( other->s.pos.trDelta, dir );
 		}
@@ -239,10 +257,12 @@ void body_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int d
 	if( self->health > GIB_HEALTH ) {
 		return;
 	}
+
 	if( !g_blood.integer ) {
 		self->health = GIB_HEALTH + 1;
 		return;
 	}
+
 	if( self->aiCharacter == AICHAR_HEINRICH || self->aiCharacter == AICHAR_HELGA || self->aiCharacter == AICHAR_SUPERSOLDIER || self->aiCharacter == AICHAR_PROTOSOLDIER ) {
 		if( self->health <= GIB_HEALTH ) {
 			self->health = -1;
@@ -362,11 +382,14 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 
 	if( attacker ) {
 		killer = attacker->s.number;
+
 		if( attacker->client ) {
 			killerName = attacker->client->pers.netname;
+
 		} else {
 			killerName = "<non-client>";
 		}
+
 	} else {
 		killer	   = ENTITYNUM_WORLD;
 		killerName = "<world>";
@@ -379,6 +402,7 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 
 	if( meansOfDeath < 0 || meansOfDeath >= sizeof( modNames ) / sizeof( modNames[0] ) ) {
 		obit = "<bad obituary>";
+
 	} else {
 		obit = modNames[meansOfDeath];
 	}
@@ -399,6 +423,7 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 	if( attacker && attacker->client ) {
 		if( attacker == self || OnSameTeam( self, attacker ) ) {
 			AddScore( attacker, -1 );
+
 		} else {
 			AddScore( attacker, 1 );
 
@@ -432,11 +457,14 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 					//					attacker->client->ps.eFlags |= EF_AWARD_EXCELLENT;
 					attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
 				}
+
 				// Ridah
 			}
+
 			// done.
 			attacker->client->lastKillTime = level.time;
 		}
+
 	} else {
 		AddScore( self, -1 );
 	}
@@ -448,6 +476,7 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 	// JPW NERVE new drop behavior
 	if( g_gametype.integer == GT_SINGLE_PLAYER ) { // only drop here in single player; in multiplayer, drop @ limbo
 		contents = sys->PointContents( self->r.currentOrigin, -1 );
+
 		if( !( contents & CONTENTS_NODROP ) ) {
 			TossClientItems( self );
 		}
@@ -458,32 +487,40 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 		if( self->client->ps.powerups[PW_REDFLAG] ) {
 			item = BG_FindItem( "Red Flag" );
 		}
+
 		if( self->client->ps.powerups[PW_BLUEFLAG] ) {
 			item = BG_FindItem( "Blue Flag" );
 		}
+
 		launchvel[0] = crandom() * 20;
 		launchvel[1] = crandom() * 20;
 		launchvel[2] = 10 + random() * 10;
+
 		if( item ) {
 			flag				= LaunchItem( item, self->r.currentOrigin, launchvel );
 			flag->s.modelindex2 = self->s.otherEntityNum2; // JPW NERVE FIXME set player->otherentitynum2 with old modelindex2 from flag and restore here
 		}
 	}
+
 	// jpw
 
 	Cmd_Score_f( self ); // show scores
+
 	// send updated scores to any clients that are following this one,
 	// or they would get stale scoreboards
 	for( i = 0; i < level.maxclients; i++ ) {
 		gclient_t* client;
 
 		client = &level.clients[i];
+
 		if( client->pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		if( client->sess.sessionTeam != TEAM_SPECTATOR ) {
 			continue;
 		}
+
 		if( client->sess.spectatorClient == self->s.number ) {
 			Cmd_Score_f( g_entities + i );
 		}
@@ -492,13 +529,16 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 	self->takedamage = qtrue; // can still be gibbed
 
 	self->s.powerups = 0;
+
 	// JPW NERVE -- only corpse in SP; in MP, need CONTENTS_BODY so medic can operate
 	if( g_gametype.integer == GT_SINGLE_PLAYER ) {
 		self->r.contents = CONTENTS_CORPSE;
 		self->s.weapon	 = WP_NONE;
+
 	} else {
 		self->client->limboDropWeapon = self->s.weapon; // store this so it can be dropped in limbo
 	}
+
 	// jpw
 	self->s.angles[0] = 0;
 	self->s.angles[2] = 0;
@@ -544,9 +584,11 @@ void  player_die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, in
 			case 0:
 				anim = BOTH_DEATH1;
 				break;
+
 			case 1:
 				anim = BOTH_DEATH2;
 				break;
+
 			case 2:
 			default:
 				anim = BOTH_DEATH3;
@@ -610,6 +652,7 @@ int CheckArmor( gentity_t* ent, int damage, int dflags )
 	// armor
 	count = client->ps.stats[STAT_ARMOR];
 	save  = ceil( damage * ARMOR_PROTECTION );
+
 	if( save >= count ) {
 		save = count;
 	}
@@ -655,6 +698,7 @@ qboolean IsHeadShotWeapon( int mod, gentity_t* targ, gentity_t* attacker )
 		case AICHAR_LOPER:
 		case AICHAR_VENOM: //----(SA)	added
 			return qfalse;
+
 		default:
 			break;
 	}
@@ -716,14 +760,17 @@ qboolean IsHeadShot( gentity_t* targ, gentity_t* attacker, vec3_t dir, vec3_t po
 		if( ( targ->r.svFlags & SVF_CASTAI ) && sys->GetTag( targ->s.number, "tag_head", & or ) ) {
 			VectorCopy( or.origin, head->r.currentOrigin );
 			VectorMA( head->r.currentOrigin, 6, or.axis[2], head->r.currentOrigin ); // tag is at base of neck
-		} else if( targ->client->ps.pm_flags & PMF_DUCKED ) {						 // closer fake offset for 'head' box when crouching
-			head->r.currentOrigin[2] += targ->client->ps.crouchViewHeight + 8;		 // JPW NERVE 16 is kludge to get head height to match up
+
+		} else if( targ->client->ps.pm_flags & PMF_DUCKED ) {				   // closer fake offset for 'head' box when crouching
+			head->r.currentOrigin[2] += targ->client->ps.crouchViewHeight + 8; // JPW NERVE 16 is kludge to get head height to match up
 		}
+
 		// else if(targ->client->ps.legsAnim == LEGS_IDLE && targ->aiCharacter == AICHAR_SOLDIER)	// standing with legs bent (about a head shorter than other leg poses)
 		//	head->r.currentOrigin[2] += targ->client->ps.viewheight;
 		else {
 			head->r.currentOrigin[2] += targ->client->ps.viewheight; // JPW NERVE pulled this	// 6 is fudged "head height" value
 		}
+
 		VectorCopy( head->r.currentOrigin, head->s.origin );
 		VectorCopy( targ->r.currentAngles, head->s.angles );
 		VectorCopy( head->s.angles, head->s.apos.trBase );
@@ -758,6 +805,7 @@ qboolean IsHeadShot( gentity_t* targ, gentity_t* attacker, vec3_t dir, vec3_t po
 			if( tr.fraction != 1 ) {
 				VectorMA( start, ( tr.fraction * 64 ), dir, end );
 			}
+
 			tent = G_TempEntity( start, EV_RAILTRAIL );
 			VectorCopy( end, tent->s.origin2 );
 			tent->s.dmgFlags = 0;
@@ -794,10 +842,13 @@ void G_ArmorDamage( gentity_t* targ )
 
 	if( targ->s.aiChar == AICHAR_PROTOSOLDIER ) {
 		numParts = 9;
+
 	} else if( targ->s.aiChar == AICHAR_SUPERSOLDIER ) {
 		numParts = 14;
+
 	} else if( targ->s.aiChar == AICHAR_HEINRICH ) {
 		numParts = 20;
+
 	} else {
 		return;
 	}
@@ -805,6 +856,7 @@ void G_ArmorDamage( gentity_t* targ )
 	if( numParts > dmgbits ) {
 		numParts = dmgbits; // lock this down so it doesn't overwrite any bits that it shouldn't.  TODO: fix this
 	}
+
 	// determined here (on server) by location of hit and existing armor, you're updating here so
 	// the client knows which pieces are still in place, and by difference with previous state, which
 	// pieces to play an effect where the part is blown off.
@@ -826,6 +878,7 @@ void G_ArmorDamage( gentity_t* targ )
 
 		// how many are removed already?
 		curbroke = 0;
+
 		for( i = 0; i < numParts; i++ ) {
 			if( targ->s.dmgFlags & ( 1 << i ) ) {
 				curbroke++;
@@ -847,13 +900,15 @@ void G_ArmorDamage( gentity_t* targ )
 				}
 
 				targ->s.dmgFlags |= ( 1 << remove ); // turn off 'undamaged' part
-				if( ( int )( random() + 0.5 ) ) {	 // choose one of two possible replacements
+
+				if( ( int )( random() + 0.5 ) ) { // choose one of two possible replacements
 					targ->s.dmgFlags |= ( 1 << ( numParts + remove ) );
 				}
 			}
 		}
 	}
 }
+
 /*
 ============
 T_Damage
@@ -895,6 +950,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 		// get out of damage in sp if in cutscene.
 		return;
 	}
+
 	//----(SA)	end
 
 	//	if (reloading || saveGamePending) {	// map transition is happening, don't do anything
@@ -923,17 +979,22 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 			case MOD_GRENADE_SPLASH:
 			case MOD_ROCKET:
 			case MOD_ROCKET_SPLASH:
+
 				// Rafael - had to change this since the
 				// we added a new lvl of diff
 				if( g_gameskill.integer == GSKILL_EASY ) {
 					damage *= 0.25;
+
 				} else if( g_gameskill.integer == GSKILL_MEDIUM ) {
 					damage *= 0.75;
+
 				} else if( g_gameskill.integer == GSKILL_HARD ) {
 					damage *= 0.9;
+
 				} else {
 					damage *= 0.9;
 				}
+
 			default:
 				break;
 		}
@@ -942,6 +1003,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 	if( !inflictor ) {
 		inflictor = &g_entities[ENTITYNUM_WORLD];
 	}
+
 	if( !attacker ) {
 		attacker = &g_entities[ENTITYNUM_WORLD];
 	}
@@ -951,6 +1013,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 		if( targ->use && targ->moverState == MOVER_POS1 ) {
 			targ->use( targ, inflictor, attacker );
 		}
+
 		return;
 	}
 
@@ -961,9 +1024,11 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 			case MOD_ROCKET:
 			case MOD_ROCKET_SPLASH:
 				break;
+
 			default:
 				return; // no damage from other weapons
 		}
+
 	} else if( targ->s.eType == ET_EXPLOSIVE ) {
 		// 32 Explosive
 		// 64 Dynamite only
@@ -1013,8 +1078,10 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 		if( !AICast_AIDamageOK( AICast_GetCastState( targ->s.number ), AICast_GetCastState( attacker->s.number ) ) ) {
 			return;
 		}
+
 		damage = ( int )( ceil( ( float )damage * 0.5 ) );
 	}
+
 	// done.
 
 	client = targ->client;
@@ -1027,6 +1094,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 
 	if( !dir ) {
 		dflags |= DAMAGE_NO_KNOCKBACK;
+
 	} else {
 		VectorNormalize( dir );
 	}
@@ -1042,6 +1110,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 	if( targ->flags & FL_NO_KNOCKBACK ) {
 		knockback = 0;
 	}
+
 	if( dflags & DAMAGE_NO_KNOCKBACK ) {
 		knockback = 0;
 	}
@@ -1071,12 +1140,15 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 			int t;
 
 			t = knockback * 2;
+
 			if( t < 50 ) {
 				t = 50;
 			}
+
 			if( t > 200 ) {
 				t = 200;
 			}
+
 			targ->client->ps.pm_time = t;
 			targ->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 		}
@@ -1112,9 +1184,11 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 	// and protects 50% against all damage
 	if( client && client->ps.powerups[PW_BATTLESUIT] ) {
 		G_AddEvent( targ, EV_POWERUP_BATTLESUIT, 0 );
+
 		if( dflags & DAMAGE_RADIUS ) {
 			return;
 		}
+
 		damage *= 0.5;
 	}
 
@@ -1125,6 +1199,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 		if( attacker->client && targ != attacker && targ->health > 0 ) {
 			if( OnSameTeam( targ, attacker ) ) {
 				attacker->client->ps.persistant[PERS_HITS] -= damage;
+
 			} else {
 				attacker->client->ps.persistant[PERS_HITS] += damage;
 			}
@@ -1152,6 +1227,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 	if( damage < 1 ) {
 		damage = 1;
 	}
+
 	take = damage;
 	save = 0;
 
@@ -1164,13 +1240,16 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 		if( g_gametype.integer != GT_SINGLE_PLAYER ) {
 			if( take * 2 < 50 ) { // head shots, all weapons, do minimum 50 points damage
 				take = 50;
+
 			} else {
 				take *= 2; // sniper rifles can do full-kill (and knock into limbo)
 			}
+
 			if( !( targ->client->ps.eFlags & EF_HEADSHOT ) ) { // only toss hat on first headshot
 				G_AddEvent( targ, EV_LOSE_HAT, DirToByte( dir ) );
 			}
 		} // jpw
+
 		else {
 			// by default, a headshot means damage x2
 			take *= 2;
@@ -1196,6 +1275,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 							if( !( targ->client->ps.eFlags & EF_HEADSHOT ) ) { // only obliterate him after he's lost his helmet
 								break;
 							}
+
 						case AICHAR_SOLDIER:
 						case AICHAR_AMERICAN:
 						case AICHAR_ELITEGUARD:
@@ -1203,6 +1283,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 						case AICHAR_CIVILIAN:
 							take = 200;
 							break;
+
 						default:
 							break;
 					}
@@ -1231,6 +1312,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 					case AICHAR_CIVILIAN:
 						take = 200;
 						break;
+
 					default:
 						break;
 				}
@@ -1248,9 +1330,11 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 	if( client ) {
 		if( attacker ) {
 			client->ps.persistant[PERS_ATTACKER] = attacker->s.number;
+
 		} else {
 			client->ps.persistant[PERS_ATTACKER] = ENTITYNUM_WORLD;
 		}
+
 		client->damage_armor += asave;
 		client->damage_blood += take;
 		client->damage_knockback += knockback;
@@ -1258,6 +1342,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 		if( dir ) {
 			VectorCopy( dir, client->damage_from );
 			client->damage_fromWorld = qfalse;
+
 		} else {
 			VectorCopy( targ->r.currentOrigin, client->damage_from );
 			client->damage_fromWorld = qtrue;
@@ -1297,6 +1382,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 			}
 
 			targ->enemy = attacker;
+
 			if( targ->die ) { // Ridah, mg42 doesn't have die func (FIXME)
 				targ->die( targ, inflictor, attacker, take, mod );
 			}
@@ -1315,6 +1401,7 @@ void G_Damage( gentity_t* targ, gentity_t* inflictor, gentity_t* attacker, vec3_
 			if( dir ) { // Ridah, had to add this to fix NULL dir crash
 				VectorCopy( dir, targ->rotate );
 				VectorCopy( point, targ->pos3 ); // this will pass loc of hit
+
 			} else {
 				VectorClear( targ->rotate );
 				VectorClear( targ->pos3 );
@@ -1353,6 +1440,7 @@ qboolean CanDamage( gentity_t* targ, vec3_t origin )
 
 	VectorCopy( midpoint, dest );
 	sys->Trace( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID );
+
 	if( tr.fraction == 1.0 ) {
 		return qtrue;
 	}
@@ -1367,6 +1455,7 @@ qboolean CanDamage( gentity_t* targ, vec3_t origin )
 	dest[0] += 15.0;
 	dest[1] += 15.0;
 	sys->Trace( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID );
+
 	if( tr.fraction == 1.0 ) {
 		return qtrue;
 	}
@@ -1375,6 +1464,7 @@ qboolean CanDamage( gentity_t* targ, vec3_t origin )
 	dest[0] += 15.0;
 	dest[1] -= 15.0;
 	sys->Trace( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID );
+
 	if( tr.fraction == 1.0 ) {
 		return qtrue;
 	}
@@ -1383,6 +1473,7 @@ qboolean CanDamage( gentity_t* targ, vec3_t origin )
 	dest[0] -= 15.0;
 	dest[1] += 15.0;
 	sys->Trace( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID );
+
 	if( tr.fraction == 1.0 ) {
 		return qtrue;
 	}
@@ -1391,6 +1482,7 @@ qboolean CanDamage( gentity_t* targ, vec3_t origin )
 	dest[0] -= 15.0;
 	dest[1] -= 15.0;
 	sys->Trace( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID );
+
 	if( tr.fraction == 1.0 ) {
 		return qtrue;
 	}
@@ -1426,6 +1518,7 @@ qboolean G_RadiusDamage( vec3_t origin, gentity_t* attacker, float damage, float
 	}
 
 	boxradius = 1.41421356 * radius; // radius * sqrt(2) for bounding box enlargement --
+
 	// bounding box was checking against radius / sqrt(2) if collision is along box plane
 	for( i = 0; i < 3; i++ ) {
 		mins[i] = origin[i] - boxradius; // JPW NERVE
@@ -1440,6 +1533,7 @@ qboolean G_RadiusDamage( vec3_t origin, gentity_t* attacker, float damage, float
 		if( ent == ignore ) {
 			continue;
 		}
+
 		if( !ent->takedamage ) {
 			continue;
 		}
@@ -1459,17 +1553,21 @@ qboolean G_RadiusDamage( vec3_t origin, gentity_t* attacker, float damage, float
 		// JPW NERVE
 		if( !ent->r.bmodel ) {
 			VectorSubtract( ent->r.currentOrigin, origin, v ); // JPW NERVE simpler centroid check that doesn't have box alignment weirdness
+
 		} else {
 			for( i = 0; i < 3; i++ ) {
 				if( origin[i] < ent->r.absmin[i] ) {
 					v[i] = ent->r.absmin[i] - origin[i];
+
 				} else if( origin[i] > ent->r.absmax[i] ) {
 					v[i] = origin[i] - ent->r.absmax[i];
+
 				} else {
 					v[i] = 0;
 				}
 			}
 		}
+
 		// jpw
 		dist = VectorLength( v );
 
@@ -1484,6 +1582,7 @@ qboolean G_RadiusDamage( vec3_t origin, gentity_t* attacker, float damage, float
 			if( LogAccuracyHit( ent, attacker ) ) {
 				hitClient = qtrue;
 			}
+
 			VectorSubtract( ent->r.currentOrigin, origin, dir );
 			// push the center of mass higher than the origin so players
 			// get knocked into the air more
@@ -1491,6 +1590,7 @@ qboolean G_RadiusDamage( vec3_t origin, gentity_t* attacker, float damage, float
 
 			G_Damage( ent, NULL, attacker, dir, origin, ( int )points, DAMAGE_RADIUS, mod );
 		}
+
 		// JPW NERVE --  MP weapons should do 1/8 damage through walls over 1/8th distance
 		else {
 			if( g_gametype.integer != GT_SINGLE_PLAYER ) {
@@ -1499,13 +1599,16 @@ qboolean G_RadiusDamage( vec3_t origin, gentity_t* attacker, float damage, float
 				VectorCopy( midpoint, dest );
 
 				sys->Trace( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID );
+
 				if( tr.fraction < 1.0 ) {
 					VectorSubtract( dest, origin, dest );
 					dist = VectorLength( dest );
+
 					if( dist < radius * 0.2f ) { // closer than 1/4 dist
 						if( LogAccuracyHit( ent, attacker ) ) {
 							hitClient = qtrue;
 						}
+
 						VectorSubtract( ent->r.currentOrigin, origin, dir );
 						dir[2] += 24;
 						G_Damage( ent, NULL, attacker, dir, origin, ( int )( points * 0.1f ), DAMAGE_RADIUS, mod );
@@ -1513,7 +1616,9 @@ qboolean G_RadiusDamage( vec3_t origin, gentity_t* attacker, float damage, float
 				}
 			}
 		}
+
 		// jpw
 	}
+
 	return hitClient;
 }

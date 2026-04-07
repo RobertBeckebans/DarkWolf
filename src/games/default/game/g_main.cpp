@@ -311,6 +311,7 @@ qboolean G_canStealthStab( int aiChar )
 		case AICHAR_CIVILIAN:
 			return qtrue;
 	}
+
 	return qfalse;
 }
 
@@ -385,6 +386,7 @@ void G_CheckForCursorHints( gentity_t* ent )
 		ps->serverCursorHintVal = 0;
 		return;
 	}
+
 	//	player->client->ps.serverCursorHint = HINT_EXIT;
 
 	if( ps->aiChar != AICHAR_NONE ) {
@@ -408,6 +410,7 @@ void G_CheckForCursorHints( gentity_t* ent )
 
 	if( zooming ) {
 		VectorMA( offset, CH_MAX_DIST_ZOOM, forward, end );
+
 	} else {
 		VectorMA( offset, CH_MAX_DIST, forward, end );
 	}
@@ -425,6 +428,7 @@ void G_CheckForCursorHints( gentity_t* ent )
 	if( zooming ) {
 		dist	 = tr->fraction * CH_MAX_DIST_ZOOM;
 		hintDist = CH_MAX_DIST_ZOOM;
+
 	} else {
 		dist	 = tr->fraction * CH_MAX_DIST;
 		hintDist = CH_MAX_DIST;
@@ -444,12 +448,14 @@ void G_CheckForCursorHints( gentity_t* ent )
 			hintDist = CH_WATER_DIST;
 			hintType = HINT_WATER;
 		}
+
 		// ladder
 		else if( ( tr->surfaceFlags & SURF_LADDER ) && !( ps->pm_flags & PMF_LADDER ) ) {
 			hintDist = CH_LADDER_DIST;
 			hintType = HINT_LADDER;
 		}
 	}
+
 	//
 	// PEOPLE
 	//
@@ -488,15 +494,18 @@ void G_CheckForCursorHints( gentity_t* ent )
 					hintDist = CH_ACTIVATE_DIST;
 					hintType = HINT_BUILD;
 					hintVal	 = ( ( float )traceEnt->client->medicHealAmt / 80.f ) * 255.f; // also send health to client for visualization
+
 					if( hintVal > 255 ) {
 						hintVal = 255;
 					}
 				}
 			}
 		}
+
 		// dhm - Nerve
 
 	}
+
 	//
 	// OTHER ENTITIES
 	//
@@ -522,8 +531,10 @@ void G_CheckForCursorHints( gentity_t* ent )
 					hintType = traceEnt->s.dmgFlags;
 					hintDist = CH_ACTIVATE_DIST;
 					checkEnt = 0;
+
 				} else { // use target for hint icon
 					checkEnt = G_Find( NULL, FOFS( targetname ), traceEnt->target );
+
 					if( !checkEnt ) { // no target found
 						hintType = HINT_BAD_USER;
 						hintDist = CH_MAX_DIST_ZOOM; // show this one from super far for debugging
@@ -547,12 +558,15 @@ void G_CheckForCursorHints( gentity_t* ent )
 						if( G_SendMissionStats() ) { // update the 'time' in the exit stats
 							if( zooming ) {
 								hintType = HINT_EXIT_FAR;
+
 							} else {
 								hintType = HINT_EXIT;
 							}
+
 						} else {
 							if( zooming ) {
 								hintType = HINT_NOEXIT_FAR;
+
 							} else {
 								hintType = HINT_NOEXIT;
 							}
@@ -561,11 +575,13 @@ void G_CheckForCursorHints( gentity_t* ent )
 						// show distance in the cursorhint bar
 						if( dist <= 255 ) {
 							hintVal = ( int )dist; // range for this hint is 256, so it happens to translate nicely
+
 						} else {
 							hintVal = 255;
 						}
 					}
 				}
+
 			} else if( checkEnt->s.eType == ET_MG42 ) {
 				// DHM - Nerve :: Engineers can repair turrets
 				if( g_gametype.integer == GT_WOLF ) {
@@ -576,12 +592,14 @@ void G_CheckForCursorHints( gentity_t* ent )
 						if( !traceEnt->takedamage ) {
 							hintType = HINT_BUILD;
 							hintVal	 = traceEnt->health;
+
 							if( hintVal > 255 ) {
 								hintVal = 255;
 							}
 						}
 					}
 				}
+
 				// dhm - end
 				else {
 					if( ent->s.weapon != WP_SNIPERRIFLE && ent->s.weapon != WP_SNOOPERSCOPE && ent->s.weapon != WP_FG42SCOPE ) {
@@ -591,17 +609,20 @@ void G_CheckForCursorHints( gentity_t* ent )
 						}
 					}
 				}
+
 			} else if( checkEnt->s.eType == ET_EXPLOSIVE ) {
 				if( checkEnt->takedamage && checkEnt->health > 0 ) { // 0 health explosives are not breakable
 					hintDist = CH_BREAKABLE_DIST;
 					hintType = HINT_BREAKABLE;
 					hintVal	 = checkEnt->health; // also send health to client for visualization
 				}
+
 			} else if( checkEnt->s.eType == ET_ALARMBOX ) {
 				if( checkEnt->health > 0 ) {
 					//					hintDist	= CH_BREAKABLE_DIST;
 					hintType = HINT_ACTIVATE;
 				}
+
 			} else if( checkEnt->s.eType == ET_ITEM ) {
 				gitem_t* it;
 				it = &bg_itemlist[checkEnt->item - bg_itemlist];
@@ -613,38 +634,50 @@ void G_CheckForCursorHints( gentity_t* ent )
 						if( !( checkEnt->s.density == ( 1 << 9 ) ) ) { // (10 bits of data transmission for density)
 							hintType = HINT_HEALTH;
 						}
+
 						break;
+
 					case IT_TREASURE:
 						hintType = HINT_TREASURE;
 						break;
+
 					case IT_CLIPBOARD:
 						hintType = HINT_CLIPBOARD;
 						break;
+
 					case IT_WEAPON:
 						hintType = HINT_WEAPON;
 						break;
+
 					case IT_AMMO:
 						hintType = HINT_AMMO;
 						break;
+
 					case IT_ARMOR:
 						hintType = HINT_ARMOR;
 						break;
+
 					case IT_POWERUP:
 						if( !( checkEnt->s.density == ( 1 << 9 ) ) ) { // (10 bits of data transmission for density)
 							hintType = HINT_POWERUP;
 						}
+
 						break;
+
 					case IT_HOLDABLE:
 						hintType = HINT_HOLDABLE;
 						break;
+
 					case IT_KEY:
 						hintType = HINT_INVENTORY;
 						break;
+
 					case IT_TEAM:
 					case IT_BAD:
 					default:
 						break;
 				}
+
 			} else if( checkEnt->s.eType == ET_MOVER ) {
 				if( !Q_stricmp( checkEnt->classname, "func_door_rotating" ) ) {
 					if( checkEnt->moverState == MOVER_POS1ROTATE ||										// stationary/closed
@@ -671,12 +704,15 @@ void G_CheckForCursorHints( gentity_t* ent )
 				} else if( !Q_stricmp( checkEnt->classname, "func_button" ) ) {
 					hintDist = CH_ACTIVATE_DIST;
 					hintType = HINT_BUTTON;
+
 				} else if( !Q_stricmp( checkEnt->classname, "props_flamebarrel" ) ) {
 					hintDist = CH_BREAKABLE_DIST;
 					hintType = HINT_BREAKABLE;
+
 				} else if( !Q_stricmp( checkEnt->classname, "props_statue" ) ) {
 					hintDist = CH_BREAKABLE_DIST;
 					hintType = HINT_BREAKABLE;
+
 				} else if( strstr( checkEnt->classname, "chair" ) ) {
 					hintDist = CH_ACTIVATE_DIST;
 					hintType = HINT_CHAIR;
@@ -690,12 +726,14 @@ void G_CheckForCursorHints( gentity_t* ent )
 						hintDist = CH_ACTIVATE_DIST;
 						hintType = HINT_BUILD;
 						hintVal	 = checkEnt->health; // also send health to client for visualization
+
 						if( hintVal > 255 ) {
 							hintVal = 255;
 						}
 					}
 				}
 			}
+
 			// dhm - end
 
 			// hint icon specified in check entity (possibly an entity targeted by an invis_user) and appropriate contact was made, so hintType was set
@@ -714,13 +752,17 @@ void G_CheckForCursorHints( gentity_t* ent )
 				case HINT_KNIFE:
 					if( ent->s.weapon == WP_KNIFE ) {
 						hintDist = CH_KNIFE_DIST;
+
 					} else {
 						hintType = 0; // no knife, clear it
 					}
+
 					break;
+
 				case HINT_BREAKABLE:
 					hintDist = CH_BREAKABLE_DIST;
 					break;
+
 				case HINT_LADDER:
 					hintDist = CH_LADDER_DIST;
 					break;
@@ -783,6 +825,7 @@ void G_FindTeams()
 
 	c  = 0;
 	c2 = 0;
+
 	for( i = 1, e = g_entities + i; i < level.num_entities; i++, e++ ) {
 		if( !e->inuse ) {
 			continue;
@@ -800,26 +843,33 @@ void G_FindTeams()
 		if( !Q_stricmp( e->classname, "func_tramcar" ) ) {
 			if( e->spawnflags & 8 ) { // leader
 				e->teammaster = e;
+
 			} else {
 				continue;
 			}
+
 		} else {
 			e->teammaster = e;
 		}
+
 		//----(SA)	end
 
 		c++;
 		c2++;
+
 		for( j = i + 1, e2 = e + 1; j < level.num_entities; j++, e2++ ) {
 			if( !e2->inuse ) {
 				continue;
 			}
+
 			if( !e2->team ) {
 				continue;
 			}
+
 			if( e2->flags & FL_TEAMSLAVE ) {
 				continue;
 			}
+
 			if( !strcmp( e->team, e2->team ) ) {
 				c2++;
 				e2->teamchain  = e->teamchain;
@@ -885,6 +935,7 @@ void G_RegisterCvars()
 
 	for( i = 0, cv = gameCvarTable; i < gameCvarTableSize; i++, cv++ ) {
 		sys->Cvar_Register( cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags );
+
 		if( cv->vmCvar ) {
 			cv->modificationCount = cv->vmCvar->modificationCount;
 		}
@@ -948,6 +999,7 @@ void		G_UpdateCvars()
 				if( !Q_stricmp( cv->cvarName, "g_playerStart" ) ) {
 					gentity_t* player;
 					player = AICast_FindEntityForName( "player" );
+
 					if( player && cv->vmCvar->integer ) {
 						char filename[MAX_QPATH];
 						char mapname[MAX_QPATH];
@@ -1035,6 +1087,7 @@ int G_SendMissionStats()
 	int		   canExit = 0;
 
 	player = AICast_FindEntityForName( "player" );
+
 	if( player ) {
 		attempts = AICast_NumAttempts( player->s.number ) + 1; // attempts tracks '0' as attempt 1
 		AICast_AgePlayTime( player->s.number );
@@ -1045,6 +1098,7 @@ int G_SendMissionStats()
 				objs++;
 			}
 		}
+
 		sec	  = player->numSecretsFound;
 		treas = player->numTreasureFound;
 	}
@@ -1056,13 +1110,16 @@ int G_SendMissionStats()
 
 	if( playtime < 3600000 ) {
 		minutes = ( playtime / 1000 ) / 60;
+
 	} else {
 		minutes = ( ( playtime % 3600000 ) / 1000 ) / 60; // handle hours in a map
 	}
+
 	Q_strcat( cmd, sizeof( cmd ), va( ",%i,%i,%i", ( ( playtime / 1000 ) / 60 ) / 60, minutes, ( playtime / 1000 ) % 60 ) );
 
 	// objectives
 	Q_strcat( cmd, sizeof( cmd ), va( ",%i,%i", objs, level.numObjectives ) );
+
 	if( objs >= level.numObjectives ) { // you're ready to go!
 		canExit = 1;
 	}
@@ -1133,11 +1190,14 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 	if( g_gametype.integer != GT_SINGLE_PLAYER && g_log.string[0] ) {
 		if( g_logSync.integer ) {
 			sys->FS_FOpenFile( g_log.string, &level.logFile, FS_APPEND_SYNC );
+
 		} else {
 			sys->FS_FOpenFile( g_log.string, &level.logFile, FS_APPEND );
 		}
+
 		if( !level.logFile ) {
 			G_Printf( "WARNING: Couldn't open logfile: %s\n", g_log.string );
+
 		} else {
 			char serverinfo[MAX_INFO_STRING];
 
@@ -1146,6 +1206,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 			G_LogPrintf( "------------------------------------------------------------\n" );
 			G_LogPrintf( "InitGame: %s\n", serverinfo );
 		}
+
 	} else {
 		if( sys->Cvar_VariableIntegerValue( "g_gametype" ) != GT_SINGLE_PLAYER ) {
 			G_Printf( "Not logging to disk.\n" );
@@ -1188,6 +1249,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 		AICast_ScriptLoad();
 
 		sys->Cvar_VariableStringBuffer( "g_missionStats", s, sizeof( s ) );
+
 		if( strlen( s ) < 1 ) {
 			// g_missionStats is used to get the player to press a key to begin
 			sys->Cvar_Set( "g_missionStats", "xx" );
@@ -1196,8 +1258,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 		for( i = 0; i < 8; i++ ) {								// max objective cvars: 8 (FIXME: use #define somewhere)
 			sys->Cvar_Set( va( "g_objective%i", i + 1 ), "0" ); // clear the objective ROM cvars
 		}
+
 		sys->Cvar_Set( "cg_yougotMail", "0" );
 	}
+
 	G_Script_ScriptLoad();
 	// done.
 
@@ -1273,8 +1337,10 @@ void G_ShutdownGame( int restart )
 				sys->DropClient( i, "Drop Cast AI" );
 			}
 		}
+
 		// done.
 	}
+
 	// done.
 
 	// write all the client session data so we can get it back
@@ -1351,12 +1417,15 @@ void AddTournamentPlayer()
 
 	for( i = 0; i < level.maxclients; i++ ) {
 		client = &level.clients[i];
+
 		if( client->pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		if( client->sess.sessionTeam != TEAM_SPECTATOR ) {
 			continue;
 		}
+
 		// never select the dedicated follow or scoreboard clients
 		if( client->sess.spectatorState == SPECTATOR_SCOREBOARD || client->sess.spectatorClient < 0 ) {
 			continue;
@@ -1413,12 +1482,14 @@ void AdjustTournamentScores()
 	int clientNum;
 
 	clientNum = level.sortedClients[0];
+
 	if( level.clients[clientNum].pers.connected == CON_CONNECTED ) {
 		level.clients[clientNum].sess.wins++;
 		ClientUserinfoChanged( clientNum );
 	}
 
 	clientNum = level.sortedClients[1];
+
 	if( level.clients[clientNum].pers.connected == CON_CONNECTED ) {
 		level.clients[clientNum].sess.losses++;
 		ClientUserinfoChanged( clientNum );
@@ -1442,6 +1513,7 @@ int QDECL SortRanks( const void* a, const void* b )
 	if( ca->sess.spectatorState == SPECTATOR_SCOREBOARD || ca->sess.spectatorClient < 0 ) {
 		return 1;
 	}
+
 	if( cb->sess.spectatorState == SPECTATOR_SCOREBOARD || cb->sess.spectatorClient < 0 ) {
 		return -1;
 	}
@@ -1450,6 +1522,7 @@ int QDECL SortRanks( const void* a, const void* b )
 	if( ca->pers.connected == CON_CONNECTING ) {
 		return 1;
 	}
+
 	if( cb->pers.connected == CON_CONNECTING ) {
 		return -1;
 	}
@@ -1459,14 +1532,18 @@ int QDECL SortRanks( const void* a, const void* b )
 		if( ca->sess.spectatorTime < cb->sess.spectatorTime ) {
 			return -1;
 		}
+
 		if( ca->sess.spectatorTime > cb->sess.spectatorTime ) {
 			return 1;
 		}
+
 		return 0;
 	}
+
 	if( ca->sess.sessionTeam == TEAM_SPECTATOR ) {
 		return 1;
 	}
+
 	if( cb->sess.sessionTeam == TEAM_SPECTATOR ) {
 		return -1;
 	}
@@ -1475,9 +1552,11 @@ int QDECL SortRanks( const void* a, const void* b )
 	if( ca->ps.persistant[PERS_SCORE] > cb->ps.persistant[PERS_SCORE] ) {
 		return -1;
 	}
+
 	if( ca->ps.persistant[PERS_SCORE] < cb->ps.persistant[PERS_SCORE] ) {
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -1504,9 +1583,11 @@ void CalculateRanks()
 	level.numNonSpectatorClients = 0;
 	level.numPlayingClients		 = 0;
 	level.numVotingClients		 = 0; // don't count bots
+
 	for( i = 0; i < TEAM_NUM_TEAMS; i++ ) {
 		level.numteamVotingClients[i] = 0;
 	}
+
 	for( i = 0; i < level.maxclients; i++ ) {
 		if( level.clients[i].pers.connected != CON_DISCONNECTED ) {
 			level.sortedClients[level.numConnectedClients] = i;
@@ -1518,16 +1599,21 @@ void CalculateRanks()
 				// decide if this should be auto-followed
 				if( level.clients[i].pers.connected == CON_CONNECTED ) {
 					level.numPlayingClients++;
+
 					if( !( g_entities[i].r.svFlags & SVF_BOT ) ) {
 						level.numVotingClients++;
+
 						if( level.clients[i].sess.sessionTeam == TEAM_RED ) {
 							level.numteamVotingClients[0]++;
+
 						} else if( level.clients[i].sess.sessionTeam == TEAM_BLUE ) {
 							level.numteamVotingClients[1]++;
 						}
 					}
+
 					if( level.follow1 == -1 ) {
 						level.follow1 = i;
+
 					} else if( level.follow2 == -1 ) {
 						level.follow2 = i;
 					}
@@ -1543,30 +1629,39 @@ void CalculateRanks()
 		// in team games, rank is just the order of the teams, 0=red, 1=blue, 2=tied
 		for( i = 0; i < level.numConnectedClients; i++ ) {
 			cl = &level.clients[level.sortedClients[i]];
+
 			if( level.teamScores[TEAM_RED] == level.teamScores[TEAM_BLUE] ) {
 				cl->ps.persistant[PERS_RANK] = 2;
+
 			} else if( level.teamScores[TEAM_RED] > level.teamScores[TEAM_BLUE] ) {
 				cl->ps.persistant[PERS_RANK] = 0;
+
 			} else {
 				cl->ps.persistant[PERS_RANK] = 1;
 			}
 		}
+
 	} else {
 		rank  = -1;
 		score = 0;
+
 		for( i = 0; i < level.numPlayingClients; i++ ) {
 			cl		 = &level.clients[level.sortedClients[i]];
 			newScore = cl->ps.persistant[PERS_SCORE];
+
 			if( i == 0 || newScore != score ) {
 				rank = i;
 				// assume we aren't tied until the next client is checked
 				level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK] = rank;
+
 			} else {
 				// we are tied with the previous client
 				level.clients[level.sortedClients[i - 1]].ps.persistant[PERS_RANK] = rank | RANK_TIED_FLAG;
 				level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK]	   = rank | RANK_TIED_FLAG;
 			}
+
 			score = newScore;
+
 			if( g_gametype.integer == GT_SINGLE_PLAYER && level.numPlayingClients == 1 ) {
 				level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK] = rank | RANK_TIED_FLAG;
 			}
@@ -1577,13 +1672,16 @@ void CalculateRanks()
 	if( g_gametype.integer >= GT_TEAM ) {
 		sys->SetConfigstring( CS_SCORES1, va( "%i", level.teamScores[TEAM_RED] ) );
 		sys->SetConfigstring( CS_SCORES2, va( "%i", level.teamScores[TEAM_BLUE] ) );
+
 	} else {
 		if( level.numConnectedClients == 0 ) {
 			sys->SetConfigstring( CS_SCORES1, va( "%i", SCORE_NOT_PRESENT ) );
 			sys->SetConfigstring( CS_SCORES2, va( "%i", SCORE_NOT_PRESENT ) );
+
 		} else if( level.numConnectedClients == 1 ) {
 			sys->SetConfigstring( CS_SCORES1, va( "%i", level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE] ) );
 			sys->SetConfigstring( CS_SCORES2, va( "%i", SCORE_NOT_PRESENT ) );
+
 		} else {
 			sys->SetConfigstring( CS_SCORES1, va( "%i", level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE] ) );
 			sys->SetConfigstring( CS_SCORES2, va( "%i", level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE] ) );
@@ -1673,14 +1771,18 @@ void FindIntermissionPoint()
 
 	// find the intermission spot
 	ent = G_Find( NULL, FOFS( classname ), "info_player_intermission" );
+
 	if( !ent ) { // the map creator forgot to put in an intermission point...
 		SelectSpawnPoint( vec3_origin, level.intermission_origin, level.intermission_angle );
+
 	} else {
 		VectorCopy( ent->s.origin, level.intermission_origin );
 		VectorCopy( ent->s.angles, level.intermission_angle );
+
 		// if it has a target, look towards it
 		if( ent->target ) {
 			target = G_PickTarget( ent->target );
+
 			if( target ) {
 				VectorSubtract( target->s.origin, level.intermission_origin, dir );
 				vectoangles( dir, level.intermission_angle );
@@ -1714,13 +1816,16 @@ void BeginIntermission()
 	// move all clients to the intermission point
 	for( i = 0; i < level.maxclients; i++ ) {
 		client = g_entities + i;
+
 		if( !client->inuse ) {
 			continue;
 		}
+
 		// respawn if dead
 		if( client->health <= 0 ) {
 			respawn( client );
 		}
+
 		MoveClientToIntermission( client );
 	}
 
@@ -1752,6 +1857,7 @@ void ExitLevel()
 			level.changemap		   = NULL;
 			level.intermissiontime = 0;
 		}
+
 		return;
 	}
 
@@ -1762,11 +1868,14 @@ void ExitLevel()
 	// reset all the scores so we don't enter the intermission again
 	level.teamScores[TEAM_RED]	= 0;
 	level.teamScores[TEAM_BLUE] = 0;
+
 	for( i = 0; i < g_maxclients.integer; i++ ) {
 		cl = level.clients + i;
+
 		if( cl->pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		cl->ps.persistant[PERS_SCORE] = 0;
 	}
 
@@ -1781,6 +1890,7 @@ void ExitLevel()
 			sys->DropClient( i, "Drop Cast AI" );
 			continue;
 		}
+
 		// done.
 
 		if( level.clients[i].pers.connected == CON_CONNECTED ) {
@@ -1848,6 +1958,7 @@ void LogExit( const char* string )
 
 	// don't send more than 32 scores (FIXME?)
 	numSorted = level.numConnectedClients;
+
 	if( numSorted > 32 ) {
 		numSorted = 32;
 	}
@@ -1864,6 +1975,7 @@ void LogExit( const char* string )
 		if( cl->sess.sessionTeam == TEAM_SPECTATOR ) {
 			continue;
 		}
+
 		if( cl->pers.connected == CON_CONNECTING ) {
 			continue;
 		}
@@ -1904,26 +2016,32 @@ void CheckIntermissionExit()
 		ExitLevel();
 		return;
 	}
+
 	// dhm - end
 
 	// see which players are ready
 	ready	  = 0;
 	notReady  = 0;
 	readyMask = 0;
+
 	for( i = 0; i < g_maxclients.integer; i++ ) {
 		cl = level.clients + i;
+
 		if( cl->pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		if( g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT ) {
 			continue;
 		}
 
 		if( cl->readyToExit ) {
 			ready++;
+
 			if( i < 16 ) {
 				readyMask |= 1 << i;
 			}
+
 		} else {
 			notReady++;
 		}
@@ -1933,9 +2051,11 @@ void CheckIntermissionExit()
 	// it can be displayed on the scoreboard
 	for( i = 0; i < g_maxclients.integer; i++ ) {
 		cl = level.clients + i;
+
 		if( cl->pers.connected != CON_CONNECTED ) {
 			continue;
 		}
+
 		cl->ps.stats[STAT_CLIENTS_READY] = readyMask;
 	}
 
@@ -2007,6 +2127,7 @@ void CheckExitRules()
 {
 	int		   i;
 	gclient_t* cl;
+
 	// if at the intermission, wait for all non-bots to
 	// signal ready, then go to next level
 	if( level.intermissiontime ) {
@@ -2019,6 +2140,7 @@ void CheckExitRules()
 			level.intermissionQueued = 0;
 			BeginIntermission();
 		}
+
 		return;
 	}
 
@@ -2030,6 +2152,7 @@ void CheckExitRules()
 				// score is tied, so don't end the game
 				return;
 			}
+
 			sys->SendServerCommand( -1, "print \"Timelimit hit.\n\"" );
 			LogExit( "Timelimit hit." );
 			return;
@@ -2055,9 +2178,11 @@ void CheckExitRules()
 
 		for( i = 0; i < g_maxclients.integer; i++ ) {
 			cl = level.clients + i;
+
 			if( cl->pers.connected != CON_CONNECTED ) {
 				continue;
 			}
+
 			if( cl->sess.sessionTeam != TEAM_FREE ) {
 				continue;
 			}
@@ -2107,6 +2232,7 @@ void CheckTournement()
 	if( g_gametype.integer != GT_TOURNAMENT ) {
 		return;
 	}
+
 	if( level.numPlayingClients == 0 ) {
 		return;
 	}
@@ -2123,6 +2249,7 @@ void CheckTournement()
 			sys->SetConfigstring( CS_WARMUP, va( "%i", level.warmupTime ) );
 			G_LogPrintf( "Warmup:\n" );
 		}
+
 		return;
 	}
 
@@ -2143,6 +2270,7 @@ void CheckTournement()
 			level.warmupTime = level.time + ( g_warmup.integer - 1 ) * 1000;
 			sys->SetConfigstring( CS_WARMUP, va( "%i", level.warmupTime ) );
 		}
+
 		return;
 	}
 
@@ -2167,24 +2295,30 @@ void CheckVote()
 		level.voteExecuteTime = 0;
 		sys->SendConsoleCommand( EXEC_APPEND, va( "%s\n", level.voteString ) );
 	}
+
 	if( !level.voteTime ) {
 		return;
 	}
+
 	if( level.time - level.voteTime >= VOTE_TIME ) {
 		sys->SendServerCommand( -1, "print \"Vote failed.\n\"" );
+
 	} else {
 		if( level.voteYes > level.numVotingClients / 2 ) {
 			// execute the command, then remove the vote
 			sys->SendServerCommand( -1, "print \"Vote passed.\n\"" );
 			level.voteExecuteTime = level.time + 3000;
+
 		} else if( level.voteNo >= level.numVotingClients / 2 ) {
 			// same behavior as a timeout
 			sys->SendServerCommand( -1, "print \"Vote failed.\n\"" );
+
 		} else {
 			// still waiting for a majority
 			return;
 		}
 	}
+
 	level.voteTime = 0;
 	sys->SetConfigstring( CS_VOTE_TIME, "" );
 }
@@ -2202,8 +2336,10 @@ void CheckReloadStatus()
 			if( level.reloadDelayTime < level.time ) {
 				if( g_reloading.integer == RELOAD_NEXTMAP_WAITING ) {
 					sys->Cvar_Set( "g_reloading", va( "%d", RELOAD_NEXTMAP ) ); // set so sv_map_f will know it's okay to start a map
+
 					if( g_cheats.integer ) {
 						sys->SendConsoleCommand( EXEC_APPEND, va( "spdevmap %s\n", level.nextMap ) );
+
 					} else {
 						sys->SendConsoleCommand( EXEC_APPEND, va( "spmap %s\n", level.nextMap ) );
 					}
@@ -2219,6 +2355,7 @@ void CheckReloadStatus()
 
 				level.reloadDelayTime = 0;
 			}
+
 		} else if( level.reloadPauseTime ) {
 			if( level.reloadPauseTime < level.time ) {
 				sys->Cvar_Set( "g_reloading", "0" );
@@ -2239,8 +2376,10 @@ void CheckCvars()
 
 	if( g_password.modificationCount != lastMod ) {
 		lastMod = g_password.modificationCount;
+
 		if( *g_password.string && Q_stricmp( g_password.string, "none" ) ) {
 			sys->Cvar_Set( "g_needpass", "1" );
+
 		} else {
 			sys->Cvar_Set( "g_needpass", "0" );
 		}
@@ -2265,17 +2404,21 @@ void G_RunThink( gentity_t* ent )
 	}
 
 	thinktime = ent->nextthink;
+
 	if( thinktime <= 0 ) {
 		return;
 	}
+
 	if( thinktime > level.time ) {
 		return;
 	}
 
 	ent->nextthink = 0;
+
 	if( !ent->think ) {
 		G_Error( "NULL ent->think" );
 	}
+
 	ent->think( ent );
 }
 
@@ -2308,6 +2451,7 @@ void G_RunFrame( int levelTime )
 		extern void AICast_CheckLoadGame();
 		AICast_CheckLoadGame();
 	}
+
 	// done.
 
 	// get any cvar changes
@@ -2318,6 +2462,7 @@ void G_RunFrame( int levelTime )
 	//
 	// start = sys->Milliseconds();
 	ent = &g_entities[0];
+
 	for( i = 0; i < level.num_entities; i++, ent++ ) {
 		if( !ent->inuse ) {
 			continue;
@@ -2327,6 +2472,7 @@ void G_RunFrame( int levelTime )
 		if( i > level.maxclients ) {
 			if( ent->flags & FL_NODRAW ) {
 				ent->s.eFlags |= EF_NODRAW;
+
 			} else {
 				ent->s.eFlags &= ~EF_NODRAW;
 			}
@@ -2338,6 +2484,7 @@ void G_RunFrame( int levelTime )
 			BG_EvaluateTrajectory( &ent->tagParent->s.pos, level.time, org );
 			G_SetOrigin( ent, org );
 			VectorCopy( org, ent->s.origin );
+
 			if( ent->r.linked ) { // update position
 				sys->LinkEntity( ent );
 			}
@@ -2348,10 +2495,12 @@ void G_RunFrame( int levelTime )
 			if( ent->s.event ) {
 				ent->s.event = 0; // &= EV_EVENT_BITS;
 			}
+
 			// RF, clear all listed events (fixes hearing lots of sounds and events after vid_restart)
 			memset( ent->s.events, 0, sizeof( ent->s.events ) );
 			memset( ent->s.eventParms, 0, sizeof( ent->s.eventParms ) );
 			ent->s.eventSequence = 0;
+
 			if( ent->client ) {
 				memset( ent->client->ps.events, 0, sizeof( ent->client->ps.events ) );
 				memset( ent->client->ps.eventParms, 0, sizeof( ent->client->ps.eventParms ) );
@@ -2359,21 +2508,25 @@ void G_RunFrame( int levelTime )
 				ent->client->ps.oldEventSequence	= 0;
 				ent->client->ps.entityEventSequence = 0;
 			}
+
 			if( ent->freeAfterEvent ) {
 				// tempEntities or dropped items completely go away after their event
 				G_FreeEntity( ent );
 				continue;
+
 			} else if( ent->unlinkAfterEvent ) {
 				// items that will respawn will hide themselves after their pickup event
 				ent->unlinkAfterEvent = qfalse;
 				sys->UnlinkEntity( ent );
 			}
+
 			ent->eventTime = 0;
 		}
 
 		// MrE: let the server know about bbox or capsule collision
 		if( ent->s.eFlags & EF_CAPSULE ) {
 			ent->r.svFlags |= SVF_CAPSULE;
+
 		} else {
 			ent->r.svFlags &= ~SVF_CAPSULE;
 		}
@@ -2412,6 +2565,7 @@ void G_RunFrame( int levelTime )
 			if( ent->flags & FL_TEAMSLAVE ) {
 				continue;
 			}
+
 			G_RunThink( ent );
 			continue;
 		}
@@ -2428,6 +2582,7 @@ void G_RunFrame( int levelTime )
 
 		G_RunThink( ent );
 	}
+
 	// end = sys->Milliseconds();
 
 	// Ridah, move the AI
@@ -2436,11 +2591,13 @@ void G_RunFrame( int levelTime )
 	// start = sys->Milliseconds();
 	//  perform final fixups on the players
 	ent = &g_entities[0];
+
 	for( i = 0; i < level.maxclients; i++, ent++ ) {
 		if( ent->inuse ) {
 			ClientEndFrame( ent );
 		}
 	}
+
 	// end = sys->Milliseconds();
 
 	// see if it is time to do a tournement restart
@@ -2466,6 +2623,7 @@ void G_RunFrame( int levelTime )
 		for( i = 0; i < MAX_GENTITIES; i++ ) {
 			G_Printf( "%4i: %s\n", i, g_entities[i].classname );
 		}
+
 		sys->Cvar_Set( "g_listEntity", "0" );
 	}
 

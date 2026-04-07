@@ -63,25 +63,30 @@ void AICast_ProcessAIFunctions( cast_state_t* cs, float thinktime )
 
 	// check for air
 	BotCheckAir( cs->bs );
+
 	// if the cast has no ai function
 	if( !cs->aifunc ) {
 		AIFunc_DefaultStart( cs );
 	}
+
 	//
 	// call AI funcs for this cast
 	//
 	AICast_DBG_InitAIFuncs();
+
 	//
 	// only allow looping in debug mode (since it's much slower)
 	for( i = 0; i < ( aicast_debug.integer ? MAX_AIFUNCS : 1 ); i++ ) {
 		if( !( funcname = cs->aifunc( cs ) ) ) {
 			break;
+
 		} else {
 			sys->BotResetAvoidReach( cs->bs->ms ); // reset avoidreach
 			cs->thinkFuncChangeTime = level.time;
 			AICast_DBG_AddAIFunc( cs, funcname );
 		}
 	}
+
 	//
 	// if the cast executed too many AI functions
 	//
@@ -102,57 +107,71 @@ void AICast_ChangeViewAngles( cast_state_t* cs, float thinktime )
 	bot_state_t* bs;
 
 	bs = cs->bs;
+
 	//
 	// restore locked viewangles if required
 	if( cs->aiFlags & AIFL_VIEWLOCKED ) {
 		VectorCopy( cs->viewlock_viewangles, cs->ideal_viewangles );
+
 	} else {
 		// check for playanim angles
 		if( cs->castScriptStatus.playAnimViewlockTime >= level.time ) {
 			// check to make sure we are still playing a legs animation
 			if( !g_entities[cs->entityNum].client->ps.legsTimer ) {
 				cs->castScriptStatus.playAnimViewlockTime = 0;
+
 			} else {
 				VectorCopy( cs->castScriptStatus.playanim_viewangles, cs->ideal_viewangles );
 			}
 		}
 	}
+
 	//
 	if( cs->ideal_viewangles[PITCH] > 180 ) {
 		cs->ideal_viewangles[PITCH] -= 360;
 	}
+
 	//
 	maxchange = cs->attributes[YAW_SPEED]; // 300;
+
 	if( cs->aiState >= AISTATE_COMBAT ) {
 		factor = 2.0;
 		maxchange *= 2.0;
+
 	} else {
 		factor = 0.7;
 	}
+
 	//
 	if( cs->lockViewAnglesTime < level.time ) {
 		maxchange *= thinktime;
+
 		for( i = 0; i < 3; i++ ) {
 			diff	   = fabs( AngleDifference( cs->viewangles[i], cs->ideal_viewangles[i] ) );
 			anglespeed = diff * factor;
+
 			if( cs->aiState >= AISTATE_COMBAT ) {
 				if( anglespeed < cs->attributes[YAW_SPEED] ) {
 					anglespeed = cs->attributes[YAW_SPEED];
 				}
 			}
+
 			if( thinktime != 9999.0f ) {
 				if( anglespeed > maxchange ) {
 					anglespeed = maxchange;
 				}
 			}
+
 			cs->viewangles[i] = BotChangeViewAngle( cs->viewangles[i], cs->ideal_viewangles[i], anglespeed );
 			// BotAI_Print(PRT_MESSAGE, "ideal_angles %f %f\n", cs->ideal_viewangles[0], cs->ideal_viewangles[1], cs->ideal_viewangles[2]);`
 			// cs->viewangles[i] = cs->ideal_viewangles[i];
 		}
 	}
+
 	if( cs->viewangles[PITCH] > 180 ) {
 		cs->viewangles[PITCH] -= 360;
 	}
+
 	// elementary action: view
 	sys->EA_View( bs->client, cs->viewangles );
 }
@@ -179,12 +198,14 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 	// Com_Printf("dir = %f %f %f speed = %f\n", bi->dir[0], bi->dir[1], bi->dir[2], bi->speed);
 	// the duration for the user command in milli seconds
 	ucmd->serverTime = serverTime;
+
 	// crouch/movedown
 	if( aiDefaults[cs->aiCharacter].attributes[ATTACK_CROUCH] ) { // only crouch if this character is physically able to
 		if( cs->bs->cur_ps.groundEntityNum != ENTITYNUM_NONE && bi->actionflags & ACTION_CROUCH ) {
 			ucmd->upmove -= 127;
 		}
 	}
+
 	//
 	// actions not effected by script pausing
 	//
@@ -192,9 +213,11 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 	if( cs->aiFlags & AIFL_ZOOMING ) {
 		ucmd->wbuttons |= WBUTTON_ZOOM;
 	}
+
 	// set the buttons
 	if( bi->actionflags & ACTION_ATTACK ) {
 		vec3_t ofs;
+
 		// don't fire if we are not facing the right direction yet
 		if( ( cs->triggerReleaseTime < level.time ) && ( ( cs->lockViewAnglesTime >= level.time ) || ( fabs( AngleDifference( cs->ideal_viewangles[YAW], cs->viewangles[YAW] ) ) < 20 ) ) &&
 			// check for radid luger firing by skilled users (release fire between shots)
@@ -206,12 +229,14 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 			VectorAdd( bi->viewangles, ofs, bi->viewangles );
 		}
 	}
+
 	//
 	// set the view angles
 	// NOTE: the ucmd->angles are the angles WITHOUT the delta angles
 	ucmd->angles[PITCH] = ANGLE2SHORT( bi->viewangles[PITCH] );
 	ucmd->angles[YAW]	= ANGLE2SHORT( bi->viewangles[YAW] );
 	ucmd->angles[ROLL]	= ANGLE2SHORT( bi->viewangles[ROLL] );
+
 	// subtract the delta angles
 	for( j = 0; j < 3; j++ ) {
 		temp			= ucmd->angles[j] - delta_angles[j];
@@ -220,6 +245,7 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 
 	//----(SA)	modified slightly for DM/DK
 	ucmd->weapon = bi->weapon;
+
 	//
 	// relaxed mode show no weapons
 	if( cs->aiState <= AISTATE_QUERY ) {
@@ -227,27 +253,32 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 			ucmd->weapon = WP_NONE;
 		}
 	}
+
 	//----(SA)	end
 
 	//
 	if( bi->actionflags & ACTION_GESTURE ) {
 		ucmd->buttons |= BUTTON_GESTURE;
 	}
+
 	if( bi->actionflags & ACTION_RELOAD ) {
 		ucmd->wbuttons |= WBUTTON_RELOAD;
 	}
+
 	//
 	// if we are locked down, don't do anything
 	//
 	if( cs->pauseTime > level.time ) {
 		return;
 	}
+
 	//
 	// if scripted pause, no movement
 	//
 	if( cs->castScriptStatus.scriptNoMoveTime > level.time ) {
 		return;
 	}
+
 	//
 	// if viewlock, wait until we are facing ideal angles before we move
 	if( cs->aiFlags & AIFL_VIEWLOCKED ) {
@@ -255,11 +286,13 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 			return;
 		}
 	}
+
 	//
 	if( bi->actionflags & ACTION_DELAYEDJUMP ) {
 		bi->actionflags |= ACTION_JUMP;
 		bi->actionflags &= ~ACTION_DELAYEDJUMP;
 	}
+
 	//
 	// only move if we are in combat or we are facing where our ideal angles
 	if( bi->speed ) {
@@ -270,9 +303,11 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 			// get the pitch in the range [-180, 180]
 			if( bi->dir[2] ) {
 				angles[PITCH] = bi->viewangles[PITCH];
+
 			} else {
 				angles[PITCH] = 0;
 			}
+
 			angles[YAW]	 = bi->viewangles[YAW];
 			angles[ROLL] = 0;
 			AngleVectors( angles, forward, right, up );
@@ -286,47 +321,59 @@ void	   AICast_InputToUserCommand( cast_state_t* cs, bot_input_t* bi, usercmd_t*
 			if( !ucmd->upmove ) { // only change it if we don't already have an upmove set
 				ucmd->upmove = DotProduct( up, bi->dir ) * bi->speed;
 			}
+
 			// if (!ucmd->upmove)	// only change it if we don't already have an upmove set
 			//	ucmd->upmove = abs(forward[2]) * bi->dir[2] * bi->speed;
 		}
 	}
+
 	//
 	// normal keyboard movement
 	if( cs->actionFlags & CASTACTION_WALK ) {
 		movechar = 70;
+
 	} else {
 		movechar = 127;
 	}
+
 	if( bi->actionflags & ACTION_MOVEFORWARD ) {
 		ucmd->forwardmove = movechar;
 	}
+
 	if( !( cs->aiFlags & AIFL_WALKFORWARD ) || ( !cs->bs->cur_ps.groundEntityNum || cs->bs->cur_ps.groundEntityNum == ENTITYNUM_NONE ) ) { // only do other movements if we are allowed to
 		if( bi->actionflags & ACTION_MOVEBACK ) {
 			ucmd->forwardmove = -movechar;
 		}
+
 		if( bi->actionflags & ACTION_MOVELEFT ) {
 			ucmd->rightmove = -movechar;
 		}
+
 		if( bi->actionflags & ACTION_MOVERIGHT ) {
 			ucmd->rightmove = movechar;
 		}
 	}
+
 	// prevent WALKFORWARD AI from moving backwards
 	if( cs->aiFlags & AIFL_WALKFORWARD ) {
 		if( ucmd->forwardmove < 0 ) {
 			ucmd->forwardmove = 0;
 		}
 	}
+
 	// jump/moveup
 	if( bi->actionflags & ACTION_JUMP ) {
 		ucmd->upmove = 127; // JUMP always takes preference over ducking
 	}
+
 	if( bi->actionflags & ACTION_MOVEDOWN ) {
 		ucmd->upmove = -127; // JUMP always takes preference over ducking
 	}
+
 	if( bi->actionflags & ACTION_MOVEUP ) {
 		ucmd->upmove = 127; // JUMP always takes preference over ducking
 	}
+
 	//
 	// Com_Printf("forward = %d right = %d up = %d\n", ucmd.forwardmove, ucmd.rightmove, ucmd.upmove);
 }
@@ -349,30 +396,37 @@ void AICast_UpdateInput( cast_state_t* cs, int time )
 	for( j = 0; j < 3; j++ ) {
 		cs->viewangles[j] = AngleMod( cs->viewangles[j] + SHORT2ANGLE( bs->cur_ps.delta_angles[j] ) );
 	}
+
 	//
 	AICast_ChangeViewAngles( cs, ( float )time / 1000 );
+
 	//
 	if( cs->pauseTime > level.time ) {
 		sys->EA_View( bs->client, cs->viewangles );
 		sys->EA_GetInput( bs->client, ( float )time / 1000, &bi );
 		AICast_InputToUserCommand( cs, &bi, &cs->lastucmd, bs->cur_ps.delta_angles );
 		g_entities[cs->bs->entitynum].client->ps.pm_flags &= ~PMF_RESPAWNED;
+
 		//
 		// subtract the delta angles
 		for( j = 0; j < 3; j++ ) {
 			cs->viewangles[j] = AngleMod( cs->viewangles[j] - SHORT2ANGLE( bs->cur_ps.delta_angles[j] ) );
 		}
+
 		//
 		return;
 	}
+
 	//
 	sys->EA_GetInput( bs->client, ( float )time / 1000, &bi );
+
 	//
 	// restrict the speed according to the character and their current speedScale
 	// HACK, don't slow down while crouching
 	if( bi.actionflags & ACTION_CROUCH && cs->speedScale < 1.0 ) {
 		cs->speedScale = 1.0;
 	}
+
 	//
 	// check some Cast AI specific movement flags
 	if( cs->actionFlags & CASTACTION_WALK ) {
@@ -380,45 +434,56 @@ void AICast_UpdateInput( cast_state_t* cs, int time )
 			cs->speedScale = ( cs->attributes[WALKING_SPEED] / cs->attributes[RUNNING_SPEED] );
 		}
 	}
+
 	// don't ever let the speed get too low
 	if( cs->speedScale < 0.25 ) {
 		cs->speedScale = 0.25;
 	}
+
 	if( cs->speedScale > 1.2 ) {
 		cs->speedScale = 1.2;
 	}
+
 	//
 	speed = cs->speedScale * cs->attributes[RUNNING_SPEED];
+
 	//
 	// if (speed <= (cs->attributes[WALKING_SPEED] + (cs->attributes[WALKING_SPEED] + 50 < cs->attributes[RUNNING_SPEED] ? 50 : -1)))	// do a fast shuffle if slightly over walking speed
 	if( speed <= cs->attributes[WALKING_SPEED] ) {
 		cs->actionFlags |= CASTACTION_WALK;
 	}
+
 	//
 	// we use 300 here, because the default player speed is 300, so Cast AI's can't move faster than that
 	if( ( bi.speed / 400.0 ) > ( speed / 300.0 ) ) {
 		bi.speed = 400.0 * ( speed / 300.0 );
+
 		if( bi.speed > 400.0 ) {
 			bi.speed = 400.0; // just in case, we should never exceed this
 		}
 	}
+
 	//
 	// do a fast shuffle if slightly over walking speed
 	if( bi.speed <= ( 400.0 / 300.0 ) * ( cs->attributes[WALKING_SPEED] + ( cs->attributes[WALKING_SPEED] + 50 < cs->attributes[RUNNING_SPEED] ? 50 : -1 ) ) ) {
 		cs->actionFlags |= CASTACTION_WALK;
 	}
+
 	//
 	AICast_InputToUserCommand( cs, &bi, &cs->lastucmd, bs->cur_ps.delta_angles );
+
 	//
 	// check some Cast AI specific movement flags
 	if( cs->actionFlags & CASTACTION_WALK ) {
 		cs->lastucmd.buttons |= BUTTON_WALKING; // play the walking animation
 	}
+
 	//
 	// subtract the delta angles
 	for( j = 0; j < 3; j++ ) {
 		cs->viewangles[j] = AngleMod( cs->viewangles[j] - SHORT2ANGLE( bs->cur_ps.delta_angles[j] ) );
 	}
+
 	//
 	// make sure the respawn flag is disabled (causes problems after multiple "map xxx" commands)
 	g_entities[cs->bs->entitynum].client->ps.pm_flags &= ~PMF_RESPAWNED;
@@ -453,12 +518,14 @@ void AICast_Think( int client, float thinktime )
 	//
 	// make sure we are using the right AAS data for this entity (one's that don't get set will default to the player's AAS data)
 	sys->AAS_SetCurrentWorld( cs->aasWorldIndex );
+
 	//
 	// make sure we have a valid navigation system
 	//
 	if( !sys->AAS_Initialized() ) {
 		return;
 	}
+
 	//
 	sys->EA_ResetInput( client, NULL );
 	cs->aiFlags &= ~AIFL_VIEWLOCKED;
@@ -467,15 +534,18 @@ void AICast_Think( int client, float thinktime )
 	//
 	//  turn off flags that are set each frame if needed
 	ent->client->ps.eFlags &= ~( EF_NOSWINGANGLES | EF_MONSTER_EFFECT | EF_MONSTER_EFFECT2 | EF_MONSTER_EFFECT3 );
+
 	// conditional flags
 	if( ent->aiCharacter == AICHAR_ZOMBIE ) {
 		if( COM_BitCheck( ent->client->ps.weapons, WP_MONSTER_ATTACK1 ) ) {
 			cs->aiFlags |= AIFL_NO_FLAME_DAMAGE;
 			SET_FLAMING_ZOMBIE( ent->s, 1 );
+
 		} else {
 			SET_FLAMING_ZOMBIE( ent->s, 0 );
 		}
 	}
+
 	//
 	// update bounding box
 	AIChar_SetBBox( ent, cs, qtrue );
@@ -490,10 +560,12 @@ void AICast_Think( int client, float thinktime )
 	cs->bs->eye[2] += ent->client->ps.viewheight;
 	// get the area the cast is in
 	cs->bs->areanum = BotPointAreaNum( cs->bs->origin );
+
 	if( cs->bs->areanum ) {
 		cs->lastValidAreaNum[cs->aasWorldIndex]	 = cs->bs->areanum;
 		cs->lastValidAreaTime[cs->aasWorldIndex] = level.time;
 	}
+
 	// if we're dead, do special stuff only
 	if( ent->health <= 0 || cs->revivingTime || cs->rebirthTime ) {
 		//
@@ -502,6 +574,7 @@ void AICast_Think( int client, float thinktime )
 			ent->client->ps.pm_type = PM_NORMAL;
 			cs->revivingTime		= 0;
 		}
+
 		//
 		if( cs->rebirthTime && cs->rebirthTime < level.time ) {
 			vec3_t mins, maxs;
@@ -526,6 +599,7 @@ void AICast_Think( int client, float thinktime )
 						break;
 					}
 				}
+
 				if( i == numTouch ) {
 					numTouch = 0;
 				}
@@ -558,37 +632,45 @@ void AICast_Think( int client, float thinktime )
 				// play the revive animation
 				cs->revivingTime = level.time + BG_AnimScriptEvent( &ent->client->ps, ANIM_ET_REVIVE, qfalse, qtrue );
 				;
+
 			} else {
 				// can't spawn yet, so set bbox back, and wait
 				ent->r.maxs[2]			= oldmaxZ;
 				ent->client->ps.maxs[2] = ent->r.maxs[2];
 			}
+
 			sys->LinkEntity( ent );
 		}
+
 		// ZOMBIE should set effect flag if really dead
 		if( cs->aiCharacter == AICHAR_ZOMBIE && !ent->r.contents ) {
 			ent->client->ps.eFlags |= EF_MONSTER_EFFECT2;
 		}
+
 		//
 		if( ent->health > GIB_HEALTH && cs->deathTime && cs->deathTime < ( level.time - 1000 ) ) {
 			// ent->r.svFlags &= ~SVF_BROADCAST;
 			if( !ent->client->ps.torsoTimer && !ent->client->ps.legsTimer ) {
 				ent->client->ps.eFlags |= EF_FORCE_END_FRAME;
 			}
+
 			// sink?
 			if( cs->deadSinkStartTime ) {
 				ent->s.effect3Time = cs->deadSinkStartTime;
+
 				// if they are gone
 				if( cs->deadSinkStartTime + DEAD_SINK_DURATION < level.time ) {
 					sys->DropClient( cs->entityNum, "" );
 					return;
 				}
 			}
+
 			// if we've been dead for a while, stop head-checking
 			if( cs->deathTime < ( level.time - 5000 ) ) {
 				ent->flags |= FL_NO_HEADCHECK;
 			}
 		}
+
 		//
 		// do some special handling for this character
 		AICast_SpecialFunc( cs );
@@ -596,37 +678,48 @@ void AICast_Think( int client, float thinktime )
 		// no more thinking required
 		return;
 	}
+
 	//
 	// set some anim conditions
 	if( cs->secondDeadTime ) {
 		BG_UpdateConditionValue( cs->entityNum, ANIM_COND_SECONDLIFE, qtrue, qfalse );
+
 	} else {
 		BG_UpdateConditionValue( cs->entityNum, ANIM_COND_SECONDLIFE, qfalse, qfalse );
 	}
+
 	// set health value
 	if( ent->health <= 0.25 * cs->attributes[STARTING_HEALTH] ) {
 		BG_UpdateConditionValue( cs->entityNum, ANIM_COND_HEALTH_LEVEL, 2, qfalse );
+
 	} else if( ent->health <= 0.5 * cs->attributes[STARTING_HEALTH] ) {
 		BG_UpdateConditionValue( cs->entityNum, ANIM_COND_HEALTH_LEVEL, 1, qfalse );
+
 	} else {
 		BG_UpdateConditionValue( cs->entityNum, ANIM_COND_HEALTH_LEVEL, 0, qfalse );
 	}
+
 	// set enemy position
 	if( cs->enemyNum >= 0 ) {
 		if( infront( ent, &g_entities[cs->enemyNum] ) ) {
 			BG_UpdateConditionValue( ent->s.number, ANIM_COND_ENEMY_POSITION, POSITION_INFRONT, qtrue );
+
 		} else {
 			BG_UpdateConditionValue( ent->s.number, ANIM_COND_ENEMY_POSITION, POSITION_BEHIND, qtrue );
 		}
+
 	} else {
 		BG_UpdateConditionValue( ent->s.number, ANIM_COND_ENEMY_POSITION, POSITION_UNUSED, qtrue );
 	}
+
 	// set defense pose
 	if( ent->flags & FL_DEFENSE_CROUCH ) {
 		BG_UpdateConditionValue( ent->s.number, ANIM_COND_DEFENSE, qtrue, qfalse );
+
 	} else {
 		BG_UpdateConditionValue( ent->s.number, ANIM_COND_DEFENSE, qfalse, qfalse );
 	}
+
 	//
 	cs->speedScale	= 1.0; // reset each frame, set if required
 	cs->actionFlags = 0;   // FIXME: move this to a Cast AI movement init function!
@@ -636,35 +729,44 @@ void AICast_Think( int client, float thinktime )
 	// setup movement speeds for the given state
 	// walking
 	animIndex = BG_GetAnimScriptAnimation( cs->entityNum, ent->client->ps.aiState, ANIM_MT_WALK );
+
 	if( animIndex >= 0 ) {
 		anim						  = BG_GetAnimationForIndex( cs->entityNum, animIndex );
 		cs->attributes[WALKING_SPEED] = anim->moveSpeed;
 	}
+
 	// crouching
 	animIndex = BG_GetAnimScriptAnimation( cs->entityNum, ent->client->ps.aiState, ANIM_MT_WALKCR );
+
 	if( animIndex >= 0 ) {
 		anim							= BG_GetAnimationForIndex( cs->entityNum, animIndex );
 		cs->attributes[CROUCHING_SPEED] = anim->moveSpeed;
 	}
+
 	// running
 	animIndex = BG_GetAnimScriptAnimation( cs->entityNum, ent->client->ps.aiState, ANIM_MT_RUN );
+
 	if( animIndex >= 0 ) {
 		anim						  = BG_GetAnimationForIndex( cs->entityNum, animIndex );
 		cs->attributes[RUNNING_SPEED] = anim->moveSpeed;
 	}
+
 	// update crouch speed scale
 	ent->client->ps.crouchSpeedScale = cs->attributes[CROUCHING_SPEED] / cs->attributes[RUNNING_SPEED];
 	//
 	// only enable headlook if we want to this frame
 	ent->client->ps.eFlags &= ~EF_HEADLOOK;
+
 	if( cs->enemyNum >= 0 ) {
 		ent->client->ps.eFlags &= ~EF_STAND_IDLE2; // never use alt idle if fighting
 	}
+
 	//
 	// check for dead leader
 	if( cs->leaderNum >= 0 && g_entities[cs->leaderNum].health <= 0 ) {
 		cs->leaderNum = -1;
 	}
+
 	//
 #if 0
 	// HACK for village2, if they are stuck, find a good position (there is a friendly guy placed inside a table)
@@ -672,6 +774,7 @@ void AICast_Think( int client, float thinktime )
 		trace_t tr;
 		vec3_t org;
 		sys->Trace( &tr, cs->bs->cur_ps.origin, cs->bs->cur_ps.mins, cs->bs->cur_ps.maxs, cs->bs->cur_ps.origin, cs->entityNum, CONTENTS_SOLID );
+
 		while( tr.startsolid ) {
 			VectorCopy( cs->bs->cur_ps.origin, org );
 			org[0] += 96 * crandom();
@@ -682,11 +785,14 @@ void AICast_Think( int client, float thinktime )
 			VectorCopy( org, g_entities[cs->entityNum].client->ps.origin );
 		}
 	}
+
 #endif
+
 	// add the delta angles to the cast's current view angles
 	for( i = 0; i < 3; i++ ) {
 		cs->viewangles[i] = AngleMod( cs->viewangles[i] + SHORT2ANGLE( cs->bs->cur_ps.delta_angles[i] ) );
 	}
+
 	//
 	// increase the local time of the cast
 	cs->bs->ltime += thinktime;
@@ -694,17 +800,20 @@ void AICast_Think( int client, float thinktime )
 	cs->bs->thinktime = thinktime;
 	// clear flags each frame
 	cs->bFlags = 0;
+
 	//
 	// check enemy health
 	if( cs->enemyNum >= 0 && g_entities[cs->enemyNum].health <= 0 ) {
 		cs->enemyNum = -1;
 	}
+
 	//
 	// if the previous movetype was temporary, set it back
 	if( cs->movestateType == MSTYPE_TEMPORARY ) {
 		cs->movestate	  = MS_DEFAULT;
 		cs->movestateType = MSTYPE_NONE;
 	}
+
 	// crouching?
 	if( ( cs->attackcrouch_time >= level.time ) /*&&
 			((cs->lastAttackCrouch > level.time - 500) || (cs->thinkFuncChangeTime < level.time - 1000))*/ ) {
@@ -714,10 +823,12 @@ void AICast_Think( int client, float thinktime )
 			sys->EA_Crouch( cs->bs->client );
 		}
 	}
+
 	//
 	// if (cs->enemyNum >= 0) {
 	// update the attack inventory values
 	AICast_UpdateBattleInventory( cs, cs->enemyNum );
+
 	//}
 	//
 	// if we don't have ammo for the current weapon, get rid of it
@@ -729,10 +840,12 @@ void AICast_Think( int client, float thinktime )
 		//	cs->weaponNum = WP_NONE;
 		//}
 	}
+
 	//
 	// in query mode, we do special handling (pause scripting, check for transition to alert/combat, etc)
 	if( cs->aiState == AISTATE_QUERY ) {
 		AICast_QueryThink( cs );
+
 	} else if( cs->pauseTime < level.time ) {
 		// do the thinking
 		AICast_ProcessAIFunctions( cs, thinktime );
@@ -747,13 +860,16 @@ void AICast_Think( int client, float thinktime )
 		// do some special handling for this character
 		AICast_SpecialFunc( cs );
 	}
+
 	//
 	// any anim playing on legs should prevent turn anims being played in the cgame
 	if( ent->client->ps.legsTimer ) {
 		ent->client->ps.eFlags |= EF_NO_TURN_ANIM;
+
 	} else {
 		ent->client->ps.eFlags &= ~EF_NO_TURN_ANIM;
 	}
+
 	//
 	// set special movestate if necessary
 	if( cs->movestateType != MSTYPE_NONE ) {
@@ -761,22 +877,28 @@ void AICast_Think( int client, float thinktime )
 			case MS_WALK:
 				cs->actionFlags |= CASTACTION_WALK;
 				break;
+
 			case MS_CROUCH:
 				sys->EA_Crouch( cs->entityNum );
 				break;
+
 			default:
 				break;
 		}
 	}
+
 	//
 	// set our weapon in the old structure, in case it's needed elsewhere (?)
 	cs->bs->weaponnum = cs->weaponNum;
+
 	// see if we were recently firing
 	if( cs->lastWeaponFired && cs->lastWeaponFired > level.time - 2000 ) {
 		ent->client->ps.eFlags |= EF_RECENTLY_FIRING;
+
 	} else {
 		ent->client->ps.eFlags &= ~EF_RECENTLY_FIRING;
 	}
+
 	//
 	// subtract the delta angles
 	for( i = 0; i < 3; i++ ) {
@@ -817,8 +939,10 @@ void AICast_StartFrame( int time )
 
 	if( !aicast_disable.handle ) {
 		sys->Cvar_Register( &aicast_disable, "aicast_disable", "0", CVAR_CHEAT );
+
 	} else {
 		sys->Cvar_Update( &aicast_disable );
+
 		if( aicast_disable.integer ) {
 			return;
 		}
@@ -832,12 +956,14 @@ void AICast_StartFrame( int time )
 	if( level.intermissiontime ) {
 		return;
 	}
+
 	//
 	// make sure the AAS gets updated
 	sys->BotLibStartFrame( ( float )time / 1000 );
 	//
 	//
 	elapsed = time - lasttime;
+
 	if( elapsed == 0 ) {
 		return; // no time has elapsed
 	}
@@ -848,29 +974,36 @@ void AICast_StartFrame( int time )
 		elapsed	 = 0;
 		lasttime = time;
 	}
+
 	// don't let the SIGHTING framerate drop below 10 (too much sighting to process at once)
 	if( elapsed > 100 ) {
 		elapsed = 100;
 	}
+
 	AICast_SightUpdate( ( int )( ( float )SIGHT_PER_SEC * ( ( float )elapsed / 1000 ) ) );
+
 	//
 	// update the player's area, only update if it's valid
 	for( i = 0; i < 2; i++ ) {
 		sys->AAS_SetCurrentWorld( i );
 		castcount = BotPointAreaNum( g_entities[0].s.pos.trBase );
+
 		if( castcount ) {
 			caststates[0].lastValidAreaNum[i]  = castcount;
 			caststates[0].lastValidAreaTime[i] = level.time;
 		}
 	}
+
 	//
 	count	  = 0;
 	castcount = 0;
 	clCount	  = 0;
+
 	//
 	if( ++lastthink > level.maxclients ) {
 		lastthink = 0;
 	}
+
 	// update the AI characters
 	for( i = lastthink, ent = &g_entities[lastthink]; clCount < level.numPlayingClients && count < aicast_maxthink; i++, ent++ ) {
 		if( i >= level.maxclients ) {
@@ -878,21 +1011,27 @@ void AICast_StartFrame( int time )
 			i	= 0;
 			ent = g_entities;
 		}
+
 		//
 		lastthink = i;
+
 		if( !ent->inuse ) {
 			continue;
 		}
+
 		if( ent->client ) {
 			clCount++;
 		}
+
 		//
 		cs = AICast_GetCastState( i );
+
 		// is this a cast AI?
 		if( cs->bs ) {
 			if( ent->aiInactive == qfalse ) {
 				//
 				elapsed = time - cs->lastThink;
+
 				//
 				// if they're moving/firing think every frame
 				if( ( elapsed && cs->scriptAnimTime && cs->scriptAnimTime >= ( level.time - 1000 ) ) ||
@@ -907,23 +1046,29 @@ void AICast_StartFrame( int time )
 							( elapsed >= aicast_thinktime * 2 ) ) ) ) {
 					// make it think now
 					AICast_Think( i, ( float )elapsed / 1000 );
+
 					// did they drop?
 					if( !cs->bs || !cs->bs->inuse ) {
 						break; // get out of here, to be safe
 					}
+
 					cs->lastThink = time + rand() % 20; // randomize this slightly to spread out thinks during high framerates
+
 					//
 					// only count live guys
 					if( ent->health > 0 ) {
 						count++;
 					}
 				}
+
 				// check for any debug info updates
 				AICast_DebugFrame( cs );
+
 			} else if( cs->aiFlags & AIFL_WAITINGTOSPAWN ) {
 				// check f the space is clear yet
 				ent->AIScript_AlertEntity( ent );
 			}
+
 			//
 			// see if we've checked all cast AI's
 			if( ++castcount >= numcast ) {
@@ -931,6 +1076,7 @@ void AICast_StartFrame( int time )
 			}
 		}
 	}
+
 	//
 	lasttime = time;
 }
@@ -973,8 +1119,10 @@ void AICast_StartServerFrame( int time )
 
 	if( !aicast_disable.handle ) {
 		sys->Cvar_Register( &aicast_disable, "aicast_disable", "0", CVAR_CHEAT );
+
 	} else {
 		sys->Cvar_Update( &aicast_disable );
+
 		if( aicast_disable.integer ) {
 			return;
 		}
@@ -986,12 +1134,14 @@ void AICast_StartServerFrame( int time )
 	if( level.intermissiontime ) {
 		return;
 	}
+
 	//
 	// make sure the AAS gets updated
 	sys->BotLibStartFrame( ( float )time / 1000 );
 	//
 	//
 	elapsed = time - lasttime;
+
 	if( elapsed == 0 ) {
 		return; // no time has elapsed
 	}
@@ -1006,10 +1156,12 @@ void AICast_StartServerFrame( int time )
 		elapsed	 = 0;
 		lasttime = time;
 	}
+
 	// don't let the framerate drop below 10
 	if( elapsed > 100 ) {
 		elapsed = 100;
 	}
+
 	//
 	// process player's current script if it exists
 	AICast_ScriptRun( AICast_GetCastState( 0 ), qfalse );
@@ -1020,6 +1172,7 @@ void AICast_StartServerFrame( int time )
 	castcount	= 0;
 	clCount		= 0;
 	activeCount = 0;
+
 	//
 	// update the AI characters
 	for( i = 0, ent = g_entities; i < level.maxclients /*&& clCount < level.numPlayingClients*/; i++, ent++ ) {
@@ -1027,22 +1180,28 @@ void AICast_StartServerFrame( int time )
 		//	clCount++;
 		//
 		cs = AICast_GetCastState( i );
+
 		// is this a cast AI?
 		if( cs->bs ) {
 			if( ent->aiInactive == qfalse && ent->inuse ) {
 				//
 				elapsed = level.time - cs->lastMoveThink;
+
 				if( cs->lastThink && elapsed > 0 ) {
 					highPriority = qfalse;
+
 					if( ent->health > 0 ) {
 						highPriority = qtrue;
+
 					} else if( cs->deathTime > ( level.time - 5000 ) ) {
 						highPriority = qtrue;
 					}
+
 					//
 					if( highPriority ) {
 						activeCount++;
 					}
+
 					//
 					// optimization, if they're not in the player's PVS, and they aren't trying to move, then don't bother thinking
 					if( ( highPriority && ( elapsed > 300 ) ) || ( g_entities[0].client && g_entities[0].client->cameraPortal ) ||
@@ -1059,6 +1218,7 @@ void AICast_StartServerFrame( int time )
 						AICast_UpdateInput( cs, elapsed );
 						sys->BotUserCommand( cs->bs->client, &( cs->lastucmd ) );
 						cs->lastMoveThink = level.time;
+
 						//
 						// check for anim changes that may require us to stay still
 						//
@@ -1070,9 +1230,11 @@ void AICast_StartServerFrame( int time )
 						}
 					}
 				}
+
 			} else {
 				sys->UnlinkEntity( ent );
 			}
+
 			//
 			// see if we've checked all cast AI's
 			if( ++castcount >= numcast ) {
@@ -1080,8 +1242,10 @@ void AICast_StartServerFrame( int time )
 			}
 		}
 	}
+
 	//
 	lasttime = time;
+
 	//
 	if( aicast_debug.integer == 3 ) {
 		G_Printf( "AI Active Count: %i\n", activeCount );
@@ -1112,6 +1276,7 @@ void AICast_PredictMovement( cast_state_t* cs, int numframes, float frametime, a
 	if( cs->bs ) {
 		ps = cs->bs->cur_ps;
 		sys->EA_GetInput( cs->entityNum, ( float )level.time / 1000, &bi );
+
 	} else {
 		ps = g_entities[cs->entityNum].client->ps;
 	}
@@ -1124,6 +1289,7 @@ void AICast_PredictMovement( cast_state_t* cs, int numframes, float frametime, a
 		checkReachMarker = qtrue;
 		VectorSubtract( g_entities[checkHitEnt].r.currentOrigin, ps.origin, startHitVec );
 		VectorCopy( ps.origin, lastOrg );
+
 	} else {
 		checkReachMarker = qfalse;
 	}
@@ -1160,44 +1326,54 @@ void AICast_PredictMovement( cast_state_t* cs, int numframes, float frametime, a
 			// if we've hit the checkent, abort
 			if( checkReachMarker ) {
 				VectorSubtract( g_entities[checkHitEnt].r.currentOrigin, pm.ps->origin, thisHitVec );
+
 				if( DotProduct( startHitVec, thisHitVec ) < 0 ) {
 					// project the marker onto the movement vec, and check distance
 					ProjectPointOntoVector( g_entities[checkHitEnt].r.currentOrigin, lastOrg, pm.ps->origin, projPoint );
+
 					if( VectorDistance( g_entities[checkHitEnt].r.currentOrigin, projPoint ) < 8 ) {
 						move->stopevent = PREDICTSTOP_HITENT;
 						goto done;
 					}
 				}
+
 				// use this position as the base for the next test
 				// VectorCopy( thisHitVec, startHitVec );
 				VectorCopy( pm.ps->origin, lastOrg );
 			}
+
 			// if we didnt reach the marker, then check for something that blocked us
 			for( i = 0; i < pm.numtouch; i++ ) {
 				if( pm.touchents[i] == pm.ps->groundEntityNum ) {
 					continue;
 				}
+
 				if( pm.touchents[i] == checkHitEnt ) {
 					move->stopevent = PREDICTSTOP_HITENT;
 					goto done;
+
 				} else if( pm.touchents[i] < MAX_CLIENTS ||
 						   ( pm.touchents[i] != ENTITYNUM_WORLD && ( g_entities[pm.touchents[i]].s.eType != ET_MOVER || g_entities[pm.touchents[i]].moverState != MOVER_POS1 ) ) ) {
 					// we have hit another entity, so abort
 					move->stopevent = PREDICTSTOP_HITCLIENT;
 					goto done;
+
 				} else if( !Q_stricmp( g_entities[pm.touchents[i]].classname, "script_mover" ) ) {
 					// avoid script_mover's
 					move->stopevent = PREDICTSTOP_HITCLIENT;
 					goto done;
 				}
 			}
+
 			// if we are trying to get to something, we should keep adjusting our input to head towards them
 			if( cs->bs && checkHitEnt >= 0 ) {
 				// keep walking straight to them
 				VectorSubtract( g_entities[checkHitEnt].r.currentOrigin, pm.ps->origin, bi.dir );
+
 				if( !ent->waterlevel ) {
 					bi.dir[2] = 0;
 				}
+
 				VectorNormalize( bi.dir );
 				bi.actionflags = 0;
 				bi.speed	   = 400;
@@ -1214,6 +1390,7 @@ done:
 		VectorCopy( move->endpos, end );
 		end[2] -= 32;
 		sys->Trace( &tr, move->endpos, pm.mins, pm.maxs, end, pm.ps->clientNum, pm.tracemask );
+
 		if( !tr.startsolid && !tr.allsolid && tr.fraction < 1 ) {
 			VectorCopy( tr.endpos, pm.ps->origin );
 			pm.ps->groundEntityNum = tr.entityNum;
@@ -1251,20 +1428,25 @@ qboolean AICast_GetAvoid( cast_state_t* cs, bot_goal_t* goal, vec3_t outpos, qbo
 	qboolean			 averting = qfalse;
 	float				 maxYaw, simTime;
 	static int			 lastTime;
+
 	//
 	// if we are in the air, no chance of avoiding
 	if( cs->bs->cur_ps.groundEntityNum == ENTITYNUM_NONE && g_entities[cs->entityNum].waterlevel <= 1 ) {
 		return qfalse;
 	}
+
 	//
 	if( cs->lastAvoid > level.time - rand() % 500 ) {
 		return qfalse;
 	}
+
 	cs->lastAvoid = level.time + 50 + rand() % 500;
+
 	//
 	if( lastTime == level.time ) {
 		return qfalse;
 	}
+
 	lastTime = level.time;
 
 	// if they have an enemy, and can currently see them, don't move out of their view
@@ -1274,60 +1456,76 @@ qboolean AICast_GetAvoid( cast_state_t* cs, bot_goal_t* goal, vec3_t outpos, qbo
 	bestmoved	   = 0;
 	bestyaw		   = 360;
 	besttraveltime = 9999999;
+
 	if( goal ) {
 		starttraveltime = sys->AAS_AreaTravelTimeToGoalArea( cs->bs->areanum, cs->bs->origin, goal->areanum, cs->travelflags );
 	}
+
 	memcpy( &ucmd, &cs->lastucmd, sizeof( usercmd_t ) );
 	ucmd.forwardmove = 127;
 	ucmd.rightmove	 = 0;
 	ucmd.upmove		 = 0;
+
 	if( cs->dangerEntity >= 0 && cs->dangerEntityValidTime >= level.time ) {
 		averting = qtrue;
+
 	} else if( !goal ) {
 		averting = qtrue; // not heading for a goal, so we must be getting out of someone's way
 	}
+
 	//
 	maxYaw	= 0;
 	simTime = 1.2;
+
 	//
 	if( averting ) {
 		// avoiding danger, go anywhere!
 		angleDiff = 300;
 		inc		  = 60;
 		invert	  = 1;
+
 	} else {
 		if( level.time % 1000 < 500 ) {
 			invert = 1;
+
 		} else {
 			invert = -1;
 		}
+
 		angleDiff = 140;
 		inc		  = 35;
 	}
+
 	if( blockEnt > aicast_maxclients ) {
 		maxYaw	= angleDiff;
 		simTime = 0.5;
 	}
+
 	//
 	for( yaw = -angleDiff * invert; yaw * invert <= maxYaw; yaw += inc * invert ) {
 		if( !averting && !yaw ) {
 			continue;
 		}
+
 		oldyaw = cs->bs->cur_ps.viewangles[YAW];
 		cs->bs->cur_ps.viewangles[YAW] += yaw + reverse * 180;
 		//
 		ucmd.angles[YAW] = ANGLE2SHORT( AngleMod( cs->bs->cur_ps.viewangles[YAW] ) );
 		//
 		AICast_PredictMovement( cs, 5, 0.4, &castmove, &ucmd, -1 );
+
 		// if we have a danger entity, try and get away from it at all costs
 		if( cs->dangerEntity >= 0 && cs->dangerEntityValidTime >= level.time ) {
 			distmoved = Distance( castmove.endpos, cs->dangerEntityPos );
+
 		} else if( goal ) {
 			// distmoved = 99999 - sys->AAS_AreaTravelTimeToGoalArea( BotPointAreaNum(castmove.endpos), castmove.endpos, goal->areanum, cs->travelflags );
 			distmoved = 99999 - Distance( castmove.endpos, goal->origin );
+
 		} else {
 			distmoved = Distance( castmove.endpos, cs->bs->cur_ps.origin );
 		}
+
 		if( ( distmoved > bestmoved )
 			//&&	((cs->bs->origin[2] - castmove.endpos[2]) < 64)	// allow up, but not down (falling)
 			&& ( castmove.groundEntityNum != ENTITYNUM_NONE ) ) {
@@ -1341,13 +1539,16 @@ qboolean AICast_GetAvoid( cast_state_t* cs, bot_goal_t* goal, vec3_t outpos, qbo
 				}
 			}
 		}
+
 		//
 		cs->bs->cur_ps.viewangles[YAW] = oldyaw;
 	}
+
 	//
 	if( bestmoved > 0 ) {
 		VectorCopy( bestpos, outpos );
 		return qtrue;
+
 	} else {
 		return qfalse;
 	}
@@ -1377,6 +1578,7 @@ void AICast_Blocked( cast_state_t* cs, bot_moveresult_t* moveresult, int activat
 				cs->blockedAvoidTime = level.time - 1;
 				return;
 			}
+
 			// are we going to hit someone soon?
 			sys->EA_GetInput( cs->entityNum, ( float )level.time / 1000, &bi );
 			AICast_InputToUserCommand( cs, &bi, &ucmd, cs->bs->cur_ps.delta_angles );
@@ -1397,6 +1599,7 @@ void AICast_Blocked( cast_state_t* cs, bot_moveresult_t* moveresult, int activat
 					VectorSubtract( goal->origin, move.endpos, v2 );
 					VectorNormalize( v1 );
 					VectorNormalize( v2 );
+
 					if( DotProduct( v1, v2 ) < 0 ) {
 						// we went passed the goal, so assume we can reach it
 						cs->blockedAvoidTime = level.time - 1;
@@ -1407,24 +1610,30 @@ void AICast_Blocked( cast_state_t* cs, bot_moveresult_t* moveresult, int activat
 
 			// try and get them to move, in case we can't get around them
 			blockEnt = -1;
+
 			for( i = 0; i < move.numtouch; i++ ) {
 				if( move.touchents[i] >= MAX_CLIENTS ) {
 					if( !Q_stricmp( g_entities[move.touchents[i]].classname, "script_mover" ) ) {
 						// avoid script_mover's
 						blockEnt = move.touchents[i];
 					}
+
 					// if we are close to the impact point, then avoid this entity
 					else if( VectorDistance( cs->bs->origin, move.endpos ) < 10 ) {
 						// G_Printf("AI (%s) avoiding %s\n", g_entities[cs->entityNum].aiName, g_entities[move.touchents[i]].classname );
 						blockEnt = move.touchents[i];
 					}
+
 					continue;
 				}
+
 				//
 				ocs = AICast_GetCastState( move.touchents[i] );
+
 				if( !ocs->bs ) {
 					blockEnt = move.touchents[i];
 				}
+
 				// reject this blocker if we are following or going to them
 				else if( cs->followEntity != ocs->entityNum ) {
 					// if they are moving away from us already, let them go
@@ -1439,33 +1648,40 @@ void AICast_Blocked( cast_state_t* cs, bot_moveresult_t* moveresult, int activat
 							continue;
 						}
 					}
+
 					//
 					// if they recently were asked to avoid us, then they're probably not listening
 					if( ocs->obstructingTime > level.time - 500 ) {
 						blockEnt = move.touchents[i];
 					}
+
 					//
 					// if they are not avoiding, ignore
 					if( !( ocs->aiFlags & AIFL_NOAVOID ) ) {
 						continue;
 					}
+
 					//
 					// they should avoid us
 					if( ocs->leaderNum >= 0 ) {
 						ogoal.entitynum = ocs->leaderNum;
 						VectorCopy( g_entities[ocs->leaderNum].r.currentOrigin, ogoal.origin );
+
 						if( AICast_GetAvoid( ocs, &ogoal, ocs->obstructingPos, qfalse, cs->entityNum ) ) {
 							// give them time to move somewhere else
 							ocs->obstructingTime = level.time + 1000;
+
 						} else {
 							// make sure they don't call GetAvoid() for another few frames to let others avoid also
 							ocs->obstructingTime = level.time - 1;
 							blockEnt			 = move.touchents[i];
 						}
+
 					} else {
 						if( AICast_GetAvoid( ocs, NULL, ocs->obstructingPos, qfalse, cs->entityNum ) ) {
 							// give them time to move somewhere else
 							ocs->obstructingTime = level.time + 1000;
+
 						} else {
 							// make sure they don't call GetAvoid() for another few frames to let others avoid also
 							ocs->obstructingTime = level.time - 1;
@@ -1489,6 +1705,7 @@ void AICast_Blocked( cast_state_t* cs, bot_moveresult_t* moveresult, int activat
 		if( g_entities[blockEnt].aiName && g_entities[blockEnt].client && cs->bs && VectorDistance( cs->bs->origin, g_entities[blockEnt].r.currentOrigin ) < 128 ) {
 			int oldId = cs->castScriptStatus.scriptId;
 			AICast_ScriptEvent( cs, "blocked", g_entities[blockEnt].aiName );
+
 			if( ( oldId != cs->castScriptStatus.scriptId ) || ( cs->aiFlags & AIFL_DENYACTION ) ) {
 				// the script has changed, so assume the scripting is handling the avoidance
 				return;
@@ -1500,11 +1717,14 @@ void AICast_Blocked( cast_state_t* cs, bot_moveresult_t* moveresult, int activat
 			VectorSubtract( pos, cs->bs->cur_ps.origin, dir );
 			VectorNormalize( dir );
 			cs->blockedAvoidYaw = vectoyaw( dir );
+
 			if( blockEnt >= MAX_CLIENTS ) {
 				cs->blockedAvoidTime = level.time + 100 + rand() % 200;
+
 			} else {
 				cs->blockedAvoidTime = level.time + 300 + rand() % 400;
 			}
+
 		} else {
 			cs->blockedAvoidTime = level.time - 1; // don't look again for another few frames
 			return;
@@ -1572,6 +1792,7 @@ void AICast_EvaluatePmove( int clientnum, pmove_t* pm )
 			AICast_UpdateVisibility( &g_entities[pm->touchents[i]], &g_entities[cs->entityNum], qfalse, qtrue );
 
 			ocs = AICast_GetCastState( pm->touchents[i] );
+
 			if( ( ocs->bs ) && ( AICast_SameTeam( cs, ocs->entityNum ) ) && ( !( ocs->aiFlags & AIFL_NOAVOID ) ) &&
 				( ( ocs->leaderNum == cs->entityNum ) || ( VectorLength( ocs->bs->velocity ) < 5 ) ) && ( ocs->obstructingTime < ( level.time + 100 ) ) ) {
 				// if they are moving away from us already, let them go
@@ -1586,22 +1807,27 @@ void AICast_EvaluatePmove( int clientnum, pmove_t* pm )
 						continue;
 					}
 				}
+
 				if( ocs->leaderNum >= 0 ) {
 					VectorCopy( g_entities[ocs->leaderNum].r.currentOrigin, ogoal.origin );
 					ogoal.areanum	= BotPointAreaNum( ogoal.origin );
 					ogoal.entitynum = ocs->leaderNum;
+
 					if( ocs->bs && AICast_GetAvoid( ocs, &ogoal, ocs->obstructingPos, qfalse, cs->entityNum ) ) { // give them time to move somewhere else
 						ocs->obstructingTime = level.time + 1000;
 					}
+
 				} else {
 					if( ocs->bs && AICast_GetAvoid( ocs, NULL, ocs->obstructingPos, qfalse, cs->entityNum ) ) { // give them time to move somewhere else
 						ocs->obstructingTime = level.time + 1000;
 					}
 				}
 			}
+
 		} else if( cs->bs ) {
 			// if we are blocked by a brush entity, see if we can activate it
 			ent = pm->touchents[i];
+
 			if( g_entities[ent].s.modelindex > 0 && g_entities[ent].s.eType == ET_MOVER ) {
 				// find the bsp entity which should be activated in order to remove
 				// the blocking entity
@@ -1626,6 +1852,7 @@ qboolean AICast_RequestCrouchAttack( cast_state_t* cs, vec3_t org, float time )
 		if( time ) {
 			cs->attackcrouch_time = level.time + ( int )( time * 1000 );
 		}
+
 		return qtrue;
 	}
 
@@ -1670,6 +1897,7 @@ void AICast_QueryThink( cast_state_t* cs )
 			// set the "short reaction" condition
 			BG_UpdateConditionValue( cs->entityNum, ANIM_COND_SHORT_REACTION, qtrue, qfalse );
 		}
+
 		AICast_StateChange( cs, AISTATE_COMBAT );
 		BG_UpdateConditionValue( cs->entityNum, ANIM_COND_SHORT_REACTION, qfalse, qfalse );
 		AIFunc_BattleStart( cs );
@@ -1742,13 +1970,16 @@ void AICast_IdleReload( cast_state_t* cs )
 	if( AICast_NoReload( cs->entityNum ) ) {
 		return;
 	}
+
 	if( cs->noReloadTime >= level.time ) {
 		return;
 	}
+
 	if( !( ( cs->bs->cur_ps.ammoclip[BG_FindClipForWeapon( ( weapon_t )cs->bs->cur_ps.weapon )] < ( int )( 0.75 * ammoTable[cs->bs->cur_ps.weapon].maxclip ) ) &&
 			cs->bs->cur_ps.ammo[BG_FindAmmoForWeapon( ( weapon_t )cs->bs->cur_ps.weapon )] ) ) {
 		return;
 	}
+
 	//
 	sys->EA_Reload( cs->entityNum );
 }

@@ -59,6 +59,7 @@ static void CG_ResetEntity( centity_t* cent )
 
 	VectorCopy( cent->currentState.origin, cent->lerpOrigin );
 	VectorCopy( cent->currentState.angles, cent->lerpAngles );
+
 	if( cent->currentState.eType == ET_PLAYER ) {
 		CG_ResetPlayerEntity( cent );
 	}
@@ -84,13 +85,16 @@ static void CG_TransitionEntity( centity_t* cent )
 		VectorSubtract( oldPos, newPos, newDir );
 		// fire should go upwards if travelling slow
 		newDir[2] += 2;
+
 		if( VectorNormalize( newDir ) < 1 ) {
 			VectorClear( newDir );
 			newDir[2] = 1;
 		}
+
 		// now move towards the newDir
 		adjust = 0.3;
 		VectorMA( cent->fireRiseDir, adjust, newDir, cent->fireRiseDir );
+
 		if( VectorNormalize( cent->fireRiseDir ) <= 0.1 ) {
 			VectorCopy( newDir, cent->fireRiseDir );
 		}
@@ -148,12 +152,15 @@ void CG_SetInitialSnapshot( snapshot_t* snap )
 
 	sys->Cvar_VariableStringBuffer( "r_savegameFogColor", buf, sizeof( buf ) );
 	sys->Cvar_Set( "r_savegameFogColor", "0" );
+
 	if( strlen( buf ) > 1 ) {
 		if( !Q_stricmp( buf, "none" ) ) {
 			sys->SendClientCommand( "fogswitch 0" ); // 'off'
+
 		} else {
 			sys->SendClientCommand( va( "fogswitch %s", buf ) );
 		}
+
 	} else {
 		sys->Cvar_VariableStringBuffer( "r_mapFogColor", buf, sizeof( buf ) );
 		sys->SendClientCommand( va( "fogswitch %s", buf ) );
@@ -193,6 +200,7 @@ void CG_SetInitialSnapshot( snapshot_t* snap )
 			sys->SendConsoleCommand( "openLimboMenu\n" );
 		}
 	}
+
 	// -NERVE - SMF
 }
 
@@ -212,6 +220,7 @@ static void CG_TransitionSnapshot()
 	if( !cg.snap ) {
 		CG_Error( "CG_TransitionSnapshot: NULL cg.snap" );
 	}
+
 	if( !cg.nextSnap ) {
 		CG_Error( "CG_TransitionSnapshot: NULL cg.nextSnap" );
 	}
@@ -251,6 +260,7 @@ static void CG_TransitionSnapshot()
 
 		ops = &oldFrame->ps;
 		ps	= &cg.snap->ps;
+
 		// teleporting checks are irrespective of prediction
 		if( ( ps->eFlags ^ ops->eFlags ) & EF_TELEPORT_BIT ) {
 			cg.thisFrameTeleport = qtrue; // will be cleared by prediction code
@@ -294,6 +304,7 @@ static void CG_SetNextSnap( snapshot_t* snap )
 		// previous frame, don't interpolate
 		if( !cent->currentValid || ( ( cent->currentState.eFlags ^ es->eFlags ) & EF_TELEPORT_BIT ) ) {
 			cent->interpolate = qfalse;
+
 		} else {
 			cent->interpolate = qtrue;
 		}
@@ -303,6 +314,7 @@ static void CG_SetNextSnap( snapshot_t* snap )
 	// can't interpolate during demos
 	if( cg.snap && ( ( snap->ps.eFlags ^ cg.snap->ps.eFlags ) & EF_TELEPORT_BIT ) ) {
 		cg.nextFrameTeleport = qtrue;
+
 	} else {
 		cg.nextFrameTeleport = qfalse;
 	}
@@ -344,6 +356,7 @@ static snapshot_t* CG_ReadNextSnapshot()
 		// decide which of the two slots to load it into
 		if( cg.snap == &cg.activeSnapshots[0] ) {
 			dest = &cg.activeSnapshots[1];
+
 		} else {
 			dest = &cg.activeSnapshots[0];
 		}
@@ -383,6 +396,7 @@ static snapshot_t* CG_ReadNextSnapshot()
 				cg.weaponSelectTime = cg.time;
 				memset( cg.viewDamage, 0, sizeof( cg.viewDamage ) );
 				memset( cg.cameraShake, 0, sizeof( cg.cameraShake ) );
+
 				// go through an reset the cent's
 				for( i = 0; i < MAX_GENTITIES; i++ ) {
 					backupCent = cg_entities[i];
@@ -392,6 +406,7 @@ static snapshot_t* CG_ReadNextSnapshot()
 					cg_entities[i].currentValid = backupCent.currentValid;
 					cg_entities[i].interpolate	= backupCent.interpolate;
 				}
+
 				// reset the predicted cent
 				memset( &cg.predictedPlayerEntity, 0, sizeof( centity_t ) );
 				cg.predictedPlayerEntity.currentState = backupCent.currentState;
@@ -447,11 +462,13 @@ void CG_ProcessSnapshots()
 
 	// see what the latest snapshot the client system has is
 	sys->GetCurrentSnapshotNumber( &n, &cg.latestSnapshotTime );
+
 	if( n != cg.latestSnapshotNum ) {
 		if( n < cg.latestSnapshotNum ) {
 			// this should never happen
 			CG_Error( "CG_ProcessSnapshots: n < cg.latestSnapshotNum" );
 		}
+
 		cg.latestSnapshotNum = n;
 	}
 
@@ -460,6 +477,7 @@ void CG_ProcessSnapshots()
 	// always have valid data for the rest of the game
 	while( !cg.snap ) {
 		snap = CG_ReadNextSnapshot();
+
 		if( !snap ) {
 			// we can't continue until we get a snapshot
 			return;
@@ -507,10 +525,12 @@ void CG_ProcessSnapshots()
 	if( cg.snap == NULL ) {
 		CG_Error( "CG_ProcessSnapshots: cg.snap == NULL" );
 	}
+
 	if( cg.time < cg.snap->serverTime ) {
 		// this can happen right after a vid_restart
 		cg.time = cg.snap->serverTime;
 	}
+
 	if( cg.nextSnap != NULL && cg.nextSnap->serverTime <= cg.time ) {
 		CG_Error( "CG_ProcessSnapshots: cg.nextSnap->serverTime <= cg.time" );
 	}

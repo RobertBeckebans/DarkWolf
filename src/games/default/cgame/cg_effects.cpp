@@ -129,11 +129,14 @@ localEntity_t* CG_SmokePuff( const vec3_t p, const vec3_t vel, float radius, flo
 	le->startTime  = startTime;
 	le->endTime	   = startTime + duration;
 	le->fadeInTime = fadeInTime;
+
 	if( fadeInTime > startTime ) {
 		le->lifeRate = 1.0 / ( le->endTime - le->fadeInTime );
+
 	} else {
 		le->lifeRate = 1.0 / ( le->endTime - le->startTime );
 	}
+
 	le->color[0] = r;
 	le->color[1] = g;
 	le->color[2] = b;
@@ -154,6 +157,7 @@ localEntity_t* CG_SmokePuff( const vec3_t p, const vec3_t vel, float radius, flo
 		re->shaderRGBA[1] = 0xff;
 		re->shaderRGBA[2] = 0xff;
 		re->shaderRGBA[3] = 0xff;
+
 	} else {
 		re->shaderRGBA[0] = le->color[0] * 0xff;
 		re->shaderRGBA[1] = le->color[1] * 0xff;
@@ -223,6 +227,7 @@ localEntity_t* CG_MakeExplosion( vec3_t origin, vec3_t dir, qhandle_t hModel, qh
 	offset = rand() & 63;
 
 	ex = CG_AllocLocalEntity();
+
 	if( isSprite ) {
 		ex->leType = LE_SPRITE_EXPLOSION;
 
@@ -230,6 +235,7 @@ localEntity_t* CG_MakeExplosion( vec3_t origin, vec3_t dir, qhandle_t hModel, qh
 		ex->refEntity.rotation = rand() % 360;
 		VectorScale( dir, 16, tmpVec );
 		VectorAdd( tmpVec, origin, newOrigin );
+
 	} else {
 		ex->leType = LE_EXPLOSION;
 		VectorCopy( origin, newOrigin );
@@ -237,6 +243,7 @@ localEntity_t* CG_MakeExplosion( vec3_t origin, vec3_t dir, qhandle_t hModel, qh
 		// set axis with random rotate
 		if( !dir ) {
 			AxisClear( ex->refEntity.axis );
+
 		} else {
 			ang = rand() % 360;
 			VectorCopy( dir, ex->refEntity.axis[0] );
@@ -367,10 +374,13 @@ void CG_Bleed( vec3_t origin, int entityNum )
 		// if it's below the waste, or above the head, clamp
 		VectorSubtract( vhead, vtorso, vec );
 		VectorSubtract( bOrigin, vtorso, pvec );
+
 		if( DotProduct( pvec, vec ) < 0 ) {
 			VectorCopy( vtorso, bOrigin );
+
 		} else {
 			VectorSubtract( bOrigin, vhead, pvec );
+
 			if( DotProduct( pvec, vec ) > 0 ) {
 				VectorCopy( vhead, bOrigin );
 			}
@@ -394,9 +404,11 @@ void CG_Bleed( vec3_t origin, int entityNum )
 
 		for( i = 0; i < BLOOD_SPURT_COUNT; i++ ) {
 			VectorCopy( dir, ndir );
+
 			for( j = 0; j < 3; j++ ) {
 				ndir[j] += crandom() * 0.3;
 			}
+
 			VectorNormalize( ndir );
 			CG_AddBloodTrails( bOrigin,
 				ndir,
@@ -406,6 +418,7 @@ void CG_Bleed( vec3_t origin, int entityNum )
 				0.1 );							 // rand scale
 		}
 	}
+
 	// done.
 }
 
@@ -433,11 +446,13 @@ void CG_LaunchGib( centity_t* cent, vec3_t origin, vec3_t angles, vec3_t velocit
 	VectorCopy( angles, le->angles.trBase );
 	VectorCopy( origin, re->origin );
 	AnglesToAxis( angles, re->axis );
+
 	if( sizeScale != 1.0 ) {
 		for( i = 0; i < 3; i++ ) {
 			VectorScale( re->axis[i], sizeScale, re->axis[i] );
 		}
 	}
+
 	re->hModel = hModel;
 
 	switch( cent->currentState.aiChar ) {
@@ -451,9 +466,11 @@ void CG_LaunchGib( centity_t* cent, vec3_t origin, vec3_t angles, vec3_t velocit
 
 			le->bounceFactor = 0.5;
 			break;
+
 		case AICHAR_HEINRICH:
 		case AICHAR_HELGA:
 			le->endTime = le->startTime + 999000; // stay around for long enough to see the player off
+
 		default:
 			le->leBounceSoundType = LEBS_BLOOD;
 			le->leMarkType		  = LEMT_BLOOD;
@@ -495,6 +512,7 @@ void CG_LaunchGib( centity_t* cent, vec3_t origin, vec3_t angles, vec3_t velocit
 	if( cent && CG_EntOnFire( cent ) ) {
 		le->onFireStart = cent->currentState.onFireStart;
 		le->onFireEnd	= re->fadeEndTime + 1000;
+
 	} else if( ( cent->currentState.aiChar == AICHAR_ZOMBIE ) && IS_FLAMING_ZOMBIE( cent->currentState ) ) {
 		le->onFireStart = cg.time - 1000;
 		le->onFireEnd	= re->fadeEndTime + 1000;
@@ -521,9 +539,11 @@ void CG_LoseHat( centity_t* cent, vec3_t dir )
 	vec3_t		  origin, velocity;
 
 	clientNum = cent->currentState.clientNum;
+
 	if( clientNum < 0 || clientNum >= MAX_CLIENTS ) {
 		CG_Error( "Bad clientNum on player entity" );
 	}
+
 	ci = &cgs.clientinfo[clientNum];
 
 	if( !ci->accModels[ACC_HAT] ) { // don't launch anything if they don't have one
@@ -582,6 +602,7 @@ void CG_LoseHat( centity_t* cent, vec3_t dir )
 		}
 	}
 }
+
 /*
 ==============
 CG_GibHead
@@ -727,9 +748,11 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 	}
 
 	clientNum = cent->currentState.clientNum;
+
 	if( clientNum < 0 || clientNum >= MAX_CLIENTS ) {
 		CG_Error( "Bad clientNum on player entity" );
 	}
+
 	ci = &cgs.clientinfo[clientNum];
 
 	// Ridah, fetch the various positions of the tag_gib*'s
@@ -768,6 +791,7 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 			if( ( cent->currentState.aiChar == AICHAR_ZOMBIE ) || ( cent->currentState.aiChar == AICHAR_HELGA ) || ( cent->currentState.aiChar == AICHAR_HEINRICH ) ) {
 				// VectorScale( velocity, 4, velocity );
 				size = 0.6 + 0.4 * random();
+
 				if( ( cent->currentState.aiChar == AICHAR_HELGA ) || ( cent->currentState.aiChar == AICHAR_HEINRICH ) ) {
 					// size *= 3.0;
 					velocity[0] = crandom() * GIB_VELOCITY * 1.0;
@@ -776,9 +800,11 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 					// additional gibs
 					CG_LaunchGib( cent, origin, angles, velocity, ci->gibModels[gibIndex], size, 1 );
 					CG_LaunchGib( cent, origin, angles, velocity, ci->gibModels[gibIndex], size, 1 );
+
 				} else {
 					CG_LaunchGib( cent, origin, angles, velocity, ci->gibModels[gibIndex], size, 1 + ( int )( 2.0 * ( size - 0.4 ) ) );
 				}
+
 			} else {
 				CG_LaunchGib( cent, origin, angles, velocity, ci->gibModels[gibIndex], 1.0, 0 );
 			}
@@ -803,14 +829,17 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 						// ok now lets spawn a little blood
 						if( cent->currentState.aiChar == AICHAR_ZOMBIE ) {
 							CG_ParticleBloodCloudZombie( cent, junctionOrigin[i], dir );
+
 						} else {
 							CG_ParticleBloodCloud( cent, junctionOrigin[i], dir );
 						}
 
 						// RF, also spawn some blood in this direction
 						VectorMA( junctionOrigin[i], 2.0, dir, origin );
+
 						if( cent->currentState.aiChar == AICHAR_ZOMBIE ) {
 							CG_ParticleBloodCloudZombie( cent, origin, dir );
+
 						} else {
 							CG_ParticleBloodCloud( cent, origin, dir );
 						}
@@ -825,6 +854,7 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 								velocity[0] = crandom() * GIB_VELOCITY * 2.0;
 								velocity[1] = crandom() * GIB_VELOCITY * 2.0;
 								velocity[2] = GIB_JUMP + random() * GIB_VELOCITY;
+
 							} else {
 								velocity[0] = dir[0] * ( 0.5 + random() ) * GIB_VELOCITY * 0.3;
 								velocity[1] = dir[1] * ( 0.5 + random() ) * GIB_VELOCITY * 0.3;
@@ -836,8 +866,10 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 
 							VectorScale( velocity, 3, velocity );
 							size = 0.6 + 0.4 * random();
+
 							if( ( cent->currentState.aiChar == AICHAR_HELGA ) || ( cent->currentState.aiChar == AICHAR_HEINRICH ) ) {
 								CG_LaunchGib( cent, origin, angles, velocity, ci->gibModels[rand() % 4], size, 1 );
+
 							} else {
 								CG_LaunchGib( cent, origin, angles, velocity, ci->gibModels[rand() % 4], size, 1 + ( int )( 2.0 * ( size - 0.4 ) ) );
 							}
@@ -857,8 +889,10 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 		velocity[0] = crandom() * GIB_VELOCITY;
 		velocity[1] = crandom() * GIB_VELOCITY;
 		velocity[2] = GIB_JUMP + crandom() * GIB_VELOCITY;
+
 		if( rand() & 1 ) {
 			CG_LaunchGib( cent, origin, vec3_origin, velocity, cgs.media.gibSkull, 1.0, 0 );
+
 		} else {
 			CG_LaunchGib( cent, origin, vec3_origin, velocity, cgs.media.gibBrain, 1.0, 0 );
 		}
@@ -921,10 +955,12 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 	if( !( cent->currentState.eFlags & EF_HEADSHOT ) ) { // (SA) already lost hat while living
 		CG_LoseHat( cent, tv( 0, 0, 1 ) );
 	}
+
 	//----(SA)	end
 
 	// Ridah, spawn a bunch of blood dots around the place
 #define GIB_BLOOD_DOTS 4
+
 	for( i = 0, count = 0; i < GIB_BLOOD_DOTS * 2; i++ ) {
 		// static vec3_t mins = {-10,-10,-10}; // TTimo: unused
 		// static vec3_t maxs = { 10, 10, 10}; // TTimo: unused
@@ -933,6 +969,7 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 			velocity[0] = ( ( i % 2 ) * 2 - 1 ) * ( 40 + 40 * random() );
 			velocity[1] = ( ( ( i / 2 ) % 2 ) * 2 - 1 ) * ( 40 + 40 * random() );
 			velocity[2] = ( ( ( i < GIB_BLOOD_DOTS ) * 2 ) - 1 ) * 40;
+
 		} else {
 			VectorClear( velocity );
 			velocity[2] = -64;
@@ -941,9 +978,11 @@ void CG_GibPlayer( centity_t* cent, vec3_t playerOrigin, vec3_t gdir )
 		VectorAdd( playerOrigin, velocity, origin );
 
 		CG_Trace( &trace, playerOrigin, NULL, NULL, origin, -1, CONTENTS_SOLID );
+
 		if( trace.fraction < 1.0 ) {
 			BG_GetMarkDir( velocity, trace.plane.normal, velocity );
 			CG_ImpactMark( cgs.media.bloodDotShaders[rand() % 5], trace.endpos, velocity, random() * 360, 1, 1, 1, 1, qtrue, 30, qfalse, cg_bloodTime.integer * 1000 );
+
 			if( count++ > GIB_BLOOD_DOTS ) {
 				break;
 			}
@@ -1292,9 +1331,11 @@ void CG_DynamicLightningBolt( qhandle_t shader, vec3_t start, vec3_t pend, int n
 	length = Distance( start, end );
 	// if (length > 128) {
 	segMin = length / 10.0;
+
 	if( segMin < 8 ) {
 		segMin = 8;
 	}
+
 	segMax = segMin * 1.2;
 	// segMax = length / 30.0;
 	// } else {
@@ -1305,6 +1346,7 @@ void CG_DynamicLightningBolt( qhandle_t shader, vec3_t start, vec3_t pend, int n
 	if( startAlpha > 1.0 ) {
 		startAlpha = 1.0;
 	}
+
 	alpha = startAlpha; // change only if fading
 
 	for( i = 0; i < numBolts; i++ ) {
@@ -1312,122 +1354,159 @@ void CG_DynamicLightningBolt( qhandle_t shader, vec3_t start, vec3_t pend, int n
 		VectorCopy( start, pos );
 		// drop a start junction
 		stScale = maxSTscale * ( 0.5 + lt_random( randseed, i + 1 ) * 0.5 );
+
 		if( fade ) {
 			if( startAlpha == 1.0 ) {
 				alpha = startAlpha * ( distLeft / length );
+
 			} else {
 				alpha = 1.0 - 1.0 * fabs( ( 1.0 - ( distLeft / length ) ) - startAlpha );
+
 				if( alpha < 0 ) {
 					alpha = 0;
 				}
+
 				if( alpha > 1 ) {
 					alpha = 1;
 				}
 			}
 		}
+
 		thisWidth = maxWidth * ( 0.5 + 0.5 * alpha );
+
 		if( ( viewDist = VectorDistance( pos, cg.refdef.vieworg ) ) < VIEW_SCALE_DIST ) {
 			thisWidth *= 0.5 + ( 0.5 * ( viewDist / VIEW_SCALE_DIST ) );
+
 			if( thisWidth < 4.0 && thisWidth < maxWidth ) {
 				thisWidth = 4.0;
 			}
+
 		} else { // scale it wider with distance so it remains visible
 			thisWidth *= 0.5 + ( 0.5 * ( viewDist / VIEW_SCALE_DIST ) );
+
 			if( thisWidth > maxWidth * 2 ) {
 				// thisWidth > maxWidth*2;
 				thisWidth = maxWidth * 2;
 			}
 		}
+
 		//
 		VectorScale( bc, alpha, c );
 		c[2] *= 1.0 + ( 1.0 - alpha );
+
 		if( c[2] > 1.0 ) {
 			c[2] = 1.0;
 		}
+
 		//
 		curJunc = CG_AddTrailJunc( 0, shader, cg.time, STYPE_LIGHTNING, pos, trailLife, 1, 1, thisWidth, thisWidth, TJFL_NOCULL, c, c, stScale, 20.0 );
+
 		while( distLeft > 0 ) {
 			// create this bolt
 			thisSeg	  = segMin + ( segMax - segMin ) * lt_random( randseed, 2 );
 			thisWidth = maxWidth * ( 0.5 + 0.5 * alpha );
+
 			if( thisSeg >= distLeft - rndSize ) { // go directly to the end point
 				VectorCopy( end, pos );
 				thisWidth *= 0.6;
+
 			} else if( ( float )distLeft / length < 0.3 ) {
 				VectorSubtract( end, pos, vec );
 				VectorNormalize( vec );
 				VectorMA( pos, thisSeg, vec, pos );
 				// randomize the position a bit
 				thisSeg *= 0.05;
+
 				if( thisSeg > rndSize ) {
 					thisSeg = rndSize;
 				}
+
 				for( j = 0; j < 3; j++ ) {
 					viewDist = lt_crandom( randseed * randseed, j * j + i * i + 3 );
+
 					if( fabs( viewDist ) < 0.5 ) {
 						if( viewDist > 0 ) {
 							viewDist = 0.5;
+
 						} else {
 							viewDist = -0.5;
 						}
 					}
+
 					pos[j] += viewDist * thisSeg;
 				}
+
 			} else {
 				VectorSubtract( end, pos, vec );
 				VectorNormalize( vec );
 				VectorMA( pos, thisSeg, vec, pos );
 				// randomize the position a bit
 				thisSeg *= 0.25;
+
 				if( thisSeg > rndSize ) {
 					thisSeg = rndSize;
 				}
+
 				for( j = 0; j < 3; j++ ) {
 					viewDist = lt_crandom( randseed, j * j + i * i + 3 );
+
 					if( fabs( viewDist ) < 0.5 ) {
 						if( viewDist > 0 ) {
 							viewDist = 0.5;
+
 						} else {
 							viewDist = -0.5;
 						}
 					}
+
 					pos[j] += viewDist * thisSeg;
 				}
 			}
 
 			distLeft = Distance( pos, end );
+
 			if( fade ) {
 				if( startAlpha == 1.0 ) {
 					alpha = startAlpha * ( distLeft / length );
+
 				} else {
 					alpha = 1.0 - 1.0 * fabs( ( 1.0 - ( distLeft / length ) ) - startAlpha );
+
 					if( alpha < 0 ) {
 						alpha = 0;
 					}
+
 					if( alpha > 1 ) {
 						alpha = 1;
 					}
 				}
 			}
+
 			// thisWidth *= alpha;
 			if( ( viewDist = VectorDistance( pos, cg.refdef.vieworg ) ) < VIEW_SCALE_DIST ) {
 				thisWidth *= 0.5 + ( 0.5 * ( viewDist / VIEW_SCALE_DIST ) );
+
 				if( thisWidth < 4.0 && thisWidth < maxWidth ) {
 					thisWidth = 4.0;
 				}
+
 			} else { // scale it wider with distance so it remains visible
 				thisWidth *= 0.5 + ( 0.5 * ( viewDist / VIEW_SCALE_DIST ) );
+
 				if( thisWidth > maxWidth * 2 ) {
 					// thisWidth > maxWidth*2;
 					thisWidth = maxWidth * 2;
 				}
 			}
+
 			//
 			VectorScale( bc, alpha, c );
 			c[2] *= 1.0 + ( 1.0 - alpha );
+
 			if( c[2] > 1.0 ) {
 				c[2] = 1.0;
 			}
+
 			//
 			// stScale = maxSTscale * (0.4 + lt_random(randseed,1)*0.6);
 			curJunc = CG_AddTrailJunc( curJunc, shader, cg.time, STYPE_LIGHTNING, pos, trailLife, 1, 1, thisWidth, thisWidth, TJFL_NOCULL, c, c, stScale, 20.0 );
@@ -1468,14 +1547,18 @@ void CG_ProjectedSpotLight( vec3_t start, vec3_t dir )
 
 	VectorMA( start, 1000, dir, end );
 	CG_Trace( &tr, start, NULL, NULL, end, -1, CONTENTS_SOLID );
+
 	if( tr.fraction == 1.0 ) {
 		return;
 	}
+
 	//
 	alpha = ( 1.0 - tr.fraction );
+
 	if( alpha > 1.0 ) {
 		alpha = 1.0;
 	}
+
 	//
 	radius = 32 + 64 * tr.fraction;
 	VectorNegate( dir, proj );
@@ -1543,6 +1626,7 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 
 	// normalize color
 	colorNorm[3] = 0; // store normalize multiplier in alpha index
+
 	for( i = 0; i < 3; i++ ) {
 		if( color[i] > colorNorm[3] ) {
 			colorNorm[3] = color[i]; // find largest color value in RGB
@@ -1551,9 +1635,11 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 
 	if( colorNorm[3] != 1 ) {									 // it needs to be boosted
 		VectorMA( color, 1.0 / colorNorm[3], color, colorNorm ); // FIXME: div by 0
+
 	} else {
 		VectorCopy( color, colorNorm );
 	}
+
 	colorNorm[3] = color[3];
 
 	if( flags & SL_NOSTARTCAP ) {
@@ -1566,6 +1652,7 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 
 	if( flags & SL_LOCKTRACETORANGE ) {
 		VectorMA( start, range, lightDir, traceEnd ); // trace out to 'range'
+
 	} else {
 		VectorMA( start, MAX_SPOT_RANGE, lightDir, traceEnd ); // trace all the way out to max dist
 	}
@@ -1573,21 +1660,26 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 	// first trace to see if anything is hit
 	if( flags & SL_NOTRACE ) {
 		tr.fraction = 1.0; // force no hit
+
 	} else {
 		if( flags & SL_TRACEWORLDONLY ) {
 			CG_Trace( &tr, start, NULL, NULL, traceEnd, -1, CONTENTS_SOLID );
+
 		} else {
 			//			CG_Trace( &tr, start, NULL, NULL, traceEnd, -1, MASK_SHOT);
 			CG_Trace( &tr, start, NULL, NULL, traceEnd, -1, MASK_SHOT & ~CONTENTS_BODY );
 		}
+
 		//		CG_Trace( &tr, start, NULL, NULL, traceEnd, -1, MASK_ALL &~(CONTENTS_MONSTERCLIP|CONTENTS_AREAPORTAL|CONTENTS_CLUSTERPORTAL));
 	}
 
 	if( tr.fraction < 1.0 ) {
 		hitDist = beamLen = MAX_SPOT_RANGE * tr.fraction;
+
 		if( beamLen > range ) {
 			beamLen = range;
 		}
+
 	} else {
 		hitDist = 0;
 		beamLen = range;
@@ -1617,9 +1709,11 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 	ent.backlerp = 0;
 	VectorCopy( cent->lerpOrigin, ent.origin );
 	VectorCopy( cent->lerpOrigin, ent.oldorigin );
+
 	//		ent.hModel = cgs.gameModels[cent->currentState.modelindex];
 	if( cent->currentState.frame == 1 ) {
 		ent.hModel = cgs.media.spotLightLightModelBroke;
+
 	} else {
 		ent.hModel = cgs.media.spotLightLightModel;
 	}
@@ -1689,6 +1783,7 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 			coreverts[i].modulate[1] = color[1] * 200.0f;
 			coreverts[i].modulate[2] = color[2] * 200.0f;
 			coreverts[i].modulate[3] = startAlpha;
+
 			if( i > 1 ) {
 				coreverts[i].modulate[3] = endAlpha;
 			}
@@ -1814,6 +1909,7 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 		// it's facing the camera, find out how closely and trace to see if the source can be seen
 
 		deg = RAD2DEG( M_PI - acos( dot ) );
+
 		if( deg <= FLAREANGLE ) { // start flare a bit before the camera gets inside the cylinder
 			lightInEyes = qtrue;
 			flarescale	= 1 - ( deg / FLAREANGLE );
@@ -1822,6 +1918,7 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 		if( lightInEyes ) { // the dot check succeeded, now do a trace
 			//			CG_Trace( &tr, start, NULL, NULL, camloc, -1, MASK_ALL &~(CONTENTS_MONSTERCLIP|CONTENTS_AREAPORTAL|CONTENTS_CLUSTERPORTAL));
 			CG_Trace( &tr, start, NULL, NULL, camloc, -1, MASK_SOLID );
+
 			if( tr.fraction != 1 ) {
 				lightInEyes = qfalse;
 			}
@@ -1829,11 +1926,13 @@ void CG_Spotlight( centity_t* cent, float* color, vec3_t realstart, vec3_t light
 
 		if( lightInEyes ) {
 			float coronasize = flarescale;
+
 			if( dist < 512 ) { // make even bigger if you're close enough
 				coronasize *= ( 512.0f / dist );
 			}
 
 			sys->R_AddCoronaToScene( start, colorNorm[0], colorNorm[1], colorNorm[2], coronasize, cent->currentState.number, 3 ); // 1&2 ('visible' & 'spotlightflare')
+
 		} else {
 			// even though it's off, still need to add it, but turned off so it can fade in/out properly
 			sys->R_AddCoronaToScene( start, colorNorm[0], colorNorm[1], colorNorm[2], 0, cent->currentState.number, 2 ); // 0&2 ('not visible' & 'spotlightflare')

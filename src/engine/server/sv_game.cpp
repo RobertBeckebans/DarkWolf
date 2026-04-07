@@ -89,6 +89,7 @@ svEntity_t* SV_SvEntityForGentity( sharedEntity_t* gEnt )
 	if( !gEnt || gEnt->s.number < 0 || gEnt->s.number >= MAX_GENTITIES ) {
 		Com_Error( ERR_DROP, "SV_SvEntityForGentity: bad gEnt" );
 	}
+
 	return &sv.svEntities[gEnt->s.number];
 }
 
@@ -111,10 +112,12 @@ void SV_GameSendServerCommand( int clientNum, const char* text )
 {
 	if( clientNum == -1 ) {
 		SV_SendServerCommand( NULL, "%s", text );
+
 	} else {
 		if( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 			return;
 		}
+
 		SV_SendServerCommand( svs.clients + clientNum, "%s", text );
 	}
 }
@@ -131,6 +134,7 @@ void SV_GameDropClient( int clientNum, const char* reason )
 	if( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 		return;
 	}
+
 	SV_DropClient( svs.clients + clientNum, reason );
 }
 
@@ -189,12 +193,15 @@ qboolean SV_inPVS( const vec3_t p1, const vec3_t p2 )
 	leafnum = CM_PointLeafnum( p2 );
 	cluster = CM_LeafCluster( leafnum );
 	area2	= CM_LeafArea( leafnum );
+
 	if( mask && ( !( mask[cluster >> 3] & ( 1 << ( cluster & 7 ) ) ) ) ) {
 		return qfalse;
 	}
+
 	if( !CM_AreasConnected( area1, area2 ) ) {
 		return qfalse; // a door blocks sight
 	}
+
 	return qtrue;
 }
 
@@ -238,9 +245,11 @@ void SV_AdjustAreaPortalState( sharedEntity_t* ent, qboolean open )
 	svEntity_t* svEnt;
 
 	svEnt = SV_SvEntityForGentity( ent );
+
 	if( svEnt->areanum2 == -1 ) {
 		return;
 	}
+
 	CM_AdjustAreaPortalState( svEnt->areanum, svEnt->areanum2, open );
 }
 
@@ -276,6 +285,7 @@ void SV_GetServerinfo( char* buffer, int bufferSize )
 	if( bufferSize < 1 ) {
 		Com_Error( ERR_DROP, "SV_GetServerinfo: bufferSize == %i", bufferSize );
 	}
+
 	Q_strncpyz( buffer, Cvar_InfoString( CVAR_SERVERINFO ), bufferSize );
 }
 
@@ -306,6 +316,7 @@ void SV_GetUsercmd( int clientNum, usercmd_t* cmd )
 	if( clientNum < 0 || clientNum >= sv_maxclients->integer ) {
 		Com_Error( ERR_DROP, "SV_GetUsercmd: bad clientNum:%i", clientNum );
 	}
+
 	*cmd = svs.clients[clientNum].lastUsercmd;
 }
 
@@ -541,9 +552,11 @@ public:
 	{
 		const char* s = ::COM_Parse( &sv.entityParsePoint );
 		::Q_strncpyz( buffer, s, bufferSize );
+
 		if( !sv.entityParsePoint && !s[0] ) {
 			return qfalse;
 		}
+
 		return qtrue;
 	}
 
@@ -1282,6 +1295,7 @@ void SV_ShutdownGameProgs()
 	if( !gvm ) {
 		return;
 	}
+
 	gvm->ShutdownGame( sv_isRestarting );
 	Sys_UnloadDll( ( void* )vmHandle );
 	vmHandle = NULL;
@@ -1325,6 +1339,7 @@ void SV_RestartGameProgs()
 	if( !gvm ) {
 		return;
 	}
+
 	sv_isRestarting = qtrue;
 	SV_ShutdownGameProgs();
 
@@ -1347,14 +1362,17 @@ void SV_InitGameProgs()
 	static idGameSystemLocal gameImports;
 
 	var = Cvar_Get( "bot_enable", "1", CVAR_LATCH );
+
 	if( var ) {
 		bot_enable = var->integer;
+
 	} else {
 		bot_enable = 0;
 	}
 
 	// load the dll or bytecode
 	vmHandle = ( dllhandle_t )Sys_LoadDll( "qagame", GAME_API_VERSION, &gameImports, ( void** )&gvm );
+
 	if( !gvm ) {
 		Com_Error( ERR_FATAL, "VM_Create on game failed" );
 	}

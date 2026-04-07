@@ -64,18 +64,23 @@ void	  Log_Open( char* filename )
 		printf( "openlog <filename>\n" );
 		return;
 	}
+
 	if( logfile.fp ) {
 		printf( "log file %s is already opened\n", logfile.filename );
 		return;
 	}
+
 	logfile.fp = fopen( filename, "wb" );
+
 	if( !logfile.fp ) {
 		printf( "can't open the log file %s\n", filename );
 		return;
 	}
+
 	strncpy( logfile.filename, filename, MAX_LOGFILENAMESIZE );
 	printf( "Opened log %s\n", logfile.filename );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -88,13 +93,16 @@ void Log_Close()
 		printf( "no log file to close\n" );
 		return;
 	}
+
 	if( fclose( logfile.fp ) ) {
 		printf( "can't close log file %s\n", logfile.filename );
 		return;
 	}
+
 	logfile.fp = NULL;
 	printf( "Closed log %s\n", logfile.filename );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -107,6 +115,7 @@ void Log_Shutdown()
 		Log_Close();
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -127,6 +136,7 @@ void Log_UnifyEndOfLine( char* buf )
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -156,6 +166,7 @@ void Log_Print( char* fmt, ... )
 		fflush( logfile.fp );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -170,6 +181,7 @@ void Log_Write( char* fmt, ... )
 	if( !logfile.fp ) {
 		return;
 	}
+
 	va_start( ap, fmt );
 	vsprintf( buf, fmt, ap );
 	va_end( ap );
@@ -177,6 +189,7 @@ void Log_Write( char* fmt, ... )
 	fprintf( logfile.fp, "%s", buf );
 	fflush( logfile.fp );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -190,6 +203,7 @@ void Log_WriteTimeStamped( char* fmt, ... )
 	if( !logfile.fp ) {
 		return;
 	}
+
 	/*	fprintf(logfile.fp, "%d   %02d:%02d:%02d:%02d   ",
 						logfile.numwrites,
 						(int) (botlibglobals.time / 60 / 60),
@@ -203,6 +217,7 @@ void Log_WriteTimeStamped( char* fmt, ... )
 	logfile.numwrites++;
 	fflush( logfile.fp );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -213,6 +228,7 @@ FILE* Log_FileStruct()
 {
 	return logfile.fp;
 }
+
 //===========================================================================
 //
 // Parameter:				-

@@ -134,10 +134,12 @@ Con_MessageMode3_f
 void Con_MessageMode3_f()
 {
 	chat_playerNum = cgvm->CrosshairPlayer();
+
 	if( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
 	}
+
 	chat_team = qfalse;
 	//	chat_limbo = qfalse;		// NERVE - SMF
 	Field_Clear( &chatField );
@@ -153,10 +155,12 @@ Con_MessageMode4_f
 void Con_MessageMode4_f()
 {
 	chat_playerNum = cgvm->LastAttacker();
+
 	if( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
 	}
+
 	chat_team = qfalse;
 	//	chat_limbo = qfalse;		// NERVE - SMF
 	Field_Clear( &chatField );
@@ -196,6 +200,7 @@ void Con_StopLimboMode_f()
 
 	//	cls.keyCatchers &= ~KEYCATCH_MESSAGE;
 }
+
 // -NERVE - SMF
 
 /*
@@ -241,8 +246,10 @@ void Con_Dump_f()
 		_ftype	  = 'TEXT';
 		_fcreator = 'R*ch';
 	}
+
 #endif
 	f = FS_FOpenFileWrite( Cmd_Argv( 1 ) );
+
 	if( !f ) {
 		Com_Printf( "ERROR: couldn't open.\n" );
 		return;
@@ -251,10 +258,12 @@ void Con_Dump_f()
 	// skip empty lines
 	for( l = con.current - con.totallines + 1; l <= con.current; l++ ) {
 		line = con.text + ( l % con.totallines ) * con.linewidth;
+
 		for( x = 0; x < con.linewidth; x++ )
 			if( ( line[x] & 0xff ) != ' ' ) {
 				break;
 			}
+
 		if( x != con.linewidth ) {
 			break;
 		}
@@ -262,18 +271,23 @@ void Con_Dump_f()
 
 	// write the remaining lines
 	buffer[con.linewidth] = 0;
+
 	for( ; l <= con.current; l++ ) {
 		line = con.text + ( l % con.totallines ) * con.linewidth;
+
 		for( i = 0; i < con.linewidth; i++ ) {
 			buffer[i] = line[i] & 0xff;
 		}
+
 		for( x = con.linewidth - 1; x >= 0; x-- ) {
 			if( buffer[x] == ' ' ) {
 				buffer[x] = 0;
+
 			} else {
 				break;
 			}
 		}
+
 		strcat( buffer, "\n" );
 		FS_Write( buffer, strlen( buffer ), f );
 	}
@@ -317,11 +331,13 @@ void Con_CheckResize()
 		width		   = DEFAULT_CONSOLE_WIDTH;
 		con.linewidth  = width;
 		con.totallines = CON_TEXTSIZE / con.linewidth;
+
 		for( i = 0; i < CON_TEXTSIZE; i++ )
 
 		{
 			con.text[i] = ( ColorIndex( COLNSOLE_COLOR ) << 8 ) | ' ';
 		}
+
 	} else {
 		oldwidth	   = con.linewidth;
 		con.linewidth  = width;
@@ -340,6 +356,7 @@ void Con_CheckResize()
 		}
 
 		memcpy( tbuf, con.text, CON_TEXTSIZE * sizeof( short ) );
+
 		for( i = 0; i < CON_TEXTSIZE; i++ )
 
 		{
@@ -374,6 +391,7 @@ void Con_Init()
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
+
 	for( i = 0; i < COMMAND_HISTORY; i++ ) {
 		Field_Clear( &historyEditLines[i] );
 		historyEditLines[i].widthInChars = g_console_field_width;
@@ -405,10 +423,13 @@ void Con_Linefeed()
 	}
 
 	con.x = 0;
+
 	if( con.display == con.current ) {
 		con.display++;
 	}
+
 	con.current++;
+
 	for( i = 0; i < con.linewidth; i++ ) {
 		con.text[( con.current % con.totallines ) * con.linewidth + i] = ( ColorIndex( COLNSOLE_COLOR ) << 8 ) | ' ';
 	}
@@ -468,17 +489,21 @@ void CL_ConsolePrint( char* txt )
 			case '\n':
 				Con_Linefeed();
 				break;
+
 			case '\r':
 				con.x = 0;
 				break;
+
 			default: // display character and advance
 				y									= con.current % con.totallines;
 				con.text[y * con.linewidth + con.x] = ( color << 8 ) | c;
 				con.x++;
+
 				if( con.x >= con.linewidth ) {
 					Con_Linefeed();
 					con.x = 0;
 				}
+
 				break;
 		}
 	}
@@ -542,18 +567,24 @@ void Con_DrawNotify()
 	re.SetColor( g_color_table[currentColor] );
 
 	v = 0;
+
 	for( i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++ ) {
 		if( i < 0 ) {
 			continue;
 		}
+
 		time = con.times[i % NUM_CON_TIMES];
+
 		if( time == 0 ) {
 			continue;
 		}
+
 		time = cls.realtime - time;
+
 		if( time > con_notifytime->value * 1000 ) {
 			continue;
 		}
+
 		text = con.text + ( i % con.totallines ) * con.linewidth;
 
 		if( cl.snap.ps.pm_type != PM_INTERMISSION && cls.keyCatchers & ( KEYCATCH_UI | KEYCATCH_CGAME ) ) {
@@ -564,10 +595,12 @@ void Con_DrawNotify()
 			if( ( text[x] & 0xff ) == ' ' ) {
 				continue;
 			}
+
 			if( ( ( text[x] >> 8 ) & 7 ) != currentColor ) {
 				currentColor = ( text[x] >> 8 ) & 7;
 				re.SetColor( g_color_table[currentColor] );
 			}
+
 			SCR_DrawSmallChar( cl_conXOffset->integer + con.xadjust + ( x + 1 ) * SMALLCHAR_WIDTH, v, text[x] & 0xff );
 		}
 
@@ -585,6 +618,7 @@ void Con_DrawNotify()
 		if( chat_team ) {
 			SCR_DrawBigString( 8, v, "say_team:", 1.0f );
 			skip = 11;
+
 		} else {
 			SCR_DrawBigString( 8, v, "say:", 1.0f );
 			skip = 5;
@@ -616,6 +650,7 @@ void Con_DrawSolidConsole( float frac )
 	vec4_t color;
 
 	lines = cls.glconfig.vidHeight * frac;
+
 	if( lines <= 0 ) {
 		return;
 	}
@@ -630,8 +665,10 @@ void Con_DrawSolidConsole( float frac )
 
 	// draw the background
 	y = frac * SCREEN_HEIGHT - 2;
+
 	if( y < 1 ) {
 		y = 0;
+
 	} else {
 		SCR_DrawPic( 0, 0, SCREEN_WIDTH, y, cls.consoleShader );
 
@@ -675,9 +712,11 @@ void Con_DrawSolidConsole( float frac )
 	if( con.display != con.current ) {
 		// draw arrows to show the buffer is backscrolled
 		re.SetColor( g_color_table[ColorIndex( COLOR_WHITE )] );
+
 		for( x = 0; x < con.linewidth; x += 4 ) {
 			SCR_DrawSmallChar( con.xadjust + ( x + 1 ) * SMALLCHAR_WIDTH, y, '^' );
 		}
+
 		y -= SMALLCHAR_HEIGHT;
 		rows--;
 	}
@@ -695,6 +734,7 @@ void Con_DrawSolidConsole( float frac )
 		if( row < 0 ) {
 			break;
 		}
+
 		if( con.current - row >= con.totallines ) {
 			// past scrollback wrap point
 			continue;
@@ -711,6 +751,7 @@ void Con_DrawSolidConsole( float frac )
 				currentColor = ( text[x] >> 8 ) & 7;
 				re.SetColor( g_color_table[currentColor] );
 			}
+
 			SCR_DrawSmallChar( con.xadjust + ( x + 1 ) * SMALLCHAR_WIDTH, y, text[x] & 0xff );
 		}
 	}
@@ -755,6 +796,7 @@ void Con_DrawConsole()
 				Con_DrawSolidConsole( 1.0 );
 				return;
 			}
+
 			break;
 
 		case CA_ACTIVE: // game views should be displayed
@@ -775,6 +817,7 @@ void Con_DrawConsole()
 
 	if( con.displayFrac ) {
 		Con_DrawSolidConsole( con.displayFrac );
+
 	} else {
 		Con_DrawNotify(); // draw notify lines
 	}
@@ -794,18 +837,22 @@ void Con_RunConsole()
 	// decide on the destination height of the console
 	if( cls.keyCatchers & KEYCATCH_CONSOLE ) {
 		con.finalFrac = 0.5; // half screen
+
 	} else {
 		con.finalFrac = 0; // none visible
 	}
+
 	// scroll towards the destination height
 	if( con.finalFrac < con.displayFrac ) {
 		con.displayFrac -= con_conspeed->value * cls.realFrametime * 0.001;
+
 		if( con.finalFrac > con.displayFrac ) {
 			con.displayFrac = con.finalFrac;
 		}
 
 	} else if( con.finalFrac > con.displayFrac ) {
 		con.displayFrac += con_conspeed->value * cls.realFrametime * 0.001;
+
 		if( con.finalFrac < con.displayFrac ) {
 			con.displayFrac = con.finalFrac;
 		}
@@ -815,6 +862,7 @@ void Con_RunConsole()
 void Con_PageUp()
 {
 	con.display -= 2;
+
 	if( con.current - con.display >= con.totallines ) {
 		con.display = con.current - con.totallines + 1;
 	}
@@ -823,6 +871,7 @@ void Con_PageUp()
 void Con_PageDown()
 {
 	con.display += 2;
+
 	if( con.display > con.current ) {
 		con.display = con.current;
 	}
@@ -831,6 +880,7 @@ void Con_PageDown()
 void Con_Top()
 {
 	con.display = con.totallines;
+
 	if( con.current - con.display >= con.totallines ) {
 		con.display = con.current - con.totallines + 1;
 	}
@@ -846,6 +896,7 @@ void Con_Close()
 	if( !com_cl_running->integer ) {
 		return;
 	}
+
 	Field_Clear( &g_consoleField );
 	Con_ClearNotify();
 	cls.keyCatchers &= ~KEYCATCH_CONSOLE;

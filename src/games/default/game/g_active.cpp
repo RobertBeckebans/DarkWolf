@@ -50,12 +50,14 @@ void		P_DamageFeedback( gentity_t* player )
 	vec3_t	   angles;
 
 	client = player->client;
+
 	if( client->ps.pm_type == PM_DEAD ) {
 		return;
 	}
 
 	// total points of damage shot at the player this frame
 	count = client->damage_blood + client->damage_armor;
+
 	if( count == 0 ) {
 		return; // didn't take any damage
 	}
@@ -73,6 +75,7 @@ void		P_DamageFeedback( gentity_t* player )
 		client->ps.damageYaw   = 255;
 
 		client->damage_fromWorld = qfalse;
+
 	} else {
 		vectoangles( client->damage_from, angles );
 		client->ps.damagePitch = angles[PITCH] / 360.0 * 256;
@@ -143,9 +146,11 @@ void P_WorldEffects( gentity_t* ent )
 			} else {
 				// drown!
 				ent->client->airOutTime += 1000;
+
 				if( ent->health > 0 ) {
 					// take more damage the longer underwater
 					ent->damage += 2;
+
 					if( ent->damage > 15 ) {
 						ent->damage = 15;
 					}
@@ -153,8 +158,10 @@ void P_WorldEffects( gentity_t* ent )
 					// play a gurp sound instead of a normal pain sound
 					if( ent->health <= ent->damage ) {
 						G_Sound( ent, G_SoundIndex( "*drown.wav" ) );
+
 					} else if( rand() & 1 ) {
 						G_Sound( ent, G_SoundIndex( "sound/player/gurp1.wav" ) );
+
 					} else {
 						G_Sound( ent, G_SoundIndex( "sound/player/gurp2.wav" ) );
 					}
@@ -166,6 +173,7 @@ void P_WorldEffects( gentity_t* ent )
 				}
 			}
 		}
+
 	} else {
 		ent->client->airOutTime = level.time + 12000;
 		ent->damage				= 2;
@@ -179,6 +187,7 @@ void P_WorldEffects( gentity_t* ent )
 		if( ent->health > 0 && ent->pain_debounce_time <= level.time ) {
 			if( envirosuit ) {
 				G_AddEvent( ent, EV_POWERUP_BATTLESUIT, 0 );
+
 			} else {
 				if( ent->watertype & CONTENTS_LAVA ) {
 					G_Damage( ent, NULL, NULL, NULL, NULL, 30 * waterlevel, 0, MOD_LAVA );
@@ -202,20 +211,25 @@ void P_WorldEffects( gentity_t* ent )
 
 		if( ent->health > 0 ) {
 			attacker = g_entities + ent->flameBurnEnt;
+
 			if( g_gametype.integer == GT_SINGLE_PLAYER ) { // JPW NERVE
 				if( ent->r.svFlags & SVF_CASTAI ) {
 					G_Damage( ent, attacker, attacker, NULL, NULL, 2, DAMAGE_NO_KNOCKBACK, MOD_FLAMETHROWER );
+
 				} else if( ( ent->s.onFireEnd - level.time ) > FIRE_FLASH_TIME / 2 && rand() % 5000 < ( ent->s.onFireEnd - level.time ) ) { // as it fades out, also fade out damage rate
 					G_Damage( ent, attacker, attacker, NULL, NULL, 1, DAMAGE_NO_KNOCKBACK, MOD_FLAMETHROWER );
 				}
 			} // JPW NERVE
+
 			else {									  // JPW NERVE multiplayer flamethrower
 				if( level.time < ent->s.onFireEnd ) { // flamethrower does total 80 pts damage in multiplayer
 					// (it's short range and hard to hit with)
 					G_Damage( ent, attacker, attacker, NULL, NULL, 2, DAMAGE_NO_KNOCKBACK, MOD_FLAMETHROWER );
 				}
 			}
+
 			// jpw
+
 		} else if( ent->s.onFireEnd > level.time + 4000 ) { // dead, so sto pthe flames soon
 			ent->s.onFireEnd = level.time + 4000;			// stop burning soon
 		}
@@ -236,6 +250,7 @@ void G_SetClientSound( gentity_t* ent )
 	if( ent->waterlevel && ( ent->watertype & CONTENTS_LAVA ) ) { //----(SA)	modified since slime is no longer deadly
 		//	if (ent->waterlevel && (ent->watertype&(CONTENTS_LAVA|CONTENTS_SLIME)) )
 		ent->s.loopSound = level.snd_fry;
+
 	} else {
 		ent->s.loopSound = 0;
 	}
@@ -255,15 +270,18 @@ void ClientImpacts( gentity_t* ent, pmove_t* pm )
 	gentity_t* other;
 
 	memset( &trace, 0, sizeof( trace ) );
+
 	for( i = 0; i < pm->numtouch; i++ ) {
 		for( j = 0; j < i; j++ ) {
 			if( pm->touchents[j] == pm->touchents[i] ) {
 				break;
 			}
 		}
+
 		if( j != i ) {
 			continue; // duplicated
 		}
+
 		other = &g_entities[pm->touchents[i]];
 
 		if( ( ent->r.svFlags & SVF_BOT ) && ( ent->touch ) ) {
@@ -319,6 +337,7 @@ void G_TouchTriggers( gentity_t* ent )
 		if( !hit->touch && !ent->touch ) {
 			continue;
 		}
+
 		if( !( hit->r.contents & CONTENTS_TRIGGER ) ) {
 			continue;
 		}
@@ -336,6 +355,7 @@ void G_TouchTriggers( gentity_t* ent )
 			if( !BG_PlayerTouchesItem( &ent->client->ps, &hit->s, level.time ) ) {
 				continue;
 			}
+
 		} else {
 			// MrE: always use capsule for player
 			if( !sys->EntityContactCapsule( mins, maxs, hit ) ) {
@@ -370,9 +390,11 @@ void SpectatorThink( gentity_t* ent, usercmd_t* ucmd )
 	if( client->sess.spectatorState != SPECTATOR_FOLLOW ) {
 		client->ps.pm_type = PM_SPECTATOR;
 		client->ps.speed   = 400; // faster than normal
+
 		if( client->ps.sprintExertTime ) {
 			client->ps.speed *= 3; // (SA) allow sprint in free-cam mode
 		}
+
 		// set up for pmove
 		memset( &pm, 0, sizeof( pm ) );
 		pm.ps		 = &client->ps;
@@ -430,20 +452,24 @@ qboolean ClientInactivityTimer( gclient_t* client )
 		// gameplay, everyone isn't kicked
 		client->inactivityTime	  = level.time + 60 * 1000;
 		client->inactivityWarning = qfalse;
+
 	} else if( client->pers.cmd.forwardmove || client->pers.cmd.rightmove || client->pers.cmd.upmove || ( client->pers.cmd.wbuttons & WBUTTON_ATTACK2 ) ||
 			   ( client->pers.cmd.buttons & BUTTON_ATTACK ) ) {
 		client->inactivityTime	  = level.time + g_inactivity.integer * 1000;
 		client->inactivityWarning = qfalse;
+
 	} else if( !client->pers.localClient ) {
 		if( level.time > client->inactivityTime ) {
 			sys->DropClient( client - level.clients, "Dropped due to inactivity" );
 			return qfalse;
 		}
+
 		if( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
 			client->inactivityWarning = qtrue;
 			sys->SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\n\"" );
 		}
 	}
+
 	return qtrue;
 }
 
@@ -470,17 +496,23 @@ void ClientTimerActions( gentity_t* ent, int msec )
 			if( client->ps.powerups[PW_REGEN] ) {
 				if( ent->health < client->ps.stats[STAT_MAX_HEALTH] ) {
 					ent->health += 15;
+
 					if( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 1.1 ) {
 						ent->health = client->ps.stats[STAT_MAX_HEALTH] * 1.1;
 					}
+
 					G_AddEvent( ent, EV_POWERUP_REGEN, 0 );
+
 				} else if( ent->health < client->ps.stats[STAT_MAX_HEALTH] * 2 ) {
 					ent->health += 2;
+
 					if( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 2 ) {
 						ent->health = client->ps.stats[STAT_MAX_HEALTH] * 2;
 					}
+
 					G_AddEvent( ent, EV_POWERUP_REGEN, 0 );
 				}
+
 			} else {
 				// count down health when over max
 				if( ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {
@@ -488,20 +520,25 @@ void ClientTimerActions( gentity_t* ent, int msec )
 				}
 			}
 		}
+
 		// JPW NERVE
 		else { // GT_WOLF
 			if( client->ps.powerups[PW_REGEN] ) {
 				if( ent->health < client->ps.stats[STAT_MAX_HEALTH] ) {
 					ent->health += 3;
+
 					if( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 1.1 ) {
 						ent->health = client->ps.stats[STAT_MAX_HEALTH] * 1.1;
 					}
+
 				} else if( ent->health < client->ps.stats[STAT_MAX_HEALTH] * 1.12 ) {
 					ent->health += 2;
+
 					if( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 1.12 ) {
 						ent->health = client->ps.stats[STAT_MAX_HEALTH] * 1.12;
 					}
 				}
+
 			} else {
 				// count down health when over max
 				if( ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {
@@ -509,6 +546,7 @@ void ClientTimerActions( gentity_t* ent, int msec )
 				}
 			}
 		}
+
 		// jpw
 		// count down armor when over max
 		if( client->ps.stats[STAT_ARMOR] > client->ps.stats[STAT_MAX_HEALTH] ) {
@@ -570,6 +608,7 @@ void ClientEvents( gentity_t* ent, int oldEventSequence )
 	if( oldEventSequence < client->ps.eventSequence - MAX_EVENTS ) {
 		oldEventSequence = client->ps.eventSequence - MAX_EVENTS;
 	}
+
 	for( i = oldEventSequence; i < client->ps.eventSequence; i++ ) {
 		event	  = client->ps.events[i & ( MAX_EVENTS - 1 )];
 		eventParm = client->ps.eventParms[i & ( MAX_EVENTS - 1 )];
@@ -595,18 +634,23 @@ void ClientEvents( gentity_t* ent, int oldEventSequence )
 				//----(SA)	FIXME: TODO:  hmm, going through here adding surfaceparms it seems that the value for ent->client->ps.pm_time was weird.  (1000 for all but dmg_25 which has 250?)
 				if( event == EV_FALL_NDIE ) {
 					damage = 9999;
+
 				} else if( event == EV_FALL_DMG_50 ) {
 					damage	 = 50;
 					stunTime = 1000;
+
 				} else if( event == EV_FALL_DMG_25 ) {
 					damage	 = 25;
 					stunTime = 250;
+
 				} else if( event == EV_FALL_DMG_15 ) {
 					damage	 = 15;
 					stunTime = 1000;
+
 				} else if( event == EV_FALL_DMG_10 ) {
 					damage	 = 10;
 					stunTime = 1000;
+
 				} else {
 					damage = 5; // never used
 				}
@@ -642,6 +686,7 @@ void ClientEvents( gentity_t* ent, int oldEventSequence )
 				//			if(fallSoundMul)
 				//				AICast_AudibleEvent( ent->s.number, ent->s.pos.trBase, fallSoundMul * g_footstepAudibleRange.value);
 				break;
+
 				//----(SA)	end
 
 			case EV_FIRE_WEAPON_MG42:
@@ -655,6 +700,7 @@ void ClientEvents( gentity_t* ent, int oldEventSequence )
 				if( !ent->client ) {
 					break;
 				}
+
 				ent->client->ps.stats[STAT_HEALTH] = ent->health = 0;
 				player_die( ent, ent, ent, 100000, MOD_SUICIDE );
 				break;
@@ -671,7 +717,9 @@ void ClientEvents( gentity_t* ent, int oldEventSequence )
 					CalcMuzzlePoints( ent, WP_GRENADE_LAUNCHER );
 					weapon_grenadelauncher_fire( ent, WP_GRENADE_LAUNCHER );
 				}
+
 				break;
+
 			//----(SA)	end
 
 			//----(SA)	modified
@@ -687,6 +735,7 @@ void ClientEvents( gentity_t* ent, int oldEventSequence )
 			case EV_USE_ITEM10: // ( HI_BOOK3 )
 				UseHoldableItem( ent, event - EV_USE_ITEM0 );
 				break;
+
 				//----(SA)	end
 
 			default:
@@ -806,6 +855,7 @@ void ClientThink_real( gentity_t* ent )
 
 		ClientDamage( ent, ent->client->ps.clientNum, enemynum, id );
 	}
+
 	// -NERVE - SMF
 
 	// sanity check the command time to prevent speedup cheating
@@ -813,12 +863,14 @@ void ClientThink_real( gentity_t* ent )
 		ucmd->serverTime = level.time + 200;
 		//		G_Printf("serverTime <<<<<\n" );
 	}
+
 	if( ucmd->serverTime < level.time - 1000 ) {
 		ucmd->serverTime = level.time - 1000;
 		//		G_Printf("serverTime >>>>>\n" );
 	}
 
 	msec = ucmd->serverTime - client->ps.commandTime;
+
 	// following others may result in bad times, but we still want
 	// to check for follow toggles
 	if( msec < 1 && client->sess.spectatorState != SPECTATOR_FOLLOW ) {
@@ -826,17 +878,21 @@ void ClientThink_real( gentity_t* ent )
 		if( msec < -100 ) {
 			client->ps.commandTime = ucmd->serverTime - 100;
 			msec				   = 100;
+
 		} else {
 			return;
 		}
+
 		// done.
 	}
+
 	if( msec > 200 ) {
 		msec = 200;
 	}
 
 	if( pmove_msec.integer < 8 ) {
 		sys->Cvar_Set( "pmove_msec", "8" );
+
 	} else if( pmove_msec.integer > 33 ) {
 		sys->Cvar_Set( "pmove_msec", "33" );
 	}
@@ -861,6 +917,7 @@ void ClientThink_real( gentity_t* ent )
 		if( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
 			return;
 		}
+
 		SpectatorThink( ent, ucmd );
 		return;
 	}
@@ -869,9 +926,11 @@ void ClientThink_real( gentity_t* ent )
 	// JPW NERVE do some time-based muzzle flip -- this never gets touched in single player (see g_weapon.c)
 	// #define RIFLE_SHAKE_TIME 150 // JPW NERVE this one goes with the commented out old damped "realistic" behavior below
 #define RIFLE_SHAKE_TIME 300 // per Id request, longer recoil time
+
 	if( client->sniperRifleFiredTime ) {
 		if( level.time - client->sniperRifleFiredTime > RIFLE_SHAKE_TIME ) {
 			client->sniperRifleFiredTime = 0;
+
 		} else {
 			VectorCopy( client->ps.viewangles, muzzlebounce );
 
@@ -900,11 +959,13 @@ void ClientThink_real( gentity_t* ent )
 			SetClientViewAngle( ent, muzzlebounce );
 		}
 	}
+
 	if( client->ps.stats[STAT_PLAYER_CLASS] == PC_MEDIC ) {
 		if( level.time > client->ps.powerups[PW_REGEN] + 5000 ) {
 			client->ps.powerups[PW_REGEN] = level.time;
 		}
 	}
+
 	// also update weapon recharge time
 	/*
 		if (g_gametype.integer != GT_SINGLE_PLAYER) {
@@ -920,6 +981,7 @@ void ClientThink_real( gentity_t* ent )
 	if( !ClientInactivityTimer( client ) ) {
 		return;
 	}
+
 	//----(SA) commented out
 	// clear the rewards if time
 	//	if ( level.time > client->rewardTime ) {
@@ -960,8 +1022,10 @@ void ClientThink_real( gentity_t* ent )
 
 	} else if( client->noclip ) {
 		client->ps.pm_type = PM_NOCLIP;
+
 	} else if( client->ps.stats[STAT_HEALTH] <= 0 ) {
 		client->ps.pm_type = PM_DEAD;
+
 	} else {
 		client->ps.pm_type = PM_NORMAL;
 	}
@@ -993,15 +1057,18 @@ void ClientThink_real( gentity_t* ent )
 	pm.ps	  = &client->ps;
 	pm.cmd	  = *ucmd;
 	pm.oldcmd = client->pers.oldcmd;
+
 	if( pm.ps->pm_type == PM_DEAD ) {
 		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;
 		// DHM-Nerve added:: EF_DEAD is checked for in Pmove functions, but wasn't being set
 		//              until after Pmove
 		pm.ps->eFlags |= EF_DEAD;
 		// dhm-Nerve end
+
 	} else {
 		pm.tracemask = ent->clipmask;
 	}
+
 	// MrE: always use capsule for AI and player
 	pm.trace = []( trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask ) {
 		sys->Trace( results, start, mins, maxs, end, passEntityNum, contentMask );
@@ -1015,9 +1082,11 @@ void ClientThink_real( gentity_t* ent )
 	pm.pmove_msec  = pmove_msec.integer;
 
 	pm.noWeapClips = ( qboolean )( ( g_dmflags.integer & DF_NO_WEAPRELOAD ) > 0 );
+
 	if( ent->aiCharacter && AICast_NoReload( ent->s.number ) ) {
 		pm.noWeapClips = qtrue; // ensure AI characters don't use clips if they're not supposed to.
 	}
+
 	// Ridah
 	//	if (ent->r.svFlags & SVF_NOFOOTSTEPS)
 	//		pm.noFootsteps = qtrue;
@@ -1026,18 +1095,22 @@ void ClientThink_real( gentity_t* ent )
 
 	// perform a pmove
 #ifdef MISSIONPACK
+
 	if( level.intermissionQueued != 0 && g_singlePlayer.integer ) {
 		if( level.time - level.intermissionQueued >= 1000 ) {
 			pm.cmd.buttons	   = 0;
 			pm.cmd.forwardmove = 0;
 			pm.cmd.rightmove   = 0;
 			pm.cmd.upmove	   = 0;
+
 			if( level.time - level.intermissionQueued >= 2000 && level.time - level.intermissionQueued <= 2500 ) {
 				sys->SendConsoleCommand( EXEC_APPEND, "centerview\n" );
 			}
+
 			ent->client->ps.pm_type = PM_SPINTERMISSION;
 		}
 	}
+
 #endif
 	monsterslick = Pmove( &pm );
 
@@ -1053,33 +1126,41 @@ void ClientThink_real( gentity_t* ent )
 			if( ( monsterslick & SURF_MONSLICK_N ) && ( monsterslick & SURF_MONSLICK_E ) ) {
 				angle = 45;
 			}
+
 			// NW
 			else if( ( monsterslick & SURF_MONSLICK_N ) && ( monsterslick & SURF_MONSLICK_W ) ) {
 				angle = 135;
 			}
+
 			// N
 			else if( monsterslick & SURF_MONSLICK_N ) {
 				angle = 90;
 			}
+
 			// SE
 			else if( ( monsterslick & SURF_MONSLICK_S ) && ( monsterslick & SURF_MONSLICK_E ) ) {
 				angle = 315;
 			}
+
 			// SW
 			else if( ( monsterslick & SURF_MONSLICK_S ) && ( monsterslick & SURF_MONSLICK_W ) ) {
 				angle = 225;
 			}
+
 			// S
 			else if( monsterslick & SURF_MONSLICK_S ) {
 				angle = 270;
 			}
+
 			// E
 			else if( monsterslick & SURF_MONSLICK_E ) {
 				angle = 0;
 			}
+
 			// W
 			else if( monsterslick & SURF_MONSLICK_W ) {
 				angle = 180;
+
 			} else {
 				bogus = qtrue;
 			}
@@ -1145,9 +1226,11 @@ void ClientThink_real( gentity_t* ent )
 				// trace from the base of our bounding box, to the head
 				VectorCopy( pm.ps->origin, src );
 				src[2] += pm.ps->mins[2] + 3;
+
 				if( or.origin[2] < src[2] ) {
 					or.origin[2] = src[2]; // dont let the head sink into the ground (even if it is visually)
 				}
+
 				sys->Trace( &tr, src, vec3_origin, vec3_origin, or.origin, ent->s.number, MASK_SOLID );
 
 				// if we hit something, move away from it
@@ -1157,16 +1240,20 @@ void ClientThink_real( gentity_t* ent )
 					vel[2] = 0;
 					VectorNormalize( vel );
 					VectorScale( vel, 80 /** (1.0-tr.fraction)*/, vel );
+
 					// dont move against current velocity
 					if( DotProduct( vel, pm.ps->velocity ) >= 0 ) {
 						VectorAdd( pm.ps->velocity, vel, pm.ps->velocity );
+
 						if( VectorLength( pm.ps->velocity ) > 100 ) {
 							VectorNormalize( pm.ps->velocity );
 							VectorScale( pm.ps->velocity, 100, pm.ps->velocity );
 						}
+
 						// stop obeying monsterslick pushes
 						ent->flags |= FL_NO_MONSTERSLICK;
 					} // else {
+
 					// disable headcheck, otherwise we risk a constant jitter
 					//	ent->flags |= FL_NO_HEADCHECK;
 					//}
@@ -1186,6 +1273,7 @@ void ClientThink_real( gentity_t* ent )
 	// RF, prevent player from standing on a chair which is on a script_mover
 	if( ent->client->ps.groundEntityNum >= MAX_CLIENTS && ent->client->ps.groundEntityNum < ENTITYNUM_WORLD ) {
 		gentity_t* groundEnt = &g_entities[ent->client->ps.groundEntityNum];
+
 		if( groundEnt->isProp && groundEnt->takedamage && !groundEnt->nopickup ) {
 			// it's a chair, is it on a mover?
 			if( groundEnt->s.groundEntityNum >= MAX_CLIENTS && groundEnt->s.groundEntityNum < ENTITYNUM_WORLD ) {
@@ -1222,6 +1310,7 @@ void ClientThink_real( gentity_t* ent )
 	if( ent->client->ps.persistant[PERS_WOLFKICK] && !ent->melee && !( ent->active ) ) {
 		if( wolfkicktimer < level.time ) {
 			ent->client->ps.persistant[PERS_WOLFKICK] = 0;
+
 		} else {
 			ent->client->ps.persistant[PERS_WOLFKICK] = ( int )( 22 - ( ( wolfkicktimer - level.time ) / 50 ) );
 
@@ -1229,12 +1318,15 @@ void ClientThink_real( gentity_t* ent )
 				ent->client->ps.persistant[PERS_WOLFKICK] = 0;
 			}
 		}
+
 	} else if( ent->melee ) {
 		if( wolfkicktimer > level.time ) {
 			ent->client->ps.persistant[PERS_WOLFKICK] = 0;
+
 			if( ent->health <= 0 ) {
 				ent->melee = NULL;
 				ent->client->ps.eFlags &= ~EF_MELEE_ACTIVE;
+
 			} else {
 				ent->melee->s.density = ( int )( 22 - ( ( wolfkicktimer - level.time ) / 50 ) );
 
@@ -1242,6 +1334,7 @@ void ClientThink_real( gentity_t* ent )
 					ent->melee->s.density = 1;
 				}
 			}
+
 		} else {
 			ent->melee->s.density = 1;
 		}
@@ -1255,6 +1348,7 @@ void ClientThink_real( gentity_t* ent )
 		extern void AICast_EvaluatePmove( int clientnum, pmove_t* pm );
 		AICast_EvaluatePmove( ent->s.number, &pm );
 	}
+
 	// done.
 
 	// save results of pmove
@@ -1266,6 +1360,7 @@ void ClientThink_real( gentity_t* ent )
 	// RF, AI needs to be interpolated, so use the old method (which sets TR_INTERPOLATE)
 	if( g_smoothClients.integer && !( ent->r.svFlags & SVF_CASTAI ) ) {
 		BG_PlayerStateToEntityStateExtraPolate( &ent->client->ps, &ent->s, ent->client->ps.commandTime, ( qboolean )( ( ent->r.svFlags & SVF_CASTAI ) == 0 ) );
+
 	} else {
 		BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, ( qboolean )( ( ent->r.svFlags & SVF_CASTAI ) == 0 ) );
 	}
@@ -1292,6 +1387,7 @@ void ClientThink_real( gentity_t* ent )
 
 	// link entity now, after any personal teleporters have been used
 	sys->LinkEntity( ent );
+
 	if( !ent->client->noclip ) {
 		G_TouchTriggers( ent );
 	}
@@ -1341,9 +1437,11 @@ void ClientThink_real( gentity_t* ent )
 					// JPW NERVE
 					if( g_gametype.integer >= GT_WOLF ) {
 						limbo( ent );
+
 					} else {
 						respawn( ent );
 					}
+
 					// jpw
 					return;
 				}
@@ -1353,21 +1451,27 @@ void ClientThink_real( gentity_t* ent )
 				if( g_gametype.integer == GT_SINGLE_PLAYER ) {
 					respawn( ent );
 				}
+
 				// pressing attack or use is the normal respawn method
 				else if( ( ucmd->buttons & ( BUTTON_ATTACK | BUTTON_USE_HOLDABLE ) ) && ( !( ent->client->ps.pm_flags & PMF_LIMBO ) ) ) { // JPW NERVE
 					// JPW NERVE
 					if( g_gametype.integer >= GT_WOLF ) {
 						limbo( ent );
+
 					} else {
 						respawn( ent );
 					}
+
 					// jpw
 				}
+
 				// dhm - Nerve :: end
 			}
+
 			return;
 		}
 	}
+
 	// done.
 
 	// perform once-a-second actions
@@ -1402,6 +1506,7 @@ void ClientThink( int clientNum )
 		AICast_StartFrame( level.time /*ent->client->pers.cmd.serverTime*/ );
 		// AICast_StartServerFrame ( level.time );
 	}
+
 	// done.
 }
 
@@ -1410,6 +1515,7 @@ void G_RunClient( gentity_t* ent )
 	if( !g_syncronousClients.integer ) {
 		return;
 	}
+
 	ent->client->pers.cmd.serverTime = level.time;
 	ClientThink_real( ent );
 }
@@ -1438,15 +1544,20 @@ void SpectatorClientEndFrame( gentity_t* ent )
 
 		if( ent->client->sess.sessionTeam == TEAM_RED ) {
 			testtime = level.time % g_redlimbotime.integer;
+
 			if( testtime < lastRedReinforceTime ) {
 				do_respawn = 1;
 			}
+
 			lastRedReinforceTime = testtime;
+
 		} else if( ent->client->sess.sessionTeam == TEAM_BLUE ) {
 			testtime = level.time % g_bluelimbotime.integer;
+
 			if( testtime < lastBlueReinforceTime ) {
 				do_respawn = 1;
 			}
+
 			lastBlueReinforceTime = testtime;
 		}
 
@@ -1484,11 +1595,14 @@ void SpectatorClientEndFrame( gentity_t* ent )
 		// team follow1 and team follow2 go to whatever clients are playing
 		if( clientNum == -1 ) {
 			clientNum = level.follow1;
+
 		} else if( clientNum == -2 ) {
 			clientNum = level.follow2;
 		}
+
 		if( clientNum >= 0 ) {
 			cl = &level.clients[clientNum];
+
 			if( cl->pers.connected == CON_CONNECTED && cl->sess.sessionTeam != TEAM_SPECTATOR ) {
 				//				flags = (cl->ps.eFlags & ~(EF_VOTED | EF_TEAMVOTED)) | (ent->client->ps.eFlags & (EF_VOTED | EF_TEAMVOTED));
 				// JPW NERVE -- limbo latch
@@ -1501,13 +1615,16 @@ void SpectatorClientEndFrame( gentity_t* ent )
 					ent->client->ps.pm_flags |= PMF_LIMBO;
 					ent->client->ps.pm_time				   = do_respawn; // put pm_time back
 					ent->client->ps.persistant[PERS_SCORE] = savedScore; // put score back
+
 				} else {
 					ent->client->ps = cl->ps;
 					ent->client->ps.pm_flags |= PMF_FOLLOW;
 				}
+
 				// jpw
 				//				ent->client->ps.eFlags = flags;
 				return;
+
 			} else {
 				// drop them to free spectators unless they are dedicated camera followers
 				if( ent->client->sess.spectatorClient >= 0 ) {
@@ -1520,6 +1637,7 @@ void SpectatorClientEndFrame( gentity_t* ent )
 
 	if( ent->client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
 		ent->client->ps.pm_flags |= PMF_SCOREBOARD;
+
 	} else {
 		ent->client->ps.pm_flags &= ~PMF_SCOREBOARD;
 	}
@@ -1561,10 +1679,12 @@ void ClientEndFrame( gentity_t* ent )
 
 	// save network bandwidth
 #if 0
+
 	if( !g_synchronousClients->integer && ent->client->ps.pm_type == PM_NORMAL ) {
 		// FIXME: this must change eventually for non-sync demo recording
 		VectorClear( ent->client->ps.viewangles );
 	}
+
 #endif
 
 	//
@@ -1584,6 +1704,7 @@ void ClientEndFrame( gentity_t* ent )
 	// add the EF_CONNECTION flag if we haven't gotten commands recently
 	if( level.time - ent->client->lastCmdTime > 1000 ) {
 		ent->s.eFlags |= EF_CONNECTION;
+
 	} else {
 		ent->s.eFlags &= ~EF_CONNECTION;
 	}
@@ -1597,6 +1718,7 @@ void ClientEndFrame( gentity_t* ent )
 	// Ridah, fixes jittery zombie movement
 	if( g_smoothClients.integer ) {
 		BG_PlayerStateToEntityStateExtraPolate( &ent->client->ps, &ent->s, ent->client->ps.commandTime, ( qboolean )( ( ent->r.svFlags & SVF_CASTAI ) == 0 ) );
+
 	} else {
 		BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, ( qboolean )( ( ent->r.svFlags & SVF_CASTAI ) == 0 ) );
 	}
@@ -1610,39 +1732,51 @@ void ClientEndFrame( gentity_t* ent )
 			case WP_TESLA: // fear the tesla
 				AICast_CheckDangerousEntity( ent, DANGER_CLIENTAIM, TESLA_RANGE + 150, 0.5, 0.6, ( ent->client->buttons & BUTTON_ATTACK ? qtrue : qfalse ) );
 				break;
+
 			case WP_MONSTER_ATTACK1:
 				if( ent->aiCharacter == AICHAR_ZOMBIE ) {
 					AICast_CheckDangerousEntity( ent, DANGER_CLIENTAIM | DANGER_FLAMES, FLAMETHROWER_RANGE + 150, 0.5, 0.8, qtrue );
 				}
+
 				break;
+
 			case WP_MONSTER_ATTACK2:
 				if( ent->aiCharacter == AICHAR_ZOMBIE ) {
 					if( ent->client->ps.eFlags & EF_MONSTER_EFFECT ) {
 						AICast_CheckDangerousEntity( ent, 0, 4000, 0.5, 0.8, qtrue );
 					}
 				}
+
 				break;
+
 			case WP_MONSTER_ATTACK3:
 				if( ent->aiCharacter == AICHAR_LOPER ) {
 					AICast_CheckDangerousEntity( ent, 0, LOPER_GROUND_RANGE + 100, 0.5, 0.8, qtrue );
 				}
+
 				break;
+
 			case WP_FLAMETHROWER: // fear the flamethrower
 				AICast_CheckDangerousEntity( ent, DANGER_CLIENTAIM | DANGER_FLAMES, FLAMETHROWER_RANGE + 150, 0.5, 0.8, ( ent->client->buttons & BUTTON_ATTACK ? qtrue : qfalse ) );
 				break;
+
 			case WP_VENOM: // avoid the venom
 				AICast_CheckDangerousEntity( ent, DANGER_CLIENTAIM, 4000, 0.5, 0.8, ( ent->client->buttons & BUTTON_ATTACK ? qtrue : qfalse ) );
 				break;
+
 			case WP_PANZERFAUST: // just predict a rocket attack, rather than waiting for them to fire, then avoiding
 				AICast_CheckDangerousEntity( ent, DANGER_CLIENTAIM, 1000, 0.5, 0.8, ( ent->client->buttons & BUTTON_ATTACK ? qtrue : qfalse ) );
 				break;
+
 			case WP_GRENADE_PINEAPPLE:
 			case WP_GRENADE_LAUNCHER: // if they are wearing down a grenade fuse, we should be very afraid
 				if( ent->client->ps.grenadeTimeLeft && ent->client->ps.grenadeTimeLeft < 3000 ) {
 					AICast_CheckDangerousEntity( ent, DANGER_CLIENTAIM, 1000, 0.5, 0.9, qtrue );
 				}
+
 				break;
 		}
 	}
+
 	// dhm
 }

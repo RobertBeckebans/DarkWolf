@@ -85,12 +85,14 @@ static void Transpose( int width, int height, drawVert_t ctrl[MAX_GRID_SIZE][MAX
 					temp	   = ctrl[j][i];
 					ctrl[j][i] = ctrl[i][j];
 					ctrl[i][j] = temp;
+
 				} else {
 					// just copy
 					ctrl[j][i] = ctrl[i][j];
 				}
 			}
 		}
+
 	} else {
 		for( i = 0; i < width; i++ ) {
 			for( j = i + 1; j < height; j++ ) {
@@ -99,6 +101,7 @@ static void Transpose( int width, int height, drawVert_t ctrl[MAX_GRID_SIZE][MAX
 					temp	   = ctrl[i][j];
 					ctrl[i][j] = ctrl[j][i];
 					ctrl[j][i] = temp;
+
 				} else {
 					// just copy
 					ctrl[i][j] = ctrl[j][i];
@@ -132,25 +135,31 @@ static void MakeMeshNormals( int width, int height, drawVert_t ctrl[MAX_GRID_SIZ
 	static int	neighbors[8][2] = { { 0, 1 }, { 1, 1 }, { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, -1 }, { -1, 0 }, { -1, 1 } };
 
 	wrapWidth = qfalse;
+
 	for( i = 0; i < height; i++ ) {
 		VectorSubtract( ctrl[i][0].xyz, ctrl[i][width - 1].xyz, delta );
 		len = VectorLengthSquared( delta );
+
 		if( len > 1.0 ) {
 			break;
 		}
 	}
+
 	if( i == height ) {
 		wrapWidth = qtrue;
 	}
 
 	wrapHeight = qfalse;
+
 	for( i = 0; i < width; i++ ) {
 		VectorSubtract( ctrl[0][i].xyz, ctrl[height - 1][i].xyz, delta );
 		len = VectorLengthSquared( delta );
+
 		if( len > 1.0 ) {
 			break;
 		}
 	}
+
 	if( i == width ) {
 		wrapHeight = qtrue;
 	}
@@ -160,6 +169,7 @@ static void MakeMeshNormals( int width, int height, drawVert_t ctrl[MAX_GRID_SIZ
 			count = 0;
 			dv	  = &ctrl[j][i];
 			VectorCopy( dv->xyz, base );
+
 			for( k = 0; k < 8; k++ ) {
 				VectorClear( around[k] );
 				good[k] = qfalse;
@@ -167,16 +177,20 @@ static void MakeMeshNormals( int width, int height, drawVert_t ctrl[MAX_GRID_SIZ
 				for( dist = 1; dist <= 3; dist++ ) {
 					x = i + neighbors[k][0] * dist;
 					y = j + neighbors[k][1] * dist;
+
 					if( wrapWidth ) {
 						if( x < 0 ) {
 							x = width - 1 + x;
+
 						} else if( x >= width ) {
 							x = 1 + x - width;
 						}
 					}
+
 					if( wrapHeight ) {
 						if( y < 0 ) {
 							y = height - 1 + y;
+
 						} else if( y >= height ) {
 							y = 1 + y - height;
 						}
@@ -185,9 +199,12 @@ static void MakeMeshNormals( int width, int height, drawVert_t ctrl[MAX_GRID_SIZ
 					if( x < 0 || x >= width || y < 0 || y >= height ) {
 						break; // edge of patch
 					}
+
 					VectorSubtract( ctrl[y][x].xyz, base, temp );
+
 					if( VectorNormalize2( temp, temp ) == 0 ) {
 						continue; // degenerate edge, get more dist
+
 					} else {
 						good[k] = qtrue;
 						VectorCopy( temp, around[k] );
@@ -197,21 +214,27 @@ static void MakeMeshNormals( int width, int height, drawVert_t ctrl[MAX_GRID_SIZ
 			}
 
 			VectorClear( sum );
+
 			for( k = 0; k < 8; k++ ) {
 				if( !good[k] || !good[( k + 1 ) & 7] ) {
 					continue; // didn't get two points
 				}
+
 				CrossProduct( around[( k + 1 ) & 7], around[k], normal );
+
 				if( VectorNormalize2( normal, normal ) == 0 ) {
 					continue;
 				}
+
 				VectorAdd( normal, sum, sum );
 				count++;
 			}
+
 			if( count == 0 ) {
 				// printf("bad normal\n");
 				count = 1;
 			}
+
 			VectorNormalize2( sum, dv->normal );
 		}
 	}
@@ -323,6 +346,7 @@ srfGridMesh_t* R_CreateSurfaceGridMesh( int width, int height, drawVert_t ctrl[M
 	grid->height	  = height;
 	grid->surfaceType = SF_GRID;
 	ClearBounds( grid->meshBounds[0], grid->meshBounds[1] );
+
 	for( i = 0; i < width; i++ ) {
 		for( j = 0; j < height; j++ ) {
 			vert  = &grid->verts[j * width + i];
@@ -389,6 +413,7 @@ srfGridMesh_t* R_SubdividePatchToGrid( int width, int height, drawVert_t points[
 			// this would basically stitch all patches in the same LOD group together.
 
 			maxLen = 0;
+
 			for( i = 0; i < height; i++ ) {
 				vec3_t midxyz;
 				vec3_t dir;
@@ -419,6 +444,7 @@ srfGridMesh_t* R_SubdividePatchToGrid( int width, int height, drawVert_t points[
 			}
 
 			maxLen = sqrt( maxLen );
+
 			// if all the points are on the lines, remove the entire columns
 			if( maxLen < 0.1f ) {
 				errorTable[dir][j + 1] = 999;
@@ -440,6 +466,7 @@ srfGridMesh_t* R_SubdividePatchToGrid( int width, int height, drawVert_t points[
 
 			// insert two columns and replace the peak
 			width += 2;
+
 			for( i = 0; i < height; i++ ) {
 				LerpDrawVert( &ctrl[i][j], &ctrl[i][j + 1], &prev );
 				LerpDrawVert( &ctrl[i][j + 1], &ctrl[i][j + 2], &next );
@@ -448,6 +475,7 @@ srfGridMesh_t* R_SubdividePatchToGrid( int width, int height, drawVert_t points[
 				for( k = width - 1; k > j + 3; k-- ) {
 					ctrl[i][k] = ctrl[i][k - 2];
 				}
+
 				ctrl[i][j + 1] = prev;
 				ctrl[i][j + 2] = mid;
 				ctrl[i][j + 3] = next;
@@ -471,12 +499,15 @@ srfGridMesh_t* R_SubdividePatchToGrid( int width, int height, drawVert_t points[
 		if( errorTable[0][i] != 999 ) {
 			continue;
 		}
+
 		for( j = i + 1; j < width; j++ ) {
 			for( k = 0; k < height; k++ ) {
 				ctrl[k][j - 1] = ctrl[k][j];
 			}
+
 			errorTable[0][j - 1] = errorTable[0][j];
 		}
+
 		width--;
 	}
 
@@ -484,16 +515,20 @@ srfGridMesh_t* R_SubdividePatchToGrid( int width, int height, drawVert_t points[
 		if( errorTable[1][i] != 999 ) {
 			continue;
 		}
+
 		for( j = i + 1; j < height; j++ ) {
 			for( k = 0; k < width; k++ ) {
 				ctrl[j - 1][k] = ctrl[j][k];
 			}
+
 			errorTable[1][j - 1] = errorTable[1][j];
 		}
+
 		height--;
 	}
 
 #if 1
+
 	// flip for longest tristrips as an optimization
 	// the results should be visually identical with or
 	// without this step
@@ -505,6 +540,7 @@ srfGridMesh_t* R_SubdividePatchToGrid( int width, int height, drawVert_t points[
 		height = t;
 		InvertCtrl( width, height, ctrl );
 	}
+
 #endif
 
 	// calculate normals
@@ -529,31 +565,41 @@ srfGridMesh_t* R_GridInsertColumn( srfGridMesh_t* grid, int column, int row, vec
 
 	oldwidth = 0;
 	width	 = grid->width + 1;
+
 	if( width > MAX_GRID_SIZE ) {
 		return NULL;
 	}
+
 	height = grid->height;
+
 	for( i = 0; i < width; i++ ) {
 		if( i == column ) {
 			// insert new column
 			for( j = 0; j < grid->height; j++ ) {
 				LerpDrawVert( &grid->verts[j * grid->width + i - 1], &grid->verts[j * grid->width + i], &ctrl[j][i] );
+
 				if( j == row ) {
 					VectorCopy( point, ctrl[j][i].xyz );
 				}
 			}
+
 			errorTable[0][i] = loderror;
 			continue;
 		}
+
 		errorTable[0][i] = grid->widthLodError[oldwidth];
+
 		for( j = 0; j < grid->height; j++ ) {
 			ctrl[j][i] = grid->verts[j * grid->width + oldwidth];
 		}
+
 		oldwidth++;
 	}
+
 	for( j = 0; j < grid->height; j++ ) {
 		errorTable[1][j] = grid->heightLodError[j];
 	}
+
 	// put all the aproximating points on the curve
 	// PutPointsOnCurve( ctrl, width, height );
 	// calculate normals
@@ -587,30 +633,39 @@ srfGridMesh_t* R_GridInsertRow( srfGridMesh_t* grid, int row, int column, vec3_t
 	oldheight = 0;
 	width	  = grid->width;
 	height	  = grid->height + 1;
+
 	if( height > MAX_GRID_SIZE ) {
 		return NULL;
 	}
+
 	for( i = 0; i < height; i++ ) {
 		if( i == row ) {
 			// insert new row
 			for( j = 0; j < grid->width; j++ ) {
 				LerpDrawVert( &grid->verts[( i - 1 ) * grid->width + j], &grid->verts[i * grid->width + j], &ctrl[i][j] );
+
 				if( j == column ) {
 					VectorCopy( point, ctrl[i][j].xyz );
 				}
 			}
+
 			errorTable[1][i] = loderror;
 			continue;
 		}
+
 		errorTable[1][i] = grid->heightLodError[oldheight];
+
 		for( j = 0; j < grid->width; j++ ) {
 			ctrl[i][j] = grid->verts[oldheight * grid->width + j];
 		}
+
 		oldheight++;
 	}
+
 	for( j = 0; j < grid->width; j++ ) {
 		errorTable[0][j] = grid->widthLodError[j];
 	}
+
 	// put all the aproximating points on the curve
 	// PutPointsOnCurve( ctrl, width, height );
 	// calculate normals

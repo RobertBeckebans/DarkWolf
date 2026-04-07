@@ -68,95 +68,140 @@ char*		NET_ErrorString()
 	int code;
 
 	code = WSAGetLastError();
+
 	switch( code ) {
 		case WSAEINTR:
 			return "WSAEINTR";
+
 		case WSAEBADF:
 			return "WSAEBADF";
+
 		case WSAEACCES:
 			return "WSAEACCES";
+
 		case WSAEDISCON:
 			return "WSAEDISCON";
+
 		case WSAEFAULT:
 			return "WSAEFAULT";
+
 		case WSAEINVAL:
 			return "WSAEINVAL";
+
 		case WSAEMFILE:
 			return "WSAEMFILE";
+
 		case WSAEWOULDBLOCK:
 			return "WSAEWOULDBLOCK";
+
 		case WSAEINPROGRESS:
 			return "WSAEINPROGRESS";
+
 		case WSAEALREADY:
 			return "WSAEALREADY";
+
 		case WSAENOTSOCK:
 			return "WSAENOTSOCK";
+
 		case WSAEDESTADDRREQ:
 			return "WSAEDESTADDRREQ";
+
 		case WSAEMSGSIZE:
 			return "WSAEMSGSIZE";
+
 		case WSAEPROTOTYPE:
 			return "WSAEPROTOTYPE";
+
 		case WSAENOPROTOOPT:
 			return "WSAENOPROTOOPT";
+
 		case WSAEPROTONOSUPPORT:
 			return "WSAEPROTONOSUPPORT";
+
 		case WSAESOCKTNOSUPPORT:
 			return "WSAESOCKTNOSUPPORT";
+
 		case WSAEOPNOTSUPP:
 			return "WSAEOPNOTSUPP";
+
 		case WSAEPFNOSUPPORT:
 			return "WSAEPFNOSUPPORT";
+
 		case WSAEAFNOSUPPORT:
 			return "WSAEAFNOSUPPORT";
+
 		case WSAEADDRINUSE:
 			return "WSAEADDRINUSE";
+
 		case WSAEADDRNOTAVAIL:
 			return "WSAEADDRNOTAVAIL";
+
 		case WSAENETDOWN:
 			return "WSAENETDOWN";
+
 		case WSAENETUNREACH:
 			return "WSAENETUNREACH";
+
 		case WSAENETRESET:
 			return "WSAENETRESET";
+
 		case WSAECONNABORTED:
 			return "WSWSAECONNABORTEDAEINTR";
+
 		case WSAECONNRESET:
 			return "WSAECONNRESET";
+
 		case WSAENOBUFS:
 			return "WSAENOBUFS";
+
 		case WSAEISCONN:
 			return "WSAEISCONN";
+
 		case WSAENOTCONN:
 			return "WSAENOTCONN";
+
 		case WSAESHUTDOWN:
 			return "WSAESHUTDOWN";
+
 		case WSAETOOMANYREFS:
 			return "WSAETOOMANYREFS";
+
 		case WSAETIMEDOUT:
 			return "WSAETIMEDOUT";
+
 		case WSAECONNREFUSED:
 			return "WSAECONNREFUSED";
+
 		case WSAELOOP:
 			return "WSAELOOP";
+
 		case WSAENAMETOOLONG:
 			return "WSAENAMETOOLONG";
+
 		case WSAEHOSTDOWN:
 			return "WSAEHOSTDOWN";
+
 		case WSASYSNOTREADY:
 			return "WSASYSNOTREADY";
+
 		case WSAVERNOTSUPPORTED:
 			return "WSAVERNOTSUPPORTED";
+
 		case WSANOTINITIALISED:
 			return "WSANOTINITIALISED";
+
 		case WSAHOST_NOT_FOUND:
 			return "WSAHOST_NOT_FOUND";
+
 		case WSATRY_AGAIN:
 			return "WSATRY_AGAIN";
+
 		case WSANO_RECOVERY:
 			return "WSANO_RECOVERY";
+
 		case WSANO_DATA:
 			return "WSANO_DATA";
+
 		default:
 			return "NO ERROR";
 	}
@@ -170,15 +215,18 @@ void NetadrToSockadr( netadr_t* a, struct sockaddr* s )
 		( ( struct sockaddr_in* )s )->sin_family	  = AF_INET;
 		( ( struct sockaddr_in* )s )->sin_port		  = a->port;
 		( ( struct sockaddr_in* )s )->sin_addr.s_addr = INADDR_BROADCAST;
+
 	} else if( a->type == NA_IP ) {
 		( ( struct sockaddr_in* )s )->sin_family	  = AF_INET;
 		( ( struct sockaddr_in* )s )->sin_addr.s_addr = *( int* )&a->ip;
 		( ( struct sockaddr_in* )s )->sin_port		  = a->port;
+
 	} else if( a->type == NA_IPX ) {
 		( ( struct sockaddr_ipx* )s )->sa_family = AF_IPX;
 		memcpy( ( ( struct sockaddr_ipx* )s )->sa_netnum, &a->ipx[0], 4 );
 		memcpy( ( ( struct sockaddr_ipx* )s )->sa_nodenum, &a->ipx[4], 6 );
 		( ( struct sockaddr_ipx* )s )->sa_socket = a->port;
+
 	} else if( a->type == NA_BROADCAST_IPX ) {
 		( ( struct sockaddr_ipx* )s )->sa_family = AF_IPX;
 		memset( ( ( struct sockaddr_ipx* )s )->sa_netnum, 0, 4 );
@@ -193,6 +241,7 @@ void SockadrToNetadr( struct sockaddr* s, netadr_t* a )
 		a->type			= NA_IP;
 		*( int* )&a->ip = ( ( struct sockaddr_in* )s )->sin_addr.s_addr;
 		a->port			= ( ( struct sockaddr_in* )s )->sin_port;
+
 	} else if( s->sa_family == AF_IPX ) {
 		a->type = NA_IPX;
 		memcpy( &a->ipx[0], ( ( struct sockaddr_ipx* )s )->sa_netnum, 4 );
@@ -239,16 +288,19 @@ qboolean Sys_StringToSockaddr( const char* s, struct sockaddr* sadr )
 		DO( 15, sa_nodenum[3] );
 		DO( 17, sa_nodenum[4] );
 		DO( 19, sa_nodenum[5] );
+
 	} else {
 		( ( struct sockaddr_in* )sadr )->sin_family = AF_INET;
 		( ( struct sockaddr_in* )sadr )->sin_port	= 0;
 
 		if( Q_isnumeric( s[0] ) ) {
 			*( int* )&( ( struct sockaddr_in* )sadr )->sin_addr = inet_addr( s );
+
 		} else {
 			if( ( h = gethostbyname( s ) ) == 0 ) {
 				return 0;
 			}
+
 			*( int* )&( ( struct sockaddr_in* )sadr )->sin_addr = *( int* )h->h_addr_list[0];
 		}
 	}
@@ -301,6 +353,7 @@ qboolean Sys_GetPacket( netadr_t* net_from, msg_t* net_message )
 	for( protocol = 0; protocol < 2; protocol++ ) {
 		if( protocol == 0 ) {
 			net_socket = ip_socket;
+
 		} else {
 			net_socket = ipx_socket;
 		}
@@ -312,12 +365,14 @@ qboolean Sys_GetPacket( netadr_t* net_from, msg_t* net_message )
 		fromlen = sizeof( from );
 		recvfromCount++; // performance check
 		ret = recvfrom( net_socket, ( char* )net_message->data, net_message->maxsize, 0, ( struct sockaddr* )&from, &fromlen );
+
 		if( ret == SOCKET_ERROR ) {
 			err = WSAGetLastError();
 
 			if( err == WSAEWOULDBLOCK || err == WSAECONNRESET ) {
 				continue;
 			}
+
 			Com_Printf( "NET_GetPacket: %s\n", NET_ErrorString() );
 			continue;
 		}
@@ -330,6 +385,7 @@ qboolean Sys_GetPacket( netadr_t* net_from, msg_t* net_message )
 			if( ret < 10 || net_message->data[0] != 0 || net_message->data[1] != 0 || net_message->data[2] != 0 || net_message->data[3] != 1 ) {
 				continue;
 			}
+
 			net_from->type		   = NA_IP;
 			net_from->ip[0]		   = net_message->data[4];
 			net_from->ip[1]		   = net_message->data[5];
@@ -337,6 +393,7 @@ qboolean Sys_GetPacket( netadr_t* net_from, msg_t* net_message )
 			net_from->ip[3]		   = net_message->data[7];
 			net_from->port		   = *( short* )&net_message->data[8];
 			net_message->readcount = 10;
+
 		} else {
 			SockadrToNetadr( &from, net_from );
 			net_message->readcount = 0;
@@ -371,12 +428,16 @@ void		Sys_SendPacket( int length, const void* data, netadr_t to )
 
 	if( to.type == NA_BROADCAST ) {
 		net_socket = ip_socket;
+
 	} else if( to.type == NA_IP ) {
 		net_socket = ip_socket;
+
 	} else if( to.type == NA_IPX ) {
 		net_socket = ipx_socket;
+
 	} else if( to.type == NA_BROADCAST_IPX ) {
 		net_socket = ipx_socket;
+
 	} else {
 		Com_Error( ERR_FATAL, "Sys_SendPacket: bad address type" );
 		return;
@@ -397,9 +458,11 @@ void		Sys_SendPacket( int length, const void* data, netadr_t to )
 		*( short* )&socksBuf[8] = ( ( struct sockaddr_in* )&addr )->sin_port;
 		memcpy( &socksBuf[10], data, length );
 		ret = sendto( net_socket, socksBuf, length + 10, 0, &socksRelayAddr, sizeof( socksRelayAddr ) );
+
 	} else {
 		ret = sendto( net_socket, ( const char* )data, length, 0, &addr, sizeof( addr ) );
 	}
+
 	if( ret == SOCKET_ERROR ) {
 		int err = WSAGetLastError();
 
@@ -456,6 +519,7 @@ qboolean Sys_IsLANAddress( netadr_t adr )
 				return qtrue;
 			}
 		}
+
 		// the RFC1918 class a block will pass the above test
 		return qfalse;
 	}
@@ -466,11 +530,13 @@ qboolean Sys_IsLANAddress( netadr_t adr )
 			if( adr.ip[0] == localIP[i][0] && adr.ip[1] == localIP[i][1] ) {
 				return qtrue;
 			}
+
 			// also check against the RFC1918 class b blocks
 			if( adr.ip[0] == 172 && localIP[i][0] == 172 && ( adr.ip[1] & 0xf0 ) == 16 && ( localIP[i][1] & 0xf0 ) == 16 ) {
 				return qtrue;
 			}
 		}
+
 		return qfalse;
 	}
 
@@ -479,11 +545,13 @@ qboolean Sys_IsLANAddress( netadr_t adr )
 		if( adr.ip[0] == localIP[i][0] && adr.ip[1] == localIP[i][1] && adr.ip[2] == localIP[i][2] ) {
 			return qtrue;
 		}
+
 		// also check against the RFC1918 class c blocks
 		if( adr.ip[0] == 192 && localIP[i][0] == 192 && adr.ip[1] == 168 && localIP[i][1] == 168 ) {
 			return qtrue;
 		}
 	}
+
 	return qfalse;
 }
 
@@ -518,15 +586,18 @@ int NET_IPSocket( char* net_interface, int port )
 
 	if( net_interface ) {
 		Com_Printf( "Opening IP socket: %s:%i\n", net_interface, port );
+
 	} else {
 		Com_Printf( "Opening IP socket: localhost:%i\n", port );
 	}
 
 	if( ( newsocket = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP ) ) == INVALID_SOCKET ) {
 		err = WSAGetLastError();
+
 		if( err != WSAEAFNOSUPPORT ) {
 			Com_Printf( "WARNING: UDP_OpenSocket: socket: %s\n", NET_ErrorString() );
 		}
+
 		return 0;
 	}
 
@@ -544,12 +615,14 @@ int NET_IPSocket( char* net_interface, int port )
 
 	if( !net_interface || !net_interface[0] || !Q_stricmp( net_interface, "localhost" ) ) {
 		address.sin_addr.s_addr = INADDR_ANY;
+
 	} else {
 		Sys_StringToSockaddr( net_interface, ( struct sockaddr* )&address );
 	}
 
 	if( port == PORT_ANY ) {
 		address.sin_port = 0;
+
 	} else {
 		address.sin_port = htons( ( short )port );
 	}
@@ -590,15 +663,18 @@ void NET_OpenSocks( int port )
 	}
 
 	h = gethostbyname( net_socksServer->string );
+
 	if( h == NULL ) {
 		err = WSAGetLastError();
 		Com_Printf( "WARNING: NET_OpenSocks: gethostbyname: %s\n", NET_ErrorString() );
 		return;
 	}
+
 	if( h->h_addrtype != AF_INET ) {
 		Com_Printf( "WARNING: NET_OpenSocks: gethostbyname: address type was not AF_INET\n" );
 		return;
 	}
+
 	address.sin_family		= AF_INET;
 	address.sin_addr.s_addr = *( int* )h->h_addr_list[0];
 	address.sin_port		= htons( ( short )net_socksPort->integer );
@@ -612,23 +688,29 @@ void NET_OpenSocks( int port )
 	// send socks authentication handshake
 	if( *net_socksUsername->string || *net_socksPassword->string ) {
 		rfc1929 = qtrue;
+
 	} else {
 		rfc1929 = qfalse;
 	}
 
 	buf[0] = 5; // SOCKS version
+
 	// method count
 	if( rfc1929 ) {
 		buf[1] = 2;
 		len	   = 4;
+
 	} else {
 		buf[1] = 1;
 		len	   = 3;
 	}
+
 	buf[2] = 0; // method #1 - method id #00: no authentication
+
 	if( rfc1929 ) {
 		buf[2] = 2; // method #2 - method id #02: username/password
 	}
+
 	if( send( socks_socket, ( const char* )buf, len, 0 ) == SOCKET_ERROR ) {
 		err = WSAGetLastError();
 		Com_Printf( "NET_OpenSocks: send: %s\n", NET_ErrorString() );
@@ -637,20 +719,25 @@ void NET_OpenSocks( int port )
 
 	// get the response
 	len = recv( socks_socket, ( char* )buf, 64, 0 );
+
 	if( len == SOCKET_ERROR ) {
 		err = WSAGetLastError();
 		Com_Printf( "NET_OpenSocks: recv: %s\n", NET_ErrorString() );
 		return;
 	}
+
 	if( len != 2 || buf[0] != 5 ) {
 		Com_Printf( "NET_OpenSocks: bad response\n" );
 		return;
 	}
+
 	switch( buf[1] ) {
 		case 0: // no authentication
 			break;
+
 		case 2: // username/password authentication
 			break;
+
 		default:
 			Com_Printf( "NET_OpenSocks: request denied\n" );
 			return;
@@ -667,10 +754,13 @@ void NET_OpenSocks( int port )
 
 		buf[0] = 1; // username/password authentication version
 		buf[1] = ulen;
+
 		if( ulen ) {
 			memcpy( &buf[2], net_socksUsername->string, ulen );
 		}
+
 		buf[2 + ulen] = plen;
+
 		if( plen ) {
 			memcpy( &buf[3 + ulen], net_socksPassword->string, plen );
 		}
@@ -684,15 +774,18 @@ void NET_OpenSocks( int port )
 
 		// get the response
 		len = recv( socks_socket, ( char* )buf, 64, 0 );
+
 		if( len == SOCKET_ERROR ) {
 			err = WSAGetLastError();
 			Com_Printf( "NET_OpenSocks: recv: %s\n", NET_ErrorString() );
 			return;
 		}
+
 		if( len != 2 || buf[0] != 1 ) {
 			Com_Printf( "NET_OpenSocks: bad response\n" );
 			return;
 		}
+
 		if( buf[1] != 0 ) {
 			Com_Printf( "NET_OpenSocks: authentication failed\n" );
 			return;
@@ -706,6 +799,7 @@ void NET_OpenSocks( int port )
 	buf[3]			   = 1; // address type: IPV4
 	*( int* )&buf[4]   = INADDR_ANY;
 	*( short* )&buf[8] = htons( ( short )port ); // port
+
 	if( send( socks_socket, ( const char* )buf, 10, 0 ) == SOCKET_ERROR ) {
 		err = WSAGetLastError();
 		Com_Printf( "NET_OpenSocks: send: %s\n", NET_ErrorString() );
@@ -714,24 +808,29 @@ void NET_OpenSocks( int port )
 
 	// get the response
 	len = recv( socks_socket, ( char* )buf, 64, 0 );
+
 	if( len == SOCKET_ERROR ) {
 		err = WSAGetLastError();
 		Com_Printf( "NET_OpenSocks: recv: %s\n", NET_ErrorString() );
 		return;
 	}
+
 	if( len < 2 || buf[0] != 5 ) {
 		Com_Printf( "NET_OpenSocks: bad response\n" );
 		return;
 	}
+
 	// check completion code
 	if( buf[1] != 0 ) {
 		Com_Printf( "NET_OpenSocks: request denied: %i\n", buf[1] );
 		return;
 	}
+
 	if( buf[3] != 1 ) {
 		Com_Printf( "NET_OpenSocks: relay address is not IPV4: %i\n", buf[3] );
 		return;
 	}
+
 	( ( struct sockaddr_in* )&socksRelayAddr )->sin_family		= AF_INET;
 	( ( struct sockaddr_in* )&socksRelayAddr )->sin_addr.s_addr = *( int* )&buf[4];
 	( ( struct sockaddr_in* )&socksRelayAddr )->sin_port		= *( short* )&buf[8];
@@ -760,6 +859,7 @@ void NET_GetLocalAddress()
 	}
 
 	hostInfo = gethostbyname( hostname );
+
 	if( !hostInfo ) {
 		error = WSAGetLastError();
 		return;
@@ -767,6 +867,7 @@ void NET_GetLocalAddress()
 
 	Com_Printf( "Hostname: %s\n", hostInfo->h_name );
 	n = 0;
+
 	while( ( p = hostInfo->h_aliases[n++] ) != NULL ) {
 		Com_Printf( "Alias: %s\n", p );
 	}
@@ -776,6 +877,7 @@ void NET_GetLocalAddress()
 	}
 
 	numIP = 0;
+
 	while( ( p = hostInfo->h_addr_list[numIP] ) != NULL && numIP < MAX_IPS ) {
 		ip				  = ntohl( *( int* )p );
 		localIP[numIP][0] = p[0];
@@ -806,15 +908,19 @@ void NET_OpenIP()
 	// a different net_port for each one
 	for( i = 0; i < 10; i++ ) {
 		ip_socket = NET_IPSocket( ip->string, port + i );
+
 		if( ip_socket ) {
 			Cvar_SetValue( "net_port", port + i );
+
 			if( net_socksEnabled->integer ) {
 				NET_OpenSocks( port + i );
 			}
+
 			NET_GetLocalAddress();
 			return;
 		}
 	}
+
 	Com_Printf( "WARNING: Couldn't allocate IP port\n" );
 }
 
@@ -832,9 +938,11 @@ int NET_IPXSocket( int port )
 
 	if( ( newsocket = socket( AF_IPX, SOCK_DGRAM, NSPROTO_IPX ) ) == INVALID_SOCKET ) {
 		err = WSAGetLastError();
+
 		if( err != WSAEAFNOSUPPORT ) {
 			Com_Printf( "WARNING: IPX_Socket: socket: %s\n", NET_ErrorString() );
 		}
+
 		return 0;
 	}
 
@@ -853,8 +961,10 @@ int NET_IPXSocket( int port )
 	address.sa_family = AF_IPX;
 	memset( address.sa_netnum, 0, 4 );
 	memset( address.sa_nodenum, 0, 6 );
+
 	if( port == PORT_ANY ) {
 		address.sa_socket = 0;
+
 	} else {
 		address.sa_socket = htons( ( short )port );
 	}
@@ -897,36 +1007,43 @@ static qboolean NET_GetCvars()
 	if( net_noudp && net_noudp->modified ) {
 		modified = qtrue;
 	}
+
 	net_noudp = Cvar_Get( "net_noudp", "0", CVAR_LATCH | CVAR_ARCHIVE );
 
 	if( net_noipx && net_noipx->modified ) {
 		modified = qtrue;
 	}
+
 	net_noipx = Cvar_Get( "net_noipx", "0", CVAR_LATCH | CVAR_ARCHIVE );
 
 	if( net_socksEnabled && net_socksEnabled->modified ) {
 		modified = qtrue;
 	}
+
 	net_socksEnabled = Cvar_Get( "net_socksEnabled", "0", CVAR_LATCH | CVAR_ARCHIVE );
 
 	if( net_socksServer && net_socksServer->modified ) {
 		modified = qtrue;
 	}
+
 	net_socksServer = Cvar_Get( "net_socksServer", "", CVAR_LATCH | CVAR_ARCHIVE );
 
 	if( net_socksPort && net_socksPort->modified ) {
 		modified = qtrue;
 	}
+
 	net_socksPort = Cvar_Get( "net_socksPort", "1080", CVAR_LATCH | CVAR_ARCHIVE );
 
 	if( net_socksUsername && net_socksUsername->modified ) {
 		modified = qtrue;
 	}
+
 	net_socksUsername = Cvar_Get( "net_socksUsername", "", CVAR_LATCH | CVAR_ARCHIVE );
 
 	if( net_socksPassword && net_socksPassword->modified ) {
 		modified = qtrue;
 	}
+
 	net_socksPassword = Cvar_Get( "net_socksPassword", "", CVAR_LATCH | CVAR_ARCHIVE );
 
 	return modified;
@@ -959,18 +1076,22 @@ void NET_Config( qboolean enableNetworking )
 		if( enableNetworking ) {
 			stop  = qtrue;
 			start = qtrue;
+
 		} else {
 			stop  = qfalse;
 			start = qfalse;
 		}
+
 	} else {
 		if( enableNetworking ) {
 			stop  = qfalse;
 			start = qtrue;
+
 		} else {
 			stop  = qtrue;
 			start = qfalse;
 		}
+
 		networkingEnabled = enableNetworking;
 	}
 
@@ -995,6 +1116,7 @@ void NET_Config( qboolean enableNetworking )
 		if( !net_noudp->integer ) {
 			NET_OpenIP();
 		}
+
 		if( !net_noipx->integer ) {
 			NET_OpenIPX();
 		}
@@ -1013,6 +1135,7 @@ void NET_Init()
 	return; //----(SA)	disabled networking for SP
 
 	r = WSAStartup( MAKEWORD( 1, 1 ), &winsockdata );
+
 	if( r ) {
 		Com_Printf( "WARNING: Winsock initialization failed, returned %d\n", r );
 		return;
@@ -1038,6 +1161,7 @@ void NET_Shutdown()
 	if( !winsockInitialized ) {
 		return;
 	}
+
 	NET_Config( qfalse );
 	WSACleanup();
 	winsockInitialized = qfalse;

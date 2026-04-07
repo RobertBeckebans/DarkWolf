@@ -55,6 +55,7 @@ void	 StripTrailing( char* e )
 	char* s;
 
 	s = e + strlen( e ) - 1;
+
 	while( s >= e && *s <= 32 ) {
 		*s = 0;
 		s--;
@@ -76,15 +77,19 @@ epair_t* ParseEpair( script_t* script )
 
 	PS_ExpectAnyToken( script, &token );
 	StripDoubleQuotes( token.string );
+
 	if( strlen( token.string ) >= MAX_KEY - 1 ) {
 		Error( "ParseEpair: token %s too long", token.string );
 	}
+
 	e->key = copystring( token.string );
 	PS_ExpectAnyToken( script, &token );
 	StripDoubleQuotes( token.string );
+
 	if( strlen( token.string ) >= MAX_VALUE - 1 ) {
 		Error( "ParseEpair: token %s too long", token.string );
 	}
+
 	e->value = copystring( token.string );
 
 	// strip trailing spaces
@@ -124,9 +129,11 @@ qboolean ParseEntity( script_t* script )
 		if( !PS_ReadToken( script, &token ) ) {
 			Error( "ParseEntity: EOF without closing brace" );
 		}
+
 		if( !strcmp( token.string, "}" ) ) {
 			break;
 		}
+
 		PS_UnreadLastToken( script );
 		e			   = ParseEpair( script );
 		e->next		   = mapent->epairs;
@@ -141,6 +148,7 @@ void PrintEntity( entity_t* ent )
 	epair_t* ep;
 
 	printf( "------- entity %p -------\n", ent );
+
 	for( ep = ent->epairs; ep; ep = ep->next ) {
 		printf( "%s = %s\n", ep->key, ep->value );
 	}
@@ -156,6 +164,7 @@ void SetKeyValue( entity_t* ent, char* key, char* value )
 			ep->value = copystring( value );
 			return;
 		}
+
 	ep			= GetMemory( sizeof( *ep ) );
 	ep->next	= ent->epairs;
 	ent->epairs = ep;
@@ -171,6 +180,7 @@ char* ValueForKey( entity_t* ent, char* key )
 		if( !strcmp( ep->key, key ) ) {
 			return ep->value;
 		}
+
 	return "";
 }
 

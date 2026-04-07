@@ -46,6 +46,7 @@ static qboolean R_CullTriSurf( srfTriangles_t* cv )
 	if( boxCull == CULL_OUT ) {
 		return qtrue;
 	}
+
 	return qfalse;
 }
 
@@ -68,9 +69,11 @@ static qboolean R_CullGrid( srfGridMesh_t* cv )
 
 	if( tr.currentEntityNum != ENTITYNUM_WORLD ) {
 		sphereCull = R_CullLocalPointAndRadius( cv->localOrigin, cv->meshRadius );
+
 	} else {
 		sphereCull = R_CullPointAndRadius( cv->localOrigin, cv->meshRadius );
 	}
+
 	boxCull = CULL_OUT;
 
 	// check for trivial reject
@@ -78,6 +81,7 @@ static qboolean R_CullGrid( srfGridMesh_t* cv )
 		tr.pc.c_sphere_cull_patch_out++;
 		return qtrue;
 	}
+
 	// check bounding box if necessary
 	else if( sphereCull == CULL_CLIP ) {
 		tr.pc.c_sphere_cull_patch_clip++;
@@ -87,11 +91,14 @@ static qboolean R_CullGrid( srfGridMesh_t* cv )
 		if( boxCull == CULL_OUT ) {
 			tr.pc.c_box_cull_patch_out++;
 			return qtrue;
+
 		} else if( boxCull == CULL_IN ) {
 			tr.pc.c_box_cull_patch_in++;
+
 		} else {
 			tr.pc.c_box_cull_patch_clip++;
 		}
+
 	} else {
 		tr.pc.c_sphere_cull_patch_in++;
 	}
@@ -149,6 +156,7 @@ static qboolean R_CullSurface( surfaceType_t* surface, shader_t* shader )
 		if( d < sface->plane.dist - 8 ) {
 			return qtrue;
 		}
+
 	} else {
 		if( d > sface->plane.dist + 8 ) {
 			return qtrue;
@@ -168,8 +176,10 @@ static int R_DlightFace( srfSurfaceFace_t* face, int dlightBits )
 		if( !( dlightBits & ( 1 << i ) ) ) {
 			continue;
 		}
+
 		dl = &tr.refdef.dlights[i];
 		d  = DotProduct( dl->origin, face->plane.normal ) - face->plane.dist;
+
 		if( d < -dl->radius || d > dl->radius ) {
 			// dlight doesn't reach the plane
 			dlightBits &= ~( 1 << i );
@@ -193,7 +203,9 @@ static int R_DlightGrid( srfGridMesh_t* grid, int dlightBits )
 		if( !( dlightBits & ( 1 << i ) ) ) {
 			continue;
 		}
+
 		dl = &tr.refdef.dlights[i];
+
 		if( dl->origin[0] - dl->radius > grid->meshBounds[1][0] || dl->origin[0] + dl->radius < grid->meshBounds[0][0] || dl->origin[1] - dl->radius > grid->meshBounds[1][1] ||
 			dl->origin[1] + dl->radius < grid->meshBounds[0][1] || dl->origin[2] - dl->radius > grid->meshBounds[1][2] || dl->origin[2] + dl->radius < grid->meshBounds[0][2] ) {
 			// dlight doesn't reach the bounds
@@ -222,7 +234,9 @@ static int R_DlightTrisurf( srfTriangles_t* surf, int dlightBits )
 		if( !( dlightBits & ( 1 << i ) ) ) {
 			continue;
 		}
+
 		dl = &tr.refdef.dlights[i];
+
 		if( dl->origin[0] - dl->radius > grid->meshBounds[1][0]
 				|| dl->origin[0] + dl->radius < grid->meshBounds[0][0]
 				|| dl->origin[1] - dl->radius > grid->meshBounds[1][1]
@@ -256,10 +270,13 @@ static int R_DlightSurface( msurface_t* surf, int dlightBits )
 {
 	if( *surf->data == SF_FACE ) {
 		dlightBits = R_DlightFace( ( srfSurfaceFace_t* )surf->data, dlightBits );
+
 	} else if( *surf->data == SF_GRID ) {
 		dlightBits = R_DlightGrid( ( srfGridMesh_t* )surf->data, dlightBits );
+
 	} else if( *surf->data == SF_TRIANGLES ) {
 		dlightBits = R_DlightTrisurf( ( srfTriangles_t* )surf->data, dlightBits );
+
 	} else {
 		dlightBits = 0;
 	}
@@ -300,9 +317,11 @@ static void R_AddWorldSurface( msurface_t* surf, int dlightBits, int modelSurfac
 	// jmarshall - raytraced models
 	if( modelSurfaceId != -1 ) {
 		R_AddDrawSurf( ( surfaceBase_t* )surf->data, surf->shader, surf->fogIndex, dlightBits, ATI_TESS_NONE, modelSurfaceId, dxrMesh );
+
 	} else {
 		R_AddDrawSurf( ( surfaceBase_t* )surf->data, surf->shader, surf->fogIndex, dlightBits, ATI_TESS_NONE );
 	}
+
 	// jmarshall end
 }
 
@@ -331,25 +350,31 @@ int R_BmodelFogNum( trRefEntity_t* re, bmodel_t* bmodel )
 
 	for( i = 1; i < tr.world->numfogs; i++ ) {
 		fog = &tr.world->fogs[i];
+
 		for( j = 0; j < 3; j++ ) {
 			if( re->e.origin[j] + bmodel->bounds[0][j] > fog->bounds[1][j] ) {
 				break;
 			}
+
 			if( re->e.origin[j] + bmodel->bounds[0][j] < fog->bounds[0][j] ) {
 				break;
 			}
 		}
+
 		if( j == 3 ) {
 			return i;
 		}
+
 		for( j = 0; j < 3; j++ ) {
 			if( re->e.origin[j] + bmodel->bounds[1][j] > fog->bounds[1][j] ) {
 				break;
 			}
+
 			if( bmodel->bounds[1][j] < fog->bounds[0][j] ) {
 				break;
 			}
 		}
+
 		if( j == 3 ) {
 			return i;
 		}
@@ -378,6 +403,7 @@ void R_AddBrushModelSurfaces( trRefEntity_t* ent )
 	bmodel = pModel->bmodel;
 
 	clip = R_CullLocalBox( bmodel->bounds );
+
 	if( clip == CULL_OUT ) {
 		return;
 	}
@@ -392,6 +418,7 @@ void R_AddBrushModelSurfaces( trRefEntity_t* ent )
 		( bmodel->firstSurface + i )->fogIndex = fognum;
 		R_AddWorldSurface( bmodel->firstSurface + i, tr.currentEntity->needDlights, i, &bmodel->dxrMesh );
 	}
+
 	//----(SA) end
 }
 
@@ -426,9 +453,11 @@ static void R_RecursiveWorldNode( mnode_t* node, int planeBits, int dlightBits )
 
 			if( planeBits & 1 ) {
 				r = BoxOnPlaneSide( node->mins, node->maxs, &tr.viewParms.frustum[0] );
+
 				if( r == 2 ) {
 					return; // culled
 				}
+
 				if( r == 1 ) {
 					planeBits &= ~1; // all descendants will also be in front
 				}
@@ -436,9 +465,11 @@ static void R_RecursiveWorldNode( mnode_t* node, int planeBits, int dlightBits )
 
 			if( planeBits & 2 ) {
 				r = BoxOnPlaneSide( node->mins, node->maxs, &tr.viewParms.frustum[1] );
+
 				if( r == 2 ) {
 					return; // culled
 				}
+
 				if( r == 1 ) {
 					planeBits &= ~2; // all descendants will also be in front
 				}
@@ -446,9 +477,11 @@ static void R_RecursiveWorldNode( mnode_t* node, int planeBits, int dlightBits )
 
 			if( planeBits & 4 ) {
 				r = BoxOnPlaneSide( node->mins, node->maxs, &tr.viewParms.frustum[2] );
+
 				if( r == 2 ) {
 					return; // culled
 				}
+
 				if( r == 1 ) {
 					planeBits &= ~4; // all descendants will also be in front
 				}
@@ -456,9 +489,11 @@ static void R_RecursiveWorldNode( mnode_t* node, int planeBits, int dlightBits )
 
 			if( planeBits & 8 ) {
 				r = BoxOnPlaneSide( node->mins, node->maxs, &tr.viewParms.frustum[3] );
+
 				if( r == 2 ) {
 					return; // culled
 				}
+
 				if( r == 1 ) {
 					planeBits &= ~8; // all descendants will also be in front
 				}
@@ -519,9 +554,11 @@ static void R_RecursiveWorldNode( mnode_t* node, int planeBits, int dlightBits )
 		if( node->mins[0] < tr.viewParms.visBounds[0][0] ) {
 			tr.viewParms.visBounds[0][0] = node->mins[0];
 		}
+
 		if( node->mins[1] < tr.viewParms.visBounds[0][1] ) {
 			tr.viewParms.visBounds[0][1] = node->mins[1];
 		}
+
 		if( node->mins[2] < tr.viewParms.visBounds[0][2] ) {
 			tr.viewParms.visBounds[0][2] = node->mins[2];
 		}
@@ -529,9 +566,11 @@ static void R_RecursiveWorldNode( mnode_t* node, int planeBits, int dlightBits )
 		if( node->maxs[0] > tr.viewParms.visBounds[1][0] ) {
 			tr.viewParms.visBounds[1][0] = node->maxs[0];
 		}
+
 		if( node->maxs[1] > tr.viewParms.visBounds[1][1] ) {
 			tr.viewParms.visBounds[1][1] = node->maxs[1];
 		}
+
 		if( node->maxs[2] > tr.viewParms.visBounds[1][2] ) {
 			tr.viewParms.visBounds[1][2] = node->maxs[2];
 		}
@@ -539,6 +578,7 @@ static void R_RecursiveWorldNode( mnode_t* node, int planeBits, int dlightBits )
 		// add the individual surfaces
 		mark = node->firstmarksurface;
 		c	 = node->nummarksurfaces;
+
 		while( c-- ) {
 			// the surface may have already been added if it
 			// spans multiple leafs
@@ -565,14 +605,18 @@ static mnode_t* R_PointInLeaf( vec3_t p )
 	}
 
 	node = tr.world->nodes;
+
 	while( 1 ) {
 		if( node->contents != -1 ) {
 			break;
 		}
+
 		plane = node->plane;
 		d	  = DotProduct( p, plane->normal ) - plane->dist;
+
 		if( d > 0 ) {
 			node = node->children[0];
+
 		} else {
 			node = node->children[1];
 		}
@@ -630,6 +674,7 @@ static void R_MarkLeaves()
 
 	if( r_showcluster->modified || r_showcluster->integer ) {
 		r_showcluster->modified = qfalse;
+
 		if( r_showcluster->integer ) {
 			ri.Printf( PRINT_ALL, "cluster:%i  area:%i\n", cluster, leaf->area );
 		}
@@ -644,6 +689,7 @@ static void R_MarkLeaves()
 				tr.world->nodes[i].visframe = tr.visCount;
 			}
 		}
+
 		return;
 	}
 
@@ -651,6 +697,7 @@ static void R_MarkLeaves()
 
 	for( i = 0, leaf = tr.world->nodes; i < tr.world->numnodes; i++, leaf++ ) {
 		cluster = leaf->cluster;
+
 		if( cluster < 0 || cluster >= tr.world->numClusters ) {
 			continue;
 		}
@@ -666,10 +713,12 @@ static void R_MarkLeaves()
 		}
 
 		parent = leaf;
+
 		do {
 			if( parent->visframe == tr.visCount ) {
 				break;
 			}
+
 			parent->visframe = tr.visCount;
 			parent			 = parent->parent;
 		} while( parent );
@@ -704,5 +753,6 @@ void R_AddWorldSurfaces()
 	if( tr.refdef.num_dlights > 32 ) {
 		tr.refdef.num_dlights = 32;
 	}
+
 	R_RecursiveWorldNode( tr.world->nodes, 15, ( 1 << tr.refdef.num_dlights ) - 1 );
 }

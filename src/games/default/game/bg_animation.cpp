@@ -270,14 +270,17 @@ static long BG_StringHashValue( const char* fname )
 
 	hash = 0;
 	i	 = 0;
+
 	while( fname[i] != '\0' ) {
 		letter = tolower( fname[i] );
 		hash += ( long )( letter ) * ( i + 119 );
 		i++;
 	}
+
 	if( hash == -1 ) {
 		hash = 0; // never return -1
 	}
+
 	return hash;
 }
 
@@ -297,6 +300,7 @@ void QDECL BG_AnimParseError( const char* msg, ... )
 
 	if( globalFilename ) {
 		Com_Error( ERR_DROP, "%s: (%s, line %i)", text, globalFilename, COM_GetCurrentParseLine() + 1 );
+
 	} else {
 		Com_Error( ERR_DROP, "%s", text );
 	}
@@ -312,10 +316,12 @@ animModelInfo_t* BG_ModelInfoForClient( int client )
 	if( !globalScriptData ) {
 		BG_AnimParseError( "BG_ModelInfoForClient: NULL globalScriptData" );
 	}
+
 	//
 	if( !globalScriptData->clientModels[client] ) {
 		BG_AnimParseError( "BG_ModelInfoForClient: client %i has no modelinfo", client );
 	}
+
 	//
 	return globalScriptData->modelInfo[globalScriptData->clientModels[client] - 1];
 }
@@ -329,13 +335,16 @@ animModelInfo_t* BG_ModelInfoForModelname( char* modelname )
 {
 	int				 i;
 	animModelInfo_t* modelInfo;
+
 	//
 	if( !globalScriptData ) {
 		BG_AnimParseError( "BG_ModelInfoForModelname: NULL globalScriptData" );
 	}
+
 	//
 	for( i = 0; i < MAX_ANIMSCRIPT_MODELS; i++ ) {
 		modelInfo = globalScriptData->modelInfo[i];
+
 		if( modelInfo == NULL ) {
 			continue;
 		}
@@ -343,10 +352,12 @@ animModelInfo_t* BG_ModelInfoForModelname( char* modelname )
 		if( !modelInfo->modelname[0] ) {
 			continue;
 		}
+
 		if( !Q_stricmp( modelname, modelInfo->modelname ) ) {
 			return modelInfo;
 		}
 	}
+
 	//
 	return NULL;
 }
@@ -372,6 +383,7 @@ int BG_AnimationIndexForString( char* string, int client )
 			return i;
 		}
 	}
+
 	// no match found
 	BG_AnimParseError( "BG_AnimationIndexForString: unknown index '%s' for model '%s'", string, modelInfo->modelname );
 	return -1; // shutup compiler
@@ -395,6 +407,7 @@ animation_t* BG_AnimationForString( char* string, animModelInfo_t* modelInfo )
 			return anim;
 		}
 	}
+
 	// no match found
 	Com_Error( ERR_DROP, "BG_AnimationForString: unknown animation '%s' for model '%s'", string, modelInfo->modelname );
 	return NULL; // shutup compiler
@@ -418,15 +431,18 @@ int BG_IndexForString( char* token, animStringItem_t* strings, qboolean allowFai
 		if( strav->hash == -1 ) {
 			strav->hash = BG_StringHashValue( strav->string );
 		}
+
 		if( ( hash == strav->hash ) && !Q_stricmp( token, strav->string ) ) {
 			// found a match
 			return i;
 		}
 	}
+
 	// no match found
 	if( !allowFail ) {
 		BG_AnimParseError( "BG_IndexForString: unknown token '%s'", token );
 	}
+
 	//
 	return -1;
 }
@@ -527,57 +543,81 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 	// read optional parameters
 	while( 1 ) {
 		token = COM_Parse( &text_p );
+
 		if( !token ) {
 			break;
 		}
+
 		if( !Q_stricmp( token, "footsteps" ) ) {
 			token = COM_Parse( &text_p );
+
 			if( !token ) {
 				break;
 			}
+
 			if( !Q_stricmp( token, "default" ) || !Q_stricmp( token, "normal" ) ) {
 				animModelInfo->footsteps = FOOTSTEP_NORMAL;
+
 			} else if( !Q_stricmp( token, "boot" ) ) {
 				animModelInfo->footsteps = FOOTSTEP_BOOT;
+
 			} else if( !Q_stricmp( token, "flesh" ) ) {
 				animModelInfo->footsteps = FOOTSTEP_FLESH;
+
 			} else if( !Q_stricmp( token, "mech" ) ) {
 				animModelInfo->footsteps = FOOTSTEP_MECH;
+
 			} else if( !Q_stricmp( token, "energy" ) ) {
 				animModelInfo->footsteps = FOOTSTEP_ENERGY;
+
 			} else {
 				BG_AnimParseError( "Bad footsteps parm '%s'\n", token );
 			}
+
 			continue;
+
 		} else if( !Q_stricmp( token, "headoffset" ) ) {
 			for( i = 0; i < 3; i++ ) {
 				token = COM_Parse( &text_p );
+
 				if( !token ) {
 					break;
 				}
+
 				animModelInfo->headOffset[i] = atof( token );
 			}
+
 			continue;
+
 		} else if( !Q_stricmp( token, "sex" ) ) {
 			token = COM_Parse( &text_p );
+
 			if( !token ) {
 				break;
 			}
+
 			if( token[0] == 'f' || token[0] == 'F' ) {
 				animModelInfo->gender = GENDER_FEMALE;
+
 			} else if( token[0] == 'n' || token[0] == 'N' ) {
 				animModelInfo->gender = GENDER_NEUTER;
+
 			} else {
 				animModelInfo->gender = GENDER_MALE;
 			}
+
 			continue;
+
 		} else if( !Q_stricmp( token, "version" ) ) {
 			token = COM_Parse( &text_p );
+
 			if( !token ) {
 				break;
 			}
+
 			animModelInfo->version = atoi( token );
 			continue;
+
 		} else if( !Q_stricmp( token, "skeletal" ) ) {
 			animModelInfo->isSkeletal = qtrue;
 			continue;
@@ -595,12 +635,14 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 		if( !Q_stricmp( token, "STARTANIMS" ) ) {
 			break;
 		}
+
 		BG_AnimParseError( "unknown token '%s'", token );
 	}
 
 	// read information for each frame
 	for( i = 0; ( animModelInfo->version > 1 ) || ( i < MAX_ANIMATIONS ); i++ ) {
 		token = COM_Parse( &text_p );
+
 		if( !token ) {
 			break;
 		}
@@ -616,9 +658,11 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 			Q_strlwr( animations[i].name );
 			//
 			token = COM_ParseExt( &text_p, qfalse );
+
 			if( !token || !token[0] ) {
 				BG_AnimParseError( "end of file without ENDANIMS" );
 			}
+
 		} else {
 			// just set it to the equivalent animStrings[]
 			Q_strncpyz( animations[i].name, animStrings[i], sizeof( animations[i].name ) );
@@ -634,47 +678,60 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 			if( i == LEGS_WALKCR ) {
 				skip = animations[LEGS_WALKCR].firstFrame - animations[TORSO_GESTURE].firstFrame;
 			}
+
 			if( i >= LEGS_WALKCR ) {
 				animations[i].firstFrame -= skip;
 			}
 		}
 
 		token = COM_ParseExt( &text_p, qfalse );
+
 		if( !token || !token[0] ) {
 			BG_AnimParseError( "end of file without ENDANIMS" );
 		}
+
 		animations[i].numFrames = atoi( token );
 
 		token = COM_ParseExt( &text_p, qfalse );
+
 		if( !token || !token[0] ) {
 			BG_AnimParseError( "end of file without ENDANIMS: line %i" );
 		}
+
 		animations[i].loopFrames = atoi( token );
 
 		token = COM_ParseExt( &text_p, qfalse );
+
 		if( !token || !token[0] ) {
 			BG_AnimParseError( "end of file without ENDANIMS: line %i" );
 		}
+
 		fps = atof( token );
+
 		if( fps == 0 ) {
 			fps = 1;
 		}
+
 		animations[i].frameLerp	  = 1000 / fps;
 		animations[i].initialLerp = 1000 / fps;
 
 		// movespeed
 		token = COM_ParseExt( &text_p, qfalse );
+
 		if( !token || !token[0] ) {
 			BG_AnimParseError( "end of file without ENDANIMS" );
 		}
+
 		animations[i].moveSpeed = atoi( token );
 
 		// animation blending
 		oldtext_p = text_p;
 		token	  = COM_ParseExt( &text_p, qfalse ); // must be on same line
+
 		if( !token || !token[0] ) {
 			text_p					= oldtext_p;
 			animations[i].animBlend = 0;
+
 		} else {
 			animations[i].animBlend = atoi( token );
 		}
@@ -682,14 +739,18 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 		// priority
 		oldtext_p = text_p;
 		token	  = COM_ParseExt( &text_p, qfalse ); // must be on same line
+
 		if( !token || !token[0] ) {
 			text_p = oldtext_p;
+
 			// death anims have highest priority
 			if( !Q_strncmp( animations[i].name, "death", 5 ) ) {
 				animations[i].priority = 99;
+
 			} else {
 				animations[i].priority = 0;
 			}
+
 		} else {
 			animations[i].priority = atoi( token );
 		}
@@ -703,6 +764,7 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 		if( !Q_strncmp( animations[i].name, "climb", 5 ) ) {
 			animations[i].flags |= ANIMFL_LADDERANIM;
 		}
+
 		if( strstr( animations[i].name, "firing" ) ) {
 			animations[i].flags |= ANIMFL_FIRINGANIM;
 			animations[i].initialLerp = 40;
@@ -718,11 +780,13 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 
 	// check for head anims
 	token = COM_Parse( &text_p );
+
 	if( token && token[0] ) {
 		if( animModelInfo->version < 2 || !Q_stricmp( token, "HEADFRAMES" ) ) {
 			// read information for each head frame
 			for( i = 0; i < MAX_HEAD_ANIMS; i++ ) {
 				token = COM_Parse( &text_p );
+
 				if( !token || !token[0] ) {
 					break;
 				}
@@ -730,6 +794,7 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 				if( animModelInfo->version > 1 ) { // includes animation names at start of each line
 					// just throw this information away, not required for head
 					token = COM_ParseExt( &text_p, qfalse );
+
 					if( !token || !token[0] ) {
 						break;
 					}
@@ -744,9 +809,11 @@ qboolean BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* fil
 				headAnims[i].firstFrame -= animations[MAX_ANIMATIONS - 1].firstFrame + animations[MAX_ANIMATIONS - 1].numFrames + skip;
 
 				token = COM_ParseExt( &text_p, qfalse );
+
 				if( !token || !token[0] ) {
 					break;
 				}
+
 				headAnims[i].numFrames = atoi( token );
 
 				// skip the movespeed
@@ -788,9 +855,11 @@ void BG_ParseConditionBits( char** text_pp, animStringItem_t* stringTable, int c
 
 	while( !endFlag ) {
 		token = COM_ParseExt( text_pp, qfalse );
+
 		if( !token || !token[0] ) {
 			COM_RestoreParseSession( text_pp ); // go back to the previous token
 			endFlag = qtrue;					// done parsing indexes
+
 			if( !strlen( currentString ) ) {
 				break;
 			}
@@ -821,10 +890,12 @@ void BG_ParseConditionBits( char** text_pp, animStringItem_t* stringTable, int c
 				endFlag					   = qtrue;
 				token[strlen( token ) - 1] = '\0';
 			}
+
 			// append this to the currentString
 			if( strlen( currentString ) ) {
 				Q_strcat( currentString, sizeof( currentString ), " " );
 			}
+
 			Q_strcat( currentString, sizeof( currentString ), token );
 		}
 
@@ -833,25 +904,31 @@ void BG_ParseConditionBits( char** text_pp, animStringItem_t* stringTable, int c
 			if( !strlen( currentString ) ) {
 				if( endFlag ) {
 					BG_AnimParseError( "BG_AnimParseAnimScript: unexpected end of condition" );
+
 				} else {
 					// check for minus indexes to follow
 					if( !Q_stricmp( token, "MINUS" ) ) {
 						minus = qtrue;
 						continue;
 					}
+
 					BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token );
 				}
 			}
+
 			if( !Q_stricmp( currentString, "all" ) ) {
 				tempBits[0] = ~0x0;
 				tempBits[1] = ~0x0;
+
 			} else {
 				// first check this string with our defines
 				indexFound = BG_IndexForString( currentString, defineStr[condIndex], qtrue );
+
 				if( indexFound >= 0 ) {
 					// we have precalculated the bitflags for the defines
 					tempBits[0] = defineBits[condIndex][indexFound][0];
 					tempBits[1] = defineBits[condIndex][indexFound][1];
+
 				} else {
 					// convert the string into an index
 					indexFound = BG_IndexForString( currentString, stringTable, qfalse );
@@ -859,16 +936,20 @@ void BG_ParseConditionBits( char** text_pp, animStringItem_t* stringTable, int c
 					COM_BitSet( tempBits, indexFound );
 				}
 			}
+
 			// perform operation
 			if( minus ) { // subtract
 				result[0] &= ~tempBits[0];
 				result[1] &= ~tempBits[1];
+
 			} else { // add
 				result[0] |= tempBits[0];
 				result[1] |= tempBits[1];
 			}
+
 			// clear the currentString
 			currentString[0] = '\0';
+
 			// check for minus indexes to follow
 			if( !Q_stricmp( token, "MINUS" ) ) {
 				minus = qtrue;
@@ -894,6 +975,7 @@ qboolean BG_ParseConditions( char** text_pp, animScriptItem_t* scriptItem )
 
 	while( 1 ) {
 		token = COM_ParseExt( text_pp, qfalse );
+
 		if( !token || !token[0] ) {
 			break;
 		}
@@ -909,21 +991,28 @@ qboolean BG_ParseConditions( char** text_pp, animScriptItem_t* scriptItem )
 			case ANIM_CONDTYPE_BITFLAGS:
 				BG_ParseConditionBits( text_pp, animConditionsTable[conditionIndex].values, conditionIndex, conditionValue );
 				break;
+
 			case ANIM_CONDTYPE_VALUE:
 				if( animConditionsTable[conditionIndex].values ) {
 					token = COM_ParseExt( text_pp, qfalse );
+
 					if( !token || !token[0] ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: expected condition value, found end of line" ); // RF modification
 					}
+
 					// check for a comma (condition divider)
 					if( token[strlen( token ) - 1] == ',' ) {
 						token[strlen( token ) - 1] = '\0';
 					}
+
 					conditionValue[0] = BG_IndexForString( token, animConditionsTable[conditionIndex].values, qfalse );
+
 				} else {
 					conditionValue[0] = 1; // not used, just check for a positive condition
 				}
+
 				break;
+
 			default:
 				break; // TTimo NUM_ANIM_CONDTYPES
 		}
@@ -954,12 +1043,15 @@ void BG_ParseCommands( char** input, animScriptItem_t* scriptItem, animModelInfo
 	int					 partIndex = 0;
 
 	globalScriptData = scriptData;
+
 	while( 1 ) {
 		// parse the body part
 		token = COM_ParseExt( input, ( qboolean )( partIndex < 1 ) );
+
 		if( !token || !token[0] ) {
 			break;
 		}
+
 		if( !Q_stricmp( token, "}" ) ) {
 			// unget the bracket and get out of here
 			*input -= strlen( token );
@@ -972,41 +1064,53 @@ void BG_ParseCommands( char** input, animScriptItem_t* scriptItem, animModelInfo
 			if( scriptItem->numCommands >= MAX_ANIMSCRIPT_ANIMCOMMANDS ) {
 				BG_AnimParseError( "BG_ParseCommands: exceeded maximum number of animations (%i)", MAX_ANIMSCRIPT_ANIMCOMMANDS );
 			}
+
 			command = &scriptItem->commands[scriptItem->numCommands++];
 			memset( command, 0, sizeof( command ) );
 		}
 
 		command->bodyPart[partIndex] = BG_IndexForString( token, animBodyPartsStr, qtrue );
+
 		if( command->bodyPart[partIndex] > 0 ) {
 			// parse the animation
 			token = COM_ParseExt( input, qfalse );
+
 			if( !token || !token[0] ) {
 				BG_AnimParseError( "BG_ParseCommands: expected animation" );
 			}
+
 			command->animIndex[partIndex]	 = BG_AnimationIndexForString( token, parseClient );
 			command->animDuration[partIndex] = modelInfo->animations[command->animIndex[partIndex]].duration;
+
 			// if this is a locomotion, set the movetype of the animation so we can reverse engineer the movetype from the animation, on the client
 			if( parseMovetype != ANIM_MT_UNUSED && command->bodyPart[partIndex] != ANIM_BP_TORSO ) {
 				modelInfo->animations[command->animIndex[partIndex]].movetype |= ( 1 << parseMovetype );
 			}
+
 			// if this is a fireweapon event, then this is a firing animation
 			if( parseEvent == ANIM_ET_FIREWEAPON ) {
 				modelInfo->animations[command->animIndex[partIndex]].flags |= ANIMFL_FIRINGANIM;
 				modelInfo->animations[command->animIndex[partIndex]].initialLerp = 40;
 			}
+
 			// check for a duration for this animation instance
 			token = COM_ParseExt( input, qfalse );
+
 			if( token && token[0] ) {
 				if( !Q_stricmp( token, "duration" ) ) {
 					// read the duration
 					token = COM_ParseExt( input, qfalse );
+
 					if( !token || !token[0] ) {
 						BG_AnimParseError( "BG_ParseCommands: expected duration value" );
 					}
+
 					command->animDuration[partIndex] = atoi( token );
+
 				} else { // unget the token
 					COM_RestoreParseSession( input );
 				}
+
 			} else {
 				COM_RestoreParseSession( input );
 			}
@@ -1014,6 +1118,7 @@ void BG_ParseCommands( char** input, animScriptItem_t* scriptItem, animModelInfo
 			if( command->bodyPart[partIndex] != ANIM_BP_BOTH && partIndex++ < 1 ) {
 				continue; // allow parsing of another bodypart
 			}
+
 		} else {
 			// unget the token
 			*input -= strlen( token );
@@ -1022,43 +1127,54 @@ void BG_ParseCommands( char** input, animScriptItem_t* scriptItem, animModelInfo
 		// parse optional parameters (sounds, etc)
 		while( 1 ) {
 			token = COM_ParseExt( input, qfalse );
+
 			if( !token || !token[0] ) {
 				break;
 			}
 
 			if( !Q_stricmp( token, "sound" ) ) {
 				token = COM_ParseExt( input, qfalse );
+
 				if( !token || !token[0] ) {
 					BG_AnimParseError( "BG_ParseCommands: expected sound" );
 				}
+
 				// NOTE: only sound script are supported at this stage
 				if( strstr( token, ".wav" ) ) {
 					BG_AnimParseError( "BG_ParseCommands: wav files not supported, only sound scripts" ); // RF mod
 				}
+
 				command->soundIndex = globalScriptData->soundIndex( token );
 
 				//----(SA)	added
+
 			} else if( !Q_stricmp( token, "showpart" ) ) { // show
 				token = COM_ParseExt( input, qfalse );
+
 				if( !token || !token[0] ) {
 					BG_AnimParseError( "BG_ParseCommands: expected showpart number" );
 				}
+
 				if( atoi( token ) > 7 ) {
 					BG_AnimParseError( va( "BG_ParseCommands: showpart number '%d' is too big! (max 8)", atoi( token ) ) );
 				}
 
 				command->accShowBits &= atoi( token );
+
 			} else if( !Q_stricmp( token, "hidepart" ) ) {
 				token = COM_ParseExt( input, qfalse );
+
 				if( !token || !token[0] ) {
 					BG_AnimParseError( "BG_ParseCommands: expected hidepart number" );
 				}
+
 				if( atoi( token ) > 7 ) {
 					BG_AnimParseError( va( "BG_ParseCommands: hidepart number '%d' is too big! (max 8)", atoi( token ) ) );
 				}
 
 				command->accHideBits &= atoi( token );
 				//----(SA)	end
+
 			} else {
 				// unknown??
 				BG_AnimParseError( "BG_ParseCommands: unknown parameter '%s'", token );
@@ -1124,6 +1240,7 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 	for( i = 0; i < MAX_INDENT_LEVELS; i++ ) {
 		indexes[i] = -1;
 	}
+
 	indentLevel	  = 0;
 	currentScript = NULL;
 
@@ -1133,15 +1250,18 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 	// read in the weapon defines
 	while( 1 ) {
 		token = COM_Parse( &text_p );
+
 		if( !token || !token[0] ) {
 			if( indentLevel ) {
 				BG_AnimParseError( "BG_AnimParseAnimScript: unexpected end of file: %s" );
 			}
+
 			break;
 		}
 
 		// check for a new section
 		newParseMode = BG_IndexForString( token, animParseModesStr, qtrue );
+
 		if( newParseMode >= 0 ) {
 			if( indentLevel ) {
 				BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token ); // RF mod
@@ -1159,13 +1279,16 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 				if( !Q_stricmp( token, "set" ) ) {
 					// read in the define type
 					token = COM_ParseExt( &text_p, qfalse );
+
 					if( !token || !token[0] ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: expected condition type string" ); // RF mod
 					}
+
 					defineType = BG_IndexForString( token, animConditionsStr, qfalse );
 
 					// read in the define
 					token = COM_ParseExt( &text_p, qfalse );
+
 					if( !token || !token[0] ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: expected condition define string" ); // RF mod
 					}
@@ -1175,9 +1298,11 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 					defineStr[defineType][numDefines[defineType]].hash	 = BG_StringHashValue( defineStr[defineType][numDefines[defineType]].string );
 					// expecting an =
 					token = COM_ParseExt( &text_p, qfalse );
+
 					if( !token ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: expected '=', found end of line" ); // RF mod
 					}
+
 					if( Q_stricmp( token, "=" ) ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: expected '=', found '%s'", token ); // RF mod
 					}
@@ -1202,21 +1327,26 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 					if( indentLevel >= MAX_INDENT_LEVELS ) {								   // too many indentations
 						BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token ); // RF mod
 					}
+
 					if( indexes[indentLevel] < 0 ) {										   // we havent found out what this new group is yet
 						BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token ); // RF mod
 					}
+
 					//
 					indentLevel++;
 
 				} else if( !Q_stricmp( token, "}" ) ) {
 					// reduce the indentLevel
 					indentLevel--;
+
 					if( indentLevel < 0 ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token ); // RF mod
 					}
+
 					if( indentLevel == 1 ) {
 						currentScript = NULL;
 					}
+
 					// make sure we read a new index before next indent
 					indexes[indentLevel] = -1;
 
@@ -1227,50 +1357,63 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 
 					// read in the state type
 					token = COM_ParseExt( &text_p, qfalse );
+
 					if( !token ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: expected state type" ); // RF mod
 					}
+
 					indexes[indentLevel] = BG_IndexForString( token, animStateStr, qfalse );
 
 					//----(SA) // RF mod
 					// check for the open bracket
 					token = COM_ParseExt( &text_p, qtrue );
+
 					if( !token || Q_stricmp( token, "{" ) ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: expected '{'" );
 					}
+
 					indentLevel++;
 					//----(SA) // RF mod
+
 				} else if( ( indentLevel == 1 ) && ( indexes[indentLevel] < 0 ) ) {
 					// we are expecting a movement type
 					indexes[indentLevel] = BG_IndexForString( token, animMoveTypesStr, qfalse );
+
 					if( parseMode == PARSEMODE_ANIMATION ) {
 						currentScript = &modelInfo->scriptAnims[indexes[0]][indexes[1]];
 						parseMovetype = ( scriptAnimMoveTypes_t )indexes[1];
+
 					} else if( parseMode == PARSEMODE_CANNED_ANIMATIONS ) {
 						currentScript = &modelInfo->scriptCannedAnims[indexes[0]][indexes[1]];
 					}
+
 					memset( currentScript, 0, sizeof( *currentScript ) );
 
 				} else if( ( indentLevel == 2 ) && ( indexes[indentLevel] < 0 ) ) {
 					// we are expecting a condition specifier
 					// move the text_p backwards so we can read in the last token again
 					text_p -= strlen( token );
+
 					// sanity check that
 					if( Q_strncmp( text_p, token, strlen( token ) ) ) {
 						// this should never happen, just here to check that this operation is correct before code goes live
 						BG_AnimParseError( "BG_AnimParseAnimScript: internal error" );
 					}
+
 					//
 					memset( &tempScriptItem, 0, sizeof( tempScriptItem ) );
 					indexes[indentLevel] = BG_ParseConditions( &text_p, &tempScriptItem );
+
 					// do we have enough room in this script for another item?
 					if( currentScript->numItems >= MAX_ANIMSCRIPT_ITEMS ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: exceeded maximum items per script (%i)", MAX_ANIMSCRIPT_ITEMS ); // RF mod
 					}
+
 					// are there enough items left in the global list?
 					if( modelInfo->numScriptItems >= MAX_ANIMSCRIPT_ITEMS_PER_MODEL ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: exceeded maximum global items (%i)", MAX_ANIMSCRIPT_ITEMS_PER_MODEL ); // RF mod
 					}
+
 					// it was parsed ok, so grab an item from the global list to use
 					currentScript->items[currentScript->numItems] = &modelInfo->scriptItems[modelInfo->numScriptItems++];
 					currentScriptItem							  = currentScript->items[currentScript->numItems];
@@ -1282,11 +1425,13 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 					// we are reading the commands, so parse this line as if it were a command
 					// move the text_p backwards so we can read in the last token again
 					text_p -= strlen( token );
+
 					// sanity check that
 					if( Q_strncmp( text_p, token, strlen( token ) ) ) {
 						// this should never happen, just here to check that this operation is correct before code goes live
 						BG_AnimParseError( "BG_AnimParseAnimScript: internal error" );
 					}
+
 					//
 					BG_ParseCommands( &text_p, currentScriptItem, modelInfo, scriptData );
 
@@ -1305,21 +1450,26 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 					if( indentLevel >= MAX_INDENT_LEVELS ) {								   // too many indentations
 						BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token ); // RF mod
 					}
+
 					if( indexes[indentLevel] < 0 ) {										   // we havent found out what this new group is yet
 						BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token ); // RF mod
 					}
+
 					//
 					indentLevel++;
 
 				} else if( !Q_stricmp( token, "}" ) ) {
 					// reduce the indentLevel
 					indentLevel--;
+
 					if( indentLevel < 0 ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: unexpected '%s'", token ); // RF mod
 					}
+
 					if( indentLevel == 0 ) {
 						currentScript = NULL;
 					}
+
 					// make sure we read a new index before next indent
 					indexes[indentLevel] = -1;
 
@@ -1331,16 +1481,20 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 
 						// read in the old state type
 						token = COM_ParseExt( &text_p, qfalse );
+
 						if( !token ) {
 							BG_AnimParseError( "BG_AnimParseAnimScript: expected <state type>" ); // RF mod
 						}
+
 						oldState = BG_IndexForString( token, animStateStr, qfalse );
 
 						// read in the new state type
 						token = COM_ParseExt( &text_p, qfalse );
+
 						if( !token ) {
 							BG_AnimParseError( "BG_AnimParseAnimScript: expected <state type>" ); // RF mod
 						}
+
 						indexes[indentLevel] = BG_IndexForString( token, animStateStr, qfalse );
 
 						currentScript = &modelInfo->scriptStateChange[oldState][indexes[indentLevel]];
@@ -1348,11 +1502,14 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 						//----(SA)		// RF mod
 						// check for the open bracket
 						token = COM_ParseExt( &text_p, qtrue );
+
 						if( !token || Q_stricmp( token, "{" ) ) {
 							BG_AnimParseError( "BG_AnimParseAnimScript: expected '{'" );
 						}
+
 						indentLevel++;
 						//----(SA)		// RF mod
+
 					} else {
 						// read in the event type
 						indexes[indentLevel] = BG_IndexForString( token, animEventTypesStr, qfalse );
@@ -1367,22 +1524,27 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 					// we are expecting a condition specifier
 					// move the text_p backwards so we can read in the last token again
 					text_p -= strlen( token );
+
 					// sanity check that
 					if( Q_strncmp( text_p, token, strlen( token ) ) ) {
 						// this should never happen, just here to check that this operation is correct before code goes live
 						BG_AnimParseError( "BG_AnimParseAnimScript: internal error" );
 					}
+
 					//
 					memset( &tempScriptItem, 0, sizeof( tempScriptItem ) );
 					indexes[indentLevel] = BG_ParseConditions( &text_p, &tempScriptItem );
+
 					// do we have enough room in this script for another item?
 					if( currentScript->numItems >= MAX_ANIMSCRIPT_ITEMS ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: exceeded maximum items per script (%i)", MAX_ANIMSCRIPT_ITEMS ); // RF mod
 					}
+
 					// are there enough items left in the global list?
 					if( modelInfo->numScriptItems >= MAX_ANIMSCRIPT_ITEMS_PER_MODEL ) {
 						BG_AnimParseError( "BG_AnimParseAnimScript: exceeded maximum global items (%i)", MAX_ANIMSCRIPT_ITEMS_PER_MODEL ); // RF mod
 					}
+
 					// it was parsed ok, so grab an item from the global list to use
 					currentScript->items[currentScript->numItems] = &modelInfo->scriptItems[modelInfo->numScriptItems++];
 					currentScriptItem							  = currentScript->items[currentScript->numItems];
@@ -1394,11 +1556,13 @@ void BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scrip
 					// we are reading the commands, so parse this line as if it were a command
 					// move the text_p backwards so we can read in the last token again
 					text_p -= strlen( token );
+
 					// sanity check that
 					if( Q_strncmp( text_p, token, strlen( token ) ) ) {
 						// this should never happen, just here to check that this operation is correct before code goes live
 						BG_AnimParseError( "BG_AnimParseAnimScript: internal error" );
 					}
+
 					//
 					BG_ParseCommands( &text_p, currentScriptItem, modelInfo, scriptData );
 
@@ -1436,16 +1600,21 @@ qboolean BG_EvaluateConditions( int client, animScriptItem_t* scriptItem )
 				if( !( globalScriptData->clientConditions[client][cond->index][0] & cond->value[0] ) && !( globalScriptData->clientConditions[client][cond->index][1] & cond->value[1] ) ) {
 					return qfalse;
 				}
+
 				break;
+
 			case ANIM_CONDTYPE_VALUE:
 				if( !( globalScriptData->clientConditions[client][cond->index][0] == cond->value[0] ) ) {
 					return qfalse;
 				}
+
 				break;
+
 			default:
 				break; // TTimo: NUM_ANIM_CONDTYPES
 		}
 	}
+
 	//
 	// all conditions must have passed
 	return qtrue;
@@ -1471,6 +1640,7 @@ animScriptItem_t* BG_FirstValidItem( int client, animScript_t* script )
 			return *ppScriptItem;
 		}
 	}
+
 	//
 	return NULL;
 }
@@ -1492,6 +1662,7 @@ int BG_PlayAnim( playerState_t* ps, int animNum, animBodyPart_t bodyPart, int fo
 
 	if( forceDuration ) {
 		duration = forceDuration;
+
 	} else {
 		duration = modelInfo->animations[animNum].duration; // account for lerping between anims
 	}
@@ -1507,9 +1678,11 @@ int BG_PlayAnim( playerState_t* ps, int animNum, animBodyPart_t bodyPart, int fo
 				if( !isContinue || !( ( ps->legsAnim & ~ANIM_TOGGLEBIT ) == animNum ) ) {
 					wasSet		 = qtrue;
 					ps->legsAnim = ( ( ps->legsAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT ) | animNum;
+
 					if( setTimer ) {
 						ps->legsTimer = duration + TIMER_PADDING;
 					}
+
 				} else if( setTimer && modelInfo->animations[animNum].loopFrames ) {
 					ps->legsTimer = duration + TIMER_PADDING;
 				}
@@ -1527,15 +1700,18 @@ int BG_PlayAnim( playerState_t* ps, int animNum, animBodyPart_t bodyPart, int fo
 			if( ( ps->torsoTimer < 50 ) || ( force && ( newAnim->priority >= oldAnim->priority ) ) ) {
 				if( !isContinue || !( ( ps->torsoAnim & ~ANIM_TOGGLEBIT ) == animNum ) ) {
 					ps->torsoAnim = ( ( ps->torsoAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT ) | animNum;
+
 					if( setTimer ) {
 						ps->torsoTimer = duration + TIMER_PADDING;
 					}
+
 				} else if( setTimer && modelInfo->animations[animNum].loopFrames ) {
 					ps->torsoTimer = duration + TIMER_PADDING;
 				}
 			}
 
 			break;
+
 		default:
 			break; // TTimo:
 	}
@@ -1571,19 +1747,24 @@ int BG_ExecuteCommand( playerState_t* ps, animScriptCommand_t* scriptCommand, qb
 
 	if( scriptCommand->bodyPart[0] ) {
 		duration = scriptCommand->animDuration[0] + 50;
+
 		// FIXME: how to sync torso/legs anims accounting for transition blends, etc
 		if( scriptCommand->bodyPart[0] == ANIM_BP_BOTH || scriptCommand->bodyPart[0] == ANIM_BP_LEGS ) {
 			playedLegsAnim = ( qboolean )( BG_PlayAnim( ps, scriptCommand->animIndex[0], ( animBodyPart_t )scriptCommand->bodyPart[0], duration, setTimer, isContinue, force ) > -1 );
+
 		} else {
 			BG_PlayAnim( ps, scriptCommand->animIndex[0], ( animBodyPart_t )scriptCommand->bodyPart[0], duration, setTimer, isContinue, force );
 		}
 	}
+
 	if( scriptCommand->bodyPart[1] ) {
 		duration = scriptCommand->animDuration[0] + 50;
+
 		// FIXME: how to sync torso/legs anims accounting for transition blends, etc
 		// just play the animation for the torso
 		if( scriptCommand->bodyPart[1] == ANIM_BP_BOTH || scriptCommand->bodyPart[1] == ANIM_BP_LEGS ) {
 			playedLegsAnim = ( qboolean )( BG_PlayAnim( ps, scriptCommand->animIndex[1], ( animBodyPart_t )scriptCommand->bodyPart[1], duration, setTimer, isContinue, force ) > -1 );
+
 		} else {
 			BG_PlayAnim( ps, scriptCommand->animIndex[1], ( animBodyPart_t )scriptCommand->bodyPart[1], duration, setTimer, isContinue, force );
 		}
@@ -1629,53 +1810,66 @@ int BG_AnimScriptAnimation( playerState_t* ps, aistateEnum_t estate, scriptAnimM
 	modelInfo = BG_ModelInfoForClient( ps->clientNum );
 
 #ifdef DBGANIMS
+
 	if( ps->clientNum ) {
 		Com_Printf( "script anim: cl %i, mt %s, ", ps->clientNum, animMoveTypesStr[movetype] );
 	}
+
 #endif
 
 	// try finding a match in all states below the given state
 	while( !scriptItem && state >= 0 ) {
 		script = &modelInfo->scriptAnims[state][movetype];
+
 		if( !script->numItems ) {
 			state--;
 			continue;
 		}
+
 		// find the first script item, that passes all the conditions for this event
 		scriptItem = BG_FirstValidItem( ps->clientNum, script );
+
 		if( !scriptItem ) {
 			state--;
 			continue;
 		}
 	}
+
 	//
 	if( !scriptItem ) {
 #ifdef DBGANIMS
+
 		if( ps->clientNum ) {
 			Com_Printf( "no valid conditions\n" );
 		}
+
 #endif
 		return -1;
 	}
+
 	// save this as our current movetype
 	BG_UpdateConditionValue( ps->clientNum, ANIM_COND_MOVETYPE, movetype, qtrue );
 	// pick the correct animation for this character (animations must be constant for each character, otherwise they'll constantly change)
 	scriptCommand = &scriptItem->commands[ps->clientNum % scriptItem->numCommands];
 
 #ifdef DBGANIMS
+
 	if( scriptCommand->bodyPart[0] ) {
 		if( ps->clientNum ) {
 			Com_Printf( "anim0 (%s): %s", animBodyPartsStr[scriptCommand->bodyPart[0]].string, modelInfo->animations[scriptCommand->animIndex[0]].name );
 		}
 	}
+
 	if( scriptCommand->bodyPart[1] ) {
 		if( ps->clientNum ) {
 			Com_Printf( "anim1 (%s): %s", animBodyPartsStr[scriptCommand->bodyPart[1]].string, modelInfo->animations[scriptCommand->animIndex[1]].name );
 		}
 	}
+
 	if( ps->clientNum ) {
 		Com_Printf( "\n" );
 	}
+
 #endif
 
 	// run it
@@ -1704,20 +1898,26 @@ int BG_AnimScriptCannedAnimation( playerState_t* ps, aistateEnum_t state )
 	}
 
 	movetype = ( scriptAnimMoveTypes_t )globalScriptData->clientConditions[ps->clientNum][ANIM_COND_MOVETYPE][0];
+
 	if( !movetype ) { // no valid movetype yet for this client
 		return -1;
 	}
+
 	//
 	modelInfo = BG_ModelInfoForClient( ps->clientNum );
 	script	  = &modelInfo->scriptCannedAnims[state][movetype];
+
 	if( !script->numItems ) {
 		return -1;
 	}
+
 	// find the first script item, that passes all the conditions for this event
 	scriptItem = BG_FirstValidItem( ps->clientNum, script );
+
 	if( !scriptItem ) {
 		return -1;
 	}
+
 	// pick a random command
 	scriptCommand = &scriptItem->commands[rand() % scriptItem->numCommands];
 	// run it
@@ -1744,14 +1944,18 @@ int BG_AnimScriptStateChange( playerState_t* ps, aistateEnum_t newState, aistate
 
 	modelInfo = BG_ModelInfoForClient( ps->clientNum );
 	script	  = &modelInfo->scriptStateChange[oldState][newState];
+
 	if( !script->numItems ) {
 		return -1;
 	}
+
 	// find the first script item, that passes all the conditions for this event
 	scriptItem = BG_FirstValidItem( ps->clientNum, script );
+
 	if( !scriptItem ) {
 		return -1;
 	}
+
 	// pick a random command
 	scriptCommand = &scriptItem->commands[rand() % scriptItem->numCommands];
 	// run it
@@ -1782,36 +1986,44 @@ int BG_AnimScriptEvent( playerState_t* ps, scriptAnimEventTypes_t event, qboolea
 
 	modelInfo = BG_ModelInfoForClient( ps->clientNum );
 	script	  = &modelInfo->scriptEvents[event];
+
 	if( !script->numItems ) {
 #ifdef DBGANIMEVENTS
 		Com_Printf( "no entry\n" );
 #endif
 		return -1;
 	}
+
 	// find the first script item, that passes all the conditions for this event
 	scriptItem = BG_FirstValidItem( ps->clientNum, script );
+
 	if( !scriptItem ) {
 #ifdef DBGANIMEVENTS
 		Com_Printf( "no valid conditions\n" );
 #endif
 		return -1;
 	}
+
 	//
 	// if no command, dont do anything
 	if( !scriptItem->numCommands ) {
 		return -1;
 	}
+
 	//
 	// pick a random command
 	scriptCommand = &scriptItem->commands[rand() % scriptItem->numCommands];
 
 #ifdef DBGANIMEVENTS
+
 	if( scriptCommand->bodyPart[0] ) {
 		Com_Printf( "anim0 (%s): %s", animBodyPartsStr[scriptCommand->bodyPart[0]].string, modelInfo->animations[scriptCommand->animIndex[0]].name );
 	}
+
 	if( scriptCommand->bodyPart[1] ) {
 		Com_Printf( "anim1 (%s): %s", animBodyPartsStr[scriptCommand->bodyPart[1]].string, modelInfo->animations[scriptCommand->animIndex[1]].name );
 	}
+
 	Com_Printf( "\n" );
 #endif
 
@@ -1831,10 +2043,12 @@ qboolean BG_ValidAnimScript( int clientNum )
 	if( !globalScriptData->clientModels[clientNum] ) {
 		return qfalse;
 	}
+
 	//
 	if( !globalScriptData->modelInfo[globalScriptData->clientModels[clientNum]]->numScriptItems ) {
 		return qfalse;
 	}
+
 	//
 	return qtrue;
 }
@@ -1847,10 +2061,12 @@ BG_GetAnimString
 char* BG_GetAnimString( int client, int anim )
 {
 	animModelInfo_t* modelinfo = BG_ModelInfoForClient( client );
+
 	//
 	if( anim >= modelinfo->numAnimations ) {
 		BG_AnimParseError( "BG_GetAnimString: anim index is out of range" );
 	}
+
 	//
 	return modelinfo->animations[anim].name;
 }
@@ -1875,6 +2091,7 @@ void BG_UpdateConditionValue( int client, int condition, int value, qboolean che
 			return;
 		}
 	}
+
 	globalScriptData->clientConditions[client][condition][0] = value;
 }
 
@@ -1914,6 +2131,7 @@ int BG_GetConditionValue( int client, int condition, qboolean checkConversion )
 					return i;
 				}
 			}
+
 			// nothing found
 			return 0;
 			// BG_AnimParseError( "BG_GetConditionValue: internal error" );
@@ -1943,26 +2161,33 @@ int BG_GetAnimScriptAnimation( int client, aistateEnum_t estate, scriptAnimMoveT
 	// try finding a match in all states below the given state
 	while( !scriptItem && state >= 0 ) {
 		script = &modelInfo->scriptAnims[state][movetype];
+
 		if( !script->numItems ) {
 			state--;
 			continue;
 		}
+
 		// find the first script item, that passes all the conditions for this event
 		scriptItem = BG_FirstValidItem( client, script );
+
 		if( !scriptItem ) {
 			state--;
 			continue;
 		}
 	}
+
 	//
 	if( !scriptItem ) {
 		return -1;
 	}
+
 	// pick the correct animation for this character (animations must be constant for each character, otherwise they'll constantly change)
 	scriptCommand = &scriptItem->commands[client % scriptItem->numCommands];
+
 	if( !scriptCommand->bodyPart[0] ) {
 		return -1;
 	}
+
 	// return the animation
 	return scriptCommand->animIndex[0];
 }
@@ -1987,14 +2212,18 @@ int BG_GetAnimScriptEvent( playerState_t* ps, scriptAnimEventTypes_t event )
 
 	modelInfo = BG_ModelInfoForClient( ps->clientNum );
 	script	  = &modelInfo->scriptEvents[event];
+
 	if( !script->numItems ) {
 		return -1;
 	}
+
 	// find the first script item, that passes all the conditions for this event
 	scriptItem = BG_FirstValidItem( ps->clientNum, script );
+
 	if( !scriptItem ) {
 		return -1;
 	}
+
 	// pick a random command
 	scriptCommand = &scriptItem->commands[rand() % scriptItem->numCommands];
 
@@ -2014,6 +2243,7 @@ animation_t* BG_GetAnimationForIndex( int client, int index )
 	animModelInfo_t* modelInfo;
 
 	modelInfo = BG_ModelInfoForClient( client );
+
 	if( index < 0 || index >= modelInfo->numAnimations ) {
 		Com_Error( ERR_DROP, "BG_GetAnimationForIndex: index out of bounds" );
 	}
@@ -2036,6 +2266,7 @@ void BG_AnimUpdatePlayerStateConditions( pmove_t* pmove )
 	// MOUNTED
 	if( ps->eFlags & EF_MG42_ACTIVE ) {
 		BG_UpdateConditionValue( ps->clientNum, ANIM_COND_MOUNTED, MOUNTED_MG42, qtrue );
+
 	} else {
 		BG_UpdateConditionValue( ps->clientNum, ANIM_COND_MOUNTED, MOUNTED_UNUSED, qtrue );
 	}
@@ -2046,20 +2277,24 @@ void BG_AnimUpdatePlayerStateConditions( pmove_t* pmove )
 	// LEANING
 	if( ps->leanf > 0 ) {
 		BG_UpdateConditionValue( ps->clientNum, ANIM_COND_LEANING, LEANING_RIGHT, qtrue );
+
 	} else if( ps->leanf < 0 ) {
 		BG_UpdateConditionValue( ps->clientNum, ANIM_COND_LEANING, LEANING_LEFT, qtrue );
+
 	} else {
 		BG_UpdateConditionValue( ps->clientNum, ANIM_COND_LEANING, LEANING_UNUSED, qtrue );
 	}
 
 	if( ps->viewheight == ps->crouchViewHeight ) {
 		ps->eFlags |= EF_CROUCHING;
+
 	} else {
 		ps->eFlags &= ~EF_CROUCHING;
 	}
 
 	if( pmove->cmd.buttons & BUTTON_ATTACK ) {
 		BG_UpdateConditionValue( ps->clientNum, ANIM_COND_FIRING, qtrue, qtrue );
+
 	} else {
 		BG_UpdateConditionValue( ps->clientNum, ANIM_COND_FIRING, qfalse, qtrue );
 	}
@@ -2080,6 +2315,7 @@ float BG_AnimGetFootstepGap( playerState_t* ps, float xyspeed )
 
 	modelInfo = BG_ModelInfoForClient( ps->clientNum );
 	index	  = ps->legsAnim & ~ANIM_TOGGLEBIT;
+
 	if( index < 0 || index >= modelInfo->numAnimations ) {
 		Com_Error( ERR_DROP, "BG_AnimGetFootstepGap: anim index out of bounds" );
 	}

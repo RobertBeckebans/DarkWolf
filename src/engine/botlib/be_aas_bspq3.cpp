@@ -147,6 +147,7 @@ bsp_trace_t AAS_Trace( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int p
 	botimport.Trace( &bsptrace, start, mins, maxs, end, passent, contentmask );
 	return bsptrace;
 }
+
 //===========================================================================
 // returns the contents at the given point
 //
@@ -158,6 +159,7 @@ int AAS_PointContents( vec3_t point )
 {
 	return botimport.PointContents( point );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -169,12 +171,15 @@ qboolean AAS_EntityCollision( int entnum, vec3_t start, vec3_t boxmins, vec3_t b
 	bsp_trace_t enttrace;
 
 	botimport.EntityTrace( &enttrace, start, boxmins, boxmaxs, end, entnum, contentmask );
+
 	if( enttrace.fraction < trace->fraction ) {
 		memcpy( trace, &enttrace, sizeof( bsp_trace_t ) );
 		return qtrue;
 	}
+
 	return qfalse;
 }
+
 //===========================================================================
 // returns true if in Potentially Hearable Set
 //
@@ -186,6 +191,7 @@ qboolean AAS_inPVS( vec3_t p1, vec3_t p2 )
 {
 	return botimport.inPVS( p1, p2 );
 }
+
 //===========================================================================
 // returns true if in Potentially Visible Set
 //
@@ -197,6 +203,7 @@ qboolean AAS_inPHS( vec3_t p1, vec3_t p2 )
 {
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -207,6 +214,7 @@ void AAS_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t mins, vec3_
 {
 	botimport.BSPModelMinsMaxsOrigin( modelnum, angles, mins, maxs, origin );
 }
+
 //===========================================================================
 // unlinks the entity from all leaves
 //
@@ -217,6 +225,7 @@ void AAS_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t mins, vec3_
 void AAS_UnlinkFromBSPLeaves( bsp_link_t* leaves )
 {
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -227,6 +236,7 @@ bsp_link_t* AAS_BSPLinkEntity( vec3_t absmins, vec3_t absmaxs, int entnum, int m
 {
 	return NULL;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -237,6 +247,7 @@ int AAS_BoxEntities( vec3_t absmins, vec3_t absmaxs, int* list, int maxcount )
 {
 	return 0;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -246,11 +257,14 @@ int AAS_BoxEntities( vec3_t absmins, vec3_t absmaxs, int* list, int maxcount )
 int AAS_NextBSPEntity( int ent )
 {
 	ent++;
+
 	if( ent >= 1 && ent < bspworld.numentities ) {
 		return ent;
 	}
+
 	return 0;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -263,8 +277,10 @@ int AAS_BSPEntityInRange( int ent )
 		botimport.Print( PRT_MESSAGE, "bsp entity out of range\n" );
 		return qfalse;
 	}
+
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -276,9 +292,11 @@ int AAS_ValueForBSPEpairKey( int ent, char* key, char* value, int size )
 	bsp_epair_t* epair;
 
 	value[0] = '\0';
+
 	if( !AAS_BSPEntityInRange( ent ) ) {
 		return qfalse;
 	}
+
 	for( epair = bspworld.entities[ent].epairs; epair; epair = epair->next ) {
 		if( !strcmp( epair->key, key ) ) {
 			strncpy( value, epair->value, size - 1 );
@@ -286,8 +304,10 @@ int AAS_ValueForBSPEpairKey( int ent, char* key, char* value, int size )
 			return qtrue;
 		}
 	}
+
 	return qfalse;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -300,9 +320,11 @@ int AAS_VectorForBSPEpairKey( int ent, char* key, vec3_t v )
 	double v1, v2, v3;
 
 	VectorClear( v );
+
 	if( !AAS_ValueForBSPEpairKey( ent, key, buf, MAX_EPAIRKEY ) ) {
 		return qfalse;
 	}
+
 	// scanf into doubles, then assign, so it is vec_t size independent
 	v1 = v2 = v3 = 0;
 	sscanf( buf, "%lf %lf %lf", &v1, &v2, &v3 );
@@ -311,6 +333,7 @@ int AAS_VectorForBSPEpairKey( int ent, char* key, vec3_t v )
 	v[2] = v3;
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -322,12 +345,15 @@ int AAS_FloatForBSPEpairKey( int ent, char* key, float* value )
 	char buf[MAX_EPAIRKEY];
 
 	*value = 0;
+
 	if( !AAS_ValueForBSPEpairKey( ent, key, buf, MAX_EPAIRKEY ) ) {
 		return qfalse;
 	}
+
 	*value = atof( buf );
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -339,12 +365,15 @@ int AAS_IntForBSPEpairKey( int ent, char* key, int* value )
 	char buf[MAX_EPAIRKEY];
 
 	*value = 0;
+
 	if( !AAS_ValueForBSPEpairKey( ent, key, buf, MAX_EPAIRKEY ) ) {
 		return qfalse;
 	}
+
 	*value = atoi( buf );
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -375,8 +404,10 @@ void AAS_FreeBSPEntities()
 	if( bspworld.ebuffer ) {
 		FreeMemory( bspworld.ebuffer );
 	}
+
 	bspworld.numentities = 0;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -409,31 +440,39 @@ void AAS_ParseBSPEntities()
 			FreeScript( script );
 			return;
 		}
+
 		if( bspworld.numentities >= MAX_BSPENTITIES ) {
 			botimport.Print( PRT_MESSAGE, "too many entities in BSP file\n" );
 			break;
 		}
+
 		while( PS_ReadToken( script, &token ) ) {
 			if( !strcmp( token.string, "}" ) ) {
 				break;
 			}
+
 			bufsize += sizeof( bsp_epair_t );
+
 			if( token.type != TT_STRING ) {
 				ScriptError( script, "invalid %s\n", token.string );
 				AAS_FreeBSPEntities();
 				FreeScript( script );
 				return;
 			}
+
 			StripDoubleQuotes( token.string );
 			bufsize += strlen( token.string ) + 1;
+
 			if( !PS_ExpectTokenType( script, TT_STRING, 0, &token ) ) {
 				AAS_FreeBSPEntities();
 				FreeScript( script );
 				return;
 			}
+
 			StripDoubleQuotes( token.string );
 			bufsize += strlen( token.string ) + 1;
 		}
+
 		if( strcmp( token.string, "}" ) ) {
 			ScriptError( script, "missing }\n" );
 			AAS_FreeBSPEntities();
@@ -441,6 +480,7 @@ void AAS_ParseBSPEntities()
 			return;
 		}
 	}
+
 	FreeScript( script );
 
 	buffer			 = ( byte* )GetClearedHunkMemory( bufsize );
@@ -459,10 +499,12 @@ void AAS_ParseBSPEntities()
 		ent = &bspworld.entities[bspworld.numentities];
 		bspworld.numentities++;
 		ent->epairs = NULL;
+
 		while( PS_ReadToken( script, &token ) ) {
 			if( !strcmp( token.string, "}" ) ) {
 				break;
 			}
+
 			epair = ( bsp_epair_t* )buftrav;
 			buftrav += sizeof( bsp_epair_t );
 			epair->next = ent->epairs;
@@ -471,19 +513,23 @@ void AAS_ParseBSPEntities()
 			epair->key = ( char* )buftrav;
 			buftrav += ( strlen( token.string ) + 1 );
 			strcpy( epair->key, token.string );
+
 			if( !PS_ExpectTokenType( script, TT_STRING, 0, &token ) ) {
 				AAS_FreeBSPEntities();
 				FreeScript( script );
 				return;
 			}
+
 			StripDoubleQuotes( token.string );
 			epair->value = ( char* )buftrav;
 			buftrav += ( strlen( token.string ) + 1 );
 			strcpy( epair->value, token.string );
 		}
 	}
+
 	FreeScript( script );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -494,6 +540,7 @@ int AAS_BSPTraceLight( vec3_t start, vec3_t end, vec3_t endpos, int* red, int* g
 {
 	return 0;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -507,12 +554,14 @@ void AAS_DumpBSPData()
 	if( bspworld.dentdata ) {
 		FreeMemory( bspworld.dentdata );
 	}
+
 	bspworld.dentdata	 = NULL;
 	bspworld.entdatasize = 0;
 	//
 	bspworld.loaded = qfalse;
 	memset( &bspworld, 0, sizeof( bspworld ) );
 }
+
 //===========================================================================
 // load an bsp file
 //

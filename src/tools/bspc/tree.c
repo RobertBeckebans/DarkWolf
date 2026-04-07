@@ -58,14 +58,18 @@ node_t*	   NodeForPoint( node_t* node, vec3_t origin )
 	while( node->planenum != PLANENUM_LEAF ) {
 		plane = &mapplanes[node->planenum];
 		d	  = DotProduct( origin, plane->normal ) - plane->dist;
+
 		if( d >= 0 ) {
 			node = node->children[0];
+
 		} else {
 			node = node->children[1];
 		}
 	}
+
 	return node;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -90,15 +94,19 @@ void Tree_FreePortals_r( node_t* node )
 
 		RemovePortalFromNode( p, p->nodes[!s] );
 #ifdef ME
+
 		if( p->winding ) {
 			freedtreemem += MemorySize( p->winding );
 		}
+
 		freedtreemem += MemorySize( p );
 #endif // ME
 		FreePortal( p );
 	}
+
 	node->portals = NULL;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -115,6 +123,7 @@ void Tree_Free_r( node_t* node )
 		Tree_Free_r( node->children[0] );
 		Tree_Free_r( node->children[1] );
 	}
+
 	// free bspbrushes
 	//	FreeBrushList (node->brushlist);
 	for( brush = node->brushlist; brush; brush = nextbrush ) {
@@ -124,6 +133,7 @@ void Tree_Free_r( node_t* node )
 #endif // ME
 		FreeBrush( brush );
 	}
+
 	node->brushlist = NULL;
 
 	/*
@@ -151,11 +161,13 @@ void Tree_Free_r( node_t* node )
 	if( numthreads == 1 ) {
 		c_nodes--;
 	}
+
 #ifdef ME
 	freedtreemem += MemorySize( node );
 #endif // ME
 	FreeMemory( node );
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -168,6 +180,7 @@ void Tree_Free( tree_t* tree )
 	if( !tree ) {
 		return;
 	}
+
 	//
 	freedtreemem = 0;
 	//
@@ -183,6 +196,7 @@ void Tree_Free( tree_t* tree )
 	Log_Print( " of tree memory\n" );
 #endif // ME
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -199,6 +213,7 @@ tree_t* Tree_Alloc()
 
 	return tree;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -214,15 +229,19 @@ void Tree_Print_r( node_t* node, int depth )
 	for( i = 0; i < depth; i++ ) {
 		printf( "  " );
 	}
+
 	if( node->planenum == PLANENUM_LEAF ) {
 		if( !node->brushlist ) {
 			printf( "NULL\n" );
+
 		} else {
 			for( bb = node->brushlist; bb; bb = bb->next ) {
 				printf( "%i ", bb->original->brushnum );
 			}
+
 			printf( "\n" );
 		}
+
 		return;
 	}
 
@@ -231,6 +250,7 @@ void Tree_Print_r( node_t* node, int depth )
 	Tree_Print_r( node->children[0], depth + 1 );
 	Tree_Print_r( node->children[1], depth + 1 );
 }
+
 //===========================================================================
 // NODES THAT DON'T SEPERATE DIFFERENT CONTENTS CAN BE PRUNED
 //
@@ -259,9 +279,11 @@ void Tree_PruneNodes_r( node_t* node )
 		if( node->faces ) {
 			Error( "node->faces seperating CONTENTS_SOLID" );
 		}
+
 		if( node->children[0]->faces || node->children[1]->faces ) {
 			Error( "!node->faces with children" );
 		}
+
 		// FIXME: free stuff
 		node->planenum		   = PLANENUM_LEAF;
 		node->contents		   = CONTENTS_SOLID;
@@ -270,6 +292,7 @@ void Tree_PruneNodes_r( node_t* node )
 		if( node->brushlist ) {
 			Error( "PruneNodes: node->brushlist" );
 		}
+
 		// combine brush lists
 		node->brushlist = node->children[1]->brushlist;
 
@@ -278,6 +301,7 @@ void Tree_PruneNodes_r( node_t* node )
 			b->next			= node->brushlist;
 			node->brushlist = b;
 		}
+
 		// free the child nodes
 		FreeMemory( node->children[0] );
 		FreeMemory( node->children[1] );
@@ -285,6 +309,7 @@ void Tree_PruneNodes_r( node_t* node )
 		c_pruned += 2;
 	}
 }
+
 //===========================================================================
 //
 // Parameter:			-

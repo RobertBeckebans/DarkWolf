@@ -73,15 +73,20 @@ static void R_ChopPolyBehindPlane( int numInPoints, vec3_t inPoints[MAX_VERTS_ON
 		dot = DotProduct( inPoints[i], normal );
 		dot -= dist;
 		dists[i] = dot;
+
 		if( dot > epsilon ) {
 			sides[i] = SIDE_FRONT;
+
 		} else if( dot < -epsilon ) {
 			sides[i] = SIDE_BACK;
+
 		} else {
 			sides[i] = SIDE_ON;
 		}
+
 		counts[sides[i]]++;
 	}
+
 	sides[i] = sides[0];
 	dists[i] = dists[0];
 
@@ -90,6 +95,7 @@ static void R_ChopPolyBehindPlane( int numInPoints, vec3_t inPoints[MAX_VERTS_ON
 	if( !counts[0] ) {
 		return;
 	}
+
 	if( !counts[1] ) {
 		*numOutPoints = numInPoints;
 		memcpy( outPoints, inPoints, numInPoints * sizeof( vec3_t ) );
@@ -120,8 +126,10 @@ static void R_ChopPolyBehindPlane( int numInPoints, vec3_t inPoints[MAX_VERTS_ON
 		p2 = inPoints[( i + 1 ) % numInPoints];
 
 		d = dists[i] - dists[i + 1];
+
 		if( d == 0 ) {
 			dot = 0;
+
 		} else {
 			dot = dists[i] / d;
 		}
@@ -155,10 +163,13 @@ void R_BoxSurfaces_r( mnode_t* node, vec3_t mins, vec3_t maxs, surfaceType_t** l
 	// do the tail recursion in a loop
 	while( node->contents == -1 ) {
 		s = BoxOnPlaneSide( mins, maxs, node->plane );
+
 		if( s == 1 ) {
 			node = node->children[0];
+
 		} else if( s == 2 ) {
 			node = node->children[1];
+
 		} else {
 			R_BoxSurfaces_r( node->children[0], mins, maxs, list, listsize, listlength, dir );
 			node = node->children[1];
@@ -173,30 +184,38 @@ void R_BoxSurfaces_r( mnode_t* node, vec3_t mins, vec3_t maxs, surfaceType_t** l
 	// add the individual surfaces
 	mark = node->firstmarksurface;
 	c	 = node->nummarksurfaces;
+
 	while( c-- ) {
 		//
 		if( *listlength >= listsize ) {
 			break;
 		}
+
 		//
 		surf = *mark;
+
 		// check if the surface has NOIMPACT or NOMARKS set
 		if( ( surf->shader->surfaceFlags & ( SURF_NOIMPACT | SURF_NOMARKS ) ) || ( surf->shader->contentFlags & CONTENTS_FOG ) ) {
 			surf->viewCount = tr.viewCount;
 		}
+
 		// extra check for surfaces to avoid list overflows
 		else if( *( surf->data ) == SF_FACE ) {
 			// the face plane should go through the box
 			s = BoxOnPlaneSide( mins, maxs, &( ( srfSurfaceFace_t* )surf->data )->plane );
+
 			if( s == 1 || s == 2 ) {
 				surf->viewCount = tr.viewCount;
+
 			} else if( DotProduct( ( ( srfSurfaceFace_t* )surf->data )->plane.normal, dir ) < -0.5 ) {
 				// don't add faces that make sharp angles with the projection direction
 				surf->viewCount = tr.viewCount;
 			}
+
 		} else if( *( surfaceType_t* )( surf->data ) != SF_GRID ) {
 			surf->viewCount = tr.viewCount;
 		}
+
 		// check the viewCount because the surface may have
 		// already been added if it spans multiple leafs
 		if( surf->viewCount != tr.viewCount ) {
@@ -204,6 +223,7 @@ void R_BoxSurfaces_r( mnode_t* node, vec3_t mins, vec3_t maxs, surfaceType_t** l
 			list[*listlength] = ( surfaceType_t* )surf->data;
 			( *listlength )++;
 		}
+
 		mark++;
 	}
 }
@@ -237,10 +257,12 @@ void R_AddMarkFragments( int numClipPoints,
 	for( i = 0; i < numPlanes; i++ ) {
 		R_ChopPolyBehindPlane( numClipPoints, clipPoints[pingPong], &numClipPoints, clipPoints[!pingPong], normals[i], dists[i], 0.5 );
 		pingPong ^= 1;
+
 		if( numClipPoints == 0 ) {
 			break;
 		}
 	}
+
 	// completely clipped away?
 	if( numClipPoints == 0 ) {
 		return;
@@ -250,6 +272,7 @@ void R_AddMarkFragments( int numClipPoints,
 	if( numClipPoints + ( *returnedPoints ) > maxPoints ) {
 		return; // not enough space for this polygon
 	}
+
 	/*
 	// all the clip points should be within the bounding box
 	for ( i = 0 ; i < numClipPoints ; i++ ) {
@@ -266,6 +289,7 @@ void R_AddMarkFragments( int numClipPoints,
 	mf			   = fragmentBuffer + ( *returnedFragments );
 	mf->firstPoint = ( *returnedPoints );
 	mf->numPoints  = numClipPoints;
+
 	// memcpy( pointBuffer + (*returnedPoints) * 3, clipPoints[pingPong], numClipPoints * sizeof(vec3_t) );
 	for( i = 0; i < numClipPoints; i++ ) {
 		VectorCopy( clipPoints[pingPong][i], ( float* )pointBuffer + 5 * ( *returnedPoints + i ) );
@@ -309,6 +333,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 	VectorNormalize2( projection, projectionDir );
 	// find all the brushes that are to be considered
 	ClearBounds( mins, maxs );
+
 	for( i = 0; i < numPoints; i++ ) {
 		vec3_t temp;
 
@@ -323,6 +348,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 	if( numPoints > MAX_VERTS_ON_POLY ) {
 		numPoints = MAX_VERTS_ON_POLY;
 	}
+
 	// create the bounding planes for the to be projected polygon
 	for( i = 0; i < numPoints; i++ ) {
 		VectorSubtract( points[( i + 1 ) % numPoints], points[i], v1 );
@@ -332,6 +358,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 		VectorNormalizeFast( normals[i] );
 		dists[i] = DotProduct( normals[i], points[i] );
 	}
+
 	// add near and far clipping planes for projection
 	VectorCopy( projectionDir, normals[numPoints] );
 	dists[numPoints] = DotProduct( normals[numPoints], points[0] ) - 32;
@@ -351,6 +378,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 	for( i = 0; i < numsurfaces; i++ ) {
 		if( *surfaces[i] == SF_GRID ) {
 			cv = ( srfGridMesh_t* )surfaces[i];
+
 			for( m = 0; m < cv->height - 1; m++ ) {
 				for( n = 0; n < cv->width - 1; n++ ) {
 					// We triangulate the grid and chop all triangles within
@@ -389,6 +417,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 					VectorSubtract( clipPoints[0][2], clipPoints[0][1], v2 );
 					CrossProduct( v1, v2, normal );
 					VectorNormalizeFast( normal );
+
 					if( DotProduct( normal, projectionDir ) < -0.1 ) {
 						// add the fragments of this triangle
 						R_AddMarkFragments(
@@ -410,6 +439,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 					VectorSubtract( clipPoints[0][2], clipPoints[0][1], v2 );
 					CrossProduct( v1, v2, normal );
 					VectorNormalizeFast( normal );
+
 					if( DotProduct( normal, projectionDir ) < -0.05 ) {
 						// add the fragments of this triangle
 						R_AddMarkFragments(
@@ -421,8 +451,10 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 					}
 				}
 			}
+
 		} else if( *surfaces[i] == SF_FACE ) {
 			surf = ( srfSurfaceFace_t* )surfaces[i];
+
 			// check the normal of this face
 			if( DotProduct( surf->plane.normal, projectionDir ) > -0.5 ) {
 				continue;
@@ -436,19 +468,24 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 			if (DotProduct(normal, projectionDir) > -0.5) continue;
 			*/
 			indexes = ( int* )( ( byte* )surf + surf->ofsIndices );
+
 			for( k = 0; k < surf->numIndices; k += 3 ) {
 				for( j = 0; j < 3; j++ ) {
 					v = surf->points[0] + VERTEXSIZE * indexes[k + j];
 					;
 					VectorMA( v, MARKER_OFFSET, surf->plane.normal, clipPoints[0][j] );
 				}
+
 				// add the fragments of this face
 				R_AddMarkFragments( 3, clipPoints, numPlanes, normals, dists, maxPoints, pointBuffer, maxFragments, fragmentBuffer, &returnedPoints, &returnedFragments, mins, maxs );
+
 				if( returnedFragments == maxFragments ) {
 					return returnedFragments; // not enough space for more fragments
 				}
 			}
+
 			continue;
+
 		} else {
 			// ignore all other world surfaces
 			// might be cool to also project polygons on a triangle soup
@@ -457,6 +494,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t* points, const vec3_t projec
 			continue;
 		}
 	}
+
 	return returnedFragments;
 }
 
@@ -505,9 +543,11 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 	}
 
 	VectorClear( center );
+
 	for( i = 0; i < numPoints; i++ ) {
 		VectorAdd( points[i], center, center );
 	}
+
 	VectorScale( center, 1.0 / numPoints, center );
 	//
 	radius	 = VectorNormalize2( projection, projectionDir ) / 2.0;
@@ -515,6 +555,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 	VectorNegate( projectionDir, bestnormal );
 	// find all the brushes that are to be considered
 	ClearBounds( mins, maxs );
+
 	for( i = 0; i < numPoints; i++ ) {
 		vec3_t temp;
 
@@ -529,6 +570,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 	if( numPoints > MAX_VERTS_ON_POLY ) {
 		numPoints = MAX_VERTS_ON_POLY;
 	}
+
 	// create the bounding planes for the to be projected polygon
 	for( i = 0; i < numPoints; i++ ) {
 		VectorSubtract( points[( i + 1 ) % numPoints], points[i], v1 );
@@ -538,6 +580,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 		VectorNormalize( normals[i] );
 		dists[i] = DotProduct( normals[i], points[i] );
 	}
+
 	// add near and far clipping planes for projection
 	VectorCopy( projectionDir, normals[numPoints] );
 	dists[numPoints] = DotProduct( normals[numPoints], points[0] ) - radius * ( 1 + oldMapping * 10 );
@@ -589,6 +632,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 	for( i = 0; i < numsurfaces; i++ ) {
 		if( *surfaces[i] == SF_GRID ) {
 			cv = ( srfGridMesh_t* )surfaces[i];
+
 			for( m = 0; m < cv->height - 1; m++ ) {
 				for( n = 0; n < cv->width - 1; n++ ) {
 					// We triangulate the grid and chop all triangles within
@@ -627,6 +671,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 					VectorSubtract( clipPoints[0][2], clipPoints[0][1], v2 );
 					CrossProduct( v1, v2, normal );
 					VectorNormalize( normal );
+
 					if( DotProduct( normal, projectionDir ) < -0.1 ) {
 						// add the fragments of this triangle
 						R_AddMarkFragments(
@@ -648,6 +693,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 					VectorSubtract( clipPoints[0][2], clipPoints[0][1], v2 );
 					CrossProduct( v1, v2, normal );
 					VectorNormalize( normal );
+
 					if( DotProduct( normal, projectionDir ) < -0.05 ) {
 						// add the fragments of this triangle
 						R_AddMarkFragments(
@@ -659,6 +705,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 					}
 				}
 			}
+
 		} else if( *surfaces[i] == SF_FACE ) {
 			extern float VectorDistance( vec3_t v1, vec3_t v2 );
 			vec3_t		 axis[3];
@@ -683,12 +730,15 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 				// find the center of the new decal
 				dot = DotProduct( center, surf->plane.normal );
 				dot -= surf->plane.dist;
+
 				// check the normal of this face
 				if( dot < -epsilon && DotProduct( surf->plane.normal, projectionDir ) >= 0.01 ) {
 					continue;
+
 				} else if( fabs( dot ) > radius ) {
 					continue;
 				}
+
 				// if the impact point is behind the surface, subtract the projection, otherwise add it
 				VectorMA( center, -dot, bestnormal, newCenter );
 
@@ -728,11 +778,13 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 					VectorNormalize( lnormals[j] );
 					ldists[j] = DotProduct( lnormals[j], originalPoints[j] );
 				}
+
 				numPlanes = numPoints;
 
 				// done.
 
 				indexes = ( int* )( ( byte* )surf + surf->ofsIndices );
+
 				for( k = 0; k < surf->numIndices; k += 3 ) {
 					for( j = 0; j < 3; j++ ) {
 						v = surf->points[0] + VERTEXSIZE * indexes[k + j];
@@ -769,14 +821,17 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 				//}
 
 				indexes = ( int* )( ( byte* )surf + surf->ofsIndices );
+
 				for( k = 0; k < surf->numIndices; k += 3 ) {
 					for( j = 0; j < 3; j++ ) {
 						v = surf->points[0] + VERTEXSIZE * indexes[k + j];
 						;
 						VectorMA( v, MARKER_OFFSET, surf->plane.normal, clipPoints[0][j] );
 					}
+
 					// add the fragments of this face
 					R_AddMarkFragments( 3, clipPoints, numPlanes, normals, dists, maxPoints, pointBuffer, maxFragments, fragmentBuffer, &returnedPoints, &returnedFragments, mins, maxs );
+
 					if( returnedFragments == maxFragments ) {
 						return returnedFragments; // not enough space for more fragments
 					}
@@ -784,6 +839,7 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 			}
 
 			continue;
+
 		} else {
 			// ignore all other world surfaces
 			// might be cool to also project polygons on a triangle soup
@@ -792,5 +848,6 @@ int R_MarkFragments( int orientation, const vec3_t* points, const vec3_t project
 			continue;
 		}
 	}
+
 	return returnedFragments;
 }

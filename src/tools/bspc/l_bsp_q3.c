@@ -114,86 +114,119 @@ void			 Q3_FreeMaxBSP()
 	if( q3_dmodels ) {
 		FreeMemory( q3_dmodels );
 	}
+
 	q3_dmodels	 = NULL;
 	q3_nummodels = 0;
+
 	if( q3_dshaders ) {
 		FreeMemory( q3_dshaders );
 	}
+
 	q3_dshaders	  = NULL;
 	q3_numShaders = 0;
+
 	if( q3_dentdata ) {
 		FreeMemory( q3_dentdata );
 	}
+
 	q3_dentdata	   = NULL;
 	q3_entdatasize = 0;
+
 	if( q3_dleafs ) {
 		FreeMemory( q3_dleafs );
 	}
+
 	q3_dleafs	= NULL;
 	q3_numleafs = 0;
+
 	if( q3_dplanes ) {
 		FreeMemory( q3_dplanes );
 	}
+
 	q3_dplanes	 = NULL;
 	q3_numplanes = 0;
+
 	if( q3_dnodes ) {
 		FreeMemory( q3_dnodes );
 	}
+
 	q3_dnodes	= NULL;
 	q3_numnodes = 0;
+
 	if( q3_dleafsurfaces ) {
 		FreeMemory( q3_dleafsurfaces );
 	}
+
 	q3_dleafsurfaces   = NULL;
 	q3_numleafsurfaces = 0;
+
 	if( q3_dleafbrushes ) {
 		FreeMemory( q3_dleafbrushes );
 	}
+
 	q3_dleafbrushes	  = NULL;
 	q3_numleafbrushes = 0;
+
 	if( q3_dbrushes ) {
 		FreeMemory( q3_dbrushes );
 	}
+
 	q3_dbrushes	  = NULL;
 	q3_numbrushes = 0;
+
 	if( q3_dbrushsides ) {
 		FreeMemory( q3_dbrushsides );
 	}
+
 	q3_dbrushsides	 = NULL;
 	q3_numbrushsides = 0;
+
 	if( q3_lightBytes ) {
 		FreeMemory( q3_lightBytes );
 	}
+
 	q3_lightBytes	 = NULL;
 	q3_numLightBytes = 0;
+
 	if( q3_gridData ) {
 		FreeMemory( q3_gridData );
 	}
+
 	q3_gridData		 = NULL;
 	q3_numGridPoints = 0;
+
 	if( q3_visBytes ) {
 		FreeMemory( q3_visBytes );
 	}
+
 	q3_visBytes	   = NULL;
 	q3_numVisBytes = 0;
+
 	if( q3_drawVerts ) {
 		FreeMemory( q3_drawVerts );
 	}
+
 	q3_drawVerts	= NULL;
 	q3_numDrawVerts = 0;
+
 	if( q3_drawIndexes ) {
 		FreeMemory( q3_drawIndexes );
 	}
+
 	q3_drawIndexes	  = NULL;
 	q3_numDrawIndexes = 0;
+
 	if( q3_drawSurfaces ) {
 		FreeMemory( q3_drawSurfaces );
 	}
+
 	q3_drawSurfaces	   = NULL;
 	q3_numDrawSurfaces = 0;
+
 	if( q3_dfogs ) {
 		FreeMemory( q3_dfogs );
 	}
+
 	q3_dfogs   = NULL;
 	q3_numFogs = 0;
 }
@@ -215,6 +248,7 @@ void Q3_PlaneFromPoints( vec3_t p0, vec3_t p1, vec3_t p2, vec3_t normal, float* 
 
 	*dist = DotProduct( p0, normal );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -228,6 +262,7 @@ void Q3_SurfacePlane( q3_dsurface_t* surface, vec3_t normal, float* dist )
 	vec3_t t1, t2;
 
 	p0 = q3_drawVerts[surface->firstVert].xyz;
+
 	for( i = 1; i < surface->numVerts - 1; i++ ) {
 		p1 = q3_drawVerts[surface->firstVert + ( ( i ) % surface->numVerts )].xyz;
 		p2 = q3_drawVerts[surface->firstVert + ( ( i + 1 ) % surface->numVerts )].xyz;
@@ -235,10 +270,12 @@ void Q3_SurfacePlane( q3_dsurface_t* surface, vec3_t normal, float* dist )
 		VectorSubtract( p2, p1, t2 );
 		CrossProduct( t1, t2, normal );
 		VectorNormalize( normal );
+
 		if( VectorLength( normal ) ) {
 			break;
 		}
 	} // end for*/
+
 	/*
 		float dot;
 		for (i = 0; i < surface->numVerts; i++)
@@ -260,13 +297,16 @@ void Q3_SurfacePlane( q3_dsurface_t* surface, vec3_t normal, float* dist )
 	if( VectorLength( normal ) < 0.9 ) {
 		printf( "surface %d bogus normal vector %f %f %f\n", surface - q3_drawSurfaces, normal[0], normal[1], normal[2] );
 		printf( "t1 = %f %f %f, t2 = %f %f %f\n", t1[0], t1[1], t1[2], t2[0], t2[1], t2[2] );
+
 		for( i = 0; i < surface->numVerts; i++ ) {
 			p1 = q3_drawVerts[surface->firstVert + ( ( i ) % surface->numVerts )].xyz;
 			Log_Print( "p%d = %f %f %f\n", i, p1[0], p1[1], p1[2] );
 		}
 	}
+
 	*dist = DotProduct( p0, normal );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -285,15 +325,18 @@ void		 Q3_CreatePlanarSurfacePlanes()
 
 	for( i = 0; i < q3_numDrawSurfaces; i++ ) {
 		surface = &q3_drawSurfaces[i];
+
 		if( surface->surfaceType != MST_PLANAR ) {
 			continue;
 		}
+
 		Q3_SurfacePlane( surface, q3_surfaceplanes[i].normal, &q3_surfaceplanes[i].dist );
 		// Log_Print("normal = %f %f %f, dist = %f\n", q3_surfaceplanes[i].normal[0],
 		//											q3_surfaceplanes[i].normal[1],
 		//											q3_surfaceplanes[i].normal[2], q3_surfaceplanes[i].dist);
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -512,6 +555,7 @@ void Q3_SwapBlock( int* block, int sizeOfBlock )
 	int i;
 
 	sizeOfBlock >>= 2;
+
 	for( i = 0; i < sizeOfBlock; i++ ) {
 		block[i] = LittleLong( block[i] );
 	}
@@ -635,6 +679,7 @@ void Q3_LoadBSPFile( struct quakefile_s* qf )
 	if( header->ident != Q3_BSP_IDENT ) {
 		Error( "%s is not a IBSP file", qf->filename );
 	}
+
 	if( header->version != Q3_BSP_VERSION ) {
 		Error( "%s is version %i, not %i", qf->filename, header->version, Q3_BSP_VERSION );
 	}
@@ -811,9 +856,11 @@ void Q3_UnparseEntities()
 
 	for( i = 0; i < num_entities; i++ ) {
 		ep = entities[i].epairs;
+
 		if( !ep ) {
 			continue; // ent got removed
 		}
+
 		strcat( end, "{\n" );
 		end += 2;
 
@@ -822,6 +869,7 @@ void Q3_UnparseEntities()
 			strcat( end, line );
 			end += strlen( line );
 		}
+
 		strcat( end, "}\n" );
 		end += 2;
 
@@ -829,5 +877,6 @@ void Q3_UnparseEntities()
 			Error( "Entity text too long" );
 		}
 	}
+
 	q3_entdatasize = end - buf + 1;
 }

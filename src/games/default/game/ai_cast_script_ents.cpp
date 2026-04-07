@@ -113,6 +113,7 @@ void ai_effect_think( gentity_t* ent )
 
 	// find the client number that uses this entity
 	targ = AICast_FindEntityForName( ent->aiName );
+
 	if( !targ ) {
 		// keep waiting until they enter, if they never do, then we have no purpose, therefore no harm can be done
 		ent->think	   = ai_effect_think;
@@ -159,6 +160,7 @@ void AICast_trigger_trigger( gentity_t* ent, gentity_t* activator )
 	}
 
 	ent->activator = AICast_FindEntityForName( ent->aiName );
+
 	if( ent->activator ) { // they might be dead
 		// trigger the script event
 		AICast_ScriptEvent( AICast_GetCastState( ent->activator->s.number ), "trigger", ent->target );
@@ -167,6 +169,7 @@ void AICast_trigger_trigger( gentity_t* ent, gentity_t* activator )
 	if( ent->wait > 0 ) {
 		ent->think	   = AICast_trigger_wait;
 		ent->nextthink = level.time + ( ent->wait + ent->random * crandom() ) * 1000;
+
 	} else {
 		// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
@@ -181,6 +184,7 @@ void AICast_Touch_Trigger( gentity_t* self, gentity_t* other, trace_t* trace )
 	if( !other->client || ( other->r.svFlags & SVF_CASTAI ) ) {
 		return;
 	}
+
 	AICast_trigger_trigger( self, other );
 }
 
@@ -224,6 +228,7 @@ void SP_ai_trigger( gentity_t* ent )
 	if( !ent->aiName ) {
 		G_Error( "ai_trigger without \"ainame\"\n" );
 	}
+
 	if( !ent->target ) {
 		G_Error( "ai_trigger without \"target\"\n" );
 	}
@@ -232,6 +237,7 @@ void SP_ai_trigger( gentity_t* ent )
 		ent->AIScript_AlertEntity = ai_trigger_activate;
 		ent->use				  = ai_trigger_use;
 		sys->UnlinkEntity( ent );
+
 	} else {
 		ai_trigger_activate( ent );
 	}

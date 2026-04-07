@@ -79,6 +79,7 @@ void AICast_Sight( gentity_t* ent, gentity_t* other, int lastSight )
 		if( ocs->deathTime > lastSight ) {
 			if( !AICast_SameTeam( cs, other->s.number ) ) {
 				AICast_ScriptEvent( cs, "enemysightcorpse", other->aiName );
+
 			} else if( !( cs->castScriptStatus.scriptFlags & SFL_FRIENDLYSIGHTCORPSE_TRIGGERED ) ) {
 				cs->castScriptStatus.scriptFlags |= SFL_FRIENDLYSIGHTCORPSE_TRIGGERED;
 				AICast_ScriptEvent( cs, "friendlysightcorpse", "" );
@@ -86,6 +87,7 @@ void AICast_Sight( gentity_t* ent, gentity_t* other, int lastSight )
 		}
 
 		// if this is the first time, call the sight script event
+
 	} else if( !lastSight && other->aiName ) {
 		if( !AICast_SameTeam( cs, other->s.number ) ) {
 			// disabled.. triggered when entering combat mode
@@ -174,6 +176,7 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 
 	if( attacker ) {
 		killer = attacker->s.number;
+
 	} else {
 		killer = ENTITYNUM_WORLD;
 	}
@@ -196,6 +199,7 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 			self->health += damage; // don't drop below gib_health if we weren't already below it
 			return;
 		}
+
 		/*
 				if (!cs->rebirthTime)
 				{
@@ -243,6 +247,7 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 				cs->secondDeadTime = ( qboolean )2;
 				cs->rebirthTime	   = 0;
 				cs->revivingTime   = 0;
+
 			} else {
 				body_die( self, inflictor, attacker, damage, meansOfDeath );
 				return;
@@ -262,6 +267,7 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 		// drop a weapon?
 		// if client is in a nodrop area, don't drop anything
 		contents = sys->PointContents( self->r.currentOrigin, -1 );
+
 		if( !( contents & CONTENTS_NODROP ) ) {
 			TossClientItems( self );
 		}
@@ -273,9 +279,11 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 		self->takedamage = qtrue; // can still be gibbed
 
 		self->s.weapon = WP_NONE;
+
 		if( cs->bs ) {
 			cs->weaponNum = WP_NONE;
 		}
+
 		self->client->ps.weapon = WP_NONE;
 
 		self->s.powerups = 0;
@@ -303,6 +311,7 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 				// RF, changed this so Zombies always gib now
 				GibEntity( self, killer );
 				nogib = qfalse;
+
 			} else if( !( contents & CONTENTS_NODROP ) ) {
 				body_die( self, inflictor, attacker, damage, meansOfDeath );
 				// GibEntity( self, killer );
@@ -314,16 +323,20 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 		if( !( self->aiCharacter == AICHAR_ZOMBIE && cs->secondDeadTime && cs->rebirthTime ) ) {
 			// set enemy weapon
 			BG_UpdateConditionValue( self->s.number, ANIM_COND_ENEMY_WEAPON, 0, qfalse );
+
 			if( attacker->client ) {
 				BG_UpdateConditionValue( self->s.number, ANIM_COND_ENEMY_WEAPON, inflictor->s.weapon, qtrue );
+
 			} else {
 				BG_UpdateConditionValue( self->s.number, ANIM_COND_ENEMY_WEAPON, 0, qfalse );
 			}
 
 			// set enemy location
 			BG_UpdateConditionValue( self->s.number, ANIM_COND_ENEMY_POSITION, 0, qfalse );
+
 			if( infront( self, inflictor ) ) {
 				BG_UpdateConditionValue( self->s.number, ANIM_COND_ENEMY_POSITION, POSITION_INFRONT, qtrue );
+
 			} else {
 				BG_UpdateConditionValue( self->s.number, ANIM_COND_ENEMY_POSITION, POSITION_BEHIND, qtrue );
 			}
@@ -348,8 +361,10 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 
 		// if end map, sink into ground
 		cs->deadSinkStartTime = 0;
+
 		if( cs->aiCharacter == AICHAR_WARZOMBIE ) {
 			sys->Cvar_VariableStringBuffer( "mapname", mapname, sizeof( mapname ) );
+
 			if( !Q_strncmp( mapname, "end", 3 ) ) { // !! FIXME: post beta2, make this a spawnflag!
 				cs->deadSinkStartTime = level.time + 4000;
 			}
@@ -361,16 +376,20 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 		if( self->aiCharacter == AICHAR_ZOMBIE ) {
 			if( !cs->secondDeadTime ) {
 				cs->rebirthTime = level.time + 5000 + rand() % 2000;
+
 				// RF, only set for gib at next death, if NoRevive is not set
 				if( !( self->spawnflags & 2 ) ) {
 					cs->secondDeadTime = qtrue;
 				}
+
 				cs->revivingTime = 0;
+
 			} else if( cs->secondDeadTime > 1 ) {
 				cs->rebirthTime	 = 0;
 				cs->revivingTime = 0;
 				cs->deathTime	 = level.time;
 			}
+
 		} else {
 			// the body can still be gibbed
 			self->die = body_die;
@@ -390,13 +409,16 @@ void AICast_Die( gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int
 		G_UseTargets( self, self );
 		// really dead now, so call the script
 		AICast_ScriptEvent( cs, "death", attacker->aiName ? attacker->aiName : "" );
+
 		// call the deathfunc for this cast, so we can play associated sounds, or do any character-specific things
 		if( !( cs->aiFlags & AIFL_DENYACTION ) && cs->deathfunc ) {
 			cs->deathfunc( self, attacker, damage, meansOfDeath ); //----(SA)	added mod
 		}
+
 	} else {
 		// really dead now, so call the script
 		AICast_ScriptEvent( cs, "fakedeath", "" );
+
 		// call the deathfunc for this cast, so we can play associated sounds, or do any character-specific things
 		if( !( cs->aiFlags & AIFL_DENYACTION ) && cs->deathfunc ) {
 			cs->deathfunc( self, attacker, damage, meansOfDeath ); //----(SA)	added mod
@@ -449,6 +471,7 @@ void AICast_AIDoor_Touch( gentity_t* ent, gentity_t* aidoor_trigger, gentity_t* 
 		VectorAdd( door->r.absmin, door->r.absmax, pos );
 		VectorScale( pos, 0.5, pos );
 		VectorSubtract( pos, cs->bs->origin, dir );
+
 		if( DotProduct( cs->bs->velocity, dir ) < 0 ) {
 			return;
 		}
@@ -458,33 +481,42 @@ void AICast_AIDoor_Touch( gentity_t* ent, gentity_t* aidoor_trigger, gentity_t* 
 	for( trav = NULL; ( trav = G_Find( trav, FOFS( target ), aidoor_trigger->targetname ) ); ) {
 		// make sure the marker is vacant
 		sys->Trace( &tr, trav->r.currentOrigin, ent->r.mins, ent->r.maxs, trav->r.currentOrigin, ent->s.number, ent->clipmask );
+
 		if( tr.startsolid ) {
 			continue;
 		}
+
 		// search all other AI's, to see if they are heading for this marker
 		for( i = 0, ocs = AICast_GetCastState( 0 ); i < aicast_maxclients; i++, ocs++ ) {
 			if( !ocs->bs ) {
 				continue;
 			}
+
 			if( ocs->aifunc != AIFunc_DoorMarker ) {
 				continue;
 			}
+
 			if( ocs->doorMarker != trav->s.number ) {
 				continue;
 			}
+
 			// found a match
 			break;
 		}
+
 		if( i < aicast_maxclients ) {
 			continue;
 		}
+
 		// make sure there is a clear path
 		VectorCopy( ent->r.mins, mins );
 		mins[2] += 16; // step height
 		sys->Trace( &tr, ent->r.currentOrigin, mins, ent->r.maxs, trav->r.currentOrigin, ent->s.number, ent->clipmask );
+
 		if( tr.fraction < 1.0 ) {
 			continue;
 		}
+
 		// the marker is vacant and available
 		cs->doorMarkerTime = level.time;
 		cs->doorMarkerNum  = trav->s.number;
@@ -512,6 +544,7 @@ void AICast_ProcessActivate( int entNum, int activatorNum )
 	if( cs->lastActivate > level.time - 1000 ) {
 		return;
 	}
+
 	cs->lastActivate = level.time;
 
 	if( !AICast_SameTeam( cs, activatorNum ) ) {
@@ -525,6 +558,7 @@ void AICast_ProcessActivate( int entNum, int activatorNum )
 	// try running the activate event, if it denies us the request, then abort
 	cs->aiFlags &= ~AIFL_DENYACTION;
 	AICast_ScriptEvent( cs, "activate", g_entities[activatorNum].aiName );
+
 	if( cs->aiFlags & AIFL_DENYACTION ) {
 		return;
 	}
@@ -534,6 +568,7 @@ void AICast_ProcessActivate( int entNum, int activatorNum )
 		if( ent->eventTime != level.time ) {
 			G_AddEvent( &g_entities[entNum], EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[cs->aiCharacter].soundScripts[ORDERSDENYSOUNDSCRIPT] ) );
 		}
+
 		return;
 	}
 
@@ -553,6 +588,7 @@ void AICast_ProcessActivate( int entNum, int activatorNum )
 		AIFunc_ChaseGoalStart( cs, newent->s.number, 128, qtrue );
 
 		// AIFunc_IdleStart( cs );
+
 	} else { // start following
 		int			  count, i;
 		cast_state_t* tcs;
@@ -563,10 +599,12 @@ void AICast_ProcessActivate( int entNum, int activatorNum )
 				count++;
 			}
 		}
+
 		if( count >= 3 ) {
 			if( ent->eventTime != level.time ) {
 				G_AddEvent( &g_entities[entNum], EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[cs->aiCharacter].soundScripts[ORDERSDENYSOUNDSCRIPT] ) );
 			}
+
 			return;
 		}
 

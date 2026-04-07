@@ -143,6 +143,7 @@ static void Con_AppendLineToInputBuffer( const char* text )
 		strncat( s_wcd.consoleText, text, remain );
 
 		curLen = strlen( s_wcd.consoleText );
+
 		if( curLen + 1 < maxLen ) {
 			strcat( s_wcd.consoleText, "\n" );
 		}
@@ -211,6 +212,7 @@ static HFONT Con_CreateUIFont( HWND hWnd, int pointSize, const char* face, int w
 	HFONT hFont;
 
 	hDC = GetDC( hWnd );
+
 	if( !hDC ) {
 		return NULL;
 	}
@@ -235,6 +237,7 @@ static void Con_DestroyResources()
 		if( s_wcd.hfButtonFont != s_wcd.hfBufferFont ) {
 			DeleteObject( s_wcd.hfButtonFont );
 		}
+
 		s_wcd.hfButtonFont = NULL;
 	}
 
@@ -324,33 +327,40 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 					if( HIWORD( wParam ) ) {
 						Cvar_Set( "viewlog", "2" );
 					}
+
 				} else if( com_viewlog->integer == 2 ) {
 					if( !HIWORD( wParam ) ) {
 						Cvar_Set( "viewlog", "1" );
 					}
 				}
 			}
+
 			return 0;
 
 		case WM_CLOSE:
 			if( com_dedicated && com_dedicated->integer ) {
 				cmdString = CopyString( "quit" );
 				Sys_QueEvent( 0, SE_CONSOLE, 0, 0, ( int )strlen( cmdString ) + 1, cmdString );
+
 			} else if( s_wcd.quitOnClose ) {
 				PostQuitMessage( 0 );
+
 			} else {
 				Sys_ShowConsole( 0, qfalse );
 				Cvar_Set( "viewlog", "0" );
 			}
+
 			return 0;
 
 		case WM_TIMER:
 			if( wParam == 1 ) {
 				s_timePolarity = !s_timePolarity;
+
 				if( s_wcd.hwndErrorBox ) {
 					InvalidateRect( s_wcd.hwndErrorBox, NULL, FALSE );
 				}
 			}
+
 			return 0;
 
 		case WM_COMMAND:
@@ -360,15 +370,18 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 						SendMessageA( s_wcd.hwndBuffer, EM_SETSEL, 0, -1 );
 						SendMessageA( s_wcd.hwndBuffer, WM_COPY, 0, 0 );
 					}
+
 					return 0;
 
 				case QUIT_ID:
 					if( s_wcd.quitOnClose ) {
 						PostQuitMessage( 0 );
+
 					} else {
 						cmdString = CopyString( "quit" );
 						Sys_QueEvent( 0, SE_CONSOLE, 0, 0, ( int )strlen( cmdString ) + 1, cmdString );
 					}
+
 					return 0;
 
 				case CLEAR_ID:
@@ -376,6 +389,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 					UpdateWindow( s_wcd.hwndBuffer );
 					return 0;
 			}
+
 			break;
 
 		case WM_CTLCOLOREDIT:
@@ -384,11 +398,13 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				SetBkColor( ( HDC )wParam, SYS_CONSOLE_BG );
 				SetTextColor( ( HDC )wParam, SYS_CONSOLE_TEXT );
 				return ( LRESULT )s_wcd.hbrEditBackground;
+
 			} else if( ( HWND )lParam == s_wcd.hwndErrorBox ) {
 				SetBkColor( ( HDC )wParam, SYS_ERROR_BG );
 				SetTextColor( ( HDC )wParam, s_timePolarity ? SYS_ERROR_TEXT_A : SYS_ERROR_TEXT_B );
 				return ( LRESULT )s_wcd.hbrErrorBackground;
 			}
+
 			break;
 
 		case WM_ERASEBKGND: {
@@ -417,6 +433,7 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				SetFocus( hWnd );
 				return 0;
 			}
+
 			break;
 
 		case WM_GETDLGCODE:
@@ -434,6 +451,7 @@ LONG WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				SetWindowTextA( s_wcd.hwndInputLine, "" );
 				return 0;
 			}
+
 			break;
 	}
 
@@ -508,11 +526,13 @@ void Sys_CreateConsole()
 	}
 
 	s_wcd.hfBufferFont = Con_CreateUIFont( s_wcd.hWnd, 10, "Consolas", FW_NORMAL, 1 );
+
 	if( !s_wcd.hfBufferFont ) {
 		s_wcd.hfBufferFont = Con_CreateUIFont( s_wcd.hWnd, 10, "Courier New", FW_NORMAL, 1 );
 	}
 
 	s_wcd.hfButtonFont = Con_CreateUIFont( s_wcd.hWnd, 9, "Segoe UI", FW_NORMAL, 0 );
+
 	if( !s_wcd.hfButtonFont ) {
 		s_wcd.hfButtonFont = s_wcd.hfBufferFont;
 	}
@@ -577,10 +597,12 @@ void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
 
 		case 1:
 			ShowWindow( s_wcd.hWnd, SW_SHOWNORMAL );
+
 			if( s_wcd.hwndBuffer ) {
 				SendMessageA( s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0x7fffffff );
 				Con_EnsureVisibleCaret();
 			}
+
 			break;
 
 		case 2:
@@ -631,6 +653,7 @@ void Conbuf_AppendText( const char* pMsg )
 
 	if( strlen( pMsg ) > CONSOLE_BUFFER_SIZE - 1 ) {
 		msg = pMsg + strlen( pMsg ) - CONSOLE_BUFFER_SIZE + 1;
+
 	} else {
 		msg = pMsg;
 	}
@@ -641,15 +664,19 @@ void Conbuf_AppendText( const char* pMsg )
 			b[1] = '\n';
 			b += 2;
 			i++;
+
 		} else if( msg[i] == '\r' || msg[i] == '\n' ) {
 			b[0] = '\r';
 			b[1] = '\n';
 			b += 2;
+
 		} else if( Q_IsColorString( &msg[i] ) ) {
 			i++;
+
 		} else {
 			*b++ = msg[i];
 		}
+
 		i++;
 	}
 
@@ -694,6 +721,7 @@ void Sys_SetErrorText( const char* buf )
 		}
 
 		Con_LayoutChildren( s_wcd.hWnd );
+
 	} else {
 		SetWindowTextA( s_wcd.hwndErrorBox, s_wcd.errorString );
 	}

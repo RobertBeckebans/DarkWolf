@@ -67,12 +67,14 @@ void LeakFile( tree_t* tree )
 	sprintf( filename, "%s.lin", source );
 	qprintf( "%s\n", filename );
 	linefile = fopen( filename, "w" );
+
 	if( !linefile ) {
 		Error( "Couldn't open %s\n", filename );
 	}
 
 	count = 0;
 	node  = &tree->outside_node;
+
 	while( node->occupied > 1 ) {
 		int		  next;
 		portal_t *p, *nextportal = NULL; // TTimo: init
@@ -81,19 +83,23 @@ void LeakFile( tree_t* tree )
 
 		// find the best portal exit
 		next = node->occupied;
+
 		for( p = node->portals; p; p = p->next[!s] ) {
 			s = ( p->nodes[0] == node );
+
 			if( p->nodes[s]->occupied && p->nodes[s]->occupied < next ) {
 				nextportal = p;
 				nextnode   = p->nodes[s];
 				next	   = nextnode->occupied;
 			}
 		}
+
 		node = nextnode;
 		WindingCenter( nextportal->winding, mid );
 		fprintf( linefile, "%f %f %f\n", mid[0], mid[1], mid[2] );
 		count++;
 	}
+
 	// add the occupant center
 	GetVectorForKey( node->occupant, "origin", mid );
 

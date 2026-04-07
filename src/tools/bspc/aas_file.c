@@ -53,38 +53,46 @@ If you have questions concerning this license or the applicable additional terms
 void AAS_SwapAASData()
 {
 	int i, j;
+
 	// bounding boxes
 	for( i = 0; i < ( *aasworld ).numbboxes; i++ ) {
 		( *aasworld ).bboxes[i].presencetype = LittleLong( ( *aasworld ).bboxes[i].presencetype );
 		( *aasworld ).bboxes[i].flags		 = LittleLong( ( *aasworld ).bboxes[i].flags );
+
 		for( j = 0; j < 3; j++ ) {
 			( *aasworld ).bboxes[i].mins[j] = LittleLong( ( *aasworld ).bboxes[i].mins[j] );
 			( *aasworld ).bboxes[i].maxs[j] = LittleLong( ( *aasworld ).bboxes[i].maxs[j] );
 		}
 	}
+
 	// vertexes
 	for( i = 0; i < ( *aasworld ).numvertexes; i++ ) {
 		for( j = 0; j < 3; j++ ) {
 			( *aasworld ).vertexes[i][j] = LittleFloat( ( *aasworld ).vertexes[i][j] );
 		}
 	}
+
 	// planes
 	for( i = 0; i < ( *aasworld ).numplanes; i++ ) {
 		for( j = 0; j < 3; j++ ) {
 			( *aasworld ).planes[i].normal[j] = LittleFloat( ( *aasworld ).planes[i].normal[j] );
 		}
+
 		( *aasworld ).planes[i].dist = LittleFloat( ( *aasworld ).planes[i].dist );
 		( *aasworld ).planes[i].type = LittleLong( ( *aasworld ).planes[i].type );
 	}
+
 	// edges
 	for( i = 0; i < ( *aasworld ).numedges; i++ ) {
 		( *aasworld ).edges[i].v[0] = LittleLong( ( *aasworld ).edges[i].v[0] );
 		( *aasworld ).edges[i].v[1] = LittleLong( ( *aasworld ).edges[i].v[1] );
 	}
+
 	// edgeindex
 	for( i = 0; i < ( *aasworld ).edgeindexsize; i++ ) {
 		( *aasworld ).edgeindex[i] = LittleLong( ( *aasworld ).edgeindex[i] );
 	}
+
 	// faces
 	for( i = 0; i < ( *aasworld ).numfaces; i++ ) {
 		( *aasworld ).faces[i].planenum	 = LittleLong( ( *aasworld ).faces[i].planenum );
@@ -94,21 +102,25 @@ void AAS_SwapAASData()
 		( *aasworld ).faces[i].frontarea = LittleLong( ( *aasworld ).faces[i].frontarea );
 		( *aasworld ).faces[i].backarea	 = LittleLong( ( *aasworld ).faces[i].backarea );
 	}
+
 	// face index
 	for( i = 0; i < ( *aasworld ).faceindexsize; i++ ) {
 		( *aasworld ).faceindex[i] = LittleLong( ( *aasworld ).faceindex[i] );
 	}
+
 	// convex areas
 	for( i = 0; i < ( *aasworld ).numareas; i++ ) {
 		( *aasworld ).areas[i].areanum	 = LittleLong( ( *aasworld ).areas[i].areanum );
 		( *aasworld ).areas[i].numfaces	 = LittleLong( ( *aasworld ).areas[i].numfaces );
 		( *aasworld ).areas[i].firstface = LittleLong( ( *aasworld ).areas[i].firstface );
+
 		for( j = 0; j < 3; j++ ) {
 			( *aasworld ).areas[i].mins[j]	 = LittleFloat( ( *aasworld ).areas[i].mins[j] );
 			( *aasworld ).areas[i].maxs[j]	 = LittleFloat( ( *aasworld ).areas[i].maxs[j] );
 			( *aasworld ).areas[i].center[j] = LittleFloat( ( *aasworld ).areas[i].center[j] );
 		}
 	}
+
 	// area settings
 	for( i = 0; i < ( *aasworld ).numareasettings; i++ ) {
 		( *aasworld ).areasettings[i].contents			 = LittleLong( ( *aasworld ).areasettings[i].contents );
@@ -121,24 +133,29 @@ void AAS_SwapAASData()
 		// Ridah
 		( *aasworld ).areasettings[i].groundsteepness = LittleFloat( ( *aasworld ).areasettings[i].groundsteepness );
 	}
+
 	// area reachability
 	for( i = 0; i < ( *aasworld ).reachabilitysize; i++ ) {
 		( *aasworld ).reachability[i].areanum = LittleLong( ( *aasworld ).reachability[i].areanum );
 		( *aasworld ).reachability[i].facenum = LittleLong( ( *aasworld ).reachability[i].facenum );
 		( *aasworld ).reachability[i].edgenum = LittleLong( ( *aasworld ).reachability[i].edgenum );
+
 		for( j = 0; j < 3; j++ ) {
 			( *aasworld ).reachability[i].start[j] = LittleFloat( ( *aasworld ).reachability[i].start[j] );
 			( *aasworld ).reachability[i].end[j]   = LittleFloat( ( *aasworld ).reachability[i].end[j] );
 		}
+
 		( *aasworld ).reachability[i].traveltype = LittleLong( ( *aasworld ).reachability[i].traveltype );
 		( *aasworld ).reachability[i].traveltime = LittleShort( ( *aasworld ).reachability[i].traveltime );
 	}
+
 	// nodes
 	for( i = 0; i < ( *aasworld ).numnodes; i++ ) {
 		( *aasworld ).nodes[i].planenum	   = LittleLong( ( *aasworld ).nodes[i].planenum );
 		( *aasworld ).nodes[i].children[0] = LittleLong( ( *aasworld ).nodes[i].children[0] );
 		( *aasworld ).nodes[i].children[1] = LittleLong( ( *aasworld ).nodes[i].children[1] );
 	}
+
 	// cluster portals
 	for( i = 0; i < ( *aasworld ).numportals; i++ ) {
 		( *aasworld ).portals[i].areanum		   = LittleLong( ( *aasworld ).portals[i].areanum );
@@ -147,10 +164,12 @@ void AAS_SwapAASData()
 		( *aasworld ).portals[i].clusterareanum[0] = LittleLong( ( *aasworld ).portals[i].clusterareanum[0] );
 		( *aasworld ).portals[i].clusterareanum[1] = LittleLong( ( *aasworld ).portals[i].clusterareanum[1] );
 	}
+
 	// cluster portal index
 	for( i = 0; i < ( *aasworld ).portalindexsize; i++ ) {
 		( *aasworld ).portalindex[i] = LittleLong( ( *aasworld ).portalindex[i] );
 	}
+
 	// cluster
 	for( i = 0; i < ( *aasworld ).numclusters; i++ ) {
 		( *aasworld ).clusters[i].numareas	  = LittleLong( ( *aasworld ).clusters[i].numareas );
@@ -158,6 +177,7 @@ void AAS_SwapAASData()
 		( *aasworld ).clusters[i].firstportal = LittleLong( ( *aasworld ).clusters[i].firstportal );
 	}
 }
+
 //===========================================================================
 // dump the current loaded aas file
 //
@@ -189,6 +209,7 @@ void AAS_DumpAASData()
 	*/
 	( *aasworld ).loaded = false;
 }
+
 //===========================================================================
 // allocate memory and read a lump of a AAS file
 //
@@ -202,6 +223,7 @@ char* AAS_LoadAASLump( FILE* fp, int offset, int length, void* buf )
 		printf( "lump size 0\n" );
 		return buf;
 	}
+
 	// seek to the data
 	if( fseek( fp, offset, SEEK_SET ) ) {
 		AAS_Error( "can't seek to lump\n" );
@@ -209,10 +231,12 @@ char* AAS_LoadAASLump( FILE* fp, int offset, int length, void* buf )
 		fclose( fp );
 		return 0;
 	}
+
 	// allocate memory
 	if( !buf ) {
 		buf = ( void* )GetClearedMemory( length );
 	}
+
 	// read the data
 	if( fread( ( char* )buf, 1, length, fp ) != length ) {
 		AAS_Error( "can't read lump\n" );
@@ -221,8 +245,10 @@ char* AAS_LoadAASLump( FILE* fp, int offset, int length, void* buf )
 		fclose( fp );
 		return NULL;
 	}
+
 	return buf;
 }
+
 //===========================================================================
 //
 // Parameter:			-
@@ -237,6 +263,7 @@ void AAS_DData( unsigned char* data, int size )
 		data[i] ^= ( unsigned char )i * 119;
 	}
 }
+
 //===========================================================================
 // load an aas file
 //
@@ -254,153 +281,190 @@ qboolean AAS_LoadAASFile( char* filename, int fpoffset, int fplength )
 	AAS_DumpAASData();
 	// open the file
 	fp = fopen( filename, "rb" );
+
 	if( !fp ) {
 		AAS_Error( "can't open %s\n", filename );
 		return false;
 	}
+
 	// seek to the correct position (in the pak file)
 	if( fseek( fp, fpoffset, SEEK_SET ) ) {
 		AAS_Error( "can't seek to file %s\n" );
 		fclose( fp );
 		return false;
 	}
+
 	// read the header
 	if( fread( &header, sizeof( aas_header_t ), 1, fp ) != 1 ) {
 		AAS_Error( "can't read header of file %s\n", filename );
 		fclose( fp );
 		return false;
 	}
+
 	// check header identification
 	header.ident = LittleLong( header.ident );
+
 	if( header.ident != AASID ) {
 		AAS_Error( "%s is not an AAS file\n", filename );
 		fclose( fp );
 		return false;
 	}
+
 	// check the version
 	header.version = LittleLong( header.version );
+
 	if( header.version != AASVERSION ) {
 		AAS_Error( "%s is version %i, not %i\n", filename, header.version, AASVERSION );
 		fclose( fp );
 		return false;
 	}
+
 	//
 	if( header.version == AASVERSION ) {
 		AAS_DData( ( unsigned char* )&header + 8, sizeof( aas_header_t ) - 8 );
 	}
+
 	( *aasworld ).bspchecksum = LittleLong( header.bspchecksum );
 	// load the lumps:
 	// bounding boxes
 	offset				 = fpoffset + LittleLong( header.lumps[AASLUMP_BBOXES].fileofs );
 	length				 = LittleLong( header.lumps[AASLUMP_BBOXES].filelen );
 	( *aasworld ).bboxes = ( aas_bbox_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).bboxes );
+
 	if( !( *aasworld ).bboxes ) {
 		return false;
 	}
+
 	( *aasworld ).numbboxes = length / sizeof( aas_bbox_t );
 	// vertexes
 	offset				   = fpoffset + LittleLong( header.lumps[AASLUMP_VERTEXES].fileofs );
 	length				   = LittleLong( header.lumps[AASLUMP_VERTEXES].filelen );
 	( *aasworld ).vertexes = ( aas_vertex_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).vertexes );
+
 	if( !( *aasworld ).vertexes ) {
 		return false;
 	}
+
 	( *aasworld ).numvertexes = length / sizeof( aas_vertex_t );
 	// planes
 	offset				 = fpoffset + LittleLong( header.lumps[AASLUMP_PLANES].fileofs );
 	length				 = LittleLong( header.lumps[AASLUMP_PLANES].filelen );
 	( *aasworld ).planes = ( aas_plane_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).planes );
+
 	if( !( *aasworld ).planes ) {
 		return false;
 	}
+
 	( *aasworld ).numplanes = length / sizeof( aas_plane_t );
 	// edges
 	offset				= fpoffset + LittleLong( header.lumps[AASLUMP_EDGES].fileofs );
 	length				= LittleLong( header.lumps[AASLUMP_EDGES].filelen );
 	( *aasworld ).edges = ( aas_edge_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).edges );
+
 	if( !( *aasworld ).edges ) {
 		return false;
 	}
+
 	( *aasworld ).numedges = length / sizeof( aas_edge_t );
 	// edgeindex
 	offset					= fpoffset + LittleLong( header.lumps[AASLUMP_EDGEINDEX].fileofs );
 	length					= LittleLong( header.lumps[AASLUMP_EDGEINDEX].filelen );
 	( *aasworld ).edgeindex = ( aas_edgeindex_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).edgeindex );
+
 	if( !( *aasworld ).edgeindex ) {
 		return false;
 	}
+
 	( *aasworld ).edgeindexsize = length / sizeof( aas_edgeindex_t );
 	// faces
 	offset				= fpoffset + LittleLong( header.lumps[AASLUMP_FACES].fileofs );
 	length				= LittleLong( header.lumps[AASLUMP_FACES].filelen );
 	( *aasworld ).faces = ( aas_face_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).faces );
+
 	if( !( *aasworld ).faces ) {
 		return false;
 	}
+
 	( *aasworld ).numfaces = length / sizeof( aas_face_t );
 	// faceindex
 	offset					= fpoffset + LittleLong( header.lumps[AASLUMP_FACEINDEX].fileofs );
 	length					= LittleLong( header.lumps[AASLUMP_FACEINDEX].filelen );
 	( *aasworld ).faceindex = ( aas_faceindex_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).faceindex );
+
 	if( !( *aasworld ).faceindex ) {
 		return false;
 	}
+
 	( *aasworld ).faceindexsize = length / sizeof( int );
 	// convex areas
 	offset				= fpoffset + LittleLong( header.lumps[AASLUMP_AREAS].fileofs );
 	length				= LittleLong( header.lumps[AASLUMP_AREAS].filelen );
 	( *aasworld ).areas = ( aas_area_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).areas );
+
 	if( !( *aasworld ).areas ) {
 		return false;
 	}
+
 	( *aasworld ).numareas = length / sizeof( aas_area_t );
 	// area settings
 	offset					   = fpoffset + LittleLong( header.lumps[AASLUMP_AREASETTINGS].fileofs );
 	length					   = LittleLong( header.lumps[AASLUMP_AREASETTINGS].filelen );
 	( *aasworld ).areasettings = ( aas_areasettings_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).areasettings );
+
 	if( !( *aasworld ).areasettings ) {
 		return false;
 	}
+
 	( *aasworld ).numareasettings = length / sizeof( aas_areasettings_t );
 	// reachability list
 	offset					   = fpoffset + LittleLong( header.lumps[AASLUMP_REACHABILITY].fileofs );
 	length					   = LittleLong( header.lumps[AASLUMP_REACHABILITY].filelen );
 	( *aasworld ).reachability = ( aas_reachability_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).reachability );
+
 	if( length && !( *aasworld ).reachability ) {
 		return false;
 	}
+
 	( *aasworld ).reachabilitysize = length / sizeof( aas_reachability_t );
 	// nodes
 	offset				= fpoffset + LittleLong( header.lumps[AASLUMP_NODES].fileofs );
 	length				= LittleLong( header.lumps[AASLUMP_NODES].filelen );
 	( *aasworld ).nodes = ( aas_node_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).nodes );
+
 	if( !( *aasworld ).nodes ) {
 		return false;
 	}
+
 	( *aasworld ).numnodes = length / sizeof( aas_node_t );
 	// cluster portals
 	offset				  = fpoffset + LittleLong( header.lumps[AASLUMP_PORTALS].fileofs );
 	length				  = LittleLong( header.lumps[AASLUMP_PORTALS].filelen );
 	( *aasworld ).portals = ( aas_portal_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).portals );
+
 	if( length && !( *aasworld ).portals ) {
 		return false;
 	}
+
 	( *aasworld ).numportals = length / sizeof( aas_portal_t );
 	// cluster portal index
 	offset					  = fpoffset + LittleLong( header.lumps[AASLUMP_PORTALINDEX].fileofs );
 	length					  = LittleLong( header.lumps[AASLUMP_PORTALINDEX].filelen );
 	( *aasworld ).portalindex = ( aas_portalindex_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).portalindex );
+
 	if( length && !( *aasworld ).portalindex ) {
 		return false;
 	}
+
 	( *aasworld ).portalindexsize = length / sizeof( aas_portalindex_t );
 	// clusters
 	offset				   = fpoffset + LittleLong( header.lumps[AASLUMP_CLUSTERS].fileofs );
 	length				   = LittleLong( header.lumps[AASLUMP_CLUSTERS].filelen );
 	( *aasworld ).clusters = ( aas_cluster_t* )AAS_LoadAASLump( fp, offset, length, ( *aasworld ).clusters );
+
 	if( length && !( *aasworld ).clusters ) {
 		return false;
 	}
+
 	( *aasworld ).numclusters = length / sizeof( aas_cluster_t );
 	// swap everything
 	AAS_SwapAASData();
@@ -410,6 +474,7 @@ qboolean AAS_LoadAASFile( char* filename, int fpoffset, int fplength )
 	fclose( fp );
 	return true;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -432,8 +497,10 @@ int AAS_WriteAASLump( FILE* fp, aas_header_t* h, int lumpnum, void* data, int le
 			return false;
 		}
 	}
+
 	return true;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -445,13 +512,16 @@ void AAS_ShowNumReachabilities( int tt, char* name )
 	int i, num;
 
 	num = 0;
+
 	for( i = 0; i < ( *aasworld ).reachabilitysize; i++ ) {
 		if( ( ( *aasworld ).reachability[i].traveltype & TRAVELTYPE_MASK ) == tt ) {
 			num++;
 		}
 	}
+
 	Log_Print( "%6d %s\n", num, name );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -492,6 +562,7 @@ void AAS_ShowTotals()
 	AAS_ShowNumReachabilities( TRAVEL_JUMPPAD, "jump pad" );
 	AAS_ShowNumReachabilities( TRAVEL_FUNCBOB, "func bob" );
 }
+
 //===========================================================================
 // aas data is useless after writing to file because it is byte swapped
 //
@@ -515,65 +586,84 @@ qboolean AAS_WriteAASFile( char* filename )
 	header.bspchecksum = LittleLong( ( *aasworld ).bspchecksum );
 	// open a new file
 	fp = fopen( filename, "wb" );
+
 	if( !fp ) {
 		Log_Print( "error opening %s\n", filename );
 		return false;
 	}
+
 	// write the header
 	if( fwrite( &header, sizeof( aas_header_t ), 1, fp ) < 1 ) {
 		fclose( fp );
 		return false;
 	}
+
 	// add the data lumps to the file
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_BBOXES, ( *aasworld ).bboxes, ( *aasworld ).numbboxes * sizeof( aas_bbox_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_VERTEXES, ( *aasworld ).vertexes, ( *aasworld ).numvertexes * sizeof( aas_vertex_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_PLANES, ( *aasworld ).planes, ( *aasworld ).numplanes * sizeof( aas_plane_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_EDGES, ( *aasworld ).edges, ( *aasworld ).numedges * sizeof( aas_edge_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_EDGEINDEX, ( *aasworld ).edgeindex, ( *aasworld ).edgeindexsize * sizeof( aas_edgeindex_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_FACES, ( *aasworld ).faces, ( *aasworld ).numfaces * sizeof( aas_face_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_FACEINDEX, ( *aasworld ).faceindex, ( *aasworld ).faceindexsize * sizeof( aas_faceindex_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_AREAS, ( *aasworld ).areas, ( *aasworld ).numareas * sizeof( aas_area_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_AREASETTINGS, ( *aasworld ).areasettings, ( *aasworld ).numareasettings * sizeof( aas_areasettings_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_REACHABILITY, ( *aasworld ).reachability, ( *aasworld ).reachabilitysize * sizeof( aas_reachability_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_NODES, ( *aasworld ).nodes, ( *aasworld ).numnodes * sizeof( aas_node_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_PORTALS, ( *aasworld ).portals, ( *aasworld ).numportals * sizeof( aas_portal_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_PORTALINDEX, ( *aasworld ).portalindex, ( *aasworld ).portalindexsize * sizeof( aas_portalindex_t ) ) ) {
 		return false;
 	}
+
 	if( !AAS_WriteAASLump( fp, &header, AASLUMP_CLUSTERS, ( *aasworld ).clusters, ( *aasworld ).numclusters * sizeof( aas_cluster_t ) ) ) {
 		return false;
 	}
+
 	// rewrite the header with the added lumps
 	fseek( fp, 0, SEEK_SET );
 	AAS_DData( ( unsigned char* )&header + 8, sizeof( aas_header_t ) - 8 );
+
 	if( fwrite( &header, sizeof( aas_header_t ), 1, fp ) < 1 ) {
 		fclose( fp );
 		return false;
 	}
+
 	// close the file
 	fclose( fp );
 	return true;

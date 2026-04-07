@@ -60,6 +60,7 @@ void		CG_InitMarkPolys()
 	cg_activeMarkPolys.nextMark = &cg_activeMarkPolys;
 	cg_activeMarkPolys.prevMark = &cg_activeMarkPolys;
 	cg_freeMarkPolys			= cg_markPolys;
+
 	for( i = 0, trav = cg_markPolys + 1, lasttrav = cg_markPolys; i < MAX_MARK_POLYS - 1; i++, trav++ ) {
 		lasttrav->nextMark = trav;
 		lasttrav		   = trav;
@@ -102,6 +103,7 @@ markPoly_t* CG_AllocMark( int endTime )
 		// no free entities, so free the one at the end of the chain
 		// remove the oldest active entity
 		time = cg_activeMarkPolys.prevMark->time;
+
 		while( cg_activeMarkPolys.prevMark && time == cg_activeMarkPolys.prevMark->time ) {
 			CG_FreeMarkPoly( cg_activeMarkPolys.prevMark );
 		}
@@ -229,12 +231,15 @@ void CG_ImpactMark( qhandle_t markShader,
 		if( mf->numPoints > MAX_VERTS_ON_POLY ) {
 			mf->numPoints = MAX_VERTS_ON_POLY;
 		}
+
 		if( mf->numPoints < 0 ) {
 			hasST = qtrue;
 			mf->numPoints *= -1;
+
 		} else {
 			hasST = qfalse;
 		}
+
 		for( j = 0, v = verts; j < mf->numPoints; j++, v++ ) {
 			vec3_t delta;
 
@@ -244,6 +249,7 @@ void CG_ImpactMark( qhandle_t markShader,
 				VectorSubtract( v->xyz, origin, delta );
 				v->st[0] = 0.5 + DotProduct( delta, axis[1] ) * texCoordScale;
 				v->st[1] = 0.5 + DotProduct( delta, axis[2] ) * texCoordScale;
+
 			} else {
 				v->st[0] = markPoints[mf->firstPoint + j][3];
 				v->st[1] = markPoints[mf->firstPoint + j][4];
@@ -291,6 +297,7 @@ void CG_AddMarks()
 	}
 
 	mp = cg_activeMarkPolys.nextMark;
+
 	for( ; mp != &cg_activeMarkPolys; mp = next ) {
 		// grab next now, so if the local entity is freed we
 		// still have it
@@ -305,10 +312,12 @@ void CG_AddMarks()
 		// fade out the energy bursts
 		if( mp->markShader == cgs.media.energyMarkShader ) {
 			fade = 450 - 450 * ( ( cg.time - mp->time ) / 3000.0 );
+
 			if( fade < 255 ) {
 				if( fade < 0 ) {
 					fade = 0;
 				}
+
 				if( mp->verts[0].modulate[0] != 0 ) {
 					for( j = 0; j < mp->poly.numVerts; j++ ) {
 						mp->verts[j].modulate[0] = mp->color[0] * fade;
@@ -322,10 +331,12 @@ void CG_AddMarks()
 		// fade in the zombie spirit marks
 		if( mp->markShader == cgs.media.zombieSpiritWallShader ) {
 			fade = 255 * ( ( cg.time - mp->time ) / 2000.0 );
+
 			if( fade < 255 ) {
 				if( fade < 0 ) {
 					fade = 0;
 				}
+
 				if( mp->verts[0].modulate[0] != 0 ) {
 					for( j = 0; j < mp->poly.numVerts; j++ ) {
 						mp->verts[j].modulate[0] = mp->color[0] * fade;
@@ -338,12 +349,15 @@ void CG_AddMarks()
 
 		// fade all marks out with time
 		t = mp->time + mp->duration - cg.time;
+
 		if( t < ( float )mp->duration / 2.0 ) {
 			fade = ( int )( 255.0 * ( float )t / ( ( float )mp->duration / 2.0 ) );
+
 			if( mp->alphaFade ) {
 				for( j = 0; j < mp->poly.numVerts; j++ ) {
 					mp->verts[j].modulate[3] = fade;
 				}
+
 			} else {
 				for( j = 0; j < mp->poly.numVerts; j++ ) {
 					mp->verts[j].modulate[0] = mp->color[0] * fade;

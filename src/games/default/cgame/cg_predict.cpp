@@ -62,6 +62,7 @@ void			  CG_BuildSolidList()
 
 	if( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
 		snap = cg.nextSnap;
+
 	} else {
 		snap = cg.snap;
 	}
@@ -124,6 +125,7 @@ static void CG_ClipMoveToEntities( const vec3_t start, const vec3_t mins, const 
 			//			VectorCopy( cent->lerpAngles, angles );
 			BG_EvaluateTrajectory( &cent->currentState.apos, cg.physicsTime, angles );
 			BG_EvaluateTrajectory( &cent->currentState.pos, cg.physicsTime, origin );
+
 		} else {
 			// encoded bbox
 			x  = ( ent->solid & 255 );
@@ -138,15 +140,19 @@ static void CG_ClipMoveToEntities( const vec3_t start, const vec3_t mins, const 
 			// MrE: use bbox or capsule
 			if( ent->eFlags & EF_CAPSULE ) {
 				cmodel = sys->CM_TempCapsuleModel( bmins, bmaxs );
+
 			} else {
 				cmodel = sys->CM_TempBoxModel( bmins, bmaxs );
 			}
+
 			VectorCopy( vec3_origin, angles );
 			VectorCopy( cent->lerpOrigin, origin );
 		}
+
 		// MrE: use bbox of capsule
 		if( capsule ) {
 			sys->CM_TransformedCapsuleTrace( &trace, start, end, mins, maxs, cmodel, mask, origin, angles );
+
 		} else {
 			sys->CM_TransformedBoxTrace( &trace, start, end, mins, maxs, cmodel, mask, origin, angles );
 		}
@@ -154,9 +160,11 @@ static void CG_ClipMoveToEntities( const vec3_t start, const vec3_t mins, const 
 		if( trace.allsolid || trace.fraction < tr->fraction ) {
 			trace.entityNum = ent->number;
 			*tr				= trace;
+
 		} else if( trace.startsolid ) {
 			tr->startsolid = qtrue;
 		}
+
 		if( tr->allsolid ) {
 			return;
 		}
@@ -226,6 +234,7 @@ int CG_PointContents( const vec3_t point, int passEntityNum )
 		}
 
 		cmodel = sys->CM_InlineModel( ent->modelindex );
+
 		if( !cmodel ) {
 			continue;
 		}
@@ -280,16 +289,20 @@ static void CG_InterpolatePlayerState( qboolean grabAngles )
 	f = ( float )( cg.time - prev->serverTime ) / ( next->serverTime - prev->serverTime );
 
 	i = next->ps.bobCycle;
+
 	if( i < prev->ps.bobCycle ) {
 		i += 256; // handle wraparound
 	}
+
 	out->bobCycle = prev->ps.bobCycle + f * ( i - prev->ps.bobCycle );
 
 	for( i = 0; i < 3; i++ ) {
 		out->origin[i] = prev->ps.origin[i] + f * ( next->ps.origin[i] - prev->ps.origin[i] );
+
 		if( !grabAngles ) {
 			out->viewangles[i] = LerpAngle( prev->ps.viewangles[i], next->ps.viewangles[i], f );
 		}
+
 		out->velocity[i] = prev->ps.velocity[i] + f * ( next->ps.velocity[i] - prev->ps.velocity[i] );
 	}
 }
@@ -316,6 +329,7 @@ static void CG_TouchItem( centity_t* cent )
 	if( !cg_autoactivate.integer ) {
 		return;
 	}
+
 	//----(SA) end
 
 	if( !BG_PlayerTouchesItem( &cg.predictedPlayerState, &cent->currentState, cg.time ) ) {
@@ -339,6 +353,7 @@ static void CG_TouchItem( centity_t* cent )
 			return;
 		}
 	}
+
 	if( item->giType == IT_CLIPBOARD ) {
 		return;
 	}
@@ -348,6 +363,7 @@ static void CG_TouchItem( centity_t* cent )
 	if( cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_RED && item->giTag == PW_REDFLAG ) {
 		return;
 	}
+
 	if( cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_BLUE && item->giTag == PW_BLUEFLAG ) {
 		return;
 	}
@@ -373,6 +389,7 @@ static void CG_TouchItem( centity_t* cent )
 				weapon = WP_AKIMBO;
 			}
 		}
+
 		//----(SA)	end
 
 		COM_BitSet( cg.predictedPlayerState.weapons, weapon );
@@ -380,13 +397,17 @@ static void CG_TouchItem( centity_t* cent )
 		//----(SA)	added
 		if( weapon == WP_SNOOPERSCOPE ) {
 			COM_BitSet( cg.predictedPlayerState.weapons, WP_GARAND );
+
 		} else if( weapon == WP_GARAND ) {
 			COM_BitSet( cg.predictedPlayerState.weapons, WP_SNOOPERSCOPE );
+
 		} else if( weapon == WP_FG42 ) {
 			COM_BitSet( cg.predictedPlayerState.weapons, WP_FG42SCOPE );
+
 		} else if( weapon == WP_SNIPERRIFLE ) {
 			COM_BitSet( cg.predictedPlayerState.weapons, WP_MAUSER );
 		}
+
 		//----(SA)	end
 
 		if( !cg.predictedPlayerState.ammo[BG_FindAmmoForWeapon( ( weapon_t )weapon )] ) {
@@ -398,6 +419,7 @@ static void CG_TouchItem( centity_t* cent )
 	if( item->giType == IT_HOLDABLE ) {
 		cg.predictedPlayerState.stats[STAT_HOLDABLE_ITEM] |= 1 << item->giTag;
 	}
+
 	//----(SA)	end
 }
 
@@ -442,6 +464,7 @@ static void CG_TouchTriggerPrediction()
 		}
 
 		cmodel = sys->CM_InlineModel( ent->modelindex );
+
 		if( !cmodel ) {
 			continue;
 		}
@@ -454,6 +477,7 @@ static void CG_TouchTriggerPrediction()
 
 		if( ent->eType == ET_TELEPORT_TRIGGER ) {
 			cg.hyperspace = qtrue;
+
 		} else {
 			float  s;
 			vec3_t dir;
@@ -471,10 +495,12 @@ static void CG_TouchTriggerPrediction()
 			// if we are already flying along the bounce direction, don't play sound again
 			VectorNormalize2( ent->origin2, dir );
 			s = DotProduct( cg.predictedPlayerState.velocity, dir );
+
 			if( s < 500 ) {
 				// don't play the event sound again if we are in a fat trigger
 				BG_AddPredictableEventToPlayerstate( EV_JUMP_PAD, 0, &cg.predictedPlayerState );
 			}
+
 			VectorCopy( ent->origin2, cg.predictedPlayerState.velocity );
 		}
 	}
@@ -543,25 +569,31 @@ void CG_PredictPlayerState()
 	cg_pmove.ps			   = &cg.predictedPlayerState;
 	cg_pmove.trace		   = CG_TraceCapsule;
 	cg_pmove.pointcontents = CG_PointContents;
+
 	if( cg_pmove.ps->pm_type == PM_DEAD ) {
 		cg_pmove.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;
 		// DHM-Nerve added:: EF_DEAD is checked for in Pmove functions, but wasn't being set
 		//              until after Pmove
 		cg_pmove.ps->eFlags |= EF_DEAD;
 		// dhm-Nerve end
+
 	} else {
 		cg_pmove.tracemask = MASK_PLAYERSOLID;
 	}
+
 	if( ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) || ( cg.snap->ps.pm_flags & PMF_LIMBO ) ) { // JPW NERVE limbo
 		cg_pmove.tracemask &= ~CONTENTS_BODY;																// spectators can fly through bodies
 	}
+
 	cg_pmove.noFootsteps = ( cgs.dmflags & DF_NO_FOOTSTEPS ) > 0;
 
 	//----(SA)	added
 	cg_pmove.noWeapClips = ( cgs.dmflags & DF_NO_WEAPRELOAD ) > 0;
+
 	if( cg.predictedPlayerState.aiChar ) {
 		cg_pmove.noWeapClips = qtrue; // ensure AI characters don't use clips
 	}
+
 	//----(SA)	end
 
 	// save the state before the pmove so we can detect transitions
@@ -574,10 +606,12 @@ void CG_PredictPlayerState()
 	// the last good position we had
 	cmdNum = current - CMD_BACKUP + 1;
 	sys->GetUserCmd( cmdNum, &oldestCmd );
+
 	if( oldestCmd.serverTime > cg.snap->ps.commandTime && oldestCmd.serverTime < cg.time ) { // special check for map_restart
 		if( cg_showmiss.integer ) {
 			CG_Printf( "exceeded PACKET_BACKUP on commands\n" );
 		}
+
 		//		return;
 	}
 
@@ -591,6 +625,7 @@ void CG_PredictPlayerState()
 	if( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
 		cg.predictedPlayerState = cg.nextSnap->ps;
 		cg.physicsTime			= cg.nextSnap->serverTime;
+
 	} else {
 		cg.predictedPlayerState = cg.snap->ps;
 		cg.physicsTime			= cg.snap->serverTime;
@@ -598,6 +633,7 @@ void CG_PredictPlayerState()
 
 	if( pmove_msec.integer < 8 ) {
 		sys->Cvar_Set( "pmove_msec", "8" );
+
 	} else if( pmove_msec.integer > 33 ) {
 		sys->Cvar_Set( "pmove_msec", "33" );
 	}
@@ -624,6 +660,7 @@ void CG_PredictPlayerState()
 
 	// run cmds
 	moved = qfalse;
+
 	for( cmdNum = current - CMD_BACKUP + 1; cmdNum <= current; cmdNum++ ) {
 		// get the command
 		sys->GetUserCmd( cmdNum, &cg_pmove.cmd );
@@ -656,10 +693,13 @@ void CG_PredictPlayerState()
 			if( cg.thisFrameTeleport ) {
 				// a teleport will not cause an error decay
 				VectorClear( cg.predictedError );
+
 				if( cg_showmiss.integer ) {
 					CG_Printf( "PredictionTeleport\n" );
 				}
+
 				cg.thisFrameTeleport = qfalse;
+
 			} else {
 				vec3_t adjusted;
 				CG_AdjustPositionForMover( cg.predictedPlayerState.origin, cg.predictedPlayerState.groundEntityNum, cg.physicsTime, cg.oldTime, adjusted, deltaAngles );
@@ -671,28 +711,36 @@ void CG_PredictPlayerState()
 						CG_Printf( "prediction error\n" );
 					}
 				}
+
 				VectorSubtract( oldPlayerState.origin, adjusted, delta );
 				len = VectorLength( delta );
+
 				if( len > 0.1 ) {
 					if( cg_showmiss.integer ) {
 						CG_Printf( "Prediction miss: %f\n", len );
 					}
+
 					if( cg_errorDecay.integer ) {
 						int	  t;
 						float f;
 
 						t = cg.time - cg.predictedErrorTime;
 						f = ( cg_errorDecay.value - t ) / cg_errorDecay.value;
+
 						if( f < 0 ) {
 							f = 0;
 						}
+
 						if( f > 0 && cg_showmiss.integer ) {
 							CG_Printf( "Double prediction decay: %f\n", f );
 						}
+
 						VectorScale( cg.predictedError, f, cg.predictedError );
+
 					} else {
 						VectorClear( cg.predictedError );
 					}
+
 					VectorAdd( delta, cg.predictedError, cg.predictedError );
 					cg.predictedErrorTime = cg.oldTime;
 				}
@@ -718,6 +766,7 @@ void CG_PredictPlayerState()
 			cg_pmove.cmd.angles[0]	 = cg_pmove.oldcmd.angles[0];
 			cg_pmove.cmd.angles[1]	 = cg_pmove.oldcmd.angles[1];
 			cg_pmove.cmd.angles[2]	 = cg_pmove.oldcmd.angles[2];
+
 			if( cg_pmove.cmd.serverTime - cg.predictedPlayerState.commandTime > 1 ) {
 				cg_pmove.cmd.serverTime = cg.predictedPlayerState.commandTime + 1;
 			}
@@ -739,6 +788,7 @@ void CG_PredictPlayerState()
 		if( cg_showmiss.integer ) {
 			CG_Printf( "not moved\n" );
 		}
+
 		return;
 	}
 

@@ -140,6 +140,7 @@ int GetVertexnum( vec3_t in )
 	for ( i = 0 ; i < 3 ; i++ ) {
 		if ( fabs( in[i] - Q_rint( in[i] ) ) < INTEGRAL_EPSILON ) {
 			vert[i] = Q_rint( in[i] );
+
 		} else {
 			vert[i] = in[i];
 		}
@@ -149,6 +150,7 @@ int GetVertexnum( vec3_t in )
 
 	for ( vnum = hashverts[h] ; vnum ; vnum = vertexchain[vnum] ) {
 		p = dvertexes[vnum].point;
+
 		if ( fabs( p[0] - vert[0] ) < POINT_EPSILON
 				&& fabs( p[1] - vert[1] ) < POINT_EPSILON
 				&& fabs( p[2] - vert[2] ) < POINT_EPSILON ) {
@@ -174,6 +176,7 @@ int GetVertexnum( vec3_t in )
 
 	return numvertexes - 1;
 }
+
 	#else
 /*
 ==================
@@ -195,6 +198,7 @@ int GetVertexnum( vec3_t v )
 		if ( fabs( v[i] - ( int )( v[i] + 0.5 ) ) < INTEGRAL_EPSILON ) {
 			v[i] = ( int )( v[i] + 0.5 );
 		}
+
 		if ( v[i] < -4096 || v[i] > 4096 ) {
 			Error( "GetVertexnum: outside +/- 4096" );
 		}
@@ -204,10 +208,12 @@ int GetVertexnum( vec3_t v )
 	for ( i = 0, dv = dvertexes ; i < numvertexes ; i++, dv++ ) {
 		for ( j = 0 ; j < 3 ; j++ ) {
 			d = v[j] - dv->point[j];
+
 			if ( d > POINT_EPSILON || d < -POINT_EPSILON ) {
 				break;
 			}
 		}
+
 		if ( j == 3 ) {
 			return i;       // a match
 		}
@@ -217,12 +223,14 @@ int GetVertexnum( vec3_t v )
 	if ( numvertexes == MAX_MAP_VERTS ) {
 		Error( "MAX_MAP_VERTS" );
 	}
+
 	VectorCopy( v, dv->point );
 	numvertexes++;
 	c_uniqueverts++;
 
 	return numvertexes - 1;
 }
+
 	#endif
 
 
@@ -248,6 +256,7 @@ void FaceFromSuperverts( node_t* node, face_t* f, int base )
 	int i;
 
 	remaining = numsuperverts;
+
 	while ( remaining > MAXEDGES ) {
 		// must split into two faces, because of vertex overload
 		c_faceoverflows++;
@@ -258,6 +267,7 @@ void FaceFromSuperverts( node_t* node, face_t* f, int base )
 		node->faces = newf;
 
 		newf->numpoints = MAXEDGES;
+
 		for ( i = 0 ; i < MAXEDGES ; i++ ) {
 			newf->vertexnums[i] = superverts[( i + base ) % numsuperverts];
 		}
@@ -273,6 +283,7 @@ void FaceFromSuperverts( node_t* node, face_t* f, int base )
 
 	// copy the vertexes back to the face
 	f->numpoints = remaining;
+
 	for ( i = 0 ; i < remaining ; i++ ) {
 		f->vertexnums[i] = superverts[( i + base ) % numsuperverts];
 	}
@@ -294,20 +305,24 @@ void EmitFaceVertexes( node_t* node, face_t* f )
 	}
 
 	w = f->w;
+
 	for ( i = 0 ; i < w->numpoints ; i++ ) {
 		if ( noweld ) { // make every point unique
 			if ( numvertexes == MAX_MAP_VERTS ) {
 				Error( "MAX_MAP_VERTS" );
 			}
+
 			superverts[i] = numvertexes;
 			VectorCopy( w->p[i], dvertexes[numvertexes].point );
 			numvertexes++;
 			c_uniqueverts++;
 			c_totalverts++;
+
 		} else {
 			superverts[i] = GetVertexnum( w->p[i] );
 		}
 	}
+
 	numsuperverts = w->numpoints;
 
 	// this may fragment the face if > MAXEDGES
@@ -355,10 +370,12 @@ void FindEdgeVerts( vec3_t v1, vec3_t v2 )
 	{
 		int i;
 		num_edge_verts = numvertexes - 1;
+
 		for ( i = 0 ; i < numvertexes - 1 ; i++ ) {
 			edge_verts[i] = i + 1;
 		}
 	}
+
 		#endif
 
 	x1 = ( 4096 + ( int )( v1[0] + 0.5 ) ) >> 7;
@@ -371,30 +388,38 @@ void FindEdgeVerts( vec3_t v1, vec3_t v2 )
 		x1 = x2;
 		x2 = t;
 	}
+
 	if ( y1 > y2 ) {
 		t = y1;
 		y1 = y2;
 		y2 = t;
 	}
+
 		#if 0
 	x1--;
 	x2++;
 	y1--;
 	y2++;
+
 	if ( x1 < 0 ) {
 		x1 = 0;
 	}
+
 	if ( x2 >= HASH_SIZE ) {
 		x2 = HASH_SIZE;
 	}
+
 	if ( y1 < 0 ) {
 		y1 = 0;
 	}
+
 	if ( y2 >= HASH_SIZE ) {
 		y2 = HASH_SIZE;
 	}
+
 		#endif
 	num_edge_verts = 0;
+
 	for ( x = x1 ; x <= x2 ; x++ ) {
 		for ( y = y1 ; y <= y2 ; y++ ) {
 			for ( vnum = hashverts[y * HASH_SIZE + x] ; vnum ; vnum = vertexchain[vnum] ) {
@@ -417,10 +442,12 @@ void FindEdgeVerts( vec3_t v1, vec3_t v2 )
 	int i;
 
 	num_edge_verts = numvertexes - 1;
+
 	for ( i = 0 ; i < num_edge_verts ; i++ ) {
 		edge_verts[i] = i + 1;
 	}
 }
+
 	#endif
 
 /*
@@ -447,6 +474,7 @@ void TestEdge( vec_t start, vec_t end, int p1, int p2, int startvert )
 
 	for ( k = startvert ; k < num_edge_verts ; k++ ) {
 		j = edge_verts[k];
+
 		if ( j == p1 || j == p2 ) {
 			continue;
 		}
@@ -455,9 +483,11 @@ void TestEdge( vec_t start, vec_t end, int p1, int p2, int startvert )
 
 		VectorSubtract( p, edge_start, delta );
 		dist = DotProduct( delta, edge_dir );
+
 		if ( dist <= start || dist >= end ) {
 			continue;       // off an end
 		}
+
 		VectorMA( edge_start, dist, edge_dir, exact );
 		VectorSubtract( p, exact, off );
 		error = VectorLength( off );
@@ -466,6 +496,7 @@ void TestEdge( vec_t start, vec_t end, int p1, int p2, int startvert )
 			continue;       // not on the edge
 
 		}
+
 		// break the edge
 		c_tjunctions++;
 		TestEdge( start, dist, p1, j, k + 1 );
@@ -477,6 +508,7 @@ void TestEdge( vec_t start, vec_t end, int p1, int p2, int startvert )
 	if ( numsuperverts >= MAX_SUPERVERTS ) {
 		Error( "MAX_SUPERVERTS" );
 	}
+
 	superverts[numsuperverts] = p1;
 	numsuperverts++;
 }
@@ -534,10 +566,12 @@ void FixFaceEdges( node_t* node, face_t* f )
 			break;
 		}
 	}
+
 	if ( i == f->numpoints ) {
 		f->badstartvert = true;
 		c_badstartverts++;
 		base = 0;
+
 	} else {
 		// rotate the vertex order
 		base = start[i];
@@ -593,9 +627,11 @@ void FixTjuncs( node_t* headnode )
 	c_degenerate = 0;
 	c_facecollapse = 0;
 	c_tjunctions = 0;
+
 	if ( !notjunc ) {
 		FixEdges_r( headnode );
 	}
+
 	qprintf( "%5i edges degenerated\n", c_degenerate );
 	qprintf( "%5i faces degenerated\n", c_facecollapse );
 	qprintf( "%5i edges added by tjunctions\n", c_tjunctions );
@@ -636,6 +672,7 @@ void FreeFace( face_t* f )
 	if ( f->w ) {
 		FreeWinding( f->w );
 	}
+
 	FreeMemory( f );
 	c_faces--;
 }
@@ -660,20 +697,25 @@ int GetEdge2( int v1, int v2,  face_t* f )
 	if ( !noshare ) {
 		for ( i = firstmodeledge ; i < numedges ; i++ ) {
 			edge = &dedges[i];
+
 			if ( v1 == edge->v[1] && v2 == edge->v[0]
 					&& edgefaces[i][0]->contents == f->contents ) {
 				if ( edgefaces[i][1] ) {
 					//				printf ("WARNING: multiple backward edge\n");
 					continue;
 				}
+
 				edgefaces[i][1] = f;
 				return -i;
 			}
+
 	#if 0
+
 			if ( v1 == edge->v[0] && v2 == edge->v[1] ) {
 				printf( "WARNING: multiple forward edge\n" );
 				return i;
 			}
+
 	#endif
 		}
 	}
@@ -682,6 +724,7 @@ int GetEdge2( int v1, int v2,  face_t* f )
 	if ( numedges >= MAX_MAP_EDGES ) {
 		Error( "numedges == MAX_MAP_EDGES" );
 	}
+
 	edge = &dedges[numedges];
 	numedges++;
 	edge->v[0] = v1;
@@ -718,18 +761,22 @@ face_t* TryMerge( face_t* f1, face_t* f2, vec3_t planenormal )
 	if ( !f1->w || !f2->w ) {
 		return NULL;
 	}
+
 	if ( f1->texinfo != f2->texinfo ) {
 		return NULL;
 	}
+
 	if ( f1->planenum != f2->planenum ) { // on front and back sides
 		return NULL;
 	}
+
 	if ( f1->contents != f2->contents ) {
 		return NULL;
 	}
 
 
 	nw = TryMergeWinding( f1->w, f2->w, planenormal );
+
 	if ( !nw ) {
 		return NULL;
 	}
@@ -780,6 +827,7 @@ void MergeNodeFaces( node_t* node )
 			plane = &mapplanes[f1->planenum];
 			//
 			merged = TryMerge( f1, f2, plane->normal );
+
 			if ( !merged ) {
 				continue;
 			}
@@ -788,6 +836,7 @@ void MergeNodeFaces( node_t* node )
 			// so it will be checked against all the faces again
 			for ( end = node->faces ; end->next ; end = end->next )
 				;
+
 			merged->next = NULL;
 			end->next = merged;
 			break;
@@ -832,24 +881,32 @@ void SubdivideFace( node_t* node, face_t* f )
 
 			VectorCopy( tex->vecs[axis], temp );
 			w = f->w;
+
 			for ( i = 0 ; i < w->numpoints ; i++ ) {
 				v = DotProduct( w->p[i], temp );
+
 				if ( v < mins ) {
 					mins = v;
 				}
+
 				if ( v > maxs ) {
 					maxs = v;
 				}
 			}
+
 	#if 0
+
 			if ( maxs - mins <= 0 ) {
 				Error( "zero extents" );
 			}
+
 	#endif
+
 			if ( axis == 2 ) { // allow double high walls
 				if ( maxs - mins <= subdivide_size /* *2 */ ) {
 					break;
 				}
+
 			} else if ( maxs - mins <= subdivide_size )     {
 				break;
 			}
@@ -862,6 +919,7 @@ void SubdivideFace( node_t* node, face_t* f )
 			dist = ( mins + subdivide_size - 16 ) / v;
 
 			ClipWindingEpsilon( w, temp, dist, ON_EPSILON, &frontw, &backw );
+
 			if ( !frontw || !backw ) {
 				Error( "SubdivideFace: didn't split the polygon" );
 			}
@@ -909,10 +967,12 @@ face_t* FaceFromPortal( portal_t* p, int pside )
 	side_t*  side;
 
 	side = p->side;
+
 	if ( !side ) {
 		return NULL;    // portal does not bridge different visible contents
 
 	}
+
 	f = AllocFace();
 
 	f->texinfo = side->texinfo;
@@ -924,13 +984,16 @@ face_t* FaceFromPortal( portal_t* p, int pside )
 		return NULL;    // don't show insides of windows
 
 	}
+
 	if ( pside ) {
 		f->w = ReverseWinding( p->winding );
 		f->contents = p->nodes[1]->contents;
+
 	} else {
 		f->w = CopyWinding( p->winding );
 		f->contents = p->nodes[0]->contents;
 	}
+
 	return f;
 }
 
@@ -962,6 +1025,7 @@ void MakeFaces_r( node_t* node )
 		if ( !nomerge ) {
 			MergeNodeFaces( node );
 		}
+
 		if ( !nosubdiv ) {
 			SubdivideNodeFaces( node );
 		}
@@ -979,6 +1043,7 @@ void MakeFaces_r( node_t* node )
 		s = ( p->nodes[1] == node );
 
 		p->face[s] = FaceFromPortal( p, s );
+
 		if ( p->face[s] ) {
 			c_nodefaces++;
 			p->face[s]->next = p->onnode->faces;
@@ -1005,4 +1070,5 @@ void MakeFaces( node_t* node )
 	qprintf( "%5i merged\n", c_merge );
 	qprintf( "%5i subdivided\n", c_subdivide );
 }
+
 #endif

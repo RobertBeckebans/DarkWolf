@@ -134,25 +134,34 @@ void InitTramcar( gentity_t* ent )
 	// if the "color" or "light" keys are set, setup constantLight
 	lightSet = G_SpawnFloat( "light", "100", &light );
 	colorSet = G_SpawnVector( "color", "1 1 1", color );
+
 	if( lightSet || colorSet ) {
 		int r, g, b, i;
 
 		r = color[0] * 255;
+
 		if( r > 255 ) {
 			r = 255;
 		}
+
 		g = color[1] * 255;
+
 		if( g > 255 ) {
 			g = 255;
 		}
+
 		b = color[2] * 255;
+
 		if( b > 255 ) {
 			b = 255;
 		}
+
 		i = light / 4;
+
 		if( i > 255 ) {
 			i = 255;
 		}
+
 		ent->s.constantLight = r | ( g << 8 ) | ( b << 16 ) | ( i << 24 );
 	}
 
@@ -173,11 +182,14 @@ void InitTramcar( gentity_t* ent )
 	// calculate time to reach second position from speed
 	VectorSubtract( ent->pos2, ent->pos1, move );
 	distance = VectorLength( move );
+
 	if( !ent->speed ) {
 		ent->speed = 100;
 	}
+
 	VectorScale( move, ent->speed, ent->s.pos.trDelta );
 	ent->s.pos.trDuration = distance * 1000 / ent->speed;
+
 	if( ent->s.pos.trDuration <= 0 ) {
 		ent->s.pos.trDuration = 1;
 	}
@@ -210,6 +222,7 @@ void Calc_Roll( gentity_t* ent )
 	if( dot2 > 0 ) {
 		if( ent->s.apos.trBase[ROLL] < -( ent->angle * 2 ) ) {
 			ent->s.apos.trBase[ROLL] += 2;
+
 		} else if( ent->s.apos.trBase[ROLL] > -( ent->angle * 2 ) ) {
 			ent->s.apos.trBase[ROLL] -= 2;
 		}
@@ -217,9 +230,11 @@ void Calc_Roll( gentity_t* ent )
 		if( ent->s.apos.trBase[ROLL] > 90 ) {
 			ent->s.apos.trBase[ROLL] = 90;
 		}
+
 	} else if( dot2 < 0 ) {
 		if( ent->s.apos.trBase[ROLL] > -( ent->angle * 2 ) ) {
 			ent->s.apos.trBase[ROLL] -= 2;
+
 		} else if( ent->s.apos.trBase[ROLL] < -( ent->angle * 2 ) ) {
 			ent->s.apos.trBase[ROLL] += 2;
 		}
@@ -227,6 +242,7 @@ void Calc_Roll( gentity_t* ent )
 		if( ent->s.apos.trBase[ROLL] < -90 ) {
 			ent->s.apos.trBase[ROLL] = -90;
 		}
+
 	} else {
 		ent->s.apos.trBase[ROLL] = 0;
 	}
@@ -291,6 +307,7 @@ void Reached_Tramcar( gentity_t* ent )
 
 	// copy the apropriate values
 	next = ent->nextTrain;
+
 	if( !next || !next->nextTrain ) {
 		return; // just stop
 	}
@@ -317,17 +334,21 @@ void Reached_Tramcar( gentity_t* ent )
 				next = ent->nextTrain;
 
 				G_Printf( "changed track to %s\n", next->targetname );
+
 			} else {
 				G_Printf( "%s lap %i\n", next->targetname, next->count );
 			}
+
 		} else if( ( next->spawnflags & 1 ) && !( next->count ) && ent->health > 0 ) { // SCRIPT flag
 			GetNextTrack( ent );
 			Think_SetupAirplaneWaypoints( ent );
+
 		} else if( ( next->spawnflags & 2 ) && ( ent->spawnflags & 8 ) && ent->health <= 0 && ent->takedamage ) { // death path
 			ent->takedamage = qfalse;
 
 			GetNextTrack( ent );
 			Think_SetupAirplaneWaypoints( ent );
+
 		} else if( ( next->spawnflags & 4 ) ) { // explode the plane
 			ExplodePlaneSndFx( ent );
 
@@ -361,10 +382,12 @@ void Reached_Tramcar( gentity_t* ent )
 			// if the path_corner has a speed, use that
 			if( next->speed ) {
 				speed = next->speed;
+
 			} else {
 				// otherwise use the train's speed
 				speed = ent->speed;
 			}
+
 			if( speed < 1 ) {
 				speed = 1;
 			}
@@ -390,6 +413,7 @@ void Reached_Tramcar( gentity_t* ent )
 
 		ent->think	   = props_me109_think;
 		ent->nextthink = level.time + 50;
+
 	} else if( !Q_stricmp( ent->classname, "truck_cam" ) ) {
 		G_Printf( "target: %s\n", next->targetname );
 
@@ -397,6 +421,7 @@ void Reached_Tramcar( gentity_t* ent )
 			ent->s.loopSound = 0;	 // stop sound
 			ent->nextTrain	 = NULL;
 			return;
+
 		} else {
 			vec3_t vec, angles;
 			float  diff;
@@ -404,6 +429,7 @@ void Reached_Tramcar( gentity_t* ent )
 			if( next->spawnflags & 4 ) { // reverse
 				ent->props_frame_state = truck_reverse;
 				VectorSubtract( ent->r.currentOrigin, ent->nextTrain->nextTrain->s.origin, vec );
+
 			} else {
 				ent->props_frame_state = truck_moving;
 				VectorSubtract( ent->nextTrain->nextTrain->s.origin, ent->r.currentOrigin, vec );
@@ -418,6 +444,7 @@ void Reached_Tramcar( gentity_t* ent )
 
 			if( angles[YAW] == 0 ) {
 				ent->s.apos.trDuration = ent->s.pos.trDuration;
+
 			} else {
 				ent->s.apos.trDuration = 1000;
 			}
@@ -439,8 +466,10 @@ void Reached_Tramcar( gentity_t* ent )
 
 		if( next->count2 == 1 ) {
 			ent->props_frame_state = truck_gear1;
+
 		} else if( next->count2 == 2 ) {
 			ent->props_frame_state = truck_gear2;
+
 		} else if( next->count2 == 3 ) {
 			ent->props_frame_state = truck_gear3;
 		}
@@ -449,30 +478,39 @@ void Reached_Tramcar( gentity_t* ent )
 			case truck_idle:
 				ent->s.loopSound = truck_idle_snd;
 				break;
+
 			case truck_gear1:
 				ent->s.loopSound = truck_gear1_snd;
 				break;
+
 			case truck_gear2:
 				ent->s.loopSound = truck_gear2_snd;
 				break;
+
 			case truck_gear3:
 				ent->s.loopSound = truck_gear3_snd;
 				break;
+
 			case truck_reverse:
 				ent->s.loopSound = truck_reverse_snd;
 				break;
+
 			case truck_moving:
 				ent->s.loopSound = truck_moving_snd;
 				break;
+
 			case truck_breaking:
 				ent->s.loopSound = truck_breaking_snd;
 				break;
+
 			case truck_bouncy1:
 				ent->s.loopSound = truck_bouncy1_snd;
 				break;
+
 			case truck_bouncy2:
 				ent->s.loopSound = truck_bouncy2_snd;
 				break;
+
 			case truck_bouncy3:
 				ent->s.loopSound = truck_bouncy3_snd;
 				break;
@@ -502,10 +540,12 @@ void Reached_Tramcar( gentity_t* ent )
 	// if the path_corner has a speed, use that
 	if( next->speed ) {
 		speed = next->speed;
+
 	} else {
 		// otherwise use the train's speed
 		speed = ent->speed;
 	}
+
 	if( speed < 1 ) {
 		speed = 1;
 	}
@@ -618,6 +658,7 @@ void TramCarUse( gentity_t* ent, gentity_t* other, gentity_t* activator )
 
 		Reached_Tramcar( ent );
 	}
+
 	//	else
 	//		G_Printf ("no can do havent reached yet\n");
 }
@@ -631,6 +672,7 @@ void Blocked_Tramcar( gentity_t* ent, gentity_t* other )
 			Team_DroppedFlagThink( other );
 			return;
 		}
+
 		G_TempEntity( other->s.origin, EV_ITEM_POP );
 		G_FreeEntity( other );
 		return;
@@ -688,6 +730,7 @@ void SP_func_tramcar( gentity_t* self )
 	if( !self->damage ) {
 		self->damage = 100;
 	}
+
 	//}
 
 	if( !self->speed ) {
@@ -717,17 +760,22 @@ void SP_func_tramcar( gentity_t* self )
 
 	if( G_SpawnInt( "mass", "75", &mass ) ) {
 		self->count = mass;
+
 	} else {
 		self->count = 75;
 	}
 
 	G_SpawnString( "type", "wood", &type );
+
 	if( !Q_stricmp( type, "wood" ) ) {
 		self->key = 0;
+
 	} else if( !Q_stricmp( type, "glass" ) ) {
 		self->key = 1;
+
 	} else if( !Q_stricmp( type, "metal" ) ) {
 		self->key = 2;
+
 	} else if( !Q_stricmp( type, "gibs" ) ) {
 		self->key = 3;
 	}
@@ -737,17 +785,21 @@ void SP_func_tramcar( gentity_t* self )
 			Q_strncpyz( buffer, s, sizeof( buffer ) );
 			self->s.dl_intensity = G_SoundIndex( buffer );
 		}
+
 	} else {
 		switch( self->key ) {
 			case 0: // "wood"
 				self->s.dl_intensity = G_SoundIndex( "sound/world/boardbreak.wav" );
 				break;
+
 			case 1: // "glass"
 				self->s.dl_intensity = G_SoundIndex( "sound/world/glassbreak.wav" );
 				break;
+
 			case 2: // "metal"
 				self->s.dl_intensity = G_SoundIndex( "sound/world/metalbreak.wav" );
 				break;
+
 			case 3: // "gibs"
 				self->s.dl_intensity = G_SoundIndex( "sound/player/gibsplit1.wav" );
 				break;
@@ -891,10 +943,13 @@ void ExplodePlaneSndFx( gentity_t* self )
 
 		if( i == 0 ) {
 			part->s.modelindex = fuse_part;
+
 		} else if( i == 1 ) {
 			part->s.modelindex = wing_part;
+
 		} else if( i == 2 ) {
 			part->s.modelindex = tail_part;
+
 		} else {
 			part->s.modelindex = nose_part;
 		}
@@ -958,16 +1013,20 @@ void Plane_Attack( gentity_t* self, qboolean in_PVS )
 
 			if( in_PVS ) {
 				G_AddEvent( self, EV_GLOBAL_SOUND, fpattack_snd );
+
 			} else {
 				G_AddEvent( self, EV_GENERAL_SOUND, fpattack_snd );
 			}
 
 			Plane_Fire_Lead( self );
+
 		} else {
 			self->s.density = 7;
 		}
+
 	} else if( self->spawnflags & 4 ) { // spinning prop
 		self->s.density = 7;
+
 	} else {
 		self->s.density = 0;
 	}
@@ -1004,6 +1063,7 @@ void props_me109_think( gentity_t* self )
 
 					G_SetOrigin( self->melee, point );
 				}
+
 			} else {
 				self->melee->s.eType = ET_GENERAL;
 			}
@@ -1039,15 +1099,20 @@ void props_me109_think( gentity_t* self )
 
 		if( self->props_frame_state == plane_choke ) {
 			self->melee->s.loopSound = self->melee->noise_index = fpchoke_snd;
+
 		} else if( self->props_frame_state == plane_startup ) {
 			self->melee->s.loopSound = self->melee->noise_index = fpstartup_snd;
+
 		} else if( self->props_frame_state == plane_idle ) {
 			self->melee->s.loopSound = self->melee->noise_index = fpidle_snd;
+
 		} else if( self->props_frame_state == plane_flyby1 ) {
 			self->melee->s.loopSound = self->melee->noise_index = fpflyby1_snd;
+
 		} else if( self->props_frame_state == plane_flyby2 ) {
 			self->melee->s.loopSound = self->melee->noise_index = fpflyby2_snd;
 		}
+
 	} else {
 		propExplosionLarge( self );
 		self->melee->s.loopSound = self->melee->noise_index = 0;
@@ -1063,12 +1128,14 @@ void Think_SetupAirplaneWaypoints( gentity_t* ent )
 	gentity_t *path, *next, *start;
 
 	ent->nextTrain = G_Find( NULL, FOFS( targetname ), ent->target );
+
 	if( !ent->nextTrain ) {
 		G_Printf( "plane at %s with an unfound target\n", vtos( ent->r.absmin ) );
 		return;
 	}
 
 	start = NULL;
+
 	for( path = ent->nextTrain; path != start; path = next ) {
 		if( !start ) {
 			start = path;
@@ -1083,8 +1150,10 @@ void Think_SetupAirplaneWaypoints( gentity_t* ent )
 		// there may also be other targets that get fired when the corner
 		// is reached
 		next = NULL;
+
 		do {
 			next = G_Find( next, FOFS( targetname ), path->target );
+
 			if( !next ) {
 				G_Printf( "plane at %s without a target path_corner\n", vtos( path->s.origin ) );
 				return;
@@ -1098,6 +1167,7 @@ void Think_SetupAirplaneWaypoints( gentity_t* ent )
 		VectorCopy( ent->nextTrain->s.origin, ent->s.pos.trBase );
 		VectorCopy( ent->nextTrain->s.origin, ent->r.currentOrigin );
 		sys->LinkEntity( ent );
+
 	} else {
 		Reached_Tramcar( ent );
 	}
@@ -1117,6 +1187,7 @@ void PlaneUse( gentity_t* ent, gentity_t* other, gentity_t* activator )
 
 		Reached_Tramcar( ent );
 	}
+
 	//	else
 	//		G_Printf ("no can do havent reached yet\n");
 }
@@ -1279,6 +1350,7 @@ void SP_truck_cam( gentity_t* self )
 
 	if( G_SpawnInt( "mass", "20", &mass ) ) {
 		self->count = mass;
+
 	} else {
 		self->count = 20;
 	}
@@ -1353,11 +1425,14 @@ void Init_Camera( gentity_t* ent )
 	// calculate time to reach second position from speed
 	VectorSubtract( ent->pos2, ent->pos1, move );
 	distance = VectorLength( move );
+
 	if( !ent->speed ) {
 		ent->speed = 100;
 	}
+
 	VectorScale( move, ent->speed, ent->s.pos.trDelta );
 	ent->s.pos.trDuration = distance * 1000 / ent->speed;
+
 	if( ent->s.pos.trDuration <= 0 ) {
 		ent->s.pos.trDuration = 1;
 	}
@@ -1436,6 +1511,7 @@ void camera_cam_use( gentity_t* ent, gentity_t* other, gentity_t* activator )
 			player->client->ps.viewlocked					= 4;
 			player->client->ps.viewlocked_entNum			= ent->s.number;
 		}
+
 	} else {
 		ent->spawnflags &= ~1;
 		ent->think = NULL;
@@ -1513,6 +1589,7 @@ void screen_fade_use( gentity_t* ent, gentity_t* other, gentity_t* activator )
 		// fade out
 		sys->SetConfigstring( CS_SCREENFADE, va( "1 %i %i", level.time + 100, ( int )ent->wait ) );
 		ent->spawnflags &= ~1;
+
 	} else {
 		// fade in
 		sys->SetConfigstring( CS_SCREENFADE, va( "0 %i %i", level.time + 100, ( int )ent->delay ) );
@@ -1527,6 +1604,7 @@ void SP_screen_fade( gentity_t* ent )
 	if( !ent->wait ) {
 		ent->wait = 500;
 	}
+
 	if( !ent->delay ) {
 		ent->delay = 500;
 	}

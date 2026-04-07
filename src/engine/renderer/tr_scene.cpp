@@ -60,6 +60,7 @@ void R_ToggleSmpFrame()
 		// use the other buffers next frame, because another CPU
 		// may still be rendering into the current ones
 		tr.smpFrame ^= 1;
+
 	} else {
 		tr.smpFrame = 0;
 	}
@@ -162,6 +163,7 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts
 	poly->verts		  = &backEndData[tr.smpFrame]->polyVerts[r_numpolyverts];
 
 	memcpy( poly->verts, verts, numVerts * sizeof( *verts ) );
+
 	// Ridah
 	if( glConfig.hardwareType == GLHW_RAGEPRO ) {
 		poly->verts->modulate[0] = 255;
@@ -169,6 +171,7 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts
 		poly->verts->modulate[2] = 255;
 		poly->verts->modulate[3] = 255;
 	}
+
 	// done.
 	r_numpolys++;
 	r_numpolyverts += numVerts;
@@ -176,24 +179,30 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t* verts
 	// see if it is in a fog volume
 	if( tr.world->numfogs == 1 ) {
 		fogIndex = 0;
+
 	} else {
 		// find which fog volume the poly is in
 		VectorCopy( poly->verts[0].xyz, bounds[0] );
 		VectorCopy( poly->verts[0].xyz, bounds[1] );
+
 		for( i = 1; i < poly->numVerts; i++ ) {
 			AddPointToBounds( poly->verts[i].xyz, bounds[0], bounds[1] );
 		}
+
 		for( fogIndex = 1; fogIndex < tr.world->numfogs; fogIndex++ ) {
 			fog = &tr.world->fogs[fogIndex];
+
 			if( bounds[1][0] >= fog->bounds[0][0] && bounds[1][1] >= fog->bounds[0][1] && bounds[1][2] >= fog->bounds[0][2] && bounds[0][0] <= fog->bounds[1][0] && bounds[0][1] <= fog->bounds[1][1] &&
 				bounds[0][2] <= fog->bounds[1][2] ) {
 				break;
 			}
 		}
+
 		if( fogIndex == tr.world->numfogs ) {
 			fogIndex = 0;
 		}
 	}
+
 	poly->fogIndex = fogIndex;
 }
 
@@ -235,6 +244,7 @@ void RE_AddPolysToScene( qhandle_t hShader, int numVerts, const polyVert_t* vert
 		poly->verts		  = &backEndData[tr.smpFrame]->polyVerts[r_numpolyverts];
 
 		memcpy( poly->verts, &verts[numVerts * j], numVerts * sizeof( *verts ) );
+
 		// Ridah
 		if( glConfig.hardwareType == GLHW_RAGEPRO ) {
 			poly->verts->modulate[0] = 255;
@@ -242,6 +252,7 @@ void RE_AddPolysToScene( qhandle_t hShader, int numVerts, const polyVert_t* vert
 			poly->verts->modulate[2] = 255;
 			poly->verts->modulate[3] = 255;
 		}
+
 		// done.
 		r_numpolys++;
 		r_numpolyverts += numVerts;
@@ -250,30 +261,38 @@ void RE_AddPolysToScene( qhandle_t hShader, int numVerts, const polyVert_t* vert
 		if( tr.world == NULL ) {
 			fogIndex = 0;
 		}
+
 		// see if it is in a fog volume
 		else if( tr.world->numfogs == 1 ) {
 			fogIndex = 0;
+
 		} else {
 			// find which fog volume the poly is in
 			VectorCopy( poly->verts[0].xyz, bounds[0] );
 			VectorCopy( poly->verts[0].xyz, bounds[1] );
+
 			for( i = 1; i < poly->numVerts; i++ ) {
 				AddPointToBounds( poly->verts[i].xyz, bounds[0], bounds[1] );
 			}
+
 			for( fogIndex = 1; fogIndex < tr.world->numfogs; fogIndex++ ) {
 				fog = &tr.world->fogs[fogIndex];
+
 				if( bounds[1][0] >= fog->bounds[0][0] && bounds[1][1] >= fog->bounds[0][1] && bounds[1][2] >= fog->bounds[0][2] && bounds[0][0] <= fog->bounds[1][0] &&
 					bounds[0][1] <= fog->bounds[1][1] && bounds[0][2] <= fog->bounds[1][2] ) {
 					break;
 				}
 			}
+
 			if( fogIndex == tr.world->numfogs ) {
 				fogIndex = 0;
 			}
 		}
+
 		poly->fogIndex = fogIndex;
 	}
 }
+
 // done.
 
 //=================================================================================
@@ -289,10 +308,12 @@ void RE_AddRefEntityToScene( const refEntity_t* ent )
 	if( !tr.registered ) {
 		return;
 	}
+
 	// show_bug.cgi?id=402
 	if( r_numentities >= ENTITYNUM_WORLD ) {
 		return;
 	}
+
 	if( ent->reType < 0 || ent->reType >= RT_MAX_REF_ENTITY_TYPE ) {
 		ri.Error( ERR_DROP, "RE_AddRefEntityToScene: bad reType %i", ent->reType );
 	}
@@ -317,21 +338,26 @@ void RE_AddLightToScene( const vec3_t org, float intensity, float r, float g, fl
 	if( !tr.registered ) {
 		return;
 	}
+
 	if( r_numdlights >= MAX_DLIGHTS ) {
 		return;
 	}
+
 	if( intensity <= 0 ) {
 		return;
 	}
+
 	// these cards don't have the correct blend mode
 	if( glConfig.hardwareType == GLHW_RIVA128 || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		return;
 	}
+
 	// RF, allow us to force some dlights under all circumstances
 	if( !( overdraw & REF_FORCE_DLIGHT ) ) {
 		if( r_dynamiclight->integer == 0 ) {
 			return;
 		}
+
 		if( r_dynamiclight->integer == 2 && !( backEndData[tr.smpFrame]->dlights[r_numdlights].forced ) ) {
 			return;
 		}
@@ -349,6 +375,7 @@ void RE_AddLightToScene( const vec3_t org, float intensity, float r, float g, fl
 	light.position.z		  = org[2];
 	glRaytracingLightingAddLight( &light );
 #if 0
+
 	if( r_dlightScale->value <= 0 ) {  //----(SA)	added
 		return;
 	}
@@ -368,13 +395,17 @@ void RE_AddLightToScene( const vec3_t org, float intensity, float r, float g, fl
 
 	if( overdraw == 10 ) {  // sorry, hijacking 10 for a quick hack (SA)
 		dl->dlshader = R_GetShaderByHandle( RE_RegisterShader( "negdlightshader" ) );
+
 	} else if( overdraw == 11 ) {  // 11 is flames
 		dl->dlshader = R_GetShaderByHandle( RE_RegisterShader( "flamedlightshader" ) );
+
 	} else {
 		dl->overdraw = overdraw;
 	}
+
 #endif
 }
+
 // done.
 
 /*
@@ -389,6 +420,7 @@ void RE_AddCoronaToScene( const vec3_t org, float r, float g, float b, float sca
 	if( !tr.registered ) {
 		return;
 	}
+
 	if( r_numcoronas >= MAX_CORONAS ) {
 		return;
 	}
@@ -422,6 +454,7 @@ void RE_RenderScene( const refdef_t* fd )
 	if( !tr.registered ) {
 		return;
 	}
+
 	GLimp_LogComment( "====== RE_RenderScene =====\n" );
 
 	if( r_norefresh->integer ) {
@@ -457,6 +490,7 @@ void RE_RenderScene( const refdef_t* fd )
 
 	if( fd->rdflags & RDF_DRAWSKYBOX ) {
 		drawskyboxportal = 1;
+
 	} else {
 		drawskyboxportal = 0;
 	}
@@ -464,12 +498,14 @@ void RE_RenderScene( const refdef_t* fd )
 	// copy the areamask data over and note if it has changed, which
 	// will force a reset of the visible leafs even if the view hasn't moved
 	tr.refdef.areamaskModified = qfalse;
+
 	if( !( tr.refdef.rdflags & RDF_NOWORLDMODEL ) ) {
 		int areaDiff;
 		int i;
 
 		// compare the area bits
 		areaDiff = 0;
+
 		for( i = 0; i < MAX_MAP_AREA_BYTES / 4; i++ ) {
 			areaDiff |= ( ( int* )tr.refdef.areamask )[i] ^ ( ( int* )fd->areamask )[i];
 			( ( int* )tr.refdef.areamask )[i] = ( ( int* )fd->areamask )[i];

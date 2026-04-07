@@ -65,9 +65,11 @@ int			 UI_ParseInfos( char* buf, int max, char* infos[] )
 
 	while( 1 ) {
 		token = COM_Parse( &buf );
+
 		if( !token[0] ) {
 			break;
 		}
+
 		if( strcmp( token, "{" ) ) {
 			Com_Printf( "Missing { in info file\n" );
 			break;
@@ -79,30 +81,39 @@ int			 UI_ParseInfos( char* buf, int max, char* infos[] )
 		}
 
 		info[0] = '\0';
+
 		while( 1 ) {
 			token = COM_ParseExt( &buf, qtrue );
+
 			if( !token[0] ) {
 				Com_Printf( "Unexpected end of info file\n" );
 				break;
 			}
+
 			if( !strcmp( token, "}" ) ) {
 				break;
 			}
+
 			Q_strncpyz( key, token, sizeof( key ) );
 
 			token = COM_ParseExt( &buf, qfalse );
+
 			if( !token[0] ) {
 				strcpy( token, "<NULL>" );
 			}
+
 			Info_SetValueForKey( info, key, token );
 		}
+
 		// NOTE: extra space for arena number
 		infos[count] = ( char* )UI_Alloc( strlen( info ) + strlen( "\\num\\" ) + strlen( va( "%d", MAX_ARENAS ) ) + 1 );
+
 		if( infos[count] ) {
 			strcpy( infos[count], info );
 			count++;
 		}
 	}
+
 	return count;
 }
 
@@ -118,10 +129,12 @@ static void UI_LoadArenasFromFile( char* filename )
 	char		 buf[MAX_ARENAS_TEXT];
 
 	len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 	if( !f ) {
 		sys->Print( va( S_COLOR_RED "file not found: %s\n", filename ) );
 		return;
 	}
+
 	if( len >= MAX_ARENAS_TEXT ) {
 		sys->Print( va( S_COLOR_RED "file too large: %s is %i, max allowed is %i", filename, len, MAX_ARENAS_TEXT ) );
 		sys->FS_FCloseFile( f );
@@ -155,8 +168,10 @@ void UI_LoadArenas()
 	uiInfo.mapCount = 0;
 
 	sys->Cvar_Register( &arenasFile, "g_arenasFile", "", CVAR_INIT | CVAR_ROM );
+
 	if( *arenasFile.string ) {
 		UI_LoadArenasFromFile( arenasFile.string );
+
 	} else {
 		UI_LoadArenasFromFile( "scripts/arenas.txt" );
 	}
@@ -164,13 +179,16 @@ void UI_LoadArenas()
 	// get all arenas from .arena files
 	numdirs = sys->FS_GetFileList( "scripts", ".arena", dirlist, 1024 );
 	dirptr	= dirlist;
+
 	for( i = 0; i < numdirs; i++, dirptr += dirlen + 1 ) {
 		dirlen = strlen( dirptr );
 		strcpy( filename, "scripts/" );
 		strcat( filename, dirptr );
 		UI_LoadArenasFromFile( filename );
 	}
+
 	sys->Print( va( "%i arenas parsed\n", ui_numArenas ) );
+
 	if( UI_OutOfMemory() ) {
 		sys->Print( S_COLOR_YELLOW "WARNING: not anough memory in pool to load all arenas\n" );
 	}
@@ -186,33 +204,43 @@ void UI_LoadArenas()
 		uiInfo.mapList[uiInfo.mapCount].typeBits	= 0;
 
 		type = Info_ValueForKey( ui_arenaInfos[n], "type" );
+
 		// if no type specified, it will be treated as "ffa"
 		if( *type ) {
 			if( strstr( type, "ffa" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= ( 1 << GT_FFA );
 			}
+
 			if( strstr( type, "tourney" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= ( 1 << GT_TOURNAMENT );
 			}
+
 			if( strstr( type, "ctf" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= ( 1 << GT_CTF );
 			}
+
 #ifdef MISSIONPACK
+
 			if( strstr( type, "oneflag" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= ( 1 << GT_1FCTF );
 			}
+
 			if( strstr( type, "overload" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= ( 1 << GT_OBELISK );
 			}
+
 			if( strstr( type, "harvester" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= ( 1 << GT_HARVESTER );
 			}
+
 #endif // #ifdef MISSIONPACK
+
 		} else {
 			uiInfo.mapList[uiInfo.mapCount].typeBits |= ( 1 << GT_FFA );
 		}
 
 		uiInfo.mapCount++;
+
 		if( uiInfo.mapCount >= MAX_MAPS ) {
 			break;
 		}
@@ -231,10 +259,12 @@ static void UI_LoadBotsFromFile( char* filename )
 	char		 buf[MAX_BOTS_TEXT];
 
 	len = sys->FS_FOpenFile( filename, &f, FS_READ );
+
 	if( !f ) {
 		sys->Print( va( S_COLOR_RED "file not found: %s\n", filename ) );
 		return;
 	}
+
 	if( len >= MAX_BOTS_TEXT ) {
 		sys->Print( va( S_COLOR_RED "file too large: %s is %i, max allowed is %i", filename, len, MAX_BOTS_TEXT ) );
 		sys->FS_FCloseFile( f );
@@ -268,8 +298,10 @@ void UI_LoadBots()
 	ui_numBots = 0;
 
 	sys->Cvar_Register( &botsFile, "g_botsFile", "", CVAR_INIT | CVAR_ROM );
+
 	if( *botsFile.string ) {
 		UI_LoadBotsFromFile( botsFile.string );
+
 	} else {
 		UI_LoadBotsFromFile( "scripts/bots.txt" );
 	}
@@ -277,12 +309,14 @@ void UI_LoadBots()
 	// get all bots from .bot files
 	numdirs = sys->FS_GetFileList( "scripts", ".bot", dirlist, 1024 );
 	dirptr	= dirlist;
+
 	for( i = 0; i < numdirs; i++, dirptr += dirlen + 1 ) {
 		dirlen = strlen( dirptr );
 		strcpy( filename, "scripts/" );
 		strcat( filename, dirptr );
 		UI_LoadBotsFromFile( filename );
 	}
+
 	sys->Print( va( "%i bots parsed\n", ui_numBots ) );
 }
 
@@ -297,6 +331,7 @@ char* UI_GetBotInfoByNumber( int num )
 		sys->Print( va( S_COLOR_RED "Invalid bot number: %i\n", num ) );
 		return NULL;
 	}
+
 	return ui_botInfos[num];
 }
 
@@ -312,6 +347,7 @@ char* UI_GetBotInfoByName( const char* name )
 
 	for( n = 0; n < ui_numBots; n++ ) {
 		value = Info_ValueForKey( ui_botInfos[n], "name" );
+
 		if( !Q_stricmp( value, name ) ) {
 			return ui_botInfos[n];
 		}
@@ -328,8 +364,10 @@ int UI_GetNumBots()
 char* UI_GetBotNameByNumber( int num )
 {
 	char* info = UI_GetBotInfoByNumber( num );
+
 	if( info ) {
 		return Info_ValueForKey( info, "name" );
 	}
+
 	return "Sarge";
 }

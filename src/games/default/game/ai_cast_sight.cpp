@@ -75,25 +75,30 @@ qboolean	  AICast_InFieldOfVision( vec3_t viewangles, float fov, vec3_t angles )
 		angle	  = AngleMod( viewangles[i] );
 		angles[i] = AngleMod( angles[i] );
 		diff	  = angles[i] - angle;
+
 		if( angles[i] > angle ) {
 			if( diff > 180.0 ) {
 				diff -= 360.0;
 			}
+
 		} else {
 			if( diff < -180.0 ) {
 				diff += 360.0;
 			}
 		}
+
 		if( diff > 0 ) {
 			if( diff > fov * 0.5 ) {
 				return qfalse;
 			}
+
 		} else {
 			if( diff < -fov * 0.5 ) {
 				return qfalse;
 			}
 		}
 	}
+
 	return qtrue;
 }
 
@@ -120,14 +125,18 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 	if( srcnum < aicast_maxclients ) {
 		cs = AICast_GetCastState( srcnum );
 	}
+
 	//
 	if( cs && cs->bs ) {
 		srcviewheight = cs->bs->cur_ps.viewheight;
+
 	} else if( g_entities[srcnum].client ) {
 		srcviewheight = g_entities[srcnum].client->ps.viewheight;
+
 	} else {
 		srcviewheight = 0;
 	}
+
 	//
 	VectorCopy( g_entities[destnum].r.mins, destmins );
 	VectorCopy( g_entities[destnum].r.maxs, destmaxs );
@@ -148,6 +157,7 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 	right[2] = 0;
 	//
 	inPVS = qfalse;
+
 	//
 	for( i = 0; i < 5; i++ ) {
 		if( cs && updateVisPos ) { // if it's a grenade or something, PVS checks don't work very well
@@ -155,23 +165,28 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 			if( i < 3 ) { // don't do PVS check for left/right checks
 				if( !sys->InPVS( eye, middle ) ) {
 					continue;
+
 				} else {
 					inPVS = qtrue;
 				}
+
 			} else if( !inPVS ) {
 				break; // wasn't in potential view in either of the previous tests
 			} // so don't bother doing left/right
 		}
+
 		//
 		contents_mask = MASK_AISIGHT; //(MASK_SHOT | CONTENTS_AI_NOSIGHT) & ~(CONTENTS_BODY);	// we can see anything that a bullet can pass through
 		passent		  = srcnum;
 		hitent		  = destnum;
 		VectorCopy( eye, start );
 		VectorCopy( middle, end );
+
 		// if the entity is in water, lava or slime
 		if( sys->PointContents( middle, destnum ) & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) {
 			contents_mask |= ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER );
 		} // if eye is in water, lava or slime
+
 		if( sys->PointContents( eye, srcnum ) & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) {
 			if( !( contents_mask & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) ) {
 				passent = destnum;
@@ -179,9 +194,12 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 				VectorCopy( middle, start );
 				VectorCopy( eye, end );
 			}
+
 			contents_mask ^= ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER );
 		} // trace from start to end
+
 		sys->Trace( &trace, start, NULL, NULL, end, ENTITYNUM_NONE /*passent*/, contents_mask );
+
 		// if water was hit
 		if( trace.contents & ( CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER ) ) {
 			// if the water surface is translucent
@@ -192,21 +210,27 @@ qboolean AICast_VisibleFromPos( vec3_t srcpos, int srcnum, vec3_t destpos, int d
 				sys->Trace( &trace, trace.endpos, NULL, NULL, end, passent, contents_mask );
 			}
 		} // if a full trace or the hitent was hit
+
 		if( trace.fraction >= 1 || trace.entityNum == hitent ) {
 			return qtrue;
 		}
+
 		// check bottom and top of bounding box as well
 		if( i == 0 ) {
 			middle[2] -= ( destmaxs[2] - destmins[2] ) * 0.5;
+
 		} else if( i == 1 ) {
 			middle[2] += destmaxs[2] - destmins[2];
+
 		} else if( i == 2 ) { // right side
 			middle[2] -= ( destmaxs[2] - destmins[2] ) / 2.0;
 			VectorMA( eye, destmaxs[0] - 0.5, right, eye );
+
 		} else if( i == 3 ) { // left side
 			VectorMA( eye, -2.0 * ( destmaxs[0] - 0.5 ), right, eye );
 		}
 	}
+
 	return qfalse;
 }
 
@@ -227,6 +251,7 @@ qboolean AICast_CheckVisibility( gentity_t* srcent, gentity_t* destent )
 	if( destent->flags & FL_NOTARGET ) {
 		return qfalse;
 	}
+
 	//
 	viewer = srcent->s.number;
 	ent	   = destent->s.number;
@@ -235,11 +260,13 @@ qboolean AICast_CheckVisibility( gentity_t* srcent, gentity_t* destent )
 	ocs = AICast_GetCastState( ent );
 	//
 	vis = &cs->vislist[ent];
+
 	//
 	// if the destent is the client, and they have just loaded a savegame, ignore them temporarily
 	if( !destent->aiCharacter && level.lastLoadTime && ( level.lastLoadTime > level.time - 2000 ) && !vis->visible_timestamp ) {
 		return qfalse;
 	}
+
 	// if we heard them
 	/*
 	if (	(vis->lastcheck_timestamp) &&
@@ -252,11 +279,14 @@ qboolean AICast_CheckVisibility( gentity_t* srcent, gentity_t* destent )
 	//
 	// set the FOV
 	fov = cs->attributes[FOV] * aiStateFovScales[cs->aiState];
+
 	if( !fov ) { // assume it's a player, give them a generic fov
 		fov = 180;
 	}
+
 	if( cs->aiFlags & AIFL_ZOOMING ) {
 		fov *= 0.8;
+
 	} else {
 		if( cs->lastEnemy >= 0 ) { // they've already been in a fight, so give them a very large fov
 			if( fov < 270 ) {
@@ -264,14 +294,17 @@ qboolean AICast_CheckVisibility( gentity_t* srcent, gentity_t* destent )
 			}
 		}
 	}
+
 	// RF, if they were visible last check, then give us a full FOV, since we are aware of them
 	if( cs->aiState >= AISTATE_ALERT && vis->visible_timestamp == vis->lastcheck_timestamp ) {
 		fov = 360;
 	}
+
 	// calculate middle of bounding box
 	VectorAdd( destent->r.mins, destent->r.maxs, middle );
 	VectorScale( middle, 0.5, middle );
 	VectorAdd( destent->client->ps.origin, middle, middle );
+
 	// calculate eye position
 	if( ( level.lastLoadTime < level.time - 4000 ) && ( srcent->r.svFlags & SVF_CASTAI ) ) {
 		if( clientHeadTagTimes[srcent->s.number] == level.time ) {
@@ -279,6 +312,7 @@ qboolean AICast_CheckVisibility( gentity_t* srcent, gentity_t* destent )
 			vectoangles( clientHeadTags[srcent->s.number].axis[0], viewangles );
 			// and the actual position of the head
 			VectorCopy( clientHeadTags[srcent->s.number].origin, eye );
+
 		} else if( sys->GetTag( srcent->s.number, "tag_head", & or ) ) {
 			// use the actual direction the head is facing
 			vectoangles( or.axis[0], viewangles );
@@ -288,6 +322,7 @@ qboolean AICast_CheckVisibility( gentity_t* srcent, gentity_t* destent )
 			// save orientation data
 			memcpy( &clientHeadTags[srcent->s.number], & or, sizeof( orientation_t ) );
 			clientHeadTagTimes[srcent->s.number] = level.time;
+
 		} else {
 			VectorCopy( srcent->client->ps.origin, eye );
 			eye[2] += srcent->client->ps.viewheight;
@@ -297,29 +332,35 @@ qboolean AICast_CheckVisibility( gentity_t* srcent, gentity_t* destent )
 			AnglesToAxis( viewangles, clientHeadTags[srcent->s.number].axis );
 			clientHeadTagTimes[srcent->s.number] = level.time;
 		}
+
 	} else {
 		VectorCopy( srcent->client->ps.origin, eye );
 		eye[2] += srcent->client->ps.viewheight;
 		VectorCopy( srcent->client->ps.viewangles, viewangles );
 	}
+
 	// check if entity is within field of vision
 	VectorSubtract( middle, eye, dir );
 	vectoangles( dir, entangles );
 	//
 	dist = VectorLength( dir );
+
 	//
 	// alertness is visible range
 	if( cs->bs && dist > cs->attributes[ALERTNESS] ) {
 		return qfalse;
 	}
+
 	// check FOV
 	if( !AICast_InFieldOfVision( viewangles, fov, entangles ) ) {
 		return qfalse;
 	}
+
 	//
 	if( !AICast_VisibleFromPos( srcent->client->ps.origin, srcent->s.number, destent->client->ps.origin, destent->s.number, qtrue ) ) {
 		return qfalse;
 	}
+
 	//
 	return qtrue;
 }
@@ -346,6 +387,7 @@ void AICast_UpdateVisibility( gentity_t* srcent, gentity_t* destent, qboolean sh
 	if( cs->castScriptStatus.scriptNoSightTime >= level.time ) {
 		return; // absolutely no sight (or hear) information allowed
 	}
+
 	shareRange = ( qboolean )( VectorDistance( srcent->client->ps.origin, destent->client->ps.origin ) < AIVIS_SHARE_RANGE );
 
 	vis = &cs->vislist[destent->s.number];
@@ -356,6 +398,7 @@ void AICast_UpdateVisibility( gentity_t* srcent, gentity_t* destent, qboolean sh
 		if( !vis->visible_timestamp || vis->visible_timestamp < level.time - 5000 ) {
 			if( directview ) {
 				G_Printf( "SIGHT (direct): %s sees %s\n", srcent->aiName, destent->aiName );
+
 			} else {
 				G_Printf( "SIGHT (non-direct/audible): %s sees %s\n", srcent->aiName, destent->aiName );
 			}
@@ -397,14 +440,17 @@ void AICast_UpdateVisibility( gentity_t* srcent, gentity_t* destent, qboolean sh
 		float idr;
 
 		idr = cs->attributes[INNER_DETECTION_RADIUS];
+
 		if( cs->aiFlags & AIFL_ZOOMING ) {
 			idr *= 10;
 		}
+
 		if( !( vis->flags & AIVIS_ENEMY ) && VectorDistance( vis->visible_pos, g_entities[cs->entityNum].r.currentOrigin ) < idr ) {
 			// RF, moved them over to AICast_ScanForEnemies()
 			// AICast_ScriptEvent( cs, "enemysight", destent->aiName );
 			vis->flags |= AIVIS_ENEMY;
 		}
+
 		// if we are in (or above) ALERT mode, then we now know this is an enemy
 		else if( cs->aiState >= AISTATE_ALERT ) {
 			// RF, moved them over to AICast_ScanForEnemies()
@@ -421,13 +467,17 @@ void AICast_UpdateVisibility( gentity_t* srcent, gentity_t* destent, qboolean sh
 			if( !( vis->flags & AIVIS_INSPECTED ) ) {
 				vis->flags |= AIVIS_INSPECT;
 			}
+
 			// if they are mad, we should help, or at least act concerned
+
 		} else if( cs->aiState < AISTATE_COMBAT && ocs->aiState >= AISTATE_COMBAT && ocs->bs && ( ocs->enemyNum >= 0 ) ) {
 			// if we haven't already checked them out
 			if( !( vis->flags & AIVIS_INSPECTED ) ) {
 				vis->flags |= AIVIS_INSPECT;
 			}
+
 			// if they are alert, we should also go alert
+
 		} else if( cs->aiState < AISTATE_ALERT && ocs->aiState == AISTATE_ALERT && ocs->bs ) {
 			AICast_StateChange( cs, AISTATE_ALERT );
 		}
@@ -439,27 +489,34 @@ void AICast_UpdateVisibility( gentity_t* srcent, gentity_t* destent, qboolean sh
 		( srcent->aiTeam != AITEAM_NEUTRAL ) ) {
 		ocs = AICast_GetCastState( destent->s.number );
 		cnt = 0;
+
 		//
 		for( i = 0; i < aicast_maxclients && cnt < level.numPlayingClients; i++ ) {
 			if( !g_entities[i].inuse ) {
 				continue;
 			}
+
 			//
 			cnt++;
+
 			//
 			if( i == srcent->s.number ) {
 				continue;
 			}
+
 			if( i == destent->s.number ) {
 				continue;
 			}
+
 			//
 			ovis = &ocs->vislist[i];
 			svis = &cs->vislist[i];
+
 			//
 			// if we are close to the friendly, then we should share their visibility info
 			if( destent->health > 0 && shareRange ) {
 				oldvis = *svis;
+
 				// if they have seen this character more recently than us, share
 				if( ( ovis->visible_timestamp > svis->visible_timestamp ) || ( ( ovis->visible_timestamp > level.time - 5000 ) && ( ovis->flags & AIVIS_ENEMY ) && !( svis->flags & AIVIS_ENEMY ) ) ) {
 					// trigger an EVENT
@@ -477,42 +534,51 @@ void AICast_UpdateVisibility( gentity_t* srcent, gentity_t* destent, qboolean sh
 						// call the event
 						BG_AnimScriptEvent( &g_entities[ocs->entityNum].client->ps, ANIM_ET_INFORM_FRIENDLY_OF_ENEMY, qfalse, qfalse );
 					}
+
 					// copy the whole structure
 					*svis = *ovis;
 					// minus the flags
 					svis->flags = oldvis.flags;
+
 					// keep our sight time if it's sooner
 					if( oldvis.visible_timestamp > ovis->visible_timestamp ) {
 						svis->visible_timestamp = oldvis.visible_timestamp;
 					}
+
 					// check to see if we just made this character an enemy of ours
 					if( /*(cs->aiState == AISTATE_COMBAT) &&*/ ( ovis->flags & AIVIS_ENEMY ) && !( oldvis.flags & AIVIS_ENEMY ) ) {
 						svis->flags |= AIVIS_ENEMY;
+
 						if( !( cs->vislist[i].flags & AIVIS_SIGHT_SCRIPT_CALLED ) ) {
 							AICast_ScriptEvent( cs, "enemysight", g_entities[i].aiName );
 							cs->vislist[i].flags |= AIVIS_SIGHT_SCRIPT_CALLED;
+
 							if( !( cs->aiFlags & AIFL_DENYACTION ) ) {
 								G_AddEvent( srcent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[cs->aiCharacter].soundScripts[SIGHTSOUNDSCRIPT] ) );
 							}
 						}
 					}
 				}
+
 			} else {
 				// if either of us haven't seen this character yet, then ignore it
 				if( !svis->visible_timestamp || !ovis->visible_timestamp ) {
 					continue;
 				}
 			}
+
 			//
 			// if they have marked this character as hostile, then we should also
 			if( ( cs->aiState == AISTATE_COMBAT ) && AICast_HostileEnemy( ocs, i ) && !AICast_HostileEnemy( cs, i ) ) {
 				if( !( cs->vislist[i].flags & AIVIS_SIGHT_SCRIPT_CALLED ) ) {
 					AICast_ScriptEvent( cs, "enemysight", g_entities[i].aiName );
 					cs->vislist[i].flags |= AIVIS_SIGHT_SCRIPT_CALLED;
+
 					if( !( cs->aiFlags & AIFL_DENYACTION ) ) {
 						G_AddEvent( srcent, EV_GENERAL_SOUND, G_SoundIndex( aiDefaults[cs->aiCharacter].soundScripts[SIGHTSOUNDSCRIPT] ) );
 					}
 				}
+
 				svis->flags |= AIVIS_ENEMY;
 			}
 		}
@@ -570,6 +636,7 @@ void	   AICast_SightUpdate( int numchecks )
 
 	src	 = 0;
 	dest = 0;
+
 	if( numchecks < 5 ) {
 		numchecks = 5;
 	}
@@ -594,9 +661,11 @@ void	   AICast_SightUpdate( int numchecks )
 		if( srcent->aiInactive ) {
 			continue;
 		}
+
 		if( srcent->health <= 0 ) {
 			continue;
 		}
+
 		if( !( srcent->r.svFlags & SVF_CASTAI ) ) { // only source check AI Cast
 			continue;
 		}
@@ -623,6 +692,7 @@ void	   AICast_SightUpdate( int numchecks )
 			if( destent->health <= 0 ) {
 				continue;
 			}
+
 			if( destent->r.svFlags & SVF_CASTAI ) { // only dest check REAL clients
 				continue;
 			}
@@ -651,6 +721,7 @@ void	   AICast_SightUpdate( int numchecks )
 			if( !( destent->flags & FL_NOTARGET ) && ( AICast_CheckVisibility( srcent, destent ) ) ) {
 				// record the sighting
 				AICast_UpdateVisibility( srcent, destent, qtrue, qtrue );
+
 			} else { // if (vis->lastcheck_timestamp == vis->real_update_timestamp)
 				AICast_UpdateNonVisibility( srcent, destent, qtrue );
 			}
@@ -669,6 +740,7 @@ void	   AICast_SightUpdate( int numchecks )
 		if( srcent->aiInactive ) {
 			continue;
 		}
+
 		if( srcent->health <= 0 ) {
 			continue;
 		}
@@ -697,6 +769,7 @@ void	   AICast_SightUpdate( int numchecks )
 			if( destent->aiInactive ) {
 				continue;
 			}
+
 			if( src == dest ) {
 				continue;
 			}
@@ -720,12 +793,14 @@ void	   AICast_SightUpdate( int numchecks )
 			if( vis->lastcheck_timestamp > level.time ) {
 				continue; // let the loadgame settle down
 			}
+
 			// if they are friends, only check very infrequently
 			if( AICast_SameTeam( cs, destent->s.number ) && ( vis->lastcheck_timestamp == vis->visible_timestamp ) && ( destent->health == vis->lastcheck_health + 1 ) ) {
 				if( dcs->aiState < AISTATE_COMBAT ) {
 					if( vis->lastcheck_timestamp > ( level.time - ( 2000 + rand() % 1000 ) ) ) {
 						continue; // dont check too often
 					}
+
 				} else { // check a little more frequently
 					if( vis->lastcheck_timestamp > ( level.time - ( 500 + rand() % 500 ) ) ) {
 						continue; // dont check too often
@@ -740,6 +815,7 @@ void	   AICast_SightUpdate( int numchecks )
 					// record the sighting
 					AICast_UpdateVisibility( srcent, destent, qtrue, qtrue );
 				}
+
 			} else { // if (vis->lastcheck_timestamp == vis->real_update_timestamp)
 				AICast_UpdateNonVisibility( srcent, destent, qtrue );
 			}
@@ -747,9 +823,11 @@ void	   AICast_SightUpdate( int numchecks )
 			// break if we've processed the maximum visibilities
 			if( ++count > numchecks ) {
 				dest++;
+
 				if( dest >= aicast_maxclients ) {
 					src++;
 				}
+
 				goto escape;
 			}
 		}
@@ -762,9 +840,12 @@ escape:
 	if( src >= aicast_maxclients ) {
 		src = 0;
 	}
+
 	lastsrc = src;
+
 	if( dest >= aicast_maxclients ) {
 		dest = 0;
 	}
+
 	lastdest = dest;
 }

@@ -75,6 +75,7 @@ qboolean PM_SlideMove( qboolean gravity )
 		endVelocity[2] -= pm->ps->gravity * pml.frametime;
 		pm->ps->velocity[2] = ( pm->ps->velocity[2] + endVelocity[2] ) * 0.5;
 		primal_velocity[2]	= endVelocity[2];
+
 		if( pml.groundPlane ) {
 			// slide along the ground plane
 			PM_ClipVelocity( pm->ps->velocity, pml.groundTrace.plane.normal, pm->ps->velocity, OVERCLIP );
@@ -87,6 +88,7 @@ qboolean PM_SlideMove( qboolean gravity )
 	if( pml.groundPlane ) {
 		numplanes = 1;
 		VectorCopy( pml.groundTrace.plane.normal, planes[0] );
+
 	} else {
 		numplanes = 0;
 	}
@@ -139,9 +141,11 @@ qboolean PM_SlideMove( qboolean gravity )
 				break;
 			}
 		}
+
 		if( i < numplanes ) {
 			continue;
 		}
+
 		VectorCopy( trace.plane.normal, planes[numplanes] );
 		numplanes++;
 
@@ -152,6 +156,7 @@ qboolean PM_SlideMove( qboolean gravity )
 		// find a plane that it enters
 		for( i = 0; i < numplanes; i++ ) {
 			into = DotProduct( pm->ps->velocity, planes[i] );
+
 			if( into >= 0.1 ) {
 				continue; // move doesn't interact with the plane
 			}
@@ -172,6 +177,7 @@ qboolean PM_SlideMove( qboolean gravity )
 				if( j == i ) {
 					continue;
 				}
+
 				if( DotProduct( clipVelocity, planes[j] ) >= 0.1 ) {
 					continue; // move doesn't interact with the plane
 				}
@@ -201,6 +207,7 @@ qboolean PM_SlideMove( qboolean gravity )
 					if( k == i || k == j ) {
 						continue;
 					}
+
 					if( DotProduct( clipVelocity, planes[k] ) >= 0.1 ) {
 						continue; // move doesn't interact with the plane
 					}
@@ -256,6 +263,7 @@ void PM_StepSlideMove( qboolean gravity )
 	down[2] -= STEPSIZE;
 	pm->trace( &trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask );
 	VectorSet( up, 0, 0, 1 );
+
 	// never step up when you still have up velocity
 	if( pm->ps->velocity[2] > 0 && ( trace.fraction == 1.0 || DotProduct( trace.plane.normal, up ) < 0.7 ) ) {
 		return;
@@ -269,10 +277,12 @@ void PM_StepSlideMove( qboolean gravity )
 
 	// test the player position if they were a stepheight higher
 	pm->trace( &trace, up, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask );
+
 	if( trace.allsolid ) {
 		if( pm->debugLevel ) {
 			Com_Printf( "%i:bend can't step\n", c_pmove );
 		}
+
 		return; // can't step up
 	}
 
@@ -286,9 +296,11 @@ void PM_StepSlideMove( qboolean gravity )
 	VectorCopy( pm->ps->origin, down );
 	down[2] -= STEPSIZE;
 	pm->trace( &trace, pm->ps->origin, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask );
+
 	if( !trace.allsolid ) {
 		VectorCopy( trace.endpos, pm->ps->origin );
 	}
+
 	if( trace.fraction < 1.0 ) {
 		PM_ClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP );
 	}
@@ -296,13 +308,16 @@ void PM_StepSlideMove( qboolean gravity )
 #if 0
 	// if the down trace can trace back to the original position directly, don't step
 	pm->trace( &trace, pm->ps->origin, pm->mins, pm->maxs, start_o, pm->ps->clientNum, pm->tracemask );
+
 	if( trace.fraction == 1.0 ) {
 		// use the original move
 		VectorCopy( down_o, pm->ps->origin );
 		VectorCopy( down_v, pm->ps->velocity );
+
 		if( pm->debugLevel ) {
 			Com_Printf( "%i:bend\n", c_pmove );
 		}
+
 	} else
 #endif
 	if( !( pm->ps->eFlags & EF_DEAD ) ) { // RF, dead zombie walking sound, after it's been gibbed(??)
@@ -310,17 +325,22 @@ void PM_StepSlideMove( qboolean gravity )
 		float delta;
 
 		delta = pm->ps->origin[2] - start_o[2];
+
 		if( delta > 2 ) {
 			if( delta < 7 ) {
 				PM_AddEvent( EV_STEP_4 );
+
 			} else if( delta < 11 ) {
 				PM_AddEvent( EV_STEP_8 );
+
 			} else if( delta < 15 ) {
 				PM_AddEvent( EV_STEP_12 );
+
 			} else {
 				PM_AddEvent( EV_STEP_16 );
 			}
 		}
+
 		if( pm->debugLevel ) {
 			Com_Printf( "%i:stepped\n", c_pmove );
 		}

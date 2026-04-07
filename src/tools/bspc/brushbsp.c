@@ -141,6 +141,7 @@ void ResetBrushBSP()
 	c_nodememory		  = 0;
 	c_peak_totalbspmemory = 0;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -156,11 +157,14 @@ void FindBrushInTree( node_t* node, int brushnum )
 			if( b->original->brushnum == brushnum ) {
 				Log_Print( "here\n" );
 			}
+
 		return;
 	}
+
 	FindBrushInTree( node->children[0], brushnum );
 	FindBrushInTree( node->children[1], brushnum );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -173,23 +177,30 @@ void DrawBrushList( bspbrush_t* brush, node_t* node )
 	side_t* s;
 
 	GLS_BeginScene();
+
 	for( ; brush; brush = brush->next ) {
 		for( i = 0; i < brush->numsides; i++ ) {
 			s = &brush->sides[i];
+
 			if( !s->winding ) {
 				continue;
 			}
+
 			if( s->texinfo == TEXINFO_NODE ) {
 				GLS_Winding( s->winding, 1 );
+
 			} else if( !( s->flags & SFL_VISIBLE ) ) {
 				GLS_Winding( s->winding, 2 );
+
 			} else {
 				GLS_Winding( s->winding, 0 );
 			}
 		}
 	}
+
 	GLS_EndScene();
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -208,18 +219,22 @@ void WriteBrushList( char* name, bspbrush_t* brush, qboolean onlyvis )
 	for( ; brush; brush = brush->next ) {
 		for( i = 0; i < brush->numsides; i++ ) {
 			s = &brush->sides[i];
+
 			if( !s->winding ) {
 				continue;
 			}
+
 			if( onlyvis && !( s->flags & SFL_VISIBLE ) ) {
 				continue;
 			}
+
 			OutputWinding( brush->sides[i].winding, f );
 		}
 	}
 
 	fclose( f );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -231,11 +246,13 @@ void PrintBrush( bspbrush_t* brush )
 	int i;
 
 	printf( "brush: %p\n", brush );
+
 	for( i = 0; i < brush->numsides; i++ ) {
 		pw( brush->sides[i].winding );
 		printf( "\n" );
 	}
 }
+
 //===========================================================================
 // Sets the mins/maxs based on the windings
 //
@@ -249,16 +266,20 @@ void BoundBrush( bspbrush_t* brush )
 	winding_t* w;
 
 	ClearBounds( brush->mins, brush->maxs );
+
 	for( i = 0; i < brush->numsides; i++ ) {
 		w = brush->sides[i].winding;
+
 		if( !w ) {
 			continue;
 		}
+
 		for( j = 0; j < w->numpoints; j++ ) {
 			AddPointToBounds( w->p[j], brush->mins, brush->maxs );
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -276,13 +297,16 @@ void CreateBrushWindings( bspbrush_t* brush )
 		side  = &brush->sides[i];
 		plane = &mapplanes[side->planenum];
 		w	  = BaseWindingForPlane( plane->normal, plane->dist );
+
 		for( j = 0; j < brush->numsides && w; j++ ) {
 			if( i == j ) {
 				continue;
 			}
+
 			if( brush->sides[j].flags & SFL_BEVEL ) {
 				continue;
 			}
+
 			plane = &mapplanes[brush->sides[j].planenum ^ 1];
 			ChopWindingInPlace( &w, plane->normal, plane->dist, 0 ); // CLIP_EPSILON);
 		}
@@ -292,6 +316,7 @@ void CreateBrushWindings( bspbrush_t* brush )
 
 	BoundBrush( brush );
 }
+
 //===========================================================================
 // Creates a new axial brush
 //
@@ -308,6 +333,7 @@ bspbrush_t* BrushFromBounds( vec3_t mins, vec3_t maxs )
 
 	b			= AllocBrush( 6 );
 	b->numsides = 6;
+
 	for( i = 0; i < 3; i++ ) {
 		VectorClear( normal );
 		normal[i]			 = 1;
@@ -323,6 +349,7 @@ bspbrush_t* BrushFromBounds( vec3_t mins, vec3_t maxs )
 
 	return b;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -338,6 +365,7 @@ int BrushOutOfBounds( bspbrush_t* brush, vec3_t mins, vec3_t maxs, float epsilon
 	for( i = 0; i < brush->numsides; i++ ) {
 		side = &brush->sides[i];
 		w	 = side->winding;
+
 		for( j = 0; j < w->numpoints; j++ ) {
 			for( n = 0; n < 3; n++ ) {
 				if( w->p[j][n] < ( mins[n] + epsilon ) || w->p[j][n] > ( maxs[n] - epsilon ) ) {
@@ -346,8 +374,10 @@ int BrushOutOfBounds( bspbrush_t* brush, vec3_t mins, vec3_t maxs, float epsilon
 			}
 		}
 	}
+
 	return false;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -368,24 +398,31 @@ vec_t BrushVolume( bspbrush_t* brush )
 
 	// grab the first valid point as the corner
 	w = NULL;
+
 	for( i = 0; i < brush->numsides; i++ ) {
 		w = brush->sides[i].winding;
+
 		if( w ) {
 			break;
 		}
 	}
+
 	if( !w ) {
 		return 0;
 	}
+
 	VectorCopy( w->p[0], corner );
 
 	// make tetrahedrons to all other faces
 	volume = 0;
+
 	for( ; i < brush->numsides; i++ ) {
 		w = brush->sides[i].winding;
+
 		if( !w ) {
 			continue;
 		}
+
 		plane = &mapplanes[brush->sides[i].planenum];
 		d	  = -( DotProduct( corner, plane->normal ) - plane->dist );
 		area  = WindingArea( w );
@@ -395,6 +432,7 @@ vec_t BrushVolume( bspbrush_t* brush )
 	volume /= 3;
 	return volume;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -406,11 +444,14 @@ int CountBrushList( bspbrush_t* brushes )
 	int c;
 
 	c = 0;
+
 	for( ; brushes; brushes = brushes->next ) {
 		c++;
 	}
+
 	return c;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -423,11 +464,14 @@ node_t* AllocNode()
 
 	node = GetMemory( sizeof( *node ) );
 	memset( node, 0, sizeof( *node ) );
+
 	if( numthreads == 1 ) {
 		c_nodememory += MemorySize( node );
 	}
+
 	return node;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -442,15 +486,19 @@ bspbrush_t* AllocBrush( int numsides )
 	c  = ( int )&( ( ( bspbrush_t* )0 )->sides[numsides] );
 	bb = GetMemory( c );
 	memset( bb, 0, c );
+
 	if( numthreads == 1 ) {
 		c_active_brushes++;
 		c_brushmemory += MemorySize( bb );
+
 		if( c_brushmemory > c_peak_brushmemory ) {
 			c_peak_brushmemory = c_brushmemory;
 		}
 	}
+
 	return bb;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -465,15 +513,19 @@ void FreeBrush( bspbrush_t* brushes )
 		if( brushes->sides[i].winding ) {
 			FreeWinding( brushes->sides[i].winding );
 		}
+
 	if( numthreads == 1 ) {
 		c_active_brushes--;
 		c_brushmemory -= MemorySize( brushes );
+
 		if( c_brushmemory < 0 ) {
 			c_brushmemory = 0;
 		}
 	}
+
 	FreeMemory( brushes );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -490,6 +542,7 @@ void FreeBrushList( bspbrush_t* brushes )
 		FreeBrush( brushes );
 	}
 }
+
 //===========================================================================
 // Duplicates the brush, the sides, and the windings
 //
@@ -516,6 +569,7 @@ bspbrush_t* CopyBrush( bspbrush_t* brush )
 
 	return newbrush;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -530,8 +584,10 @@ node_t* PointInLeaf( node_t* node, vec3_t point )
 	while( node->planenum != PLANENUM_LEAF ) {
 		plane = &mapplanes[node->planenum];
 		d	  = DotProduct( point, plane->normal ) - plane->dist;
+
 		if( d > 0 ) {
 			node = node->children[0];
+
 		} else {
 			node = node->children[1];
 		}
@@ -539,6 +595,7 @@ node_t* PointInLeaf( node_t* node, vec3_t point )
 
 	return node;
 }
+
 //===========================================================================
 // Returns PSIDE_FRONT, PSIDE_BACK, or PSIDE_BOTH
 //
@@ -557,12 +614,15 @@ int BoxOnPlaneSide( vec3_t mins, vec3_t maxs, plane_t* plane )
 	// axial planes are easy
 	if ( plane->type < 3 ) {
 		side = 0;
+
 		if ( maxs[plane->type] > plane->dist + PLANESIDE_EPSILON ) {
 			side |= PSIDE_FRONT;
 		}
+
 		if ( mins[plane->type] < plane->dist - PLANESIDE_EPSILON ) {
 			side |= PSIDE_BACK;
 		}
+
 		return side;
 	}
 
@@ -572,6 +632,7 @@ int BoxOnPlaneSide( vec3_t mins, vec3_t maxs, plane_t* plane )
 		if ( plane->normal[i] < 0 ) {
 			corners[0][i] = mins[i];
 			corners[1][i] = maxs[i];
+
 		} else {
 			corners[1][i] = mins[i];
 			corners[0][i] = maxs[i];
@@ -581,15 +642,18 @@ int BoxOnPlaneSide( vec3_t mins, vec3_t maxs, plane_t* plane )
 	dist1 = DotProduct( plane->normal, corners[0] ) - plane->dist;
 	dist2 = DotProduct( plane->normal, corners[1] ) - plane->dist;
 	side = 0;
+
 	if ( dist1 >= PLANESIDE_EPSILON ) {
 		side = PSIDE_FRONT;
 	}
+
 	if ( dist2 < PLANESIDE_EPSILON ) {
 		side |= PSIDE_BACK;
 	}
 
 	return side;
 }
+
 #else
 int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, plane_t* p )
 {
@@ -599,12 +663,15 @@ int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, plane_t* p )
 	// axial planes are easy
 	if( p->type < 3 ) {
 		sides = 0;
+
 		if( emaxs[p->type] > p->dist + PLANESIDE_EPSILON ) {
 			sides |= PSIDE_FRONT;
 		}
+
 		if( emins[p->type] < p->dist - PLANESIDE_EPSILON ) {
 			sides |= PSIDE_BACK;
 		}
+
 		return sides;
 	}
 
@@ -614,34 +681,42 @@ int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, plane_t* p )
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			break;
+
 		case 1:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			break;
+
 		case 2:
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			break;
+
 		case 3:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			break;
+
 		case 4:
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			break;
+
 		case 5:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2];
 			break;
+
 		case 6:
 			dist1 = p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			break;
+
 		case 7:
 			dist1 = p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2];
 			dist2 = p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2];
 			break;
+
 		default:
 			dist1 = dist2 = 0; // shut up compiler
 			//		assert( 0 );
@@ -649,9 +724,11 @@ int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, plane_t* p )
 	}
 
 	sides = 0;
+
 	if( dist1 - p->dist >= PLANESIDE_EPSILON ) {
 		sides = PSIDE_FRONT;
 	}
+
 	if( dist2 - p->dist < PLANESIDE_EPSILON ) {
 		sides |= PSIDE_BACK;
 	}
@@ -660,6 +737,7 @@ int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, plane_t* p )
 
 	return sides;
 }
+
 #endif
 //===========================================================================
 //
@@ -678,27 +756,33 @@ int QuickTestBrushToPlanenum( bspbrush_t* brush, int planenum, int* numsplits )
 	plane = &mapplanes[planenum];
 
 #ifdef ME
+
 	// fast axial cases
 	if( plane->type < 3 ) {
 		if( plane->dist + PLANESIDE_EPSILON < brush->mins[plane->type] ) {
 			return PSIDE_FRONT;
 		}
+
 		if( plane->dist - PLANESIDE_EPSILON > brush->maxs[plane->type] ) {
 			return PSIDE_BACK;
 		}
 	}
+
 #endif // ME*/
 
 	// if the brush actually uses the planenum,
 	// we can tell the side for sure
 	for( i = 0; i < brush->numsides; i++ ) {
 		num = brush->sides[i].planenum;
+
 		if( num >= MAX_MAPFILE_PLANES ) {
 			Error( "bad planenum" );
 		}
+
 		if( num == planenum ) {
 			return PSIDE_BACK | PSIDE_FACING;
 		}
+
 		if( num == ( planenum ^ 1 ) ) {
 			return PSIDE_FRONT | PSIDE_FACING;
 		}
@@ -714,6 +798,7 @@ int QuickTestBrushToPlanenum( bspbrush_t* brush, int planenum, int* numsplits )
 
 	return s;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -739,14 +824,18 @@ int TestBrushToPlanenum( bspbrush_t* brush, int planenum, int* numsplits, qboole
 #ifdef ME
 	// fast axial cases
 	type = plane->type;
+
 	if( type < 3 ) {
 		dist = plane->dist;
+
 		if( dist + PLANESIDE_EPSILON < brush->mins[type] ) {
 			return PSIDE_FRONT;
 		}
+
 		if( dist - PLANESIDE_EPSILON > brush->maxs[type] ) {
 			return PSIDE_BACK;
 		}
+
 		if( brush->mins[type] < dist - PLANESIDE_EPSILON && brush->maxs[type] > dist + PLANESIDE_EPSILON ) {
 			s = PSIDE_BOTH;
 		}
@@ -759,14 +848,17 @@ int TestBrushToPlanenum( bspbrush_t* brush, int planenum, int* numsplits, qboole
 		// we can tell the side for sure
 		for( i = 0; i < brush->numsides; i++ ) {
 			num = brush->sides[i].planenum;
+
 			if( num >= MAX_MAPFILE_PLANES ) {
 				Error( "bad planenum" );
 			}
+
 			if( num == planenum ) {
 				// we don't need to test this side plane again
 				brush->sides[i].flags |= SFL_TESTED;
 				return PSIDE_BACK | PSIDE_FACING;
 			}
+
 			if( num == ( planenum ^ 1 ) ) {
 				// we don't need to test this side plane again
 				brush->sides[i].flags |= SFL_TESTED;
@@ -789,32 +881,43 @@ int TestBrushToPlanenum( bspbrush_t* brush, int planenum, int* numsplits, qboole
 		if( brush->sides[i].texinfo == TEXINFO_NODE ) {
 			continue; // on node, don't worry about splits
 		}
+
 		if( !( brush->sides[i].flags & SFL_VISIBLE ) ) {
 			continue; // we don't care about non-visible
 		}
+
 		w = brush->sides[i].winding;
+
 		if( !w ) {
 			continue;
 		}
+
 		front = back = 0;
+
 		for( j = 0; j < w->numpoints; j++ ) {
 			d = DotProduct( w->p[j], plane->normal ) - plane->dist;
+
 			if( d > d_front ) {
 				d_front = d;
 			}
+
 			if( d < d_back ) {
 				d_back = d;
 			}
+
 			if( d > 0.1 ) { // PLANESIDE_EPSILON)
 				front = 1;
 			}
+
 			if( d < -0.1 ) { // PLANESIDE_EPSILON)
 				back = 1;
 			}
 		}
+
 		if( front && back ) {
 			if( !( brush->sides[i].surf & SURF_SKIP ) ) {
 				( *numsplits )++;
+
 				if( brush->sides[i].surf & SURF_HINT ) {
 					*hintsplit = true;
 				}
@@ -827,19 +930,24 @@ int TestBrushToPlanenum( bspbrush_t* brush, int planenum, int* numsplits, qboole
 	}
 
 #if 0
+
 	if ( *numsplits == 0 ) { //	didn't really need to be split
 		if ( front ) {
 			s = PSIDE_FRONT;
+
 		} else if ( back ) {
 			s = PSIDE_BACK;
+
 		} else {
 			s = 0;
 		}
 	}
+
 #endif
 
 	return s;
 }
+
 //===========================================================================
 // Returns true if the winding would be crunched out of
 // existance by the vertex snapping.
@@ -852,9 +960,11 @@ int TestBrushToPlanenum( bspbrush_t* brush, int planenum, int* numsplits, qboole
 qboolean WindingIsTiny( winding_t* w )
 {
 #if 0
+
 	if ( WindingArea( w ) < 1 ) {
 		return true;
 	}
+
 	return false;
 #else
 	int	   i, j;
@@ -863,19 +973,23 @@ qboolean WindingIsTiny( winding_t* w )
 	int	   edges;
 
 	edges = 0;
+
 	for( i = 0; i < w->numpoints; i++ ) {
 		j = i == w->numpoints - 1 ? 0 : i + 1;
 		VectorSubtract( w->p[j], w->p[i], delta );
 		len = VectorLength( delta );
+
 		if( len > EDGE_LENGTH ) {
 			if( ++edges == 3 ) {
 				return false;
 			}
 		}
 	}
+
 	return true;
 #endif
 }
+
 //===========================================================================
 // Returns true if the winding still has one of the points
 // from basewinding for plane
@@ -894,8 +1008,10 @@ qboolean WindingIsHuge( winding_t* w )
 				return true;
 			}
 	}
+
 	return false;
 }
+
 //===========================================================================
 // creates a leaf out of the given nodes with the given brushes
 //
@@ -923,24 +1039,29 @@ void LeafNode( node_t* node, bspbrush_t* brushes )
 				if( b->sides[i].texinfo != TEXINFO_NODE ) {
 					break;
 				}
+
 			if( i == b->numsides ) {
 				node->contents = CONTENTS_SOLID;
 				break;
 			}
 		}
+
 		node->contents |= b->original->contents;
 	}
 
 	if( create_aas ) {
 		node->expansionbboxes = 0;
 		node->contents		  = 0;
+
 		for( b = brushes; b; b = b->next ) {
 			node->expansionbboxes |= b->original->expansionbbox;
 			node->contents |= b->original->contents;
+
 			if( b->original->modelnum ) {
 				node->modelnum = b->original->modelnum;
 			}
 		}
+
 		if( node->contents & CONTENTS_SOLID ) {
 			if( node->expansionbboxes != cfg.allpresencetypes ) {
 				node->contents &= ~CONTENTS_SOLID;
@@ -950,6 +1071,7 @@ void LeafNode( node_t* node, bspbrush_t* brushes )
 
 	node->brushlist = brushes;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -966,6 +1088,7 @@ void CheckPlaneAgainstParents( int pnum, node_t* node )
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -984,12 +1107,14 @@ qboolean CheckPlaneAgainstVolume( int pnum, node_t* node )
 	if( front ) {
 		FreeBrush( front );
 	}
+
 	if( back ) {
 		FreeBrush( back );
 	}
 
 	return good;
 }
+
 //===========================================================================
 // Using a hueristic, choses one of the sides out of the brushlist
 // to partition the brushes with.
@@ -1033,6 +1158,7 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 	// If any valid plane is available in a pass, no further
 	// passes will be tried.
 	numpasses = 2;
+
 	for( pass = 0; pass < numpasses; pass++ ) {
 		for( brush = brushes; brush; brush = brush->next ) {
 			// only check detail the second pass
@@ -1042,17 +1168,21 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 			//				continue;
 			for( i = 0; i < brush->numsides; i++ ) {
 				side = brush->sides + i;
+
 				//				if (side->flags & SFL_BEVEL)
 				//					continue;	// never use a bevel as a spliter
 				if( !side->winding ) {
 					continue; // nothing visible, so it can't split
 				}
+
 				if( side->texinfo == TEXINFO_NODE ) {
 					continue; // allready a node splitter
 				}
+
 				if( side->flags & SFL_TESTED ) {
 					continue; // we allready have metrics for this plane
 				}
+
 				//				if (side->surf & SURF_SKIP)
 				//					continue;	// skip surfaces are never chosen
 				//				if (!(side->flags & SFL_VISIBLE) && (pass < 2))
@@ -1060,6 +1190,7 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 				if( ( side->flags & SFL_CURVE ) && ( pass < 1 ) ) {
 					continue; // only check curves on the second pass
 				}
+
 				pnum = side->planenum;
 				pnum &= ~1; // allways use positive facing plane
 
@@ -1068,6 +1199,7 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 				if( !CheckPlaneAgainstVolume( pnum, node ) ) {
 					continue; // would produce a tiny volume
 				}
+
 				front		 = 0;
 				back		 = 0;
 				both		 = 0;
@@ -1084,16 +1216,20 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 					//						Error ("PSIDE_FACING with splits");
 
 					test->testside = s;
+
 					//
 					if( s & PSIDE_FACING ) {
 						facing++;
 					}
+
 					if( s & PSIDE_FRONT ) {
 						front++;
 					}
+
 					if( s & PSIDE_BACK ) {
 						back++;
 					}
+
 					if( s == PSIDE_BOTH ) {
 						both++;
 					}
@@ -1101,11 +1237,13 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 
 				// give a value estimate for using this plane
 				value = 5 * facing - 5 * splits - abs( front - back );
+
 				//					value =  -5*splits;
 				//					value =  5*facing - 5*splits;
 				if( mapplanes[pnum].type < 3 ) {
 					value += 5; // axial is better
 				}
+
 				value -= epsilonbrush * 1000; // avoid!
 
 				// never split a hint side except with another hint
@@ -1120,6 +1258,7 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 					bestvalue  = value;
 					bestside   = side;
 					bestsplits = splits;
+
 					for( test = brushes; test; test = test->next ) {
 						test->side = test->testside;
 					}
@@ -1135,9 +1274,11 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 					c_nonvis++;
 				}
 			}
+
 			if( pass > 0 ) {
 				node->detail_seperator = true; // not needed for vis
 			}
+
 			break;
 		}
 	} // end for (pass = 0;
@@ -1153,6 +1294,7 @@ side_t* SelectSplitSide( bspbrush_t* brushes, node_t* node )
 
 	return bestside;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -1168,25 +1310,32 @@ int BrushMostlyOnSide( bspbrush_t* brush, plane_t* plane )
 
 	max	 = 0;
 	side = PSIDE_FRONT;
+
 	for( i = 0; i < brush->numsides; i++ ) {
 		w = brush->sides[i].winding;
+
 		if( !w ) {
 			continue;
 		}
+
 		for( j = 0; j < w->numpoints; j++ ) {
 			d = DotProduct( w->p[j], plane->normal ) - plane->dist;
+
 			if( d > max ) {
 				max	 = d;
 				side = PSIDE_FRONT;
 			}
+
 			if( -d > max ) {
 				max	 = -d;
 				side = PSIDE_BACK;
 			}
 		}
 	}
+
 	return side;
 }
+
 //===========================================================================
 // Generates two new brushes, leaving the original
 // unchanged
@@ -1209,16 +1358,21 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 
 	// check all points
 	d_front = d_back = 0;
+
 	for( i = 0; i < brush->numsides; i++ ) {
 		w = brush->sides[i].winding;
+
 		if( !w ) {
 			continue;
 		}
+
 		for( j = 0; j < w->numpoints; j++ ) {
 			d = DotProduct( w->p[j], plane->normal ) - plane->dist;
+
 			if( d > 0 && d > d_front ) {
 				d_front = d;
 			}
+
 			if( d < 0 && d < d_back ) {
 				d_back = d;
 			}
@@ -1230,6 +1384,7 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 		*back = CopyBrush( brush );
 		return;
 	}
+
 	if( d_back > -0.2 ) { // PLANESIDE_EPSILON)
 		// only on front
 		*front = CopyBrush( brush );
@@ -1239,6 +1394,7 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 	// create a new winding from the split plane
 
 	w = BaseWindingForPlane( plane->normal, plane->dist );
+
 	for( i = 0; i < brush->numsides && w; i++ ) {
 		plane2 = &mapplanes[brush->sides[i].planenum ^ 1];
 		ChopWindingInPlace( &w, plane2->normal, plane2->dist, 0 ); // PLANESIDE_EPSILON);
@@ -1248,16 +1404,20 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 		int side;
 
 		side = BrushMostlyOnSide( brush, plane );
+
 		if( side == PSIDE_FRONT ) {
 			*front = CopyBrush( brush );
 		}
+
 		if( side == PSIDE_BACK ) {
 			*back = CopyBrush( brush );
 		}
+
 		// free a possible winding
 		if( w ) {
 			FreeWinding( w );
 		}
+
 		return;
 	}
 
@@ -1279,19 +1439,25 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 	for( i = 0; i < brush->numsides; i++ ) {
 		s = &brush->sides[i];
 		w = s->winding;
+
 		if( !w ) {
 			continue;
 		}
+
 		ClipWindingEpsilon( w, plane->normal, plane->dist, 0 /*PLANESIDE_EPSILON*/, &cw[0], &cw[1] );
+
 		for( j = 0; j < 2; j++ ) {
 			if( !cw[j] ) {
 				continue;
 			}
+
 #if 0
+
 			if ( WindingIsTiny( cw[j] ) ) {
 				FreeWinding( cw[j] );
 				continue;
 			}
+
 #endif
 			cs = &b[j]->sides[b[j]->numsides];
 			b[j]->numsides++;
@@ -1308,6 +1474,7 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 
 	for( i = 0; i < 2; i++ ) {
 		BoundBrush( b[i] );
+
 		for( j = 0; j < 3; j++ ) {
 			if( b[i]->mins[j] < -MAX_MAP_BOUNDS || b[i]->maxs[j] > MAX_MAP_BOUNDS ) {
 				Log_Write( "bogus brush after clip" );
@@ -1324,17 +1491,21 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 	if( !( b[0] && b[1] ) ) {
 		if( !b[0] && !b[1] ) {
 			Log_Write( "split removed brush\r\n" );
+
 		} else {
 			Log_Write( "split not on both sides\r\n" );
 		}
+
 		if( b[0] ) {
 			FreeBrush( b[0] );
 			*front = CopyBrush( brush );
 		}
+
 		if( b[1] ) {
 			FreeBrush( b[1] );
 			*back = CopyBrush( brush );
 		}
+
 		return;
 	}
 
@@ -1347,8 +1518,10 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 		cs->texinfo	 = TEXINFO_NODE; // never use these sides as splitters
 		cs->flags &= ~SFL_VISIBLE;
 		cs->flags &= ~SFL_TESTED;
+
 		if( i == 0 ) {
 			cs->winding = CopyWinding( midwinding );
+
 		} else {
 			cs->winding = midwinding;
 		}
@@ -1360,12 +1533,14 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 
 		for( i = 0; i < 2; i++ ) {
 			v1 = BrushVolume( b[i] );
+
 			if( v1 < 1.0 ) {
 				FreeBrush( b[i] );
 				b[i] = NULL;
 				// Log_Write("tiny volume after clip");
 			}
 		}
+
 		if( !b[0] && !b[1] ) {
 			Log_Write( "two tiny brushes\r\n" );
 		}
@@ -1374,6 +1549,7 @@ void SplitBrush( bspbrush_t* brush, int planenum, bspbrush_t** front, bspbrush_t
 	*front = b[0];
 	*back  = b[1];
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -1394,14 +1570,17 @@ void SplitBrushList( bspbrush_t* brushes, node_t* node, bspbrush_t** front, bspb
 
 		if( sides == PSIDE_BOTH ) { // split into two brushes
 			SplitBrush( brush, node->planenum, &newbrush, &newbrush2 );
+
 			if( newbrush ) {
 				newbrush->next = *front;
 				*front		   = newbrush;
 			}
+
 			if( newbrush2 ) {
 				newbrush2->next = *back;
 				*back			= newbrush2;
 			}
+
 			continue;
 		}
 
@@ -1413,6 +1592,7 @@ void SplitBrushList( bspbrush_t* brushes, node_t* node, bspbrush_t** front, bspb
 		if( sides & PSIDE_FACING ) {
 			for( i = 0; i < newbrush->numsides; i++ ) {
 				side = newbrush->sides + i;
+
 				if( ( side->planenum & ~1 ) == node->planenum ) {
 					side->texinfo = TEXINFO_NODE;
 				}
@@ -1424,6 +1604,7 @@ void SplitBrushList( bspbrush_t* brushes, node_t* node, bspbrush_t** front, bspb
 			*front		   = newbrush;
 			continue;
 		}
+
 		if( sides & PSIDE_BACK ) {
 			newbrush->next = *back;
 			*back		   = newbrush;
@@ -1431,6 +1612,7 @@ void SplitBrushList( bspbrush_t* brushes, node_t* node, bspbrush_t** front, bspb
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -1447,6 +1629,7 @@ void CheckBrushLists( bspbrush_t* brushlist1, bspbrush_t* brushlist2 )
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -1467,9 +1650,11 @@ node_t* BuildTree_r( node_t* node, bspbrush_t* brushes )
 
 	if( numthreads == 1 ) {
 		totalmem = WindingMemory() + c_nodememory + c_brushmemory;
+
 		if( totalmem > c_peak_totalbspmemory ) {
 			c_peak_totalbspmemory = totalmem;
 		}
+
 		c_nodes++;
 	} // endif
 
@@ -1479,24 +1664,29 @@ node_t* BuildTree_r( node_t* node, bspbrush_t* brushes )
 
 	// find the best plane to use as a splitter
 	bestside = SelectSplitSide( brushes, node );
+
 	if( !bestside ) {
 		// leaf node
 		node->side	   = NULL;
 		node->planenum = -1;
 		LeafNode( node, brushes );
+
 		if( node->contents & CONTENTS_SOLID ) {
 			c_solidleafnodes++;
 		}
+
 		if( create_aas ) {
 			// free up memory!!!
 			FreeBrushList( node->brushlist );
 			node->brushlist = NULL;
+
 			// free the node volume brush
 			if( node->volume ) {
 				FreeBrush( node->volume );
 				node->volume = NULL;
 			}
 		}
+
 		return node;
 	}
 
@@ -1526,6 +1716,7 @@ node_t* BuildTree_r( node_t* node, bspbrush_t* brushes )
 			node->volume = NULL;
 		}
 	}
+
 	// recursively process children
 	for( i = 0; i < 2; i++ ) {
 		node->children[i] = BuildTree_r( node->children[i], children[i] );
@@ -1533,6 +1724,7 @@ node_t* BuildTree_r( node_t* node, bspbrush_t* brushes )
 
 	return node;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -1555,15 +1747,18 @@ void AddNodeToStack( node_t* node )
 
 	node->next = firstnode;
 	firstnode  = node;
+
 	if( !lastnode ) {
 		lastnode = node;
 	}
+
 	nodelistsize++;
 
 	ThreadUnlock();
 	//
 	ThreadSemaphoreIncrease( 1 );
 }
+
 // add the node to the end of the node list
 //(effectively using a node queue)
 void AddNodeToQueue( node_t* node )
@@ -1571,11 +1766,14 @@ void AddNodeToQueue( node_t* node )
 	ThreadLock();
 
 	node->next = NULL;
+
 	if( lastnode ) {
 		lastnode->next = node;
+
 	} else {
 		firstnode = node;
 	}
+
 	lastnode = node;
 	nodelistsize++;
 
@@ -1583,6 +1781,7 @@ void AddNodeToQueue( node_t* node )
 	//
 	ThreadSemaphoreIncrease( 1 );
 }
+
 // get the first node from the front of the node list
 node_t* NextNodeFromList()
 {
@@ -1590,11 +1789,13 @@ node_t* NextNodeFromList()
 
 	ThreadLock();
 	numwaiting++;
+
 	if( !firstnode ) {
 		if( numwaiting >= GetNumThreads() ) {
 			ThreadSemaphoreIncrease( GetNumThreads() );
 		}
 	}
+
 	ThreadUnlock();
 
 	ThreadSemaphoreWait();
@@ -1604,10 +1805,12 @@ node_t* NextNodeFromList()
 	numwaiting--;
 
 	node = firstnode;
+
 	if( firstnode ) {
 		firstnode = firstnode->next;
 		nodelistsize--;
 	}
+
 	if( !firstnode ) {
 		lastnode = NULL;
 	}
@@ -1616,6 +1819,7 @@ node_t* NextNodeFromList()
 
 	return node;
 }
+
 // returns the size of the node list
 int NodeListSize()
 {
@@ -1627,6 +1831,7 @@ int NodeListSize()
 
 	return size;
 }
+
 //
 void IncreaseNodeCounter()
 {
@@ -1636,6 +1841,7 @@ void IncreaseNodeCounter()
 	// qprintf("\r%6d %d, %5d ", numrecurse++, GetNumThreads(), nodelistsize);
 	ThreadUnlock();
 }
+
 // thread function, gets nodes from the nodelist and processes them
 void BuildTreeThread( int threadid )
 {
@@ -1656,9 +1862,11 @@ void BuildTreeThread( int threadid )
 
 		if( numthreads == 1 ) {
 			totalmem = WindingMemory() + c_nodememory + c_brushmemory;
+
 			if( totalmem > c_peak_totalbspmemory ) {
 				c_peak_totalbspmemory = totalmem;
 			}
+
 			c_nodes++;
 		} // endif
 
@@ -1668,14 +1876,17 @@ void BuildTreeThread( int threadid )
 
 		if( cancelconversion ) {
 			bestside = NULL;
+
 		} else {
 			// find the best plane to use as a splitter
 			bestside = SelectSplitSide( brushes, node );
 		}
+
 		// if there's no split side left
 		if( !bestside ) {
 			// create a leaf out of the node
 			LeafNode( node, brushes );
+
 			if( node->contents & CONTENTS_SOLID ) {
 				c_solidleafnodes++;
 			}
@@ -1685,11 +1896,13 @@ void BuildTreeThread( int threadid )
 				FreeBrushList( node->brushlist );
 				node->brushlist = NULL;
 			}
+
 			// free the node volume brush (it is not used anymore)
 			if( node->volume ) {
 				FreeBrush( node->volume );
 				node->volume = NULL;
 			}
+
 			node = NextNodeFromList();
 			continue;
 		}
@@ -1731,8 +1944,10 @@ void BuildTreeThread( int threadid )
 		AddNodeToList( node->children[1] );
 		node = node->children[0];
 	}
+
 	RemoveThread( threadid );
 }
+
 //===========================================================================
 // build the bsp tree using a node list
 //
@@ -1746,36 +1961,45 @@ void BuildTree( tree_t* tree )
 
 	firstnode = NULL;
 	lastnode  = NULL;
+
 	// use a node queue or node stack
 	if( use_nodequeue ) {
 		AddNodeToList = AddNodeToQueue;
+
 	} else {
 		AddNodeToList = AddNodeToStack;
 	}
+
 	// setup thread locking
 	ThreadSetupLock();
 	ThreadSetupSemaphore();
 	numwaiting = 0;
 	//
 	Log_Print( "%6d threads max\n", numthreads );
+
 	if( use_nodequeue ) {
 		Log_Print( "breadth first bsp building\n" );
+
 	} else {
 		Log_Print( "depth first bsp building\n" );
 	}
+
 	qprintf( "%6d splits", 0 );
 	// add the first node to the list
 	AddNodeToList( tree->headnode );
+
 	// start the threads
 	for( i = 0; i < numthreads; i++ ) {
 		AddThread( BuildTreeThread );
 	}
+
 	// wait for all added threads to be finished
 	WaitForAllThreadsFinished();
 	// shutdown the thread locking
 	ThreadShutdownLock();
 	ThreadShutdownSemaphore();
 }
+
 //===========================================================================
 // The incoming brush list will be freed before exiting
 //
@@ -1800,10 +2024,12 @@ tree_t* BrushBSP( bspbrush_t* brushlist, vec3_t mins, vec3_t maxs )
 	c_nonvisfaces = 0;
 	c_brushes	  = 0;
 	c_totalsides  = 0;
+
 	for( b = brushlist; b; b = b->next ) {
 		c_brushes++;
 
 		volume = BrushVolume( b );
+
 		if( volume < microvolume ) {
 			Log_Print( "WARNING: entity %i, brush %i: microbrush\n", b->original->entitynum, b->original->brushnum );
 		}
@@ -1812,19 +2038,24 @@ tree_t* BrushBSP( bspbrush_t* brushlist, vec3_t mins, vec3_t maxs )
 			if( b->sides[i].flags & SFL_BEVEL ) {
 				continue;
 			}
+
 			if( !b->sides[i].winding ) {
 				continue;
 			}
+
 			if( b->sides[i].texinfo == TEXINFO_NODE ) {
 				continue;
 			}
+
 			if( b->sides[i].flags & SFL_VISIBLE ) {
 				c_faces++;
+
 			} else {
 				c_nonvisfaces++;
 				// if (create_aas) b->sides[i].texinfo = TEXINFO_NODE;
 			}
 		}
+
 		c_totalsides += b->numsides;
 
 		AddPointToBounds( b->mins, tree->mins, tree->maxs );
@@ -1866,6 +2097,7 @@ tree_t* BrushBSP( bspbrush_t* brushlist, vec3_t mins, vec3_t maxs )
 
 	qprintf( "\n" );
 	Log_Write( "%6d splits\r\n", numrecurse );
+
 	//	Log_Print("%6i visible nodes\n", c_nodes/2 - c_nonvis);
 	//	Log_Print("%6i nonvis nodes\n", c_nonvis);
 	//	Log_Print("%6i leaves\n", (c_nodes+1)/2);

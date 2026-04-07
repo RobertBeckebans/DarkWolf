@@ -57,9 +57,11 @@ void			 R_AddEdgeDef( int i1, int i2, int facing )
 	int c;
 
 	c = numEdgeDefs[i1];
+
 	if( c == MAX_EDGE_DEFS ) {
 		return; // overflow
 	}
+
 	edgeDefs[i1][c].i2	   = i2;
 	edgeDefs[i1][c].facing = facing;
 
@@ -98,6 +100,7 @@ void R_RenderShadowEdges()
 		glVertex3fv( tess.xyz[ i1 + tess.numVertexes ] );
 		glEnd();
 	}
+
 #else
 	int c, c2;
 	int j, k;
@@ -114,6 +117,7 @@ void R_RenderShadowEdges()
 
 	for( i = 0; i < tess.numVertexes; i++ ) {
 		c = numEdgeDefs[i];
+
 		for( j = 0; j < c; j++ ) {
 			if( !edgeDefs[i][j].facing ) {
 				continue;
@@ -124,6 +128,7 @@ void R_RenderShadowEdges()
 
 			i2 = edgeDefs[i][j].i2;
 			c2 = numEdgeDefs[i2];
+
 			for( k = 0; k < c2; k++ ) {
 				if( edgeDefs[i2][k].i2 == i ) {
 					hit[edgeDefs[i2][k].facing]++;
@@ -140,11 +145,13 @@ void R_RenderShadowEdges()
 				glVertex3fv( tess.xyz[i2 + tess.numVertexes] );
 				glEnd();
 				c_edges++;
+
 			} else {
 				c_rejected++;
 			}
 		}
 	}
+
 #endif
 }
 
@@ -186,6 +193,7 @@ void RB_ShadowTessEnd()
 	memset( numEdgeDefs, 0, 4 * tess.numVertexes );
 
 	numTris = tess.numIndexes / 3;
+
 	for( i = 0; i < numTris; i++ ) {
 		int	   i1, i2, i3;
 		vec3_t d1, d2, normal;
@@ -205,8 +213,10 @@ void RB_ShadowTessEnd()
 		CrossProduct( d1, d2, normal );
 
 		d = DotProduct( normal, lightDir );
+
 		if( d > 0 ) {
 			facing[i] = 1;
+
 		} else {
 			facing[i] = 0;
 		}
@@ -241,6 +251,7 @@ void RB_ShadowTessEnd()
 		glStencilOp( GL_KEEP, GL_KEEP, GL_DECR );
 
 		R_RenderShadowEdges();
+
 	} else {
 		glCullFace( GL_BACK );
 		glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
@@ -272,9 +283,11 @@ void RB_ShadowFinish()
 	if( r_shadows->integer != 2 ) {
 		return;
 	}
+
 	if( glConfig.stencilBits < 4 ) {
 		return;
 	}
+
 	glEnable( GL_STENCIL_TEST );
 	glStencilFunc( GL_NOTEQUAL, 0, 255 );
 
@@ -329,11 +342,13 @@ void RB_ProjectionShadowDeform()
 
 	VectorCopy( backEnd.currentEntity->lightDir, lightDir );
 	d = DotProduct( lightDir, ground );
+
 	// don't let the shadows get too long or go negative
 	if( d < 0.5 ) {
 		VectorMA( lightDir, ( 0.5 - d ), ground, lightDir );
 		d = DotProduct( lightDir, ground );
 	}
+
 	d = 1.0 / d;
 
 	light[0] = lightDir[0] * d;

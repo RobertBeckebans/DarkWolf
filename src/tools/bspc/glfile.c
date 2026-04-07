@@ -38,6 +38,7 @@ int PortalVisibleSides( portal_t* p )
 	if( !p->onnode ) {
 		return 0; // outside
 	}
+
 	fcon = p->nodes[0]->contents;
 	bcon = p->nodes[1]->contents;
 
@@ -50,9 +51,11 @@ int PortalVisibleSides( portal_t* p )
 	if( !fcon ) {
 		return 1;
 	}
+
 	if( !bcon ) {
 		return 2;
 	}
+
 	return 0;
 }
 
@@ -65,9 +68,11 @@ void OutputWinding( winding_t* w, FILE* glview )
 	fprintf( glview, "%i\n", w->numpoints );
 	level += 28;
 	light = ( level & 255 ) / 255.0;
+
 	for( i = 0; i < w->numpoints; i++ ) {
 		fprintf( glview, "%6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n", w->p[i][0], w->p[i][1], w->p[i][2], light, light, light );
 	}
+
 	fprintf( glview, "\n" );
 }
 
@@ -82,6 +87,7 @@ void OutputPortal( portal_t* p, FILE* glview )
 	int		   sides;
 
 	sides = PortalVisibleSides( p );
+
 	if( !sides ) {
 		return;
 	}
@@ -121,6 +127,7 @@ void WriteGLView_r( node_t* node, FILE* glview )
 		if( p->nodes[0] == node ) {
 			OutputPortal( p, glview );
 			nextp = p->next[0];
+
 		} else {
 			nextp = p->next[1];
 		}
@@ -142,9 +149,11 @@ void WriteGLView( tree_t* tree, char* source )
 	printf( "Writing %s\n", name );
 
 	glview = fopen( name, "w" );
+
 	if( !glview ) {
 		Error( "Couldn't open %s", name );
 	}
+
 	WriteGLView_r( tree->headnode, glview );
 	fclose( glview );
 

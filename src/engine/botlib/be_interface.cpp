@@ -100,6 +100,7 @@ int Sys_MilliSeconds()
 		sys_timeBase = timeGetTime();
 		initialized	 = qtrue;
 	}
+
 	sys_curtime = timeGetTime() - sys_timeBase;
 
 	return sys_curtime;
@@ -107,6 +108,7 @@ int Sys_MilliSeconds()
 	return clock() * 1000 / CLOCKS_PER_SEC;
 #endif
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -120,8 +122,10 @@ qboolean ValidClientNumber( int num, char* str )
 		botimport.Print( PRT_ERROR, "%s: invalid client number %d, [0, %d]\n", str, num, botlibglobals.maxclients );
 		return qfalse;
 	}
+
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -134,8 +138,10 @@ qboolean ValidEntityNumber( int num, char* str )
 		botimport.Print( PRT_ERROR, "%s: invalid entity number %d, [0, %d]\n", str, num, botlibglobals.maxentities );
 		return qfalse;
 	}
+
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -150,8 +156,10 @@ qboolean BotLibSetup( char* str )
 		botimport.Print( PRT_ERROR, "%s: bot library used before being setup\n", str );
 		return qfalse;
 	}
+
 	return qtrue;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -173,13 +181,17 @@ int Export_BotLibSetup()
 	botlibglobals.maxentities = ( int )LibVarValue( "maxentities", "2048" );
 
 	errnum = AAS_Setup(); // be_aas_main.c
+
 	if( errnum != BLERR_NOERROR ) {
 		return errnum;
 	}
+
 	errnum = EA_Setup(); // be_ea.c
+
 	if( errnum != BLERR_NOERROR ) {
 		return errnum;
 	}
+
 	//	errnum = BotSetupWeaponAI();	//be_ai_weap.c
 	//	if (errnum != BLERR_NOERROR)return errnum;
 	//	errnum = BotSetupGoalAI();		//be_ai_goal.c
@@ -187,6 +199,7 @@ int Export_BotLibSetup()
 	//	errnum = BotSetupChatAI();		//be_ai_chat.c
 	//	if (errnum != BLERR_NOERROR) return errnum;
 	errnum = BotSetupMoveAI(); // be_ai_move.c
+
 	if( errnum != BLERR_NOERROR ) {
 		return errnum;
 	}
@@ -196,6 +209,7 @@ int Export_BotLibSetup()
 
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -209,10 +223,12 @@ int Export_BotLibShutdown()
 	if( !BotLibSetup( "BotLibShutdown" ) ) {
 		return BLERR_LIBRARYNOTSETUP;
 	}
+
 	//
 	if( recursive ) {
 		return BLERR_NOERROR;
 	}
+
 	recursive = 1;
 	// shutdown all AI subsystems
 	BotShutdownChatAI();	 // be_ai_chat.c
@@ -245,6 +261,7 @@ int Export_BotLibShutdown()
 #endif
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -256,6 +273,7 @@ int Export_BotLibVarSet( char* var_name, char* value )
 	LibVarSet( var_name, value );
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -271,6 +289,7 @@ int Export_BotLibVarGet( char* var_name, char* value, int size )
 	value[size - 1] = '\0';
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -282,8 +301,10 @@ int Export_BotLibStartFrame( float time )
 	if( !BotLibSetup( "BotStartFrame" ) ) {
 		return BLERR_LIBRARYNOTSETUP;
 	}
+
 	return AAS_StartFrame( time );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -300,13 +321,16 @@ int Export_BotLibLoadMap( const char* mapname )
 	if( !BotLibSetup( "BotLoadMap" ) ) {
 		return BLERR_LIBRARYNOTSETUP;
 	}
+
 	//
 	botimport.Print( PRT_MESSAGE, "------------ Map Loading ------------\n" );
 	// startup AAS for the current map, model and sound index
 	errnum = AAS_LoadMap( mapname );
+
 	if( errnum != BLERR_NOERROR ) {
 		return errnum;
 	}
+
 	// initialize the items in the level
 	BotInitLevelItems();	 // be_ai_goal.h
 	BotSetBrushModelTypes(); // be_ai_move.h
@@ -318,6 +342,7 @@ int Export_BotLibLoadMap( const char* mapname )
 	//
 	return BLERR_NOERROR;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -329,12 +354,14 @@ int Export_BotLibUpdateEntity( int ent, bot_entitystate_t* state )
 	if( !BotLibSetup( "BotUpdateEntity" ) ) {
 		return BLERR_LIBRARYNOTSETUP;
 	}
+
 	if( !ValidEntityNumber( ent, "BotUpdateEntity" ) ) {
 		return BLERR_INVALIDENTITYNUMBER;
 	}
 
 	return AAS_UpdateEntity( ent, state );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -401,6 +428,7 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 	if( !( *aasworld ).loaded ) {
 		return 0;
 	}
+
 	AAS_SetCurrentWorld( 0 );
 
 	for( i = 0; i < 2; i++ )
@@ -410,14 +438,17 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 
 	//	AAS_ClearShownDebugLines();
 	bot_testhidepos = LibVarGetValue( "bot_testhidepos" );
+
 	if( bot_testhidepos ) {
 		VectorCopy( parm2, origin );
 		newarea = BotFuzzyPointReachabilityArea( origin );
+
 		if( parm0 & 1 ) {
 			botlibglobals.goalareanum = newarea;
 			VectorCopy( origin, botlibglobals.goalorigin );
 			botimport.Print( PRT_MESSAGE, "new enemy position %2.1f %2.1f %2.1f area %d\n", origin[0], origin[1], origin[2], newarea );
 		}
+
 		AAS_ClearShownPolygons();
 		AAS_ClearShownDebugLines();
 		hideposarea = AAS_NearestHideArea( -1, origin, AAS_PointAreaNum( origin ), 0, botlibglobals.goalorigin, botlibglobals.goalareanum, TFL_DEFAULT );
@@ -430,6 +461,7 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 					( *aasworld ).areawaypoints[hideposarea][0],
 					( *aasworld ).areawaypoints[hideposarea][1],
 					( *aasworld ).areawaypoints[hideposarea][2] );
+
 			} else {
 				botimport.Print( PRT_MESSAGE, "no hidepos found\n" );
 			}
@@ -445,14 +477,17 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 	}
 
 	bot_testroutevispos = LibVarGetValue( "bot_testroutevispos" );
+
 	if( bot_testroutevispos ) {
 		VectorCopy( parm2, origin );
 		newarea = BotFuzzyPointReachabilityArea( origin );
+
 		if( parm0 & 1 ) {
 			botlibglobals.goalareanum = newarea;
 			VectorCopy( origin, botlibglobals.goalorigin );
 			botimport.Print( PRT_MESSAGE, "new enemy position %2.1f %2.1f %2.1f area %d\n", origin[0], origin[1], origin[2], newarea );
 		}
+
 		AAS_ClearShownPolygons();
 		AAS_ClearShownDebugLines();
 		AAS_GetRouteFirstVisPos( botlibglobals.goalorigin, origin, TFL_DEFAULT, eye );
@@ -471,8 +506,10 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 	// botimport.Print(PRT_MESSAGE, "%f %f %f\n", parm2[0], parm2[1], parm2[2]);
 	//*
 	highlightarea = LibVarGetValue( "bot_highlightarea" );
+
 	if( highlightarea > 0 ) {
 		newarea = highlightarea;
+
 	} else {
 		VectorCopy( parm2, origin );
 		origin[2] += 0.5;
@@ -481,43 +518,56 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 	}
 
 	botimport.Print( PRT_MESSAGE, "\rtravel time to goal (%d) = %d  ", botlibglobals.goalareanum, AAS_AreaTravelTimeToGoalArea( newarea, origin, botlibglobals.goalareanum, TFL_DEFAULT ) );
+
 	// newarea = BotReachabilityArea(origin, qtrue);
 	if( newarea != area ) {
 		botimport.Print( PRT_MESSAGE, "origin = %f, %f, %f\n", origin[0], origin[1], origin[2] );
 		area = newarea;
 		botimport.Print( PRT_MESSAGE, "new area %d, cluster %d, presence type %d\n", area, AAS_AreaCluster( area ), AAS_PointPresenceType( origin ) );
+
 		if( ( *aasworld ).areasettings[area].areaflags & AREA_LIQUID ) {
 			botimport.Print( PRT_MESSAGE, "liquid area\n" );
 		}
+
 		botimport.Print( PRT_MESSAGE, "area contents: " );
+
 		if( ( *aasworld ).areasettings[area].contents & AREACONTENTS_WATER ) {
 			botimport.Print( PRT_MESSAGE, "water " );
 		}
+
 		if( ( *aasworld ).areasettings[area].contents & AREACONTENTS_LAVA ) {
 			botimport.Print( PRT_MESSAGE, "lava " );
 		}
+
 		if( ( *aasworld ).areasettings[area].contents & AREACONTENTS_SLIME ) {
 			//			botimport.Print(PRT_MESSAGE, "slime ");
 			botimport.Print( PRT_MESSAGE, "slag " );
 		}
+
 		if( ( *aasworld ).areasettings[area].contents & AREACONTENTS_JUMPPAD ) {
 			botimport.Print( PRT_MESSAGE, "jump pad " );
 		}
+
 		if( ( *aasworld ).areasettings[area].contents & AREACONTENTS_CLUSTERPORTAL ) {
 			botimport.Print( PRT_MESSAGE, "cluster portal " );
 		}
+
 		if( ( *aasworld ).areasettings[area].contents & AREACONTENTS_DONOTENTER ) {
 			botimport.Print( PRT_MESSAGE, "do not enter " );
 		}
+
 		if( ( *aasworld ).areasettings[area].contents & AREACONTENTS_DONOTENTER_LARGE ) {
 			botimport.Print( PRT_MESSAGE, "do not enter large " );
 		}
+
 		if( !( *aasworld ).areasettings[area].contents ) {
 			botimport.Print( PRT_MESSAGE, "empty " );
 		}
+
 		if( ( *aasworld ).areasettings[area].areaflags & AREA_DISABLED ) {
 			botimport.Print( PRT_MESSAGE, "DISABLED" );
 		}
+
 		botimport.Print( PRT_MESSAGE, "\n" );
 		botimport.Print(
 			PRT_MESSAGE, "travel time to goal (%d) = %d\n", botlibglobals.goalareanum, AAS_AreaTravelTimeToGoalArea( newarea, origin, botlibglobals.goalareanum, TFL_DEFAULT | TFL_ROCKETJUMP ) );
@@ -535,12 +585,14 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 								origin[0], origin[1], origin[2], newarea);
 		*/
 	}
+
 	//*
 	if( parm0 & 1 ) {
 		botlibglobals.goalareanum = newarea;
 		VectorCopy( parm2, botlibglobals.goalorigin );
 		botimport.Print( PRT_MESSAGE, "new goal %2.1f %2.1f %2.1f area %d\n", origin[0], origin[1], origin[2], newarea );
 	} // end if*/
+
 	//	if (parm0 & BUTTON_USE)
 	//	{
 	//		botlibglobals.runai = !botlibglobals.runai;
@@ -590,8 +642,10 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 	AAS_ClearShownPolygons();
 	AAS_ClearShownDebugLines();
 	AAS_ShowAreaPolygons( newarea, 1, parm0 & 4 );
+
 	if( parm0 & 2 ) {
 		AAS_ShowReachableAreas( area );
+
 	} else {
 		static int		   lastgoalareanum, lastareanum;
 		static int		   avoidreach[MAX_AVOIDREACH];
@@ -608,6 +662,7 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 		AAS_ReachabilityFromNum( reachnum, &reach );
 		AAS_ShowReachability( &reach );
 	}
+
 	VectorClear( forward );
 	// BotGapDistance(origin, forward, 0);
 	/*

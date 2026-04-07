@@ -105,6 +105,7 @@ static int		   g_oalNumAuxSends	  = 0;
 static void		   OAL_CheckError( const char* where )
 {
 	ALenum err = alGetError();
+
 	if( err != AL_NO_ERROR ) {
 		Com_Printf( S_COLOR_RED "OpenAL error at %s: 0x%x\n", where, err );
 	}
@@ -237,6 +238,7 @@ static void OAL_InitFilters()
 
 	alGenFilters( 1, &g_oalBassFilter );
 	err = alGetError();
+
 	if( err != AL_NO_ERROR || !g_oalBassFilter ) {
 		Com_Printf( S_COLOR_YELLOW "OpenAL: failed to create direct filter\n" );
 		g_oalBassFilter = 0;
@@ -332,6 +334,7 @@ static void OAL_ApplyCurrentReverbParameters()
 		alEffectf( g_oalEffect, AL_EAXREVERB_ROOM_ROLLOFF_FACTOR, s_eaxRoomRolloff ? s_eaxRoomRolloff->value : 0.0f );
 		alEffecti( g_oalEffect, AL_EAXREVERB_DECAY_HFLIMIT, AL_TRUE );
 		OAL_CheckError( "alEffectf eaxreverb" );
+
 	} else {
 		alEffectf( g_oalEffect, AL_REVERB_DENSITY, 1.0f );
 		alEffectf( g_oalEffect, AL_REVERB_DIFFUSION, 1.0f );
@@ -372,6 +375,7 @@ static void OAL_InitEffects()
 	}
 
 	alcEfxPresent = alcIsExtensionPresent( g_oalDevice, "ALC_EXT_EFX" );
+
 	if( !alcEfxPresent ) {
 		Com_Printf( S_COLOR_YELLOW "OpenAL: ALC_EXT_EFX not present, no EAX/EFX reverb\n" );
 		return;
@@ -392,6 +396,7 @@ static void OAL_InitEffects()
 
 	alGenAuxiliaryEffectSlots( 1, &g_oalAuxEffectSlot );
 	err = alGetError();
+
 	if( err != AL_NO_ERROR || !g_oalAuxEffectSlot ) {
 		Com_Printf( S_COLOR_YELLOW "OpenAL: failed to create auxiliary effect slot\n" );
 		g_oalHasEFX		   = qfalse;
@@ -401,6 +406,7 @@ static void OAL_InitEffects()
 
 	alGenEffects( 1, &g_oalEffect );
 	err = alGetError();
+
 	if( err != AL_NO_ERROR || !g_oalEffect ) {
 		Com_Printf( S_COLOR_YELLOW "OpenAL: failed to create effect object\n" );
 		OAL_DestroyEffects();
@@ -413,9 +419,11 @@ static void OAL_InitEffects()
 	if( g_oalEffectActive ) {
 		if( g_oalHasEAXReverb ) {
 			Com_Printf( S_COLOR_GREEN "OpenAL: EFX enabled, using EAX reverb path\n" );
+
 		} else {
 			Com_Printf( S_COLOR_GREEN "OpenAL: EFX enabled, using standard reverb path\n" );
 		}
+
 	} else {
 		Com_Printf( S_COLOR_YELLOW "OpenAL: EFX available but effect disabled by cvar\n" );
 	}
@@ -480,12 +488,14 @@ static qboolean OAL_LoadWavFromMemory( const byte* data, int dataSize, wavinfo_t
 			channels = OAL_ReadLE16( p + 2 );
 			rate	 = OAL_ReadLE32( p + 4 );
 			bits	 = OAL_ReadLE16( p + 14 );
+
 		} else if( memcmp( chunkId, "data", 4 ) == 0 ) {
 			pcmData = p;
 			pcmSize = chunkSize;
 		}
 
 		p += chunkSize;
+
 		if( chunkSize & 1 ) {
 			p++;
 		}
@@ -528,15 +538,19 @@ static ALenum OAL_GetFormat( int channels, int width )
 	if( channels == 1 && width == 1 ) {
 		return AL_FORMAT_MONO8;
 	}
+
 	if( channels == 1 && width == 2 ) {
 		return AL_FORMAT_MONO16;
 	}
+
 	if( channels == 2 && width == 1 ) {
 		return AL_FORMAT_STEREO8;
 	}
+
 	if( channels == 2 && width == 2 ) {
 		return AL_FORMAT_STEREO16;
 	}
+
 	return 0;
 }
 
@@ -561,17 +575,20 @@ static int		   g_numSfx = 1; // 0 reserved as invalid
 static sfxHandle_t OAL_FindSfx( const char* sample )
 {
 	int i;
+
 	for( i = 1; i < g_numSfx; ++i ) {
 		if( g_sfx[i].inUse && !Q_stricmp( g_sfx[i].name, sample ) ) {
 			return ( sfxHandle_t )i;
 		}
 	}
+
 	return 0;
 }
 
 static sfxHandle_t OAL_AllocSfx( const char* sample )
 {
 	int idx;
+
 	if( g_numSfx >= OAL_MAX_SFX ) {
 		Com_Printf( S_COLOR_RED "OpenAL: OAL_MAX_SFX reached\n" );
 		return 0;
@@ -595,8 +612,10 @@ static qboolean OAL_LoadSfxBuffer( const char* sample, ALuint* outBuffer, int* o
 	memset( &w, 0, sizeof( w ) );
 
 	fileLen = FS_ReadFile( sample, &fileData );
+
 	if( fileLen <= 0 || !fileData ) {
 		fileLen = FS_ReadFile( va( "%s.wav", sample ), &fileData );
+
 		if( fileLen <= 0 || !fileData ) {
 			return qfalse;
 		}
@@ -608,6 +627,7 @@ static qboolean OAL_LoadSfxBuffer( const char* sample, ALuint* outBuffer, int* o
 	}
 
 	fmt = OAL_GetFormat( w.channels, w.width );
+
 	if( !fmt ) {
 		OAL_FreeWav( &w );
 		FS_FreeFile( fileData );
@@ -615,6 +635,7 @@ static qboolean OAL_LoadSfxBuffer( const char* sample, ALuint* outBuffer, int* o
 	}
 
 	buf = OAL_GenBufferSafe();
+
 	if( !buf ) {
 		OAL_FreeWav( &w );
 		FS_FreeFile( fileData );
@@ -638,6 +659,7 @@ static qboolean OAL_LoadSfxBuffer( const char* sample, ALuint* outBuffer, int* o
 static sfxHandle_t OAL_RegisterPlaceholder( const char* sample )
 {
 	sfxHandle_t h = OAL_AllocSfx( sample );
+
 	if( !h ) {
 		return 0;
 	}
@@ -808,6 +830,7 @@ static oalChannel_t* OAL_AllocChannel()
 		}
 
 		alGetSourcei( g_channels[i].source, AL_SOURCE_STATE, &state );
+
 		if( state == AL_STOPPED ) {
 			OAL_StopChannel( &g_channels[i] );
 			return &g_channels[i];
@@ -849,13 +872,16 @@ static void OAL_ConfigureSourceCommon( ALuint source, qboolean local, const vec3
 		alSource3f( source, AL_VELOCITY, 0.0f, 0.0f, 0.0f );
 
 		OAL_ClearAuxSend( source );
+
 	} else {
 		vec3_t tmp;
 
 		if( origin ) {
 			OAL_CopyVec3( origin, tmp );
+
 		} else if( entnum >= 0 && entnum < OAL_MAX_ENTITIES && g_entities[entnum].valid ) {
 			OAL_CopyVec3( g_entities[entnum].origin, tmp );
+
 		} else {
 			VectorClear( tmp );
 		}
@@ -874,6 +900,7 @@ static void OAL_ConfigureSourceCommon( ALuint source, qboolean local, const vec3
 static void OAL_StopEntityChannel( int entnum, int entchannel )
 {
 	int i;
+
 	for( i = 0; i < OAL_MAX_SOURCES; ++i ) {
 		if( g_channels[i].inUse && g_channels[i].entnum == entnum && g_channels[i].entchannel == entchannel ) {
 			OAL_StopChannel( &g_channels[i] );
@@ -915,6 +942,7 @@ static qboolean OAL_LoadStaticWavBuffer( const char* name, ALuint* outBuffer )
 	}
 
 	b = 0;
+
 	if( !OAL_LoadSfxBuffer( name, &b, &rate, &width, &channels, &sizeBytes ) ) {
 		return qfalse;
 	}
@@ -942,6 +970,7 @@ static void OAL_UpdateBackgroundTrack()
 				alSourcei( g_bgTrack.source, AL_LOOPING, AL_TRUE );
 				alSourcef( g_bgTrack.source, AL_GAIN, ( s_musicvolume ? s_musicvolume->value : 1.0f ) * g_bgTrack.gain );
 				alSourcePlay( g_bgTrack.source );
+
 			} else {
 				g_bgTrack.active = qfalse;
 			}
@@ -958,6 +987,7 @@ static void OAL_UpdateEntStreams()
 		ALfloat			pos[3];
 
 		oalEntStream_t* st = &g_entStreams[i];
+
 		if( !st->active || !st->source ) {
 			continue;
 		}
@@ -980,6 +1010,7 @@ static void OAL_UpdateEntStreams()
 					alSourcei( st->source, AL_LOOPING, AL_TRUE );
 					OAL_AttachWorldReverbToSource( st->source );
 					alSourcePlay( st->source );
+
 				} else {
 					st->active = qfalse;
 				}
@@ -1001,6 +1032,7 @@ static void OAL_InitRawStream( oalRawStream_t* rs )
 	memset( rs, 0, sizeof( *rs ) );
 
 	rs->source = OAL_GenSourceSafe();
+
 	if( !rs->source ) {
 		return;
 	}
@@ -1026,6 +1058,7 @@ static void OAL_ShutdownRawStream( oalRawStream_t* rs )
 		{
 			ALint queued = 0;
 			alGetSourcei( rs->source, AL_BUFFERS_QUEUED, &queued );
+
 			while( queued-- > 0 ) {
 				ALuint b;
 				alSourceUnqueueBuffers( rs->source, 1, &b );
@@ -1051,6 +1084,7 @@ static void OAL_ServiceRawStream( oalRawStream_t* rs )
 	}
 
 	alGetSourcei( rs->source, AL_BUFFERS_PROCESSED, &processed );
+
 	while( processed-- > 0 ) {
 		ALuint b;
 		alSourceUnqueueBuffers( rs->source, 1, &b );
@@ -1110,6 +1144,7 @@ void S_Init()
 	memset( g_rawStreams, 0, sizeof( g_rawStreams ) );
 
 	g_oalDevice = alcOpenDevice( NULL );
+
 	if( !g_oalDevice ) {
 		Com_Printf( S_COLOR_RED "OpenAL: failed to open device\n" );
 		g_soundDisabled = qtrue;
@@ -1117,6 +1152,7 @@ void S_Init()
 	}
 
 	g_oalContext = alcCreateContext( g_oalDevice, NULL );
+
 	if( !g_oalContext ) {
 		Com_Printf( S_COLOR_RED "OpenAL: failed to create context\n" );
 		alcCloseDevice( g_oalDevice );
@@ -1180,6 +1216,7 @@ void S_Shutdown()
 	OAL_DestroyFilters();
 
 	OAL_FreeBgTrackBuffers( &g_bgTrack );
+
 	if( g_bgTrack.source ) {
 		OAL_DeleteSourceSafe( g_bgTrack.source );
 		g_bgTrack.source = 0;
@@ -1194,6 +1231,7 @@ void S_Shutdown()
 			OAL_DeleteBufferSafe( g_entStreams[i].loopBuffer );
 			OAL_DeleteSourceSafe( g_entStreams[i].source );
 		}
+
 		memset( &g_entStreams[i], 0, sizeof( g_entStreams[i] ) );
 	}
 
@@ -1213,6 +1251,7 @@ void S_Shutdown()
 		if( g_sfx[i].buffer ) {
 			OAL_DeleteBufferSafe( g_sfx[i].buffer );
 		}
+
 		memset( &g_sfx[i], 0, sizeof( g_sfx[i] ) );
 	}
 
@@ -1261,6 +1300,7 @@ void S_StartSoundEx( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx,
 	}
 
 	s = &g_sfx[sfx];
+
 	if( !s->inUse || !s->buffer ) {
 		return;
 	}
@@ -1270,6 +1310,7 @@ void S_StartSoundEx( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx,
 	}
 
 	ch = OAL_AllocChannel();
+
 	if( !ch ) {
 		return;
 	}
@@ -1310,6 +1351,7 @@ void S_StartLocalSoundEx( sfxHandle_t sfx, int channelNum, int entnum )
 	}
 
 	s = &g_sfx[sfx];
+
 	if( !s->buffer ) {
 		return;
 	}
@@ -1319,6 +1361,7 @@ void S_StartLocalSoundEx( sfxHandle_t sfx, int channelNum, int entnum )
 	}
 
 	ch = OAL_AllocChannel();
+
 	if( !ch ) {
 		return;
 	}
@@ -1364,6 +1407,7 @@ void S_StartBackgroundTrack( const char* intro, const char* loop, int fadeupTime
 
 	memset( &g_bgTrack, 0, sizeof( g_bgTrack ) );
 	g_bgTrack.source = OAL_GenSourceSafe();
+
 	if( !g_bgTrack.source ) {
 		return;
 	}
@@ -1392,11 +1436,13 @@ void S_StartBackgroundTrack( const char* intro, const char* loop, int fadeupTime
 		alSourcei( g_bgTrack.source, AL_LOOPING, AL_FALSE );
 		alSourcei( g_bgTrack.source, AL_BUFFER, g_bgTrack.introBuffer );
 		alSourcePlay( g_bgTrack.source );
+
 	} else if( g_bgTrack.loopBuffer ) {
 		g_bgTrack.introPlaying = qfalse;
 		alSourcei( g_bgTrack.source, AL_LOOPING, AL_TRUE );
 		alSourcei( g_bgTrack.source, AL_BUFFER, g_bgTrack.loopBuffer );
 		alSourcePlay( g_bgTrack.source );
+
 	} else {
 		g_bgTrack.active = qfalse;
 	}
@@ -1486,6 +1532,7 @@ void S_StartStreamingSound( const char* intro, const char* loop, int entnum, int
 			memset( st, 0, sizeof( *st ) );
 
 			st->source = OAL_GenSourceSafe();
+
 			if( !st->source ) {
 				return;
 			}
@@ -1513,6 +1560,7 @@ void S_StartStreamingSound( const char* intro, const char* loop, int entnum, int
 			if( st->entnum >= 0 ) {
 				alSourcef( st->source, AL_PITCH, OAL_RandomPitchOffset( s_pitchJitter3D ? s_pitchJitter3D->value : 0.02f ) );
 				OAL_ApplyBassFilterToSource( st->source, qtrue );
+
 			} else {
 				alSourcef( st->source, AL_PITCH, OAL_RandomPitchOffset( s_pitchJitter2D ? s_pitchJitter2D->value : 0.015f ) );
 				OAL_ApplyBassFilterToSource( st->source, qtrue );
@@ -1520,6 +1568,7 @@ void S_StartStreamingSound( const char* intro, const char* loop, int entnum, int
 
 			if( st->entnum >= 0 ) {
 				OAL_AttachWorldReverbToSource( st->source );
+
 			} else {
 				OAL_ClearAuxSend( st->source );
 			}
@@ -1529,6 +1578,7 @@ void S_StartStreamingSound( const char* intro, const char* loop, int entnum, int
 				alSourcei( st->source, AL_LOOPING, AL_FALSE );
 				alSourcei( st->source, AL_BUFFER, st->introBuffer );
 				alSourcePlay( st->source );
+
 			} else if( st->loopBuffer ) {
 				st->introPlaying = qfalse;
 				alSourcei( st->source, AL_LOOPING, AL_TRUE );
@@ -1586,11 +1636,13 @@ void S_RawSamples( int samples, int rate, int width, int s_channels, const byte*
 	}
 
 	rs = &g_rawStreams[streamingIndex];
+
 	if( !rs->source || !data || samples <= 0 ) {
 		return;
 	}
 
 	fmt = OAL_GetFormat( s_channels, width );
+
 	if( !fmt ) {
 		return;
 	}
@@ -1739,6 +1791,7 @@ void S_ClearSoundBuffer()
 			{
 				ALint queued = 0;
 				alGetSourcei( g_rawStreams[i].source, AL_BUFFERS_QUEUED, &queued );
+
 				while( queued-- > 0 ) {
 					ALuint b;
 					alSourceUnqueueBuffers( g_rawStreams[i].source, 1, &b );
@@ -1747,6 +1800,7 @@ void S_ClearSoundBuffer()
 		}
 	}
 }
+
 #endif
 
 void S_Respatialize( int entityNum, const vec3_t origin, vec3_t axis[3], int inwater )
@@ -1806,6 +1860,7 @@ static void OAL_UpdateLoopingSounds()
 
 	for( i = 0; i < OAL_MAX_LOOP_SOUNDS; ++i ) {
 		oalLoopSound_t* ls = &g_loopSounds[i];
+
 		if( !ls->active ) {
 			continue;
 		}
@@ -1830,11 +1885,13 @@ static void OAL_UpdateLoopingSounds()
 			}
 
 			sfx = &g_sfx[ls->sfx];
+
 			if( !sfx->buffer ) {
 				continue;
 			}
 
 			ch = OAL_AllocChannel();
+
 			if( !ch ) {
 				continue;
 			}
@@ -1897,6 +1954,7 @@ void S_Update()
 		if( g_channels[i].inUse ) {
 			ALint state = AL_STOPPED;
 			alGetSourcei( g_channels[i].source, AL_SOURCE_STATE, &state );
+
 			if( !g_channels[i].looping && state == AL_STOPPED ) {
 				OAL_StopChannel( &g_channels[i] );
 			}
@@ -1942,16 +2000,19 @@ sfxHandle_t S_RegisterSound( const char* sample, qboolean compressed )
 	}
 
 	h = OAL_FindSfx( sample );
+
 	if( h ) {
 		return h;
 	}
 
 	h = OAL_AllocSfx( sample );
+
 	if( !h ) {
 		return 0;
 	}
 
 	buf = 0;
+
 	if( !OAL_LoadSfxBuffer( sample, &buf, &rate, &width, &channels, &sizeBytes ) ) {
 		// Com_Printf(S_COLOR_YELLOW "OpenAL: failed to load sound '%s'\n", sample);
 		g_sfx[h].placeholder = qtrue;
@@ -2005,6 +2066,7 @@ void S_ClearSoundBuffer( int killStreaming )
 
 	// clear raw stream bookkeeping for legacy code
 	s_soundtime = 0;
+
 	for( i = 0; i < 8; ++i ) {
 		g_s_rawend[i] = 0;
 	}

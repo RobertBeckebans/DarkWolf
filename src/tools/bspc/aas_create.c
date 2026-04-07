@@ -74,6 +74,7 @@ void	  AAS_InitTmpAAS()
 	//
 	tmpaasworld.nodebuffer = NULL;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -89,25 +90,32 @@ void AAS_FreeTmpAAS()
 	// free all the faces
 	for( f = tmpaasworld.faces; f; f = nextf ) {
 		nextf = f->l_next;
+
 		if( f->winding ) {
 			FreeWinding( f->winding );
 		}
+
 		FreeMemory( f );
 	}
+
 	// free all tmp areas
 	for( a = tmpaasworld.areas; a; a = nexta ) {
 		nexta = a->l_next;
+
 		if( a->settings ) {
 			FreeMemory( a->settings );
 		}
+
 		FreeMemory( a );
 	}
+
 	// free all the tmp nodes
 	for( nb = tmpaasworld.nodebuffer; nb; nb = nextnb ) {
 		nextnb = nb->next;
 		FreeMemory( nb );
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -122,13 +130,16 @@ tmp_face_t* AAS_AllocTmpFace()
 	tmpface->num	= tmpaasworld.facenum++;
 	tmpface->l_prev = NULL;
 	tmpface->l_next = tmpaasworld.faces;
+
 	if( tmpaasworld.faces ) {
 		tmpaasworld.faces->l_prev = tmpface;
 	}
+
 	tmpaasworld.faces = tmpface;
 	tmpaasworld.numfaces++;
 	return tmpface;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -140,19 +151,24 @@ void AAS_FreeTmpFace( tmp_face_t* tmpface )
 	if( tmpface->l_next ) {
 		tmpface->l_next->l_prev = tmpface->l_prev;
 	}
+
 	if( tmpface->l_prev ) {
 		tmpface->l_prev->l_next = tmpface->l_next;
+
 	} else {
 		tmpaasworld.faces = tmpface->l_next;
 	}
+
 	// free the winding
 	if( tmpface->winding ) {
 		FreeWinding( tmpface->winding );
 	}
+
 	// free the face
 	FreeMemory( tmpface );
 	tmpaasworld.numfaces--;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -167,13 +183,16 @@ tmp_area_t* AAS_AllocTmpArea()
 	tmparea->areanum = tmpaasworld.areanum++;
 	tmparea->l_prev	 = NULL;
 	tmparea->l_next	 = tmpaasworld.areas;
+
 	if( tmpaasworld.areas ) {
 		tmpaasworld.areas->l_prev = tmparea;
 	}
+
 	tmpaasworld.areas = tmparea;
 	tmpaasworld.numareas++;
 	return tmparea;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -185,17 +204,22 @@ void AAS_FreeTmpArea( tmp_area_t* tmparea )
 	if( tmparea->l_next ) {
 		tmparea->l_next->l_prev = tmparea->l_prev;
 	}
+
 	if( tmparea->l_prev ) {
 		tmparea->l_prev->l_next = tmparea->l_next;
+
 	} else {
 		tmpaasworld.areas = tmparea->l_next;
 	}
+
 	if( tmparea->settings ) {
 		FreeMemory( tmparea->settings );
 	}
+
 	FreeMemory( tmparea );
 	tmpaasworld.numareas--;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -212,9 +236,11 @@ tmp_node_t* AAS_AllocTmpNode()
 		nodebuf->numnodes	   = 0;
 		tmpaasworld.nodebuffer = nodebuf;
 	}
+
 	tmpaasworld.numnodes++;
 	return &tmpaasworld.nodebuffer->nodes[tmpaasworld.nodebuffer->numnodes++];
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -225,6 +251,7 @@ void AAS_FreeTmpNode( tmp_node_t* tmpnode )
 {
 	tmpaasworld.numnodes--;
 }
+
 //===========================================================================
 // returns true if the face is a gap from the given side
 //
@@ -246,6 +273,7 @@ int AAS_GapFace( tmp_face_t* tmpface, int side )
 
 	return ( DotProduct( invgravity, mapplanes[tmpface->planenum ^ side].normal ) > cfg.phys_maxsteepness );
 }
+
 //===========================================================================
 // returns true if the face is a ground face
 //
@@ -267,6 +295,7 @@ int AAS_GroundFace( tmp_face_t* tmpface )
 
 	return ( DotProduct( invgravity, mapplanes[tmpface->planenum].normal ) > cfg.phys_maxsteepness );
 }
+
 //===========================================================================
 // adds the side of a face to an area
 //
@@ -285,6 +314,7 @@ void AAS_AddFaceSideToArea( tmp_face_t* tmpface, int side, tmp_area_t* tmparea )
 		if( tmpface->backarea ) {
 			Error( "AAS_AddFaceSideToArea: already a back area\n" );
 		}
+
 	} else {
 		if( tmpface->frontarea ) {
 			Error( "AAS_AddFaceSideToArea: already a front area\n" );
@@ -293,6 +323,7 @@ void AAS_AddFaceSideToArea( tmp_face_t* tmpface, int side, tmp_area_t* tmparea )
 
 	if( side ) {
 		tmpface->backarea = tmparea;
+
 	} else {
 		tmpface->frontarea = tmparea;
 	}
@@ -301,10 +332,12 @@ void AAS_AddFaceSideToArea( tmp_face_t* tmpface, int side, tmp_area_t* tmparea )
 		tmpfaceside							 = tmparea->tmpfaces->frontarea != tmparea;
 		tmparea->tmpfaces->prev[tmpfaceside] = tmpface;
 	}
+
 	tmpface->next[side] = tmparea->tmpfaces;
 	tmpface->prev[side] = NULL;
 	tmparea->tmpfaces	= tmpface;
 }
+
 //===========================================================================
 // remove (a side of) a face from an area
 //
@@ -319,26 +352,34 @@ void AAS_RemoveFaceFromArea( tmp_face_t* tmpface, tmp_area_t* tmparea )
 	if( tmpface->frontarea != tmparea && tmpface->backarea != tmparea ) {
 		Error( "AAS_RemoveFaceFromArea: face not part of the area" );
 	}
+
 	side = tmpface->frontarea != tmparea;
+
 	if( tmpface->prev[side] ) {
 		prevside							= tmpface->prev[side]->frontarea != tmparea;
 		tmpface->prev[side]->next[prevside] = tmpface->next[side];
+
 	} else {
 		tmparea->tmpfaces = tmpface->next[side];
 	}
+
 	if( tmpface->next[side] ) {
 		nextside							= tmpface->next[side]->frontarea != tmparea;
 		tmpface->next[side]->prev[nextside] = tmpface->prev[side];
 	}
+
 	// remove the area number from the face depending on the side
 	if( side ) {
 		tmpface->backarea = NULL;
+
 	} else {
 		tmpface->frontarea = NULL;
 	}
+
 	tmpface->prev[side] = NULL;
 	tmpface->next[side] = NULL;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -357,6 +398,7 @@ void AAS_CheckArea( tmp_area_t* tmparea )
 	if( tmparea->invalid ) {
 		Log_Print( "AAS_CheckArea: invalid area\n" );
 	}
+
 	for( n = 0, face = tmparea->tmpfaces; face; face = face->next[side] ) {
 		// side of the face the area is on
 		side = face->frontarea != tmparea;
@@ -364,16 +406,20 @@ void AAS_CheckArea( tmp_area_t* tmparea )
 		VectorAdd( acenter, wcenter, acenter );
 		n++;
 	}
+
 	n = 1 / n;
 	VectorScale( acenter, n, acenter );
+
 	for( face = tmparea->tmpfaces; face; face = face->next[side] ) {
 		// side of the face the area is on
 		side = face->frontarea != tmparea;
 
 #ifdef L_DEBUG
+
 		if( WindingError( face->winding ) ) {
 			Log_Write( "AAS_CheckArea: area %d face %d: %s\r\n", tmparea->areanum, face->num, WindingErrorString() );
 		}
+
 #endif L_DEBUG
 
 		plane = &mapplanes[face->planenum ^ side];
@@ -382,16 +428,20 @@ void AAS_CheckArea( tmp_area_t* tmparea )
 			Log_Print( "AAS_CheckArea: area %d face %d is flipped\n", tmparea->areanum, face->num );
 			Log_Print( "AAS_CheckArea: area %d center is %f %f %f\n", tmparea->areanum, acenter[0], acenter[1], acenter[2] );
 		}
+
 		// check if the winding plane is the same as the face plane
 		WindingPlane( face->winding, normal, &dist );
 		plane = &mapplanes[face->planenum];
 #ifdef L_DEBUG
+
 		if( fabs( dist - plane->dist ) > 0.4 || fabs( normal[0] - plane->normal[0] ) > 0.0001 || fabs( normal[1] - plane->normal[1] ) > 0.0001 || fabs( normal[2] - plane->normal[2] ) > 0.0001 ) {
 			Log_Write( "AAS_CheckArea: area %d face %d winding plane unequal to face plane\r\n", tmparea->areanum, face->num );
 		}
+
 #endif L_DEBUG
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -410,20 +460,24 @@ void AAS_CheckFaceWindingPlane( tmp_face_t* face )
 	plane = &mapplanes[face->planenum];
 	//
 	sign1 = DotProduct( plane->normal, normal );
+
 	//
 	if( fabs( dist - plane->dist ) > 0.4 || fabs( normal[0] - plane->normal[0] ) > 0.0001 || fabs( normal[1] - plane->normal[1] ) > 0.0001 || fabs( normal[2] - plane->normal[2] ) > 0.0001 ) {
 		VectorInverse( normal );
 		dist = -dist;
+
 		if( fabs( dist - plane->dist ) > 0.4 || fabs( normal[0] - plane->normal[0] ) > 0.0001 || fabs( normal[1] - plane->normal[1] ) > 0.0001 || fabs( normal[2] - plane->normal[2] ) > 0.0001 ) {
 			Log_Write( "AAS_CheckFaceWindingPlane: face %d winding plane unequal to face plane\r\n", face->num );
 			//
 			sign2 = DotProduct( plane->normal, normal );
+
 			if( ( sign1 < 0 && sign2 > 0 ) || ( sign1 > 0 && sign2 < 0 ) ) {
 				Log_Write( "AAS_CheckFaceWindingPlane: face %d winding reversed\r\n", face->num );
 				w			  = face->winding;
 				face->winding = ReverseWinding( w );
 				FreeWinding( w );
 			}
+
 		} else {
 			Log_Write( "AAS_CheckFaceWindingPlane: face %d winding reversed\r\n", face->num );
 			w			  = face->winding;
@@ -432,6 +486,7 @@ void AAS_CheckFaceWindingPlane( tmp_face_t* face )
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -445,16 +500,19 @@ void AAS_CheckAreaWindingPlanes()
 	tmp_face_t* face;
 
 	Log_Write( "AAS_CheckAreaWindingPlanes:\r\n" );
+
 	for( tmparea = tmpaasworld.areas; tmparea; tmparea = tmparea->l_next ) {
 		if( tmparea->invalid ) {
 			continue;
 		}
+
 		for( face = tmparea->tmpfaces; face; face = face->next[side] ) {
 			side = face->frontarea != tmparea;
 			AAS_CheckFaceWindingPlane( face );
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -474,14 +532,17 @@ void AAS_FlipAreaFaces( tmp_area_t* tmparea )
 		if( !face->frontarea ) {
 			Error( "face %d has no front area\n", face->num );
 		}
+
 		// side of the face the area is on
 		side = face->frontarea != tmparea;
 		WindingCenter( face->winding, wcenter );
 		VectorAdd( acenter, wcenter, acenter );
 		n++;
 	}
+
 	n = 1 / n;
 	VectorScale( acenter, n, acenter );
+
 	for( face = tmparea->tmpfaces; face; face = face->next[side] ) {
 		// side of the face the area is on
 		side = face->frontarea != tmparea;
@@ -498,6 +559,7 @@ void AAS_FlipAreaFaces( tmp_area_t* tmparea )
 			FreeWinding(w);
 			*/
 		}
+
 #ifdef L_DEBUG
 		{
 			float  dist;
@@ -506,13 +568,16 @@ void AAS_FlipAreaFaces( tmp_area_t* tmparea )
 			// check if the winding plane is the same as the face plane
 			WindingPlane( face->winding, normal, &dist );
 			plane = &mapplanes[face->planenum];
+
 			if( fabs( dist - plane->dist ) > 0.4 || fabs( normal[0] - plane->normal[0] ) > 0.0001 || fabs( normal[1] - plane->normal[1] ) > 0.0001 || fabs( normal[2] - plane->normal[2] ) > 0.0001 ) {
 				Log_Write( "area %d face %d winding plane unequal to face plane\r\n", tmparea->areanum, face->num );
 			}
 		}
+
 #endif
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -534,6 +599,7 @@ void AAS_RemoveAreaFaceColinearPoints()
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -549,26 +615,32 @@ void AAS_RemoveTinyFaces()
 	// FIXME: loop over the faces instead of area->faces
 	Log_Write( "AAS_RemoveTinyFaces\r\n" );
 	num = 0;
+
 	for( tmparea = tmpaasworld.areas; tmparea; tmparea = tmparea->l_next ) {
 		for( face = tmparea->tmpfaces; face; face = nextface ) {
 			side	 = face->frontarea != tmparea;
 			nextface = face->next[side];
+
 			//
 			if( WindingArea( face->winding ) < 1 ) {
 				if( face->frontarea ) {
 					AAS_RemoveFaceFromArea( face, face->frontarea );
 				}
+
 				if( face->backarea ) {
 					AAS_RemoveFaceFromArea( face, face->backarea );
 				}
+
 				AAS_FreeTmpFace( face );
 				// Log_Write("area %d face %d is tiny\r\n", tmparea->areanum, face->num);
 				num++;
 			}
 		}
 	}
+
 	Log_Write( "%d tiny faces removed\r\n", num );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -588,6 +660,7 @@ void AAS_CreateAreaSettings()
 	Log_Write( "AAS_CreateAreaSettings\r\n" );
 	i = 0;
 	qprintf( "%6d areas provided with settings", i );
+
 	for( tmparea = tmpaasworld.areas; tmparea; tmparea = tmparea->l_next ) {
 		// if the area is invalid there no need to create settings for it
 		if( tmparea->invalid ) {
@@ -600,40 +673,51 @@ void AAS_CreateAreaSettings()
 		flags							   = 0;
 		count							   = 0;
 		tmparea->settings->groundsteepness = 0.0;
+
 		for( face = tmparea->tmpfaces; face; face = face->next[side] ) {
 			side = face->frontarea != tmparea;
 			flags |= face->faceflags;
+
 			// Ridah, add this face's steepness
 			if( face->faceflags & FACE_GROUND ) {
 				tmparea->settings->groundsteepness += ( 1.0 - mapplanes[face->planenum ^ side].normal[2] );
 				count++;
 			}
 		}
+
 		tmparea->settings->groundsteepness /= ( float )count;
+
 		if( tmparea->settings->groundsteepness > 1.0 ) {
 			tmparea->settings->groundsteepness = 1.0;
 		}
+
 		if( tmparea->settings->groundsteepness < 0.0 ) {
 			tmparea->settings->groundsteepness = 0.0;
 		}
+
 		tmparea->settings->areaflags = 0;
+
 		if( flags & FACE_GROUND ) {
 			tmparea->settings->areaflags |= AREA_GROUNDED;
 			numgrounded++;
 		}
+
 		if( flags & FACE_LADDER ) {
 			tmparea->settings->areaflags |= AREA_LADDER;
 			numladderareas++;
 		}
+
 		if( tmparea->contents & ( AREACONTENTS_WATER | AREACONTENTS_SLIME | AREACONTENTS_LAVA ) ) {
 			tmparea->settings->areaflags |= AREA_LIQUID;
 			numliquidareas++;
 		}
+
 		// presence type of the area
 		tmparea->settings->presencetype = tmparea->presencetype;
 		//
 		qprintf( "\r%6d", ++i );
 	}
+
 	qprintf( "\n" );
 #ifdef AASINFO
 	Log_Print( "%6d grounded areas\n", numgrounded );
@@ -641,6 +725,7 @@ void AAS_CreateAreaSettings()
 	Log_Print( "%6d liquid areas\n", numliquidareas );
 #endif // AASINFO
 }
+
 //===========================================================================
 // create a tmp AAS area from a leaf node
 //
@@ -664,15 +749,18 @@ tmp_node_t* AAS_CreateArea( node_t* node )
 	tmparea->tmpfaces = NULL;
 	// clear the area face flags
 	areafaceflags = 0;
+
 	// make aas faces from the portals
 	for( p = node->portals; p; p = p->next[pside] ) {
 		pside = ( p->nodes[1] == node );
+
 		// don't create faces from very small portals
 		//		if (WindingArea(p->winding) < 1) continue;
 		// if there's already a face created for this portal
 		if( p->tmpface ) {
 			// add the back side of the face to the area
 			AAS_AddFaceSideToArea( p->tmpface, 1, tmparea );
+
 		} else {
 			tmpface = AAS_AllocTmpFace();
 			// set the face pointer at the portal so we can see from
@@ -681,28 +769,35 @@ tmp_node_t* AAS_CreateArea( node_t* node )
 			// FIXME: test this change
 			// tmpface->planenum = (p->planenum & ~1) | pside;
 			tmpface->planenum = p->planenum ^ pside;
+
 			if( pside ) {
 				tmpface->winding = ReverseWinding( p->winding );
+
 			} else {
 				tmpface->winding = CopyWinding( p->winding );
 			}
+
 #ifdef L_DEBUG
 			//
 			AAS_CheckFaceWindingPlane( tmpface );
 #endif // L_DEBUG
-	   // if there's solid at the other side of the portal
+
+			// if there's solid at the other side of the portal
 			if( p->nodes[!pside]->contents & ( CONTENTS_SOLID | CONTENTS_PLAYERCLIP ) ) {
 				tmpface->faceflags |= FACE_SOLID;
 			}
+
 			// else there is no solid at the other side and if there
 			// is a liquid at this side
 			else if( node->contents & ( CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) {
 				tmpface->faceflags |= FACE_LIQUID;
+
 				// if there's no liquid at the other side
 				if( !( p->nodes[!pside]->contents & ( CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) ) {
 					tmpface->faceflags |= FACE_LIQUIDSURFACE;
 				}
 			}
+
 			// if there's ladder contents at other side of the portal
 			if( ( p->nodes[pside]->contents & CONTENTS_LADDER ) || ( p->nodes[!pside]->contents & CONTENTS_LADDER ) ) {
 				// NOTE: doesn't have to be solid at the other side because
@@ -714,10 +809,12 @@ tmp_node_t* AAS_CreateArea( node_t* node )
 				//  ladder sides when standing (not crouched)
 				tmpface->faceflags |= FACE_LADDER;
 			}
+
 			// if it is possible to stand on the face
 			if( AAS_GroundFace( tmpface ) ) {
 				tmpface->faceflags |= FACE_GROUND;
 			}
+
 			//
 			areafaceflags |= tmpface->faceflags;
 			// no aas face number yet (zero is a dummy in the aasworld faces)
@@ -726,35 +823,45 @@ tmp_node_t* AAS_CreateArea( node_t* node )
 			AAS_AddFaceSideToArea( tmpface, 0, tmparea );
 		}
 	}
+
 	qprintf( "\r%6d", tmparea->areanum );
 	// presence type in the area
 	tmparea->presencetype = ~node->expansionbboxes & cfg.allpresencetypes;
 	//
 	tmparea->contents = 0;
+
 	if( node->contents & CONTENTS_CLUSTERPORTAL ) {
 		tmparea->contents |= AREACONTENTS_CLUSTERPORTAL;
 	}
+
 	if( node->contents & CONTENTS_MOVER ) {
 		tmparea->contents |= AREACONTENTS_MOVER;
 	}
+
 	if( node->contents & CONTENTS_TELEPORTER ) {
 		tmparea->contents |= AREACONTENTS_TELEPORTER;
 	}
+
 	if( node->contents & CONTENTS_JUMPPAD ) {
 		tmparea->contents |= AREACONTENTS_JUMPPAD;
 	}
+
 	if( node->contents & CONTENTS_DONOTENTER ) {
 		tmparea->contents |= AREACONTENTS_DONOTENTER;
 	}
+
 	if( node->contents & CONTENTS_DONOTENTER_LARGE ) {
 		tmparea->contents |= AREACONTENTS_DONOTENTER_LARGE;
 	}
+
 	if( node->contents & CONTENTS_WATER ) {
 		tmparea->contents |= AREACONTENTS_WATER;
 	}
+
 	if( node->contents & CONTENTS_LAVA ) {
 		tmparea->contents |= AREACONTENTS_LAVA;
 	}
+
 	if( node->contents & CONTENTS_SLIME ) {
 		tmparea->contents |= AREACONTENTS_SLIME;
 	}
@@ -774,6 +881,7 @@ tmp_node_t* AAS_CreateArea( node_t* node )
 	//
 	return tmpnode;
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -793,6 +901,7 @@ tmp_node_t* AAS_CreateAreas_r( node_t* node )
 		tmpnode->children[1] = AAS_CreateAreas_r( node->children[1] );
 		return tmpnode;
 	}
+
 	// areas won't be created for solid leafs
 	if( node->contents & CONTENTS_SOLID ) {
 		// just return zero for a solid leaf (in tmp AAS NULL is a solid leaf)
@@ -801,6 +910,7 @@ tmp_node_t* AAS_CreateAreas_r( node_t* node )
 
 	return AAS_CreateArea( node );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -815,6 +925,7 @@ void AAS_CreateAreas( node_t* node )
 	qprintf( "\n" );
 	Log_Write( "%6d areas created\r\n", tmpaasworld.numareas );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -831,8 +942,10 @@ void AAS_PrintNumGroundFaces()
 			numgroundfaces++;
 		}
 	}
+
 	qprintf( "%6d ground faces\n", numgroundfaces );
 }
+
 //===========================================================================
 // checks the number of shared faces between the given two areas
 // since areas are convex they should only have ONE shared face
@@ -854,27 +967,34 @@ void AAS_CheckAreaSharedFaces( tmp_area_t* tmparea1, tmp_area_t* tmparea2 )
 
 	sharedface	   = NULL;
 	numsharedfaces = 0;
+
 	for( face1 = tmparea1->tmpfaces; face1; face1 = face1->next[side] ) {
 		side = face1->frontarea != tmparea1;
+
 		if( face1->backarea == tmparea2 || face1->frontarea == tmparea2 ) {
 			sharedface = face1;
 			numsharedfaces++;
 		}
 	}
+
 	if( !sharedface ) {
 		return;
 	}
+
 	// the areas should only have one shared face
 	if( numsharedfaces > 1 ) {
 		Log_Write( "---- tmp area %d and %d have %d shared faces\r\n", tmparea1->areanum, tmparea2->areanum, numsharedfaces );
+
 		for( face1 = tmparea1->tmpfaces; face1; face1 = face1->next[side] ) {
 			side = face1->frontarea != tmparea1;
+
 			if( face1->backarea == tmparea2 || face1->frontarea == tmparea2 ) {
 				Log_Write( "face %d, planenum = %d, face->frontarea = %d face->backarea = %d\r\n", face1->num, face1->planenum, face1->frontarea->areanum, face1->backarea->areanum );
 			}
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -890,10 +1010,12 @@ void AAS_CheckSharedFaces()
 			if( tmparea1 == tmparea2 ) {
 				continue;
 			}
+
 			AAS_CheckAreaSharedFaces( tmparea1, tmparea2 );
 		}
 	}
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -907,10 +1029,12 @@ void AAS_FlipFace( tmp_face_t* face )
 
 	frontarea = face->frontarea;
 	backarea  = face->backarea;
+
 	// must have an area at both sides before flipping is allowed
 	if( !frontarea || !backarea ) {
 		return;
 	}
+
 	// flip the face winding
 	w			  = face->winding;
 	face->winding = ReverseWinding( w );
@@ -923,6 +1047,7 @@ void AAS_FlipFace( tmp_face_t* face )
 	AAS_AddFaceSideToArea( face, 1, frontarea );
 	AAS_AddFaceSideToArea( face, 0, backarea );
 }
+
 //===========================================================================
 //
 // Parameter:				-
@@ -1015,34 +1140,44 @@ void AAS_FlipSharedFaces()
 
 	i = 0;
 	qprintf( "%6d areas checked for shared face flipping", i );
+
 	for( tmparea1 = tmpaasworld.areas; tmparea1; tmparea1 = tmparea1->l_next ) {
 		if( tmparea1->invalid ) {
 			continue;
 		}
+
 		for( face1 = tmparea1->tmpfaces; face1; face1 = face1->next[side1] ) {
 			side1 = face1->frontarea != tmparea1;
+
 			if( !face1->frontarea || !face1->backarea ) {
 				continue;
 			}
+
 			//
 			for( face2 = face1->next[side1]; face2; face2 = face2->next[side2] ) {
 				side2 = face2->frontarea != tmparea1;
+
 				if( !face2->frontarea || !face2->backarea ) {
 					continue;
 				}
+
 				//
 				if( face1->frontarea == face2->backarea && face1->backarea == face2->frontarea ) {
 					AAS_FlipFace( face2 );
 				}
+
 				// recheck side
 				side2 = face2->frontarea != tmparea1;
 			}
 		}
+
 		qprintf( "\r%6d", ++i );
 	}
+
 	qprintf( "\n" );
 	Log_Print( "%6d areas checked for shared face flipping\r\n", i );
 }
+
 //===========================================================================
 // creates an .AAS file with the given name
 // a MAP should be loaded before calling this
@@ -1070,46 +1205,56 @@ void AAS_Create( char* aasfile )
 	e = &entities[entity_num];
 	// process the whole world
 	tree = ProcessWorldBrushes( e->firstbrush, e->firstbrush + e->numbrushes );
+
 	// if the conversion is cancelled
 	if( cancelconversion ) {
 		Tree_Free( tree );
 		return;
 	}
+
 	// display BSP tree creation time
 	Log_Print( "BSP tree created in %5.0f seconds\n", I_FloatTime() - start_time );
 	// prune the bsp tree
 	Tree_PruneNodes( tree->headnode );
+
 	// if the conversion is cancelled
 	if( cancelconversion ) {
 		Tree_Free( tree );
 		return;
 	}
+
 	// create the tree portals
 	MakeTreePortals( tree );
+
 	// if the conversion is cancelled
 	if( cancelconversion ) {
 		Tree_Free( tree );
 		return;
 	}
+
 	// Marks all nodes that can be reached by entites
 	if( FloodEntities( tree ) ) {
 		// fill out nodes that can't be reached
 		FillOutside( tree->headnode );
+
 	} else {
 		LeakFile( tree );
 		Error( "**** leaked ****\n" );
 		return;
 	}
+
 	// create AAS from the BSP tree
 	//==========================================
 	// initialize tmp aas
 	AAS_InitTmpAAS();
 	// create the convex areas from the leaves
 	AAS_CreateAreas( tree->headnode );
+
 	// free the BSP tree because it isn't used anymore
 	if( freetree ) {
 		Tree_Free( tree );
 	}
+
 	// try to merge area faces
 	AAS_MergeAreaFaces();
 	// do gravitational subdivision
@@ -1136,6 +1281,7 @@ void AAS_Create( char* aasfile )
 	AAS_RemoveTinyFaces();
 	// create area settings
 	AAS_CreateAreaSettings();
+
 	// check if the winding plane is equal to the face plane
 	// AAS_CheckAreaWindingPlanes();
 	//
@@ -1147,6 +1293,7 @@ void AAS_Create( char* aasfile )
 		AAS_FreeTmpAAS();
 		return;
 	}
+
 	// store the created AAS stuff in the AAS file format and write the file
 	AAS_StoreFile( aasfile );
 	// free the temporary AAS memory

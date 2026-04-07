@@ -90,6 +90,7 @@ int Sys_ShellExecute( char* op, char* file, qboolean doexit, char* params, char*
 	// set default operation to "open"
 	if( op ) {
 		se_op = op;
+
 	} else {
 		se_op = "open";
 	}
@@ -114,6 +115,7 @@ int Sys_ShellExecute( char* op, char* file, qboolean doexit, char* params, char*
 
 	return 999; // success
 }
+
 //----(SA) end
 #endif
 
@@ -133,6 +135,7 @@ void Sys_StartProcess( char* exeName, qboolean doexit )             // NERVE - S
 	si.cb = sizeof( si );
 
 	GetCurrentDirectory( _MAX_PATH, szPathOrig );
+
 	if( !CreateProcess( NULL, va( "%s\\%s", szPathOrig, exeName ), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi ) ) {
 		// couldn't start it, popup error box
 		Com_Error( ERR_DROP, "Could not start process: '%s\\%s' ", szPathOrig, exeName );
@@ -170,6 +173,7 @@ void Sys_OpenURL( char* url, qboolean doexit )                  // NERVE - SMF
 		Cbuf_ExecuteText( EXEC_APPEND, "quit" );
 	}
 }
+
 //----(SA)	end
 
 /*
@@ -214,6 +218,7 @@ void QDECL Sys_Error( const char* error, ... )
 		if( !GetMessage( &msg, NULL, 0, 0 ) ) {
 			Com_Quit_f();
 		}
+
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}
@@ -317,11 +322,13 @@ void Sys_ListFilteredFiles( const char* basedir, char* subdirs, char* filter, ch
 
 	if( strlen( subdirs ) ) {
 		Com_sprintf( search, sizeof( search ), "%s\\%s\\*", basedir, subdirs );
+
 	} else {
 		Com_sprintf( search, sizeof( search ), "%s\\*", basedir );
 	}
 
 	findhandle = _findfirst( search, &findinfo );
+
 	if( findhandle == -1 ) {
 		return;
 	}
@@ -331,19 +338,25 @@ void Sys_ListFilteredFiles( const char* basedir, char* subdirs, char* filter, ch
 			if( Q_stricmp( findinfo.name, "." ) && Q_stricmp( findinfo.name, ".." ) ) {
 				if( strlen( subdirs ) ) {
 					Com_sprintf( newsubdirs, sizeof( newsubdirs ), "%s\\%s", subdirs, findinfo.name );
+
 				} else {
 					Com_sprintf( newsubdirs, sizeof( newsubdirs ), "%s", findinfo.name );
 				}
+
 				Sys_ListFilteredFiles( basedir, newsubdirs, filter, list, numfiles );
 			}
 		}
+
 		if( *numfiles >= MAX_FOUND_FILES - 1 ) {
 			break;
 		}
+
 		Com_sprintf( filename, sizeof( filename ), "%s\\%s", subdirs, findinfo.name );
+
 		if( !Com_FilterPath( filter, filename, qfalse ) ) {
 			continue;
 		}
+
 		list[ *numfiles ] = CopyString( filename );
 		( *numfiles )++;
 	} while( _findnext( findhandle, &findinfo ) != -1 );
@@ -366,10 +379,12 @@ static qboolean strgtr( const char* s0, const char* s1 )
 		if( s1[i] > s0[i] ) {
 			return qtrue;
 		}
+
 		if( s1[i] < s0[i] ) {
 			return qfalse;
 		}
 	}
+
 	return qfalse;
 }
 
@@ -397,9 +412,11 @@ char** Sys_ListFiles( const char* directory, const char* extension, char* filter
 		}
 
 		listCopy = ( char** )Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+
 		for( i = 0 ; i < nfiles ; i++ ) {
 			listCopy[i] = list[i];
 		}
+
 		listCopy[i] = NULL;
 
 		return listCopy;
@@ -413,6 +430,7 @@ char** Sys_ListFiles( const char* directory, const char* extension, char* filter
 	if( extension[0] == '/' && extension[1] == 0 ) {
 		extension = "";
 		flag = 0;
+
 	} else {
 		flag = _A_SUBDIR;
 	}
@@ -423,6 +441,7 @@ char** Sys_ListFiles( const char* directory, const char* extension, char* filter
 	nfiles = 0;
 
 	findhandle = _findfirst( search, &findinfo );
+
 	if( findhandle == -1 ) {
 		*numfiles = 0;
 		return NULL;
@@ -433,6 +452,7 @@ char** Sys_ListFiles( const char* directory, const char* extension, char* filter
 			if( nfiles == MAX_FOUND_FILES - 1 ) {
 				break;
 			}
+
 			list[ nfiles ] = CopyString( findinfo.name );
 			nfiles++;
 		}
@@ -450,13 +470,16 @@ char** Sys_ListFiles( const char* directory, const char* extension, char* filter
 	}
 
 	listCopy = ( char** )Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+
 	for( i = 0 ; i < nfiles ; i++ ) {
 		listCopy[i] = list[i];
 	}
+
 	listCopy[i] = NULL;
 
 	do {
 		flag = 0;
+
 		for( i = 1; i < nfiles; i++ ) {
 			if( strgtr( listCopy[i - 1], listCopy[i] ) ) {
 				char* temp = listCopy[i];
@@ -503,10 +526,12 @@ qboolean Sys_ScanForCD()
 	FILE        *f;
 	char test[MAX_OSPATH];
 #if 0
+
 	// don't override a cdpath on the command line
 	if( strstr( sys_cmdline, "cdpath" ) ) {
 		return;
 	}
+
 #endif
 
 	drive[0] = 'c';
@@ -523,6 +548,7 @@ qboolean Sys_ScanForCD()
 		sprintf( cddir, "%s%s", drive, CD_BASEDIR );
 		sprintf( test, "%s\\%s", cddir, CD_EXE );
 		f = fopen( test, "r" );
+
 		if( f ) {
 			fclose( f );
 			return qtrue;
@@ -531,6 +557,7 @@ qboolean Sys_ScanForCD()
 			sprintf( cddir, "%s%s", drive, CD_BASEDIR_LINUX );
 			sprintf( test, "%s\\%s", cddir, CD_EXE_LINUX );
 			f = fopen( test, "r" );
+
 			if( f ) {
 				fclose( f );
 				return qtrue;
@@ -579,8 +606,10 @@ char* Sys_GetClipboardData()
 				strtok( data, "\n\r\b" );
 			}
 		}
+
 		CloseClipboard();
 	}
+
 	return data;
 }
 
@@ -604,6 +633,7 @@ void Sys_UnloadDll( void* dllHandle )
 	if( !dllHandle ) {
 		return;
 	}
+
 	if( !FreeLibrary( ( HMODULE )dllHandle ) ) {
 		Com_Error( ERR_FATAL, "Sys_UnloadDll FreeLibrary failed" );
 	}
@@ -643,6 +673,7 @@ void* QDECL Sys_LoadDll( const char* name, int apiVersion, void* importAPI, void
 	if( 1 ) {  //----(SA)	always dll
 		//	if (Cvar_VariableIntegerValue( "devdll" )) {
 		libHandle = LoadLibrary( filename );
+
 		if( libHandle ) {
 			goto found_dll;
 		}
@@ -669,6 +700,7 @@ void* QDECL Sys_LoadDll( const char* name, int apiVersion, void* importAPI, void
 found_dll:
 
 	dllEntry = ( void* ( QDECL* )( int apiVersion, void* importAPI ) )GetProcAddress( libHandle, "dllEntry" );
+
 	if( !dllEntry ) {
 		FreeLibrary( libHandle );
 		return NULL;
@@ -774,6 +806,7 @@ void Sys_StreamFillBuffer( int i )
 	// if there is any space left in the buffer, fill it up
 	if ( stream.sIO[i].active  && !stream.sIO[i].eof ) {
 		count = stream.sIO[i].bufferSize - ( stream.sIO[i].threadPosition - stream.sIO[i].streamPosition );
+
 		if ( !count ) {
 			return;
 		}
@@ -783,9 +816,11 @@ void Sys_StreamFillBuffer( int i )
 		readCount = buffer < count ? buffer : count;
 
 		r = FS_ReadDirect( stream.sIO[i].buffer + bufferPoint, readCount, stream.sIO[i].file );
+
 		if ( r != readCount ) {
 			stream.sIO[i].eof = qtrue;
 		}
+
 		stream.sIO[i].threadPosition += r;
 	}
 }
@@ -804,9 +839,11 @@ void Sys_StreamThread()
 	while ( 1 ) {
 		Sleep( 10 );
 		EnterCriticalSection( &stream.crit );
+
 		for ( i = 1; i < 64; i++ ) {
 			Sys_StreamFillBuffer( i );
 		}
+
 		LeaveCriticalSection( &stream.crit );
 	}
 }
@@ -937,18 +974,23 @@ int Sys_StreamedRead( void* buffer, int size, int count, fileHandle_t f )
 	}
 
 	sleepCount = 0;
+
 	while ( remaining > 0 ) {
 		available = stream.sIO[f].threadPosition - stream.sIO[f].streamPosition;
+
 		if ( !available ) {
 			if ( stream.sIO[f].eof ) {
 				break;
 			}
+
 			if ( sleepCount == 1 ) {
 				Com_DPrintf( "Sys_StreamedRead: waiting\n" );
 			}
+
 			if ( ++sleepCount > 100 ) {
 				Com_Error( ERR_FATAL, "Sys_StreamedRead: thread has died" );
 			}
+
 			Sleep( 10 );
 			continue;
 		}
@@ -957,9 +999,11 @@ int Sys_StreamedRead( void* buffer, int size, int count, fileHandle_t f )
 		bufferCount = stream.sIO[f].bufferSize - bufferPoint;
 
 		copy = available < bufferCount ? available : bufferCount;
+
 		if ( copy > remaining ) {
 			copy = remaining;
 		}
+
 		memcpy( dest, stream.sIO[f].buffer + bufferPoint, copy );
 		stream.sIO[f].streamPosition += copy;
 		dest += copy;
@@ -1045,12 +1089,15 @@ void Sys_QueEvent( int time, sysEventType_t type, int value, int value2, int ptr
 	sysEvent_t*  ev;
 
 	ev = &eventQue[ eventHead & MASK_QUED_EVENTS ];
+
 	if ( eventHead - eventTail >= MAX_QUED_EVENTS ) {
 		Com_Printf( "Sys_QueEvent: overflow\n" );
+
 		// we are discarding an event, but don't leak memory
 		if ( ev->evPtr ) {
 			Z_Free( ev->evPtr );
 		}
+
 		eventTail++;
 	}
 
@@ -1103,6 +1150,7 @@ sysEvent_t Sys_GetEvent()
 
 	// check for console commands
 	s = Sys_ConsoleInput();
+
 	if ( s ) {
 		char*    b;
 		int len;
@@ -1115,6 +1163,7 @@ sysEvent_t Sys_GetEvent()
 
 	// check for network packets
 	MSG_Init( &netmsg, sys_packetReceived, sizeof( sys_packetReceived ) );
+
 	if ( Sys_GetPacket( &adr, &netmsg ) ) {
 		netadr_t*        buf;
 		int len;
@@ -1202,20 +1251,25 @@ void Sys_Init()
 	if ( g_wv.osversion.dwMajorVersion < 4 ) {
 		Sys_Error( "Wolf requires Windows version 4 or greater" );
 	}
+
 	if ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32s ) {
 		Sys_Error( "Wolf doesn't run on Win32s" );
 	}
 
 	if ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT ) {
 		Cvar_Set( "arch", "winnt" );
+
 	} else if ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )   {
 		if ( LOWORD( g_wv.osversion.dwBuildNumber ) >= WIN98_BUILD_NUMBER ) {
 			Cvar_Set( "arch", "win98" );
+
 		} else if ( LOWORD( g_wv.osversion.dwBuildNumber ) >= OSR2_BUILD_NUMBER )   {
 			Cvar_Set( "arch", "win95 osr2.x" );
+
 		} else {
 			Cvar_Set( "arch", "win95" );
 		}
+
 	} else {
 		Cvar_Set( "arch", "unknown Windows variant" );
 	}
@@ -1228,6 +1282,7 @@ void Sys_Init()
 	// figure out our CPU
 	//
 	Cvar_Get( "sys_cpustring", "detect", 0 );
+
 	if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "detect" ) ) {
 		Com_Printf( "...detecting CPU, found " );
 
@@ -1237,47 +1292,63 @@ void Sys_Init()
 			case CPUID_GENERIC:
 				Cvar_Set( "sys_cpustring", "generic" );
 				break;
+
 			case CPUID_INTEL_UNSUPPORTED:
 				Cvar_Set( "sys_cpustring", "x86 (pre-Pentium)" );
 				break;
+
 			case CPUID_INTEL_PENTIUM:
 				Cvar_Set( "sys_cpustring", "x86 (P5/PPro, non-MMX)" );
 				break;
+
 			case CPUID_INTEL_MMX:
 				Cvar_Set( "sys_cpustring", "x86 (P5/Pentium2, MMX)" );
 				break;
+
 			case CPUID_INTEL_KATMAI:
 				Cvar_Set( "sys_cpustring", "Intel Pentium III" );
 				break;
+
 			case CPUID_AMD_3DNOW:
 				Cvar_Set( "sys_cpustring", "AMD w/ 3DNow!" );
 				break;
+
 			case CPUID_AXP:
 				Cvar_Set( "sys_cpustring", "Alpha AXP" );
 				break;
+
 			default:
 				Com_Error( ERR_FATAL, "Unknown cpu type %d\n", cpuid );
 				break;
 		}
+
 	} else {
 		Com_Printf( "...forcing CPU type to " );
+
 		if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "generic" ) ) {
 			cpuid = CPUID_GENERIC;
+
 		} else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "x87" ) )     {
 			cpuid = CPUID_INTEL_PENTIUM;
+
 		} else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "mmx" ) )     {
 			cpuid = CPUID_INTEL_MMX;
+
 		} else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "3dnow" ) )     {
 			cpuid = CPUID_AMD_3DNOW;
+
 		} else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "PentiumIII" ) )     {
 			cpuid = CPUID_INTEL_KATMAI;
+
 		} else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "axp" ) )     {
 			cpuid = CPUID_AXP;
+
 		} else {
 			Com_Printf( "WARNING: unknown sys_cpustring '%s'\n", Cvar_VariableString( "sys_cpustring" ) );
 			cpuid = CPUID_GENERIC;
 		}
 	}
+
 	Cvar_SetValue( "sys_cpuid", cpuid );
 	Com_Printf( "%s\n", Cvar_VariableString( "sys_cpustring" ) );
 
@@ -1323,6 +1394,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	// (SA) enable to do cd check for setup\setup.exe
 	//#if 1
 #if 0
+
 	// if we find the CD, add a +set cddir xxx command line
 	if ( !Sys_ScanForCD() ) {
 		Sys_Error( "Game CD not in drive" );
