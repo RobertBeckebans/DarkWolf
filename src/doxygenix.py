@@ -77,6 +77,46 @@ def is_source(p: Path) -> bool:
     return p.suffix.lower() in SOURCE_EXTS
 
 
+def is_under_dir(path: Path, directory: Optional[Path]) -> bool:
+    if directory is None:
+        return True
+    try:
+        path.resolve().relative_to(directory.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def default_callsite_roots(project_root: Path) -> List[Path]:
+    candidates = [
+        project_root / "engine",
+        project_root / "games",
+        project_root / "shared",
+        project_root / "tools",
+    ]
+    roots = [p for p in candidates if p.exists()]
+    return roots or [project_root]
+
+
+def _looks_like_decl_or_def(line: str, func_name: str) -> bool:
+    s = line.strip()
+    if not s:
+        return False
+    if s.startswith("#"):
+        return True
+    if "typedef" in s or s.startswith("using "):
+        return True
+    if re.search(rf"\b{re.escape(func_name)}\s*\(", s):
+        if re.match(
+            r"^\s*(static|extern|inline|ID_INLINE|ID_STATIC|ID_FORCE_INLINE|FORCE_INLINE|const|void|int|float|double|char|long|short|signed|unsigned|struct|class|template)\b",
+            line,
+        ):
+            return True
+        if s.endswith(";") and "return" not in s and "=" not in s:
+            return True
+    return False
+
+
 def read_file(path: Path) -> List[str]:
     return path.read_text(encoding="utf-8", errors="ignore").splitlines()
 
@@ -302,6 +342,123 @@ def extract_implementation(func: FuncInfo, repo_root: Path, max_chars=6000) -> s
         excerpt = excerpt[:max_chars] + "\n/* ... truncated ... */"
 
     return excerpt
+
+
+def find_callsite_examples(
+    func: FuncInfo,
+    func_id: str,
+    repo_root: Path,
+    search_roots: List[Path],
+    max_examples: int = 3,
+    context_lines: int = 30,
+) -> List[str]:
+    if max_examples <= 0:
+        return []
+
+    func_name = func.name
+    if not func_name:
+        return []
+
+    class_name = None
+    if "::" in func_id:
+        class_name = func_id.rsplit("::", 1)[0]
+
+    patterns = []
+    if class_name:
+        patterns.append(
+            re.compile(
+                rf"\b{re.escape(class_name)}::\s*{re.escape(func_name)}\s*\("
+            )
+        )
+        patterns.append(re.compile(rf"->\s*{re.escape(func_name)}\s*\("))
+        patterns.append(re.compile(rf"\.\s*{re.escape(func_name)}\s*\("))
+    patterns.append(re.compile(rf"\b{re.escape(func_name)}\s*\("))
+
+    excluded_dirs = {
+        "build",
+        "doxygen-xml",
+        ".git",
+        ".vs",
+        ".venv",
+        "__pycache__",
+        "chats",
+        "diags",
+        "libs",
+    }
+
+    bodyfile = func.bodyfile or func.file
+    body_path = (
+        (repo_root / bodyfile).resolve()
+        if not bodyfile.is_absolute()
+        else bodyfile.resolve()
+    )
+    body_start = func.bodystart or -1
+    body_end = func.bodyend or -1
+
+    matches: list[tuple[int, Path, int, list[str]]] = []
+    seen: set[tuple[str, int]] = set()
+
+    for root in search_roots:
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            if path.suffix.lower() not in (HEADER_EXTS | SOURCE_EXTS):
+                continue
+            if any(part in excluded_dirs for part in path.parts):
+                continue
+
+            try:
+                rel = path.resolve().relative_to(repo_root.resolve())
+            except ValueError:
+                rel = path
+
+            lines = read_file(path)
+            for idx, line in enumerate(lines):
+                if _looks_like_decl_or_def(line, func_name):
+                    continue
+
+                matched_priority = None
+                for p_idx, pattern in enumerate(patterns):
+                    if pattern.search(line):
+                        matched_priority = p_idx
+                        break
+
+                if matched_priority is None:
+                    continue
+
+                # skip matches inside the function's own body
+                if (
+                    path.resolve() == body_path
+                    and body_start != -1
+                    and body_end != -1
+                    and body_start - 1 <= idx <= body_end - 1
+                ):
+                    continue
+
+                key = (str(rel), idx)
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                matches.append((matched_priority, rel, idx, lines))
+
+    matches.sort(key=lambda x: (x[0], str(x[1]), x[2]))
+
+    before = max(0, context_lines // 2)
+    after = max(0, context_lines - before - 1)
+
+    examples: list[str] = []
+    for _prio, rel, idx, lines in matches:
+        if len(examples) >= max_examples:
+            break
+        start = max(0, idx - before)
+        end = min(len(lines) - 1, idx + after)
+        snippet = "\n".join(lines[start : end + 1])
+        examples.append(f"{rel}:{start + 1}-{end + 1}\n{snippet}")
+
+    return examples
 
 
 def extract_inline_comment(line: str) -> str:
@@ -766,6 +923,7 @@ def ai_generate_comment(
     trivial: bool,
     original_comment: str | None = None,
     mcp_context: str | None = None,
+    call_examples: List[str] | None = None,
 ) -> CommentModel:
     signature = (func.definition + func.argsstring).strip()
 
@@ -780,6 +938,7 @@ def ai_generate_comment(
         "- Declared return type\n"
         "- List of parameters (name + type)\n"
         "- An excerpt of the implementation/body code\n"
+        "- Optional call-site examples (file snippets)\n"
         "- Optional MCP tool context summary\n"
         "\n"
         "YOUR OUTPUT MUST FOLLOW THESE RULES STRICTLY:\n"
@@ -809,7 +968,9 @@ def ai_generate_comment(
         "   - Fill brief and – if sensible – details, params, returns, throws, pre, post, threadsafety.\n"
         "   - No generic phrases, no repetition of the signature in words.\n"
         "14) If you have get an original_comment than consider it as a viable source for your new comment.\n"
-        "15) If mcp_context is provided, use it to improve accuracy. If it conflicts with the implementation, "
+        "15) If call_examples are provided, use them to improve accuracy and phrasing of usage, "
+        "but do not describe the example code verbatim.\n"
+        "16) If mcp_context is provided, use it to improve accuracy. If it conflicts with the implementation, "
         "prefer the implementation and write 'TODO: clarify ...' for ambiguous details.\n"
         "\n"
         "IMPORTANT: The final Doxygen comment block will be rendered by another component. "
@@ -823,6 +984,7 @@ def ai_generate_comment(
         "params": [{"name": n, "type": t or ""} for n, t in func.params],
         "impl": impl,
         "original_comment": original_comment or "<none>",
+        "call_examples": call_examples or [],
         "mcp_context": mcp_context or "<none>",
     }
 
@@ -1248,11 +1410,18 @@ def generate_doxygen_comments(
     mcp_enabled: bool = False,
     mcp_max_examples: int = 3,
     mcp_timeout: int = 20,
+    scope_dir: Optional[Path] = None,
+    callsite_max: int = 3,
+    callsite_context_lines: int = 30,
+    callsite_roots: Optional[List[Path]] = None,
 ) -> int:
     insert_map: Dict[Path, List[Tuple[int, str]]] = {}
     impl_cleanup_map: Dict[Path, List[Tuple[int, str]]] = {}
 
     cache = load_cache(cache_path) if cache_path else CacheFile()
+
+    scope_path = scope_dir.resolve() if scope_dir else None
+    search_roots = callsite_roots or default_callsite_roots(repo_root)
 
     num_comments = 0
     ai_candidates = []
@@ -1302,6 +1471,9 @@ def generate_doxygen_comments(
         if not fpath.is_absolute():
             fpath = (repo_root / fpath).resolve()
         if not fpath.exists():
+            continue
+
+        if scope_path and not is_under_dir(fpath, scope_path):
             continue
 
         # Ignore operators because they are usually too trivial
@@ -1423,6 +1595,15 @@ def generate_doxygen_comments(
                 timeout_s=mcp_timeout,
             )
 
+        call_examples = find_callsite_examples(
+            func,
+            func_id,
+            repo_root,
+            search_roots,
+            max_examples=callsite_max,
+            context_lines=callsite_context_lines,
+        )
+
         model = ai_generate_comment(
             func,
             impl,
@@ -1430,6 +1611,7 @@ def generate_doxygen_comments(
             trivial,
             orig_comment,
             mcp_context=mcp_context,
+            call_examples=call_examples,
         )
         if model.brief == "MISSING":
             continue
@@ -1633,30 +1815,38 @@ def run_doxygen(
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--xml-dir", default="doxygen-xml/xml")
-    ap.add_argument("--repo-root", default="engine/botlib")
+    ap.add_argument("--project-root", default=".")
+    ap.add_argument("--scope-dir", default="engine/botlib")
     ap.add_argument("--llm", default="ollama/gpt-oss:20b")
     #ap.add_argument("--llm", default="ollama/gemma4")
     ap.add_argument("--max-impl", type=int, default=6000)
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--cache-file", default="doxy_ai_cache.json")
+    ap.add_argument("--callsite-max", type=int, default=3)
+    ap.add_argument("--callsite-context", type=int, default=30)
     args = ap.parse_args()
 
     xml_dir = Path(args.xml_dir)
-    repo_root = Path(args.repo_root)
-    cache_path = repo_root / args.cache_file
+    project_root = Path(args.project_root)
+    scope_dir = Path(args.scope_dir) if args.scope_dir else None
+    cache_base = scope_dir if scope_dir else project_root
+    cache_path = cache_base / args.cache_file
 
     print("Create Doxygen XML …")
-    run_doxygen("Doxyfile-xmlgen.cfg", doxygen_exe="doxygen.exe", repo_root=repo_root)
+    run_doxygen("Doxyfile-xmlgen.cfg", doxygen_exe="doxygen.exe", repo_root=project_root)
 
-    funcs = parse_doxygen_xml(xml_dir, repo_root, prefer_decl=True)
+    funcs = parse_doxygen_xml(xml_dir, project_root, prefer_decl=True)
     total = generate_doxygen_comments(
         funcs,
-        repo_root,
+        project_root,
         llm=args.llm,
         dry_run=False,  # not args.apply,
         maximpl=args.max_impl,
         cache_path=cache_path,
+        scope_dir=scope_dir,
+        callsite_max=args.callsite_max,
+        callsite_context_lines=args.callsite_context,
     )
 
     print(f"Comments inserted: {total}")

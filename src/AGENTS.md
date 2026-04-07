@@ -9,11 +9,11 @@ DarkWolf is a fork of the Return to Castle Wolfenstein id Tech 3 engine by id So
   - `/build/bin/`          : Built binaries by platform/config
   - `/build/obj/`          : Object files and build logs by target/config
   - `/build/vs2022/`       : Visual Studio 2022 project files
-- `/chats/`                : AI Chat/session artifacts
+- `/chats/`                : Doxygenix AI debug output (can be ignored)
 - `/diags/`                : Visual Studio Diagnostic outputs and logs
 - `/doxygen-xml/`          : Doxygen XML output which serves as input for doxygenix.py agentic comment generator
 - `/engine/`               : Engine source code
-  - `/engine/botlib/`      : Bot library
+  - `/engine/botlib/`      : AAS loading code and bot library
   - `/engine/client/`      : Client code
   - `/engine/collision/`   : Collision system
   - `/engine/qcommon/`     : Core shared engine code
