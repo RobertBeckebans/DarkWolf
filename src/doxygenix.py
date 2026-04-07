@@ -630,13 +630,22 @@ def is_trivial_setter(func: FuncInfo, impl: str) -> bool:
 # -----------------------------------------------------------------------------
 # Pydantic AI Comment Generator
 # -----------------------------------------------------------------------------
-ollama_model = OpenAIChatModel(
-    model_name="gpt-oss:20b", # good
-    # model_name="ministral-3", # fails many times
-    # model_name="glm-4.7-flash", # good but slow
-    # model_name="qwen3-coder",
-    provider=OllamaProvider(base_url="http://localhost:11434/v1"),
-)
+def _build_ollama_model_from_llm(llm: str | None) -> OpenAIChatModel:
+    model_name = "gpt-oss:20b"
+    if llm:
+        normalized = llm.strip()
+        if normalized.startswith("ollama/"):
+            normalized = normalized[len("ollama/") :]
+        if normalized:
+            model_name = normalized
+
+    return OpenAIChatModel(
+        model_name=model_name,
+        provider=OllamaProvider(base_url="http://localhost:11434/v1"),
+    )
+
+
+ollama_model = _build_ollama_model_from_llm("ollama/gpt-oss:20b")
 
 # llama_cpp_model = OpenAIChatModel(
 #     model_name="gpt-oss:20b", # does not matter
@@ -660,7 +669,7 @@ class CommentModel(BaseModel):
 
 def render_ai_block(model: CommentModel, trivial: bool) -> str:
     if trivial:
-        return f"\t//! {model.brief}"
+        return f"\t//! {model.brief}\n"
 
     lines = ["\t/*!"]
     lines.append(f"\t\t\\brief {model.brief}")
@@ -679,7 +688,10 @@ def render_ai_block(model: CommentModel, trivial: bool) -> str:
     if model.throws:
         lines.append(f"\t\t\\throws {model.throws}")
 
-    lines.append("\t*/")
+    # Hard guarantee: close block exactly once
+    if not lines[-1].strip().endswith("*/"):
+        lines.append("\t*/")
+
     return "\n".join(lines) + "\n"
 
 
@@ -760,7 +772,7 @@ def ai_generate_comment(
     system_prompt = (
         "You are an experienced senior C++ software engineer. "
         "Your job is to fill the fields of CommentModel for a single C++ function.\n"
-        "You're dealing with a derivate of the Doom 3 BFG code base by id Software called RBDOOM-3-BFG.\n"
+        "You're dealing with a derivate of the Return to Castle Wolfenstein code base by id Software.\n"
         "\n"
         "INPUT YOU RECEIVE:\n"
         "- mode: 'full' or 'trivial'\n"
@@ -814,7 +826,8 @@ def ai_generate_comment(
         "mcp_context": mcp_context or "<none>",
     }
 
-    agent = Agent(ollama_model, output_type=CommentModel, system_prompt=system_prompt)
+    model = _build_ollama_model_from_llm(llm)
+    agent = Agent(model, output_type=CommentModel, system_prompt=system_prompt)
 
     try:
         r = agent.run_sync(user_prompt=str(user_prompt))
@@ -957,136 +970,151 @@ def cleanup_comments_above(
     lines: list[str], idx: int, func_id: str, allow_skip_doxygen: bool = False
 ) -> int:
     """
-    Removes legacy non-Doxygen comment blocks *above* a function declaration/definition.
+    Removes contiguous non-Doxygen comment blocks directly above a declaration/definition.
+
+    Handles /* ... */ blocks ATOMICALLY: scans from a closing */ upward to find
+    the matching /* opener and decides as a unit whether it is Doxygen or not.
 
     Patterns removed:
-        - Doom3-style banners:
-              /* ================= idPlane::Func ================ */
-              // ================= idPlane::Func =================
-        - Any multi-line /* ... */ block containing the function name
-        - Any multi-line /* ... */ block containing ASCII separators (=====, ----, ****)
-        - Single-line non-Doxygen comments containing the function name
-
-    Doxygen comments are preserved, depending on allow_skip_doxygen
-
-    Returns the possibly updated index of the function line.
+      - contiguous // lines (including separator/banner lines)
+      - non-Doxygen /* ... */ blocks
+      - banner blocks made of '=', '-', '*'
+    Doxygen blocks (/*!, /**, ///, //!) are preserved unless allow_skip_doxygen=True.
     """
 
-    # If already at the top, nothing to do
     if idx <= 0:
         return idx
 
-    short_name = func_id.split("::")[-1] if "::" in func_id else func_id
+    def is_doxygen_line_comment(s: str) -> bool:
+        t = s.lstrip()
+        return t.startswith("///") or t.startswith("//!")
 
-    # --------------------------------------------
-    # Helper: determines if a comment line is Doxygen
-    # --------------------------------------------
-    def is_doxygen_line(s: str) -> bool:
-        stripped = s.lstrip()
+    def _find_block_opener(lines: list[str], end_idx: int) -> int:
+        """Given that lines[end_idx] contains or ends with */, scan upward to find
+        the line containing the matching /*. Returns the line index, or -1."""
+        j = end_idx
+        while j >= 0:
+            if "/*" in lines[j]:
+                return j
+            j -= 1
+        return -1
+
+    def _is_doxygen_block(lines: list[str], opener_idx: int) -> bool:
+        t = lines[opener_idx].lstrip()
+        return t.startswith("/**") or t.startswith("/*!")
+
+    def _line_is_inside_block_comment(s: str) -> bool:
+        """True for lines that look like block-comment interior: leading * or */."""
+        t = s.lstrip()
         return (
-            stripped.startswith("/**")
-            or stripped.startswith("/*!")
-            or stripped.startswith("///")
-            or stripped.startswith("//!")
+            t.startswith("*/")
+            or (t.startswith("*") and not t.startswith("*=") and not t.startswith("* ="))
         )
 
-    # --------------------------------------------
-    # Helper: Doom-style banner detection
-    # --------------------------------------------
-    doom_banner_re = re.compile(r"(=+|-+|\*+).*(%s).*(=+|-+|\*+)" % re.escape(func_id))
-
-    # --------------------------------------------
-    # Start scanning upward
-    # --------------------------------------------
+    # ------------------------------------------------------------------
+    # Phase 1: collect ranges to delete  [delete_start, delete_end]
+    # ------------------------------------------------------------------
+    # We walk upward from just above idx, identifying comment chunks.
+    # Each chunk is either a block comment (/* ... */), a run of // lines,
+    # or empty lines.  We stop when we hit code or a Doxygen comment we
+    # must not cross.
+    # ------------------------------------------------------------------
+    delete_ranges: list[tuple[int, int]] = []   # (start, end) inclusive
     i = idx - 1
-    while i >= 0:
-        line = lines[i].rstrip()
 
-        if line.strip() == "":
-            i -= 1
-            continue
-
-        if is_doxygen_line(line):
-            if not allow_skip_doxygen:
-                break
-            i -= 1
-            continue
-
-        # --------------------------------------------
-        # 1) Inline Doom3 banner on a single line
-        # --------------------------------------------
-        if doom_banner_re.search(line):
-            del lines[i]
-            idx -= 1
-            i -= 1
-            continue
-
-        # --------------------------------------------
-        # 2) Single-line comment containing the func_id or pure function name
-        # --------------------------------------------
-        if (
-            (line.strip().startswith("//") or line.strip().startswith("/*"))
-            and not is_doxygen_line(line)
-            and (func_id in line or short_name in line)
-        ):
-            del lines[i]
-            idx -= 1
-            i -= 1
-            continue
-
-        # --------------------------------------------
-        # 3) Multi-line /* ... */ block → fully collect and check if either
-        #    func_id or short_name is present
-        # --------------------------------------------
-        if line.strip().startswith("*/") or line.strip().startswith("*"):
-            end = i
-            start = i
-            while start >= 0 and "/*" not in lines[start]:
-                start -= 1
-            if start >= 0:
-                block = "\n".join(lines[start : end + 1])
-                if (
-                    (func_id in block)
-                    or (short_name in block)
-                    or re.search(r"(=|-|\*){5,}", block)
-                ):
-                    del lines[start : end + 1]
-                    removed_count = end - start + 1
-                    idx -= removed_count
-                    i = start - 1
-                    continue
-            # If this line is not a comment at all → stop
-            break
-
-        if not line.strip().startswith(("//", "/*", "*")):
-            break
-
+    # skip blank lines directly above declaration
+    while i >= 0 and lines[i].strip() == "":
         i -= 1
 
-    # --------------------------------------------
-    # Fallback: simply remove the non-Doxygen comment block directly above the function
-    # --------------------------------------------
-    # j = idx - 1
-    # if j >= 0:
-    #     start = j
-    #     # scan upward until we hit a non-comment line
-    #     while start >= 0:
-    #         s = lines[start].lstrip()
-    #         if not s:
-    #             # empty line separates from rest
-    #             break
-    #         # only "normal" comments (not Doxygen)
-    #         if (s.startswith("//") or s.startswith("/*") or s.startswith("*")) and not is_doxygen_line(s):
-    #             start -= 1
-    #             continue
-    #         break
+    if i < 0:
+        return idx
 
-    #     start += 1  # one line back, because we fell into the first non-comment line
-    #     if start <= j:
-    #         # delete everything between start and idx (exclusive)
-    #         del lines[start:idx]
-    #         removed = idx - start
-    #         idx -= removed
+    while i >= 0:
+        cur = lines[i].strip()
+
+        # --- empty line: skip over it ---
+        if cur == "":
+            i -= 1
+            continue
+
+        # --- block comment end (line contains or is  */) ---
+        if cur.endswith("*/") or _line_is_inside_block_comment(lines[i]):
+            # find the closing */ line first (might be the current one or above)
+            block_end = i
+            # walk up to find the actual */ if we landed on an interior * line
+            while block_end >= 0 and "*/" not in lines[block_end]:
+                block_end += 1
+                if block_end >= idx:
+                    break
+            if block_end >= idx:
+                block_end = i  # safety: don't go past declaration
+
+            opener = _find_block_opener(lines, block_end)
+            if opener < 0:
+                # malformed block; treat the single line as a comment
+                delete_ranges.append((i, i))
+                i -= 1
+                continue
+
+            if _is_doxygen_block(lines, opener):
+                # This is a Doxygen block
+                if allow_skip_doxygen:
+                    i = opener - 1
+                    continue
+                else:
+                    break  # preserve it; stop scanning
+            else:
+                # Non-Doxygen block → mark for deletion
+                delete_ranges.append((opener, block_end))
+                i = opener - 1
+                continue
+
+        # --- Doxygen line comment (///, //!) ---
+        if is_doxygen_line_comment(lines[i]):
+            if allow_skip_doxygen:
+                i -= 1
+                continue
+            else:
+                break  # preserve it; stop scanning
+
+        # --- regular // line comment ---
+        if cur.startswith("//"):
+            # collect the whole contiguous run of // lines
+            run_end = i
+            while i >= 0 and lines[i].strip().startswith("//") and not is_doxygen_line_comment(lines[i]):
+                i -= 1
+            run_start = i + 1
+            delete_ranges.append((run_start, run_end))
+            continue
+
+        # --- anything else is code → stop ---
+        break
+
+    # ------------------------------------------------------------------
+    # Phase 2: apply deletions bottom-to-top so indices stay valid
+    # ------------------------------------------------------------------
+    if not delete_ranges:
+        return idx
+
+    # sort by start descending
+    delete_ranges.sort(key=lambda r: r[0], reverse=True)
+
+    for d_start, d_end in delete_ranges:
+        if d_start < 0 or d_end >= idx:
+            continue
+        count = d_end - d_start + 1
+        del lines[d_start : d_end + 1]
+        idx -= count
+
+    # trim excess blank lines above to at most one
+    j = idx - 1
+    blank_count = 0
+    while j >= 0 and lines[j].strip() == "":
+        blank_count += 1
+        j -= 1
+    if blank_count > 1:
+        del lines[j + 2 : idx]
+        idx -= (blank_count - 1)
 
     return idx
 
@@ -1466,7 +1494,15 @@ def generate_doxygen_comments(
                 comment_start += 1  # Comment moves down one line
 
             # 5) Insert comment block (without additional empty line after!)
+            # Guard: ensure block comment is properly closed before insertion
+            if block.lstrip().startswith(("/*!", "/**")):
+                if "*/" not in block:
+                    block = block.rstrip("\n") + "\n\t*/\n"
             block_lines = block.splitlines()
+            # Second guard: check splitlines result as well
+            if block_lines and block_lines[0].lstrip().startswith(("/*!", "/**")):
+                if not any("*/" in ln for ln in block_lines):
+                    block_lines.append("\t*/")
             lines[comment_start:comment_start] = block_lines
 
             changed = True
@@ -1597,9 +1633,9 @@ def run_doxygen(
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--xml-dir", default="doxygen-xml/xml")
-    ap.add_argument("--repo-root", default="shared")
-    # ap.add_argument("--llm", default="ollama/gpt-oss:20b")
-    ap.add_argument("--llm", default="ollama/gemma4")
+    ap.add_argument("--repo-root", default="engine/botlib")
+    ap.add_argument("--llm", default="ollama/gpt-oss:20b")
+    #ap.add_argument("--llm", default="ollama/gemma4")
     ap.add_argument("--max-impl", type=int, default=6000)
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
