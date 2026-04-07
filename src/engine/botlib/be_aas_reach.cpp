@@ -141,12 +141,16 @@ aas_lreachability_t*  nextreachability; // next free reachability from the heap
 aas_lreachability_t** areareachability; // reachability links for every area
 int					  numlreachabilities;
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns the number of the most suitable area from a list of candidate link areas.
+
+	The function iterates over a singly linked list of aas_link_t structures. It first looks for an area that is either grounded or a swim area and returns that area's number when found. If no such
+   area exists, it then searches for any non‑zero area number in the list and returns it. If the list contains no valid area numbers, the function returns 0. The area number 0 is used to indicate that
+   no reachable area was found.
+
+	\param areas pointer to a linked list of aas_link_t structures representing candidate areas for a reachability link.
+	\return the area number, or 0 if no suitable area is found.
+*/
 int					  AAS_BestReachableLinkArea( aas_link_t* areas )
 {
 	aas_link_t* link;
@@ -171,12 +175,6 @@ int					  AAS_BestReachableLinkArea( aas_link_t* areas )
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_BestReachableArea( vec3_t origin, vec3_t mins, vec3_t maxs, vec3_t goalorigin )
 {
 	int			areanum, i, j, k, l;
@@ -268,12 +266,14 @@ int AAS_BestReachableArea( vec3_t origin, vec3_t mins, vec3_t maxs, vec3_t goalo
 	return areanum;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the global reachability heap by allocating and linking a pool of reachability structures.
+
+	The function allocates an array of aas_lreachability_t entries of size AAS_MAX_REACHABILITYSIZE, clears them, and chains them into a singly linked list through next pointers, with the last entry
+   pointing to null. It then sets the global nextreachability pointer to the start of the list and resets the count of used reachabilities to zero. This establishes a pool from which reachability
+   records can be allocated.
+
+*/
 void AAS_SetupReachabilityHeap()
 {
 	int i;
@@ -289,25 +289,27 @@ void AAS_SetupReachabilityHeap()
 	numlreachabilities									= 0;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees the memory used for the reachability heap and resets the number of reachabilities to zero.
+
+	The function calls FreeMemory on the global reachabilityheap pointer and sets numlreachabilities to zero, releasing all resources associated with the reachability heap.
+
+*/
 void AAS_ShutDownReachabilityHeap()
 {
 	FreeMemory( reachabilityheap );
 	numlreachabilities = 0;
 }
 
-//===========================================================================
-// returns a reachability link
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Allocates a reachability link from the internal pool and returns it.
+
+	If the global pool variable nextreachability points to a valid element, the function removes that element from the pool and returns it. The pool pointer is advanced once the element is taken, and
+   the global counter numlreachabilities is incremented. If no elements remain, the function returns NULL. The function also emits an allocation error message only once when the pool will become empty
+   after the current allocation.
+
+	\return a pointer to a aas_lreachability_t object if available, otherwise NULL
+*/
 aas_lreachability_t* AAS_AllocReachability()
 {
 	aas_lreachability_t* r;
@@ -328,13 +330,14 @@ aas_lreachability_t* AAS_AllocReachability()
 	return r;
 }
 
-//===========================================================================
-// frees a reachability link
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recycles a reachability structure back into the global free list.
+
+	The function clears the memory of the provided reachability structure, adds it to the global free list, and decrements the count of live reachabilities. This allows the structure to be reused
+   later while keeping the global state consistent.
+
+	\param lreach pointer to the reachability entry to be returned to the free list
+*/
 void AAS_FreeReachability( aas_lreachability_t* lreach )
 {
 	memset( lreach, 0, sizeof( aas_lreachability_t ) );
@@ -344,13 +347,6 @@ void AAS_FreeReachability( aas_lreachability_t* lreach )
 	numlreachabilities--;
 }
 
-//===========================================================================
-// returns qtrue if the area has reachability links
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaReachability( int areanum )
 {
 	if( areanum < 0 || areanum >= ( *aasworld ).numareas ) {
@@ -366,13 +362,16 @@ int AAS_AreaReachability( int areanum )
 	return ( *aasworld ).areasettings[areanum].numreachableareas;
 }
 
-//===========================================================================
-// returns the surface area of the given face
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns the surface area of the specified face.
+
+	The function triangulates a face by taking the first vertex as a common point and creating triangles with each pair of successive vertices in the face. For every triangle it computes two edge
+   vectors, takes their cross product, and adds half of the resulting vector’s length to a running total. This sum gives the total surface area of the face. The function expects a valid face pointer
+   and relies on the global geometry stored in the aasworld object. It works for convex or concave polygons as long as the vertices are listed around the perimeter.
+
+	\param face pointer to the face whose area is desired
+	\return the computed area as a float
+*/
 float AAS_FaceArea( aas_face_t* face )
 {
 	int			i, edgenum, side;
@@ -401,13 +400,19 @@ float AAS_FaceArea( aas_face_t* face )
 	return total;
 }
 
-//===========================================================================
-// returns the volume of an area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the volume of a 3D area by summing the volumes of tetrahedrons formed with a corner point and each face.
+
+	The function selects a corner vertex from the first edge of the area, then iterates over all faces of the area. For each face, it calculates the distance from the corner to the face plane along
+   the plane normal, multiplies that distance by the face's area, and adds the result to a running total. After all faces are processed, the sum is divided by three to obtain the volume of the convex
+   hull defined by the faces and the selected corner.
+
+	The calculation assumes that the area is defined by planar faces and that the area’s faces are oriented correctly so that the normal points outward. The result is the signed volume; if the faces
+   are oriented consistently, the volume will be positive.
+
+	\param areanum Index of the area whose volume is to be computed; must be valid within the global AAS world structure.
+	\return The computed volume as a float.
+*/
 float AAS_AreaVolume( int areanum )
 {
 	int			 i, edgenum, facenum;
@@ -442,13 +447,6 @@ float AAS_AreaVolume( int areanum )
 	return volume;
 }
 
-//===========================================================================
-// returns the surface area of all ground faces together of the area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float AAS_AreaGroundFaceArea( int areanum )
 {
 	int			i;
@@ -473,13 +471,20 @@ float AAS_AreaGroundFaceArea( int areanum )
 	return total;
 }
 
-//===========================================================================
-// returns the center of a face
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates the geometric center of a face and stores it in the supplied vector.
+
+	The function iterates over each edge of the specified face, accumulating the positions of the associated vertices. After summing all vertex positions, it scales the resulting vector by half the
+   reciprocal of the number of edges, effectively computing the arithmetic mean of the vertices.
+
+	It accesses the global AAS world data structure to locate the face, its edges, and the vertex positions. The result is written into the center parameter; the caller should provide a vector large
+   enough to hold the result.
+
+	Valid facenum values must correspond to an existing face index; passing an out-of-range index results in undefined behavior.
+
+	\param facenum Index of the face whose center is to be computed.
+	\param center Output vector where the computed center will be stored.
+*/
 void AAS_FaceCenter( int facenum, vec3_t center )
 {
 	int			i;
@@ -501,14 +506,15 @@ void AAS_FaceCenter( int facenum, vec3_t center )
 	VectorScale( center, scale, center );
 }
 
-//===========================================================================
-// returns the maximum distance a player can fall before being damaged
-// damage = deltavelocity*deltavelocity  * 0.0001
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the maximum fall distance a player can travel before falling damage is applied in the AAS system.
+
+	The function determines the distance required for a free‑fall to reach a velocity of sqrt(30 × 10 000), which represents the velocity threshold at which fall damage would be incurred according to
+   the damage formula damage = deltaV² × 0.0001. It uses the current gravity value from aassettings.sv_gravity, calculates the falling time to reach that velocity, and then applies the kinematic
+   equation d = ½ g t². The resulting floating‑point distance is truncated to an integer for the return value.
+
+	\return The truncated maximum drop distance, in game units, before fall damage is triggered.
+*/
 int AAS_FallDamageDistance()
 {
 	float maxzvelocity, gravity, t;
@@ -519,15 +525,16 @@ int AAS_FallDamageDistance()
 	return 0.5 * gravity * t * t;
 }
 
-//===========================================================================
-// distance = 0.5 * gravity * t * t
-// vel = t * gravity
-// damage = vel * vel * 0.0001
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates a damage factor based on a fall distance using the current gravity setting.
+
+	The fall distance argument is interpreted as the vertical distance a character falls.  The function first computes the time it would take to fall that distance under constant gravity (distance =
+   0.5 * g * t^2).  It then derives the impact velocity as g * t and returns the damage delta which is velocity squared multiplied by 0.0001, a scaling used by the game engine.  The gravity value used
+   is taken from the global settings aassettings.sv_gravity, ensuring consistency with other physics calculations.
+
+	\param distance vertical distance fallen (positive or negative), in game units.
+	\return damage delta proportional to the square of the impact velocity; typically a small float used to augment travel time or damage calculations.
+*/
 float AAS_FallDelta( float distance )
 {
 	float t, delta, gravity;
@@ -538,12 +545,15 @@ float AAS_FallDelta( float distance )
 	return delta * delta * 0.0001;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the maximum vertical height achievable from a given initial jump velocity using the current engine gravity.
+
+	The function retrieves the global gravity value from the AAS settings structure. It then applies basic projectile physics to calculate the peak height reached by a player starting with the
+   supplied upward velocity: height = velocity^2 / (2 * gravity). This result is used by various reachability routines to test whether a target area can be reached by a jump.
+
+	\param sv_jumpvel Initial upward velocity applied at the start of the jump.
+	\return The theoretical maximum height (in world units) that can be reached with the specified initial velocity.
+*/
 float AAS_MaxJumpHeight( float sv_jumpvel )
 {
 	float sv_gravity;
@@ -553,13 +563,15 @@ float AAS_MaxJumpHeight( float sv_jumpvel )
 	return 0.5 * sv_gravity * ( sv_jumpvel / sv_gravity ) * ( sv_jumpvel / sv_gravity );
 }
 
-//===========================================================================
-// returns true if a player can only crouch in the area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the horizontal distance a player can clear when jumping.
+
+	The distance depends on the configured gravity, maximum horizontal speed, and the initial upward velocity supplied to the function. It first estimates the time it takes to fall down a predefined
+   maximum jump fall height, then adds the time contributed by the vertical jump velocity. The product of this total time with the maximum horizontal speed yields the result, expressed in world units.
+
+	\param sv_jumpvel initial upward velocity of the jump, as defined in the server settings.
+	\return maximum horizontal distance, in game units, a player can cover in a single jump.
+*/
 float AAS_MaxJumpDistance( float sv_jumpvel )
 {
 	float sv_gravity, sv_maxvelocity, t;
@@ -572,13 +584,6 @@ float AAS_MaxJumpDistance( float sv_jumpvel )
 	return sv_maxvelocity * ( t + sv_jumpvel / sv_gravity );
 }
 
-//===========================================================================
-// returns true if a player can only crouch in the area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaCrouch( int areanum )
 {
 	if( !( ( *aasworld ).areasettings[areanum].presencetype & PRESENCE_NORMAL ) ) {
@@ -589,13 +594,6 @@ int AAS_AreaCrouch( int areanum )
 	}
 }
 
-//===========================================================================
-// returns qtrue if it is possible to swim in the area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaSwim( int areanum )
 {
 	if( ( *aasworld ).areasettings[areanum].areaflags & AREA_LIQUID ) {
@@ -606,13 +604,6 @@ int AAS_AreaSwim( int areanum )
 	}
 }
 
-//===========================================================================
-// returns qtrue if the area contains a liquid
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaLiquid( int areanum )
 {
 	if( ( *aasworld ).areasettings[areanum].areaflags & AREA_LIQUID ) {
@@ -623,115 +614,78 @@ int AAS_AreaLiquid( int areanum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaLava( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].contents & AREACONTENTS_LAVA );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaSlime( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].contents & AREACONTENTS_SLIME );
 }
 
-//===========================================================================
-// returns qtrue if the area contains ground faces
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaGrounded( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].areaflags & AREA_GROUNDED );
 }
 
-//===========================================================================
-// returns true if the area contains ladder faces
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaLadder( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].areaflags & AREA_LADDER );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaJumpPad( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].contents & AREACONTENTS_JUMPPAD );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether a given area is marked as a teleporter.
+
+	Accesses the global world data to inspect the contents flag of the specified area. The content flag AREACONTENTS_TELEPORTER is checked via a bitwise AND operation; a non‑zero result indicates the
+   area is a teleporter, whereas zero means it is not. This check is used in reachability calculations to identify teleporter or jump locations.
+
+	\param areanum Index of the area to test
+	\return Non‑zero when the area contains a teleporter flag, zero otherwise
+*/
 int AAS_AreaTeleporter( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].contents & AREACONTENTS_TELEPORTER );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaDoNotEnter( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].contents & AREACONTENTS_DONOTENTER );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaDoNotEnterLarge( int areanum )
 {
 	return ( ( *aasworld ).areasettings[areanum].contents & AREACONTENTS_DONOTENTER_LARGE );
 }
 
-//===========================================================================
-// returns the time it takes perform a barrier jump
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns the time required for a barrier jump.
+
+	The travel time is calculated by dividing the jump velocity by ten times the gravity constant, producing a value that represents the duration of a barrier jump in game time units. It is used as
+   the traversal time for barrier‑jump reachabilities.
+
+	\return duration in game units the barrier jump takes.
+*/
 unsigned short int AAS_BarrierJumpTravelTime()
 {
 	return aassettings.sv_jumpvel / ( aassettings.sv_gravity * 0.1 );
-} // end op the function AAS_BarrierJumpTravelTime
+}
 
-//===========================================================================
-// returns true if there already exists a reachability from area1 to area2
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Checks whether a reachability link already exists from one area to another in the navigation graph.
+
+	This function iterates through the linked list of reachabilities that originate from the source area. If any of those reachabilities point to the target area, the function returns qtrue.
+   Otherwise, it returns qfalse. It is commonly used by path‑finding and area traversal logic to prevent duplicate links being added.
+
+	\param area1num The numeric identifier of the source area.
+	\param area2num The numeric identifier of the target area.
+	\return qtrue if a reachability from area1 to area2 exists, otherwise qfalse.
+*/
 qboolean AAS_ReachabilityExists( int area1num, int area2num )
 {
 	aas_lreachability_t* r;
@@ -745,14 +699,24 @@ qboolean AAS_ReachabilityExists( int area1num, int area2num )
 	return qfalse;
 }
 
-//===========================================================================
-// returns true if there is a solid just after the end point when going
-// from start to end
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Detects whether a solid obstacle or empty space lies immediately beyond a line from start to end.
+
+	The function projects a horizontal line from the end point toward the start point, zeroing the vertical component of the direction vector and normalizing it. It then evaluates two test points
+   ahead of the end point.
+
+	First, it checks a point 48 units along the direction. If that point is not inside any area, the test point is raised 16 units; if it remains outside any area a gap is detected and the function
+   returns true.
+
+	Next, it checks a point 64 units along the direction. If an area is found there and that area is neither a swimming nor a grounded area, it is treated as an obstacle, causing the function to
+   return true.
+
+	If neither of these conditions is met, the function concludes that there is no nearby solid or gap and returns false.
+
+	\param start The starting point of the line segment being tested.
+	\param end The ending point of the line segment being tested.
+	\return Non‑zero (qtrue) if a solid or a gap is found immediately beyond the end point; zero (qfalse) otherwise.
+*/
 int AAS_NearbySolidOrGap( vec3_t start, vec3_t end )
 {
 	vec3_t dir, testpoint;
@@ -786,13 +750,20 @@ int AAS_NearbySolidOrGap( vec3_t start, vec3_t end )
 	return qfalse;
 }
 
-//===========================================================================
-// searches for swim reachabilities between adjacent areas
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates and links a swim reachability between two adjacent swim‑capable areas when they share a face.
+
+	The function first verifies that both areas are swim‑capable and that the destination area allows normal presence. It then ensures the two areas are within a small spatial buffer so they are
+   considered adjacent. For each face of the first area, it looks for a matching face on the second area. When a common face is found, the face center’s content is checked to be water, lava or slime;
+   if so, a new reachability record is allocated. The record contains the target area number, the shared face, an edge number of 0, the start position at the face center and an end position slightly
+   inside the target area. The travel type is marked as swim, with a base travel time of 1 second and an extra penalty for very small volumes. The new reachability is added to the source area’s linked
+   list. The function returns a success code if the link was created, otherwise it returns failure.
+
+
+	\param area1num index of the source area
+	\param area2num index of the target area
+	\return integer flag indicating success (true) or failure (false)
+*/
 int AAS_Reachability_Swim( int area1num, int area2num )
 {
 	int					 i, j, face1num, face2num, side1;
@@ -880,14 +851,19 @@ int AAS_Reachability_Swim( int area1num, int area2num )
 	return qfalse;
 }
 
-//===========================================================================
-// searches for reachabilities between adjacent areas with equal floor
-// heights
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines if two adjacent ground areas share a common floor height and creates a walk reachability between them.
+
+	The routine first checks that both areas are grounded and within a small XY distance, and that the second area is not entirely above the first. It then iterates over ground faces of each area to
+   find common edges. For each shared edge it evaluates the lowest point just inside the two faces, measuring the edge length and comparing heights to pick the lowest, longest suitable edge. If an
+   eligible edge is found a new reachability is allocated, linked into the destination list and time adjustments are made for crouch transitions. If no suitable edge exists the function returns false.
+
+	The travel time defaults to one unit; when moving into a crouch area an extra crouch startup cost is added.
+
+	\param area1num index of the first area
+	\param area2num index of the second area
+	\return 1 if a reachability was added, otherwise 0
+*/
 int AAS_Reachability_EqualFloorHeight( int area1num, int area2num )
 {
 	int					i, j, edgenum, edgenum1, edgenum2, foundreach, side;
@@ -1047,13 +1023,18 @@ int AAS_Reachability_EqualFloorHeight( int area1num, int area2num )
 	return qfalse;
 }
 
-//===========================================================================
-// searches step, barrier, waterjump and walk off ledge reachabilities
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Checks whether two AAS areas can be connected by stepping, blocking, waterjumping or walking off a ledge.
+
+	The function first verifies that both source and destination areas are either grounded or swimable; it then ensures the areas are close in the XY plane within a small margin. It examines all faces
+   and edges of the first area, constructing a vertical plane through each qualifying edge, and compares it to the ground faces of the second area to detect potential step or barrier connections.
+   Special handling is applied for water faces, computing best distances for walk‑off and water‑jump scenarios. If a suitable connection is found, the function returns true; otherwise it returns
+   false.
+
+	\param area1num Index of the first area in the AAS area table
+	\param area2num Index of the second area in the AAS area table
+	\return An integer indicating success (1) or failure (0).
+*/
 int AAS_Reachability_Step_Barrier_WaterJump_WalkOffLedge( int area1num, int area2num )
 {
 	int					 i, j, k, l, edge1num, edge2num;
@@ -1635,29 +1616,18 @@ int AAS_Reachability_Step_Barrier_WaterJump_WalkOffLedge( int area1num, int area
 	return qfalse;
 }
 
-//===========================================================================
-// returns the distance between the two vectors
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-/* Ridah, moved to q_math.c
-float VectorDistance(vec3_t v1, vec3_t v2)
-{
-	vec3_t dir;
+/*!
+	\brief Determines whether a point lies between two other points on a line segment.
 
-	VectorSubtract(v2, v1, dir);
-	return VectorLength(dir);
-}
+	The function computes vectors from each of the two reference points (v1 and v2) to the test point v and evaluates the dot product of these two vectors. If the dot product is less than or equal to
+   zero, the vectors point in opposite directions, indicating that v is situated on the line segment connecting v1 and v2 (including the endpoints). The result is returned as an integer value of 1 for
+   true and 0 for false.
+
+	\param v test point to check if it lies between v1 and v2
+	\param v1 first endpoint of the segment
+	\param v2 second endpoint of the segment
+	\return 1 if v is between v1 and v2, otherwise 0
 */
-//===========================================================================
-// returns true if the first vector is between the last two vectors
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int VectorBetweenVectors( vec3_t v, vec3_t v1, vec3_t v2 )
 {
 	vec3_t dir1, dir2;
@@ -1667,19 +1637,43 @@ int VectorBetweenVectors( vec3_t v, vec3_t v1, vec3_t v2 )
 	return ( DotProduct( dir1, dir2 ) <= 0 );
 }
 
-//===========================================================================
-// returns the mid point between the two vectors
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the midpoint between two 3D vectors.
+
+	Adds the two input vectors together and then scales the result by 0.5 to produce the midpoint. The operation is performed in place on the third parameter.
+
+	\param middle output vector that will contain the calculated midpoint
+	\param v1 first input vector
+	\param v2 second input vector
+*/
 void VectorMiddle( vec3_t v1, vec3_t v2, vec3_t middle )
 {
 	VectorAdd( v1, v2, middle );
 	VectorScale( middle, 0.5, middle );
 }
 
+/*!
+	\brief Computes the shortest distance between two 3‑D edges defined by four vertices and updates the closest points on each edge.
+
+	The function computes the minimum separation between the segment from v1 to v2 and the segment from v3 to v4, assuming the segments lie on two distinct horizontal planes (plane1 and plane2). For
+   each segment, a point on the other segment’s plane is found by projecting onto the horizontal direction of each edge. If that projected point lies between the endpoints of the segment, the distance
+   from the corresponding original endpoint to the projected point is considered. The function keeps track of the best distance found so far (and only updates it if the new distance lies within ±0.5
+   units of the current best). When a new best distance is found, the closest points on both edges are written to beststart1/bestend1 and beststart2/bestend2. If no perpendicular projection lies
+   between the endpoints, all four vertex-to-vertex distances are examined as fall‑back. The function returns the updated best distance.
+
+	\param v1 first endpoint of the first edge
+	\param v2 second endpoint of the first edge
+	\param v3 first endpoint of the second edge
+	\param v4 second endpoint of the second edge
+	\param plane1 ground plane containing the first edge
+	\param plane2 ground plane containing the second edge
+	\param beststart1 output vector for the closest point on the first edge
+	\param bestend1 output vector for the other closest point on the first edge
+	\param beststart2 output vector for the closest point on the second edge
+	\param bestend2 output vector for the other closest point on the second edge
+	\param bestdist current best known distance; updated if a shorter distance is found
+	\return the updated best distance between the two edges
+*/
 float AAS_ClosestEdgePoints(
 	vec3_t v1, vec3_t v2, vec3_t v3, vec3_t v4, aas_plane_t* plane1, aas_plane_t* plane2, vec3_t beststart1, vec3_t bestend1, vec3_t beststart2, vec3_t bestend2, float bestdist )
 {
@@ -1973,21 +1967,19 @@ float AAS_ClosestEdgePoints(
 	return bestdist;
 }
 
-//===========================================================================
-// creates possible jump reachabilities between the areas
-//
-// The two closest points on the ground of the areas are calculated
-// One of the points will be on an edge of a ground face of area1 and
-// one on an edge of a ground face of area2.
-// If there is a range of closest points the point in the middle of this range
-// is selected.
-// Between these two points there must be one or more gaps.
-// If the gaps exist a potential jump is predicted.
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether a jump between two areas can be made and establishes a reachability if possible
+
+	The function first checks that both areas are grounded and not crouch areas. It then makes sure the areas are close enough in the horizontal plane and that the height difference does not exceed
+   the maximum jump height. For each ground face of the two areas it finds the closest pair of edge points lying on the ground planes. The middle of the shortest segment between these points is used
+   as the candidate start and end positions. If the distance between these points lies within a valid range the horizontal speed for the jump is calculated; for very small gaps a walk‑off‑ledge
+   scenario is used. After verifying that the path is not obstructed by solids or dangerous liquids, a movement prediction is performed to ensure the jump would hit the ground safely. If all tests
+   pass the function records a jump reachability and returns true; otherwise it returns false.
+
+	\param area1num the number of the originating area in the navigation graph
+	\param area2num the number of the target area in the navigation graph
+	\return 1 if a jump reachability can be created between the areas, 0 otherwise
+*/
 int AAS_Reachability_Jump( int area1num, int area2num )
 {
 	int					 i, j, k, l, face1num, face2num, edge1num, edge2num, traveltype;
@@ -2270,13 +2262,18 @@ int AAS_Reachability_Jump( int area1num, int area2num )
 	return qfalse;
 }
 
-//===========================================================================
-// create a possible ladder reachability from area1 to area2
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates ladder reachability links between two areas if they share suitable ladder faces.
+
+	The routine first verifies that both areas are ladder areas. It then searches the faces in each area for ladder faces that share a common edge, selecting the pair with the largest face areas. It
+   ensures the shared faces are vertically oriented, that the normals of the faces are not too divergent, and that the shared edge itself is not excessively vertical. When these conditions are met, a
+   reachability entry of type TRAVEL_LADDER is allocated for each direction between the areas, with appropriate start and end points offset slightly into each area. The function updates the global
+   reachability linked lists for both areas and increments a global ladder counter. If any step fails (e.g., allocation, conditions not satisfied), the function returns false.
+
+	\param area1num identifier of the first area
+	\param area2num identifier of the second area
+	\return qtrue if the ladder reachability was successfully created, otherwise qfalse
+*/
 int AAS_Reachability_Ladder( int area1num, int area2num )
 {
 	int					 i, j, k, l, edge1num, edge2num, sharededgenum, lowestedgenum;
@@ -2619,24 +2616,16 @@ int AAS_Reachability_Ladder( int area1num, int area2num )
 	return qfalse;
 }
 
-//===========================================================================
-// create possible teleporter reachabilities
-// this is very game dependent.... :(
-//
-// classname = trigger_multiple or trigger_teleport
-// target = "t1"
-//
-// classname = target_teleporter
-// targetname = "t1"
-// target = "t2"
-//
-// classname = misc_teleporter_dest
-// targetname = "t2"
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates teleport reachability links between teleporter triggers and their destinations.
+
+	The function scans all BSP entities for teleporter-related triggers – either trigger_multiple or trigger_teleport – and attempts to match them with corresponding target_teleporter and
+   misc_teleporter_dest entities. For each matching pair it resolves the destination’s world position, verifies the destination is within a valid area (and adjusts for ground-level anomalies), and
+   then creates a reachability record linking the source area to the destination area with travel type TRAVEL_TELEPORT and a constant travel time defined by TELEPORT_TIME. The reachability links are
+   stored in the global area reachability list, and a global counter of teleport links is incremented. Errors such as missing targets or destinations are logged via botimport.Print.
+
+
+*/
 void AAS_Reachability_Teleport()
 {
 	int					 area1num, area2num;
@@ -2800,15 +2789,19 @@ void AAS_Reachability_Teleport()
 	}
 }
 
-//===========================================================================
-// create possible elevator (func_plat) reachabilities
-// this is very game dependent.... :(
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 #define REACHDEBUG
+
+/*!
+	\brief Creates elevator reachabilities by scanning func_plat entities and linking adjacent grounded or swim areas.
+
+	The routine iterates over every BSP entity and inspects those with classname "func_plat". For each platform it reads the model number and retrieves its bounding box, lip, movement height, and
+   speed, applying defaults when a property is missing. It then computes a bottom and a top position for the moving platform and generates a set of points around the edges of each position. At each
+   point it looks upward, adjusting the vertical coordinate until it finds a grounded or swim area, or until it has moved too far above solid geometry. Once candidate pairs of adjacent areas (bottom
+   and top) are identified, the function performs a client‑bbox trace from a point above the bottom area to just above the top area using crouch presence.  If the trace shows an unobstructed path, a
+   reachability entry is created for the transition between the two areas. All the work is done using the AAS helpers for area lookups, bbox traces, and area properties, and debug logging can be
+   enabled via REACHDEBUG.
+
+*/
 void AAS_Reachability_Elevator()
 {
 	int					 area1num, area2num, modelnum, i, j, k, l, n, p;
@@ -3095,12 +3088,20 @@ void AAS_Reachability_Elevator()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines reachable areas from a polygon of face points by evaluating ground faces and generating reachability structures.
+
+	The function scans all ground faces in the AAS world, computing the minimal distance between the edges of a supplied polygon and those of each ground face. It keeps track of the best matching face
+   and verifies several geometric constraints: horizontal distance must be within a jump limit, vertical differences are bounded, and the target face must be reachable in height. When a suitable face
+   is found, the function creates a reachability entry with start and end positions derived from the closest edge pair, linking it into a returned list. If no valid reachability is found, or memory
+   allocation fails, the function returns the list built so far (which may be empty).
+
+	\param facepoints Array of vertices defining the polygon to evaluate; must form a closed loop
+	\param numpoints Number of vertices in facepoints
+	\param plane Plane of the original face for projecting test points
+	\param towardsface If true, search is directed towards the face; if false, directed away
+	\return Pointer to a linked list of reachability structures; NULL on failure or no matches
+*/
 aas_lreachability_t* AAS_FindFaceReachabilities( vec3_t* facepoints, int numpoints, aas_plane_t* plane, int towardsface )
 {
 	int					 i, j, k, l;
@@ -3258,12 +3259,16 @@ aas_lreachability_t* AAS_FindFaceReachabilities( vec3_t* facepoints, int numpoin
 	return lreachabilities;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes and logs reachabilities for func_bobbing entities in the map
+
+	The routine scans all BSP entities for those with the classname "func_bobbing".  For each such entity it extracts the model number, height (defaulting to 32 if unspecified) and spawnflags to
+   determine the bobbing axis.  Using the model's bounding box it calculates a start and end point that represent the lowest and highest positions of the bobbing surface.  Two opposing planes are
+   defined and the function then looks up reachability data for the corners of the surface with AAS_FindFaceReachabilities.  For each start and end face reachability pair it traces a line between the
+   two sides and records the areas that the trace passes through, recording each area transition with Log_Write.  The routine is used by the AAS to generate reachability data for bots when
+   encountering a func_bobbing entity.
+
+*/
 void AAS_Reachability_FuncBobbing()
 {
 	int					 ent, spawnflags, modelnum, axis;
@@ -3521,12 +3526,19 @@ void AAS_Reachability_FuncBobbing()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates reachability entries for trigger_push entities by computing their push velocity toward a target and connecting the source and destination jump pad areas
+
+	The function iterates over all BspEntities that are named "trigger_push".
+	For each, it reads the speed (default 1000 if unspecified) and the entity’s model to determine its bounding box.  It then finds the entity’s target by matching a targetname field.
+	Using the vertical height difference between the push and the target and the gravity setting, it derives a launch time and uses this to compute a horizontal velocity scaled by a factor of 1.1
+   before setting the Z component to the expected apex velocity. It traces a client bbox from slightly above the push to locate the starting area and finds all areas that cover the push’s bounding
+   box. When a linked area is identified as a jump pad, it predicts the client movement forward for up to 20 iterations to find a valid destination area. If a destination jump pad area is found and no
+   existing reachability exists, the function allocates a new reachability. The new entry stores the start and end positions, the area numbers, a travel type of TRAVEL_JUMPPAD, and a hardcoded travel
+   time of 200.  The facenum field contains the vertical velocity, and the edgenum field contains the horizontal speed. Debug output is printed through botimport.Print for missing targets, solid
+   starts, and computed velocities. The process continues for all trigger_push entities. The function performs no obvious error throws; it simply logs issues and skips problematic entities.
+
+*/
 void AAS_Reachability_JumpPad()
 {
 	int					 face2num, i, ret, modelnum, area2num, visualize;
@@ -3873,14 +3885,21 @@ void AAS_Reachability_JumpPad()
 	}
 }
 
-//===========================================================================
-// never point at ground faces
-// always a higher and pretty far area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds a grapple reachability link between two areas when the path and geometry satisfy safety and movement constraints.
+
+	The function first verifies that the source area is either grounded or swimming and not a crouch area, then ensures the target area is not significantly lower. It computes a starting position near
+   the source area, optionally adjusting for swimming or solid checks. It iterates over the faces of the target area, filtering for solid, upward‑facing faces that can accommodate a grapple. For each
+   suitable face, it performs several geometric checks: distance limits, minimum angle, skyline avoidance, and a trace to the face normal to ascertain a viable hook point. A second trace simulates the
+   grapple’s path, ensuring the landing area is safe, not a lava source, and that it does not traverse cluster portals. If all tests pass and no existing reachability exists, a new reachability record
+   is allocated and populated, updating the source area’s linked list. The function tracks successful creations in a counter. At the end, the function returns zero; the number of links added can be
+   accessed via the counter.
+
+
+	\param area1num Index of the source area for the grapple.
+	\param area2num Index of the target area where a grapple might be attached.
+	\return Non‑zero if a new reachability was allocated and added, zero otherwise.
+*/
 int AAS_Reachability_Grapple( int area1num, int area2num )
 {
 	int					 face2num, i, j, areanum, numareas, areas[20];
@@ -4100,12 +4119,15 @@ int AAS_Reachability_Grapple( int area1num, int area2num )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Marks map areas that can be reached by a weapon jump based on special item items and jump pads
+
+	It iterates over all map entities, checks whether they are special weapon, armor or power‑up items that can be used to launch a weapon jump, and for each such entity it finds a reachable area
+   around the item’s origin. The AREA_WEAPONJUMP flag is then set for that area so that the bot AI recognises it as a weapon‑jump destination. Items that are not stationary are checked for solid
+   placement and a message is printed if they lie inside solid geometry. The function also scans all area settings for jump‑pad contents and applies the same flag. Finally the total count of
+   weapon‑jump areas is printed.
+
+*/
 void AAS_SetWeaponJumpAreaFlags()
 {
 	int	   ent, i;
@@ -4161,17 +4183,19 @@ void AAS_SetWeaponJumpAreaFlags()
 	botimport.Print( PRT_MESSAGE, "%d weapon jump areas\n", weaponjumpareas );
 }
 
-//===========================================================================
-// create a possible weapon jump reachability from area1 to area2
-//
-// check if there's a cool item in the second area
-// check if area1 is lower than area2
-// check if the bot can rocketjump from area1 to area2
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether a weapon jump link exists between two areas and creates a reachability if one is possible
+
+	The function first verifies that the source area is grounded and suitable for a jump (not a swim area) and that the destination area also has a ground surface. It requires the destination to be
+   flagged for a weapon jump and higher than the source. From the source area's center it calculates a potential start point for the jump by tracing downward to the ground. It then iterates over all
+   ground faces of the destination area that are above the start point, trying both a rocket‑jump and a BFG‑jump. For each face it computes the horizontal velocity needed to reach the face from the
+   start position and, if the required speed is below a threshold, uses the prediction subsystem to ensure the motion would reach the face without falling into water, lava, slime or taking excessive
+   damage. When a valid jump is found, it allocates a reachability structure, sets its fields to represent a rocket or BFG jump, links it into the source area's reachability list, and returns success.
+
+	\param area1num index of the starting area to evaluate for a weapon jump
+	\param area2num index of the destination area that might be reachable via a jump
+	\return returns 1 if a jump reachability was created, 0 otherwise
+*/
 int AAS_Reachability_WeaponJump( int area1num, int area2num )
 {
 	int					 face2num, i, n, ret;
@@ -4328,13 +4352,17 @@ int AAS_Reachability_WeaponJump( int area1num, int area2num )
 	return qfalse;
 }
 
-//===========================================================================
-// calculates additional walk off ledge reachabilities for the given area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds walk‑off‑ledge reachabilities for a given area.
+
+	The function inspects a grounded, non‑swim area and scans each of its ground faces and the adjoining non‑ground faces sharing an edge. It determines if a third face creates a gap large enough for
+   a jump off ledge. For each suitable edge it builds a candidate trajectory by offsetting along the face normal, traces a client hit box from that point downward, and checks the resulting landing
+   location. If the landing location is in a grounded area that does not contain lava or slime, a walk‑off‑ledge reachability is allocated, configured with travel type TRAVEL_WALKOFFLEDGE, travel time
+   based on the height difference and gravity, and inserted into the global area reachability list. The process skips areas that already have a suitable reachability, or where the landing area is
+   non‑grounded and non‑swim and does not qualify for a walk off ledge.
+
+	\param areanum the numeric identifier of the area being processed
+*/
 void AAS_Reachability_WalkOffLedge( int areanum )
 {
 	int					 i, j, k, l, m, n;
@@ -4530,12 +4558,15 @@ void AAS_Reachability_WalkOffLedge( int areanum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Rebuilds and stores a global reachability table for all areas, allocating new memory, copying existing reachabilities and enforcing a minimum travel time.
+
+	The function first frees any previously allocated reachability array in the global AAS world. It then allocates a new clear memory block large enough to hold all reachabilities plus a small
+   margin. For each area, it records the index of the first reachable area in the new array and iterates through that area's linked-list of local reachabilities. Each entry is copied, the source and
+   destination vectors are duplicated, and the travel type and time are transferred. If a travel time is less than the defined minimum, it is increased to that minimum. The counts of reachable areas
+   for each area are updated and the global reachability size is adjusted accordingly.
+
+*/
 void AAS_StoreReachability()
 {
 	int					 i;
@@ -4603,6 +4634,19 @@ void AAS_StoreReachability()
 // Returns:				true if NOT finished
 // Changes Globals:		-
 //===========================================================================
+
+/*!
+	\brief Calculates a portion of the AAS reachability data for the map and reports if further processing is required.
+
+	This routine is called repeatedly during map initialization to build the reachability graph between map areas. It first verifies that a world file has been loaded and that reachability has not
+   already been completed, then processes a batch of areas up to the specified time budget. Reachability edges are generated by a series of checks for swim, walk, step, ladder, jump, and other
+   movement types, with special handling for teleporter, jumppad, and terrain content. Progress is printed to the console, and once all reachabilities for all areas have been computed, the data is
+   stored, temporary memory freed, and clustering initialization begins. The function returns true while additional reachability work remains, and false when the graph is fully populated or when no
+   work is needed.
+
+	\param time Seconds allocated for the incremental reachability calculation in this call.
+	\return Non‑zero value if more reachability work remains, zero otherwise.
+*/
 int AAS_ContinueInitReachability( float time )
 {
 	int			 i, j, todo, start_time;
@@ -4784,12 +4828,14 @@ int AAS_ContinueInitReachability( float time )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes reachability data structures for the current AAS world.
+
+	If the world is not loaded, the function exits immediately. For worlds that already have a reachability size set, the function optionally respects the “forcereachability” library variable: when
+   not forced, it simply sets the number of reachable areas to the current area count plus two and returns. Otherwise it initializes the savefile flag, starts with area one, establishes a heap for
+   reachability links, allocates memory for the per‑area reachability pointers, and configures flags for areas that support weapon‑jump actions.
+
+*/
 void AAS_InitReachability()
 {
 	if( !( *aasworld ).loaded ) {

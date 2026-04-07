@@ -75,23 +75,32 @@ typedef struct optimized_s {
 	int*			 faceoptimizeindex;
 } optimized_t;
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Always indicates that a given edge must be kept.
+
+	Determines whether an edge should be retained during optimization. The current implementation always returns 1, so every edge is kept. Future revisions may add criteria based on edge properties.
+
+	\param edge pointer to the edge to evaluate for retention
+	\return non‑zero if the edge should be kept, zero otherwise
+*/
 int AAS_KeepEdge( aas_edge_t* edge )
 {
 	return 1;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns the optimized index of the specified edge, or 0 if the edge is not kept.
+
+	The function first queries the global world structure to obtain the edge and checks whether it should be retained by calling AAS_KeepEdge. If the edge is not kept, the function immediately returns
+   0. If the edge has already been optimized previously, it returns the stored optimized index, preserving the sign of the original edge number. Otherwise a new optimized edge is created: the function
+   ensures each vertex of the original edge is recorded in the optimized vertex list (adding new entries if necessary), and the edge itself is added to the optimized edge list. The corresponding index
+   maps and counters are updated, and finally the function returns the new edge index with the same sign as the input parameter.
+
+
+	\param optimized pointer to the structure holding the optimized mesh data
+	\param edgenum index of the edge in the global world map, sign indicates direction
+	\return The optimized edge index, positive or negative to preserve the original direction, or 0 if the edge is not kept by AAS_KeepEdge.
+*/
 int AAS_OptimizeEdge( optimized_t* optimized, int edgenum )
 {
 	int			i, optedgenum;
@@ -142,12 +151,15 @@ int AAS_OptimizeEdge( optimized_t* optimized, int edgenum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns 1 if the face has the ladder flag, otherwise returns 0.
+
+	The function examines the face's faceflags field for the FACE_LADDER bit. If the bit is not set, it returns 0, indicating the face should not be kept for further processing. If the bit is set, it
+   returns 1, meaning the face qualifies for optimization.
+
+	\param face Pointer to a face structure whose flags are inspected.
+	\return 1 if the FACE_LADDER flag is set in the face’s flags, otherwise 0.
+*/
 int AAS_KeepFace( aas_face_t* face )
 {
 	if( !( face->faceflags & FACE_LADDER ) ) {
@@ -158,12 +170,18 @@ int AAS_KeepFace( aas_face_t* face )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Optimize an individual face for later area optimization, returning its new index or zero if it is excluded.
+
+	The function examines the face indicated by facenum in the global world data. If the face should not be kept, it returns zero. If the face has already been optimized, it returns the stored index,
+   preserving the sign of facenum to indicate face side. Otherwise, a copy of the face is created in the optimized structure, its edges are individually optimized, and mappings for edges and faces are
+   updated. The face’s new index is stored for future lookups and returned with the original sign.
+
+
+	\param optimized structure accumulating optimized area data, including face and edge records
+	\param facenum index of the face in the global world structure; the sign indicates the side to keep
+	\return Index of the face within the optimized structure, or zero if the face is not kept.
+*/
 int AAS_OptimizeFace( optimized_t* optimized, int facenum )
 {
 	int			i, edgenum, optedgenum, optfacenum;
@@ -217,12 +235,16 @@ int AAS_OptimizeFace( optimized_t* optimized, int facenum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Processes the faces of a specified area and stores the resulting optimized data in the supplied structure.
+
+	The function copies the original area data from the global world into the optimized structure. It then resets the face count for the optimized area and iterates over each face in the original
+   area, calling AAS_OptimizeFace to optimize the individual face. Optimized face indices are written into the optimized face index array, updating the area’s face count and the overall face index
+   size counter.
+
+	\param optimized Pointer to the optimized data structure where the processed area will be stored.
+	\param areanum Index of the area to optimize.
+*/
 void AAS_OptimizeArea( optimized_t* optimized, int areanum )
 {
 	int			i, facenum, optfacenum;
@@ -247,12 +269,15 @@ void AAS_OptimizeArea( optimized_t* optimized, int areanum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the optimized data structures for AAS processing by allocating and clearing memory.
+
+	The function allocates memory blocks for vertices, edges, edge indices, faces, face indices, areas, and optimization indices using GetClearedMemory. It sets the count of used vertices to zero, and
+   initializes the count of used edges and faces to one, reserving index zero as a dummy placeholder. The sizes of the index structures are reset to zero, and the total number of areas is copied from
+   the global world data.
+
+	\param optimized pointer to an optimized_t structure that will receive the allocated arrays and initialized counters and sizes
+*/
 void AAS_OptimizeAlloc( optimized_t* optimized )
 {
 	optimized->vertexes		 = ( aas_vertex_t* )GetClearedMemory( ( *aasworld ).numvertexes * sizeof( aas_vertex_t ) );
@@ -273,12 +298,15 @@ void AAS_OptimizeAlloc( optimized_t* optimized )
 	optimized->faceoptimizeindex   = ( int* )GetClearedMemory( ( *aasworld ).numfaces * sizeof( int ) );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Updates the global AAS world with optimized geometry data and frees temporary optimization indices.
+
+	The function first frees any existing vertex, edge, face, area, and index arrays stored in the global aasworld structure, then replaces them with the corresponding pointers from the supplied
+   optimized structure. After the data has been stored, the temporary arrays used for calculating the optimizations (vertexoptimizeindex, edgeoptimizeindex, faceoptimizeindex) are freed. This
+   effectively swaps the old geometry with the optimized version and cleans up intermediate allocations.
+
+	\param optimized pointer to a structure containing precomputed optimized geometry arrays and index counts to be imported into the global world state
+*/
 void AAS_OptimizeStore( optimized_t* optimized )
 {
 	// store the optimized vertexes
@@ -334,12 +362,6 @@ void AAS_OptimizeStore( optimized_t* optimized )
 	FreeMemory( optimized->faceoptimizeindex );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_Optimize()
 {
 	int			i, sign;

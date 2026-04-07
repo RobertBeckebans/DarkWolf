@@ -66,11 +66,56 @@ typedef struct structdef_s {
 	fielddef_t* fields;
 } structdef_t;
 
-// read a structure from a script
+/*!
+	\brief Parses a script source into a C structure according to a provided definition.
+
+	The function begins by expecting an opening brace token to indicate the start of a structured block. It then enters a loop reading tokens sequentially; each token should name a field in the
+   structure. The field name is matched against the definition, and if it is an array the function expects a nested brace to contain elements. For each field or array element, the appropriate helper
+   routine (ReadChar, ReadNumber, ReadString, or a recursive call for sub‑structures) is invoked to read the value from the source and store it into the correct offset within the target structure.
+   Commas separate array elements, and the loop terminates when a closing brace token is encountered. On any parsing error or unexpected token, a message is sent via SourceError and the function
+   returns false; otherwise it returns true after successfully filling the structure.
+
+	\param source pointer to the script source being read
+	\param def definition of the structure’s fields and layout
+	\param structure pointer to the memory buffer to populate with parsed values
+	\return non‑zero on success (qtrue), zero on failure (qfalse)
+*/
 int ReadStructure( source_t* source, structdef_t* def, char* structure );
-// write a structure to a file
+
+/*!
+	\brief Writes the structure definition to the specified file.
+
+	The function forwards the request to WriteStructWithIndent, passing an indentation level of zero so that the structure is written without any preceding indentation.
+
+	\param fp File pointer to write to.
+	\param def Pointer to the structure definition data.
+	\param structure String containing the structure's source code representation.
+	\return Result of WriteStructWithIndent; typically indicates success or an error code.
+*/
 int WriteStructure( FILE* fp, structdef_t* def, char* structure );
-// writes indents
+
+/*!
+	\brief Writes a given number of tab columns to a file.
+
+	This function outputs tab characters to the supplied file stream until the specified indentation level has been written. It counts down from the provided indent value, writing a single tab
+   character for each iteration. If any call to fprintf fails, the function aborts and signals an error by returning qfalse. On successful completion it returns qtrue.
+
+	Note that the function's return type is int while the returned constants qtrue and qfalse represent boolean success or failure, the latter being zero.
+
+	\param fp pointer to the FILE stream to write the indents to
+	\param indent number of tab characters to output
+	\return qtrue (non‑zero) if all indents were written successfully; qfalse (zero) if any write operation failed
+*/
 int WriteIndent( FILE* fp, int indent );
-// writes a float without traling zeros
+
+/*!
+	\brief Writes a float to a file without trailing zeros.
+
+	The function formats the supplied float into a decimal string using sprintf, then removes any trailing zero characters and an optional decimal point so the output is as concise as possible. The
+   resulting string is written to the specified FILE stream with fprintf. It returns 1 when the write succeeds and 0 if an error occurs during output.
+
+	\param fp File stream to which the value will be written
+	\param value Floating point number to output
+	\return 1 if the value was successfully written, 0 otherwise
+*/
 int WriteFloat( FILE* fp, float value );

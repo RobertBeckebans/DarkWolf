@@ -48,21 +48,126 @@ void			   AAS_CreateAllRoutingCache();
 void			   AAS_RoutingInfo();
 #endif // AASINTERN
 
-// returns the travel flag for the given travel type
+/*!
+	\brief Retrieves the travel flag for a given travel type.
+
+	If the provided type is outside the valid range, the function returns the special constant TFL_INVALID. Otherwise it returns the flag located in the global AAS world structure for that type.
+
+	\param traveltype index of the travel type whose flag is requested.
+	\return An integer representing the travel flag, or the constant TFL_INVALID for an out‑of‑range type.
+*/
 int				   AAS_TravelFlagForType( int traveltype );
-//
+
+/*!
+	\brief Retrieves travel flags for a specified area based on its content descriptors.
+
+	The function looks up the area settings for the given area number and examines the contents bitfield. Depending on which content bits are set, it returns a bitmask of travel flags: a water, slime,
+   or lava area yields the corresponding travel flag; if none of these are set, the area is considered air. It also adds the large not‑enter or standard not‑enter flags if the respective content bits
+   are present, returning immediately when the standard not‑enter flag is set. The resulting bitmask can be used by pathfinding code to determine which travel types are prohibited for the area.
+
+	\param areanum Index of the area whose contents should be queried in the current AAS world.
+	\return A bitmask of travel flags representing the area’s contents, such as water, slime, lava, air, and not‑enter restrictions.
+*/
 int				   AAS_AreaContentsTravelFlag( int areanum );
-// returns the index of the next reachability for the given area
+
+/*!
+	\brief Retrieves the next reachability index for a specified area.
+
+	Given an area number and a current reachability index, the function returns the subsequent reachability index in the area’s routing list.
+
+	If the provided current index is 0, the function returns the first reachable area index. Any index less than the first reachable area triggers a fatal error message. After incrementing the current
+   index, if the result exceeds the number of reachable areas, 0 is returned to indicate that no further reachabilities exist for the area.
+
+	\param areanum Numerical identifier of the area whose reachabilities are queried
+	\param reachnum Current reachability index; zero starts enumeration
+	\return The next reachability index, or zero if there are none left.
+*/
 int				   AAS_NextAreaReachability( int areanum, int reachnum );
-// returns the reachability with the given index
+
+/*!
+	\brief Retrieves a reachability entry by index and stores it in the supplied buffer.
+
+	If the navigation system has not been initialized or the index is outside the valid range, the reachability structure is zeroed before returning. Otherwise it copies the entry from the internal
+   reachability array into the supplied structure.
+
+	\param num Index of the desired reachability within the internal array
+	\param reach Pointer to a reachability structure that will receive a copy of the requested entry
+*/
 void			   AAS_ReachabilityFromNum( int num, struct aas_reachability_s* reach );
-// returns a random goal area and goal origin
+
+/*!
+	\brief Selects a random reachable goal area from a given area and provides the area index and coordinates.
+
+	The function begins by verifying that the supplied area has any reachability information; if none, it fails immediately. It then selects a random target area among all areas in the world, wrapping
+   around to stay within bounds. For each candidate, it checks that a travel path exists to the candidate area with the given travel flags. If the candidate is a swim area, its center point is
+   returned as the goal. Otherwise, a downward trace from the candidate’s center is performed, and if the trace ends in the candidate area and the area has a sufficient ground face height, the trace
+   end position is returned. The function continues scanning until a suitable area is found or all areas have been considered, returning success or failure accordingly.
+
+	\param areanum Index of the starting area to search from
+	\param travelflags Travel flags used when determining reachability
+	\param goalareanum Pointer to an integer where the chosen goal area number will be stored
+	\param goalorigin Vector to receive the coordinates of the goal location
+	\return Non‑zero integer (true) if a goal area was found; zero (false) otherwise.
+*/
 int				   AAS_RandomGoalArea( int areanum, int travelflags, int* goalareanum, vec3_t goalorigin );
-// returns the travel time within the given area from start to end
+
+/*!
+	\brief Computes the time needed to move between two points inside a specified area, adjusting for terrain steepness and movement type.
+
+	The function first calculates the straight‑line distance between the start and end coordinates. It then scales this distance by the area’s terrain steepness factor obtained via
+   AAS_AreaGroundSteepnessScale. Depending on the area’s movement properties, the distance is multiplied by one of three predefined factors: crouch, swim, or normal walk. The resulting value is
+   rounded up to the nearest integer and returned as an unsigned short. If the computed distance is zero, it is set to one to avoid returning an invalid travel time. The function returns the estimated
+   travel time in milliseconds for moving within the area between the two points.
+
+	\param areanum identifies the area whose properties are used for scaling and movement type selection
+	\param start the starting position vector
+	\param end the ending position vector
+	\return the travel time in milliseconds to traverse from start to end within the specified area
+*/
 unsigned short int AAS_AreaTravelTime( int areanum, vec3_t start, vec3_t end );
-// returns the travel time from the area to the goal area using the given travel flags
+
+/*!
+	\brief Returns the travel time between a starting area and a goal area using the specified travel flags.
+
+	The function first attempts to compute a route using AAS_AreaRouteToGoalArea. If a route is found, the accumulated travel time (in ticks) for that route is returned. If no route can be found, the
+   function returns 0. The resulting time reflects the time required by the underlying navigation system to move from the origin point to the goal area while obeying the provided travel constraints.
+
+	\param areanum Identifier of the starting area number
+	\param origin World‑space origin point from which the travel time is calculated
+	\param goalareanum Identifier of the destination area number
+	\param travelflags Bit mask specifying allowed travel types (e.g., walk, swim)
+	\return The travel time in ticks between the start and goal areas, or 0 if no path exists.
+*/
 int				   AAS_AreaTravelTimeToGoalArea( int areanum, vec3_t origin, int goalareanum, int travelflags );
-// returns the travel time from the area to the goal area using the given travel flags
+
+/*!
+	\brief Calculates the time to travel from a starting area to a goal area while avoiding loops
+
+	The function first attempts to find a route from the current area to the goal area using the supplied travel flags. If a route is found, the resulting travel time is examined. Additionally, if the
+   proposed destination area equals a provided loop safeguard area, the route is rejected to prevent a circular path and a zero time is returned. All other unreachable or looped scenarios also result
+   in a zero return value.
+
+	\param areanum the numeric identifier of the starting area
+	\param origin the position vector within the starting area
+	\param goalareanum the numeric identifier of the destination area
+	\param travelflags bitmask specifying allowed traversal types
+	\param loopareanum numeric identifier of an area that should not be targeted to avoid looping
+	\return The computed travel time in game ticks; zero indicates the goal is unreachable or would create a looped route
+*/
 int				   AAS_AreaTravelTimeToGoalAreaCheckLoop( int areanum, vec3_t origin, int goalareanum, int travelflags, int loopareanum );
 
+/*!
+	\brief Compute a reachable area number for a point, using fuzzy search when direct reachability fails
+
+	This function attempts to locate the navigation area that contains the given point. It first queries the exact area at the point; if that area is reachable it is returned immediately. If not, an
+   upwards trace by 4 units is performed to locate a nearby reachable area. When still no reachable area is found, the function expands the search in a 3×3×3 grid around the origin, offsetting the
+   target by 256 units horizontally and 200 units vertically in the positive and negative directions, and traces areas along these directions. The closest reachable area intersected during this
+   expanded search is chosen as the best candidate. If no reachable area is identified, the function falls back to the first area encountered during any trace and finally returns 0 if all attempts
+   fail.
+
+	The function is intended for AI navigation to determine a suitable start or target area when a point may lie outside of a reachable zone.
+
+	\param origin 3‑D world position of the point to test
+	\return Area number (integer) for the point; 0 indicates no reachable area could be determined
+*/
 extern int		   BotFuzzyPointReachabilityArea( vec3_t origin );

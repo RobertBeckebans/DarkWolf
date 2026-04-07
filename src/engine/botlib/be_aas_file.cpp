@@ -51,12 +51,15 @@ If you have questions concerning this license or the applicable additional terms
 
 // #define AASFILEDEBUG
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Swaps all data structures in the AAS world to little-endian format when necessary.
+
+	If the host machine is little-endian, the function exits immediately because no byte-swapping is required. Otherwise it iterates through the various AAS structures, converting integer and
+   floating-point fields from big-endian to little-endian. The conversion is performed for bounding boxes, vertices, planes, edges, faces, convex areas, area settings, reachability records, nodes,
+   portals, and cluster information. Each field uses appropriate LittleFloat, LittleLong, or LittleShort conversion functions. The function does not allocate memory or modify global state beyond the
+   AAS world data it traverses.
+
+*/
 void AAS_SwapAASData()
 {
 	int i, j;
@@ -192,13 +195,14 @@ void AAS_SwapAASData()
 	}
 }
 
-//===========================================================================
-// dump the current loaded aas file
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Releases all memory allocated for the current AAS world and resets the global state to an unloaded configuration.
+
+	The function iterates over each member of the global AAS data structure, freeing any allocated memory blocks and zeroing associated counters. It clears arrays for boxes, vertexes, planes, edges,
+   faces, areas, area settings, reachability, nodes, portals, portal indices, and clusters. After deallocation, it null‑terminates the corresponding pointers and resets all size fields to zero.
+   Finally, status flags indicating whether the world is loaded, initialized, or saved are set to false, ensuring the structure is returned to an empty, uninitialized state.
+
+*/
 void AAS_DumpAASData()
 {
 	( *aasworld ).numbboxes = 0;
@@ -306,7 +310,6 @@ void AAS_DumpAASData()
 	( *aasworld ).savefile	  = qfalse;
 }
 
-//===========================================================================
 //
 // Parameter:				-
 // Returns:					-
@@ -356,13 +359,22 @@ void AAS_FileInfo()
 }
 
 #endif // AASFILEDEBUG
-//===========================================================================
-// allocate memory and read a lump of a AAS file
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+
+/*!
+	\brief Loads a specified lump from an AAS file into newly allocated memory.
+
+	If the requested lump size is zero the function immediately returns NULL.
+	When the caller's expected next offset does not match the supplied offset a warning is issued. The function attempts to seek to the correct position; if that fails an error is logged,
+   diagnostic dumps are output, and the file is closed before returning NULL. Memory for the lump is obtained from GetClearedHunkMemory and the data is read directly into this buffer. The supplied
+   lastoffset pointer is updated to reflect the position following the read. The returned buffer occupies persistent hunk memory and is returned as a raw byte array; the caller is responsible for
+   interpreting it as the appropriate structure type.
+
+	\param fp file handle from which the lump is read
+	\param offset file position where the lump begins
+	\param length number of bytes to read
+	\param lastoffset pointer to the last read offset, updated after the function executes
+	\return pointer to the allocated buffer containing the lump data, or NULL if the length is zero or an error occurs
+*/
 char* AAS_LoadAASLump( fileHandle_t fp, int offset, int length, int* lastoffset )
 {
 	char* buf;
@@ -396,12 +408,20 @@ char* AAS_LoadAASLump( fileHandle_t fp, int offset, int length, int* lastoffset 
 	return buf;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief XORs each byte of the buffer with a value derived from its index multiplied by 119
+
+	The function iterates through the provided buffer of the given size.
+	For each element, it XORs the byte with a byte value computed from the element's index multiplied by 119 and then cast to unsigned char.
+	This operation effectively scrambles or de‑scrambles the data, depending on whether the same function is applied again.
+	The function does not allocate additional memory and works in-place on the supplied array.
+
+	NOTE: The multiplier 119 is hard‑coded and therefore the result is deterministic.
+	No bounds checking is performed beyond the size parameter, so callers must ensure the buffer has at least size bytes.
+
+	\param data pointer to the byte array to be processed
+	\param size number of bytes in the array to be processed
+*/
 void AAS_DData( unsigned char* data, int size )
 {
 	int i;
@@ -411,13 +431,19 @@ void AAS_DData( unsigned char* data, int size )
 	}
 }
 
-//===========================================================================
-// load an aas file
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Loads an AAS file into the server’s global state.
+
+	The routine opens the specified file, validates its header (ident and version match and checksum is correct), and then reads each lump segment—bounding boxes, vertexes, planes, edges, area data,
+   reachability lists, and so on—into the global aasworld structure. If any step fails, an appropriate BLERR_* code is returned and error handling is performed with AAS_Error. The function also dumps
+   the previous AAS data and logs progress to the console.
+
+	The function returns
+	BLERR_NOERROR on success, or one of the BLERR_* error codes for issues such as missing file, bad header, wrong checksum, or failed lump read.
+
+	\param filename Name of the .aas file to load, relative to the maps directory.
+	\return An integer error code – BLERR_NOERROR on success, otherwise a code indicating the failure type.
+*/
 int AAS_LoadAASFile( char* filename )
 {
 	fileHandle_t fp;
@@ -626,14 +652,21 @@ int AAS_LoadAASFile( char* filename )
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 static int AAS_WriteAASLump_offset;
 
+/*!
+	\brief Writes a lump to an AAS file and updates the corresponding header entry.
+
+	The function records the file offset and length for a specified lump in the AAS header, writes the lump data to the file if any, advances the write offset, and returns a success flag. File offsets
+   and lengths are converted to little‑endian format before storage. The lump information is stored in the header’s lumps array at the index supplied by lumpnum.
+
+	\param fp File handle to the open AAS file
+	\param h Pointer to the AAS header structure that contains lump metadata
+	\param lumpnum Index of the lump entry within the header to update
+	\param data Pointer to the data buffer to be written to the file
+	\param length Size of the data buffer in bytes
+	\return qtrue (non‑zero) on success, qfalse (zero) otherwise
+*/
 int		   AAS_WriteAASLump( fileHandle_t fp, aas_header_t* h, int lumpnum, void* data, int length )
 {
 	aas_lump_t* lump;
@@ -652,13 +685,6 @@ int		   AAS_WriteAASLump( fileHandle_t fp, aas_header_t* h, int lumpnum, void* d
 	return qtrue;
 }
 
-//===========================================================================
-// aas data is useless after writing to file because it is byte swapped
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 qboolean AAS_WriteAASFile( char* filename )
 {
 	aas_header_t header;

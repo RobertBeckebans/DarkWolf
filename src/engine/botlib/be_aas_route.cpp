@@ -94,12 +94,30 @@ int numportalcacheupdates;
 int	  routingcachesize;
 int	  max_routingcachesize;
 
-// Ridah, routing memory calls go here, so we can change between Hunk/Zone easily
+/*!
+	\brief Allocates and clears a block of memory for routing structures.
+
+	The function forwards the requested size to an underlying allocation routine that returns a zero‑initialized buffer. This abstraction permits the routing code to switch between different memory
+   pools, such as a hunk or a zone, without modifications.
+
+	\param size Number of bytes to allocate.
+	\return Pointer to the allocated memory, or nullptr if the allocation fails.
+*/
 void* AAS_RoutingGetMemory( int size )
 {
 	return GetClearedMemory( size );
 }
 
+/*!
+	\brief Releases memory used by the AAS routing subsystem.
+
+	This function frees a block of memory that was previously allocated by the AAS routing system. The pointer passed to it should refer to memory obtained through the routing allocator and must not
+   have been freed already. Internally it simply forwards the request to the platform's FreeMemory routine, ensuring that the routing subsystem's custom allocation tracking is respected.
+
+	TODO: clarify whether specific type of allocation or alignment is required.
+
+	\param ptr Pointer to the memory block allocated by the AAS routing allocator that should be deallocated.
+*/
 void AAS_RoutingFreeMemory( void* ptr )
 {
 	FreeMemory( ptr );
@@ -114,6 +132,13 @@ void AAS_RoutingFreeMemory( void* ptr )
 // Changes Globals:		-
 //===========================================================================
 #ifdef ROUTING_DEBUG
+
+/*!
+	\brief Prints the current counts of area cache, portal cache updates, and routing cache byte usage.
+
+	This function outputs three statistics via botimport.Print: the number of area cache updates that have occurred, the number of portal cache updates, and the size, in bytes, of the routing cache.
+
+*/
 void AAS_RoutingInfo()
 {
 	botimport.Print( PRT_MESSAGE, "%d area cache updates\n", numareacacheupdates );
@@ -122,14 +147,18 @@ void AAS_RoutingInfo()
 }
 
 #endif // ROUTING_DEBUG
-//===========================================================================
-// returns the number of the area in the cluster
-// assumes the given area is in the given cluster or a portal of the cluster
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+
+/*!
+	\brief Returns the cluster‐relative number of a given area or portal within the specified cluster.
+
+	The function retrieves the internal area index used within a cluster. If the supplied area number refers to a regular area whose cluster field is positive, the function returns its cluster
+   area number from the area's settings. If the area number refers to a portal (represented by a negative cluster value), the portal’s front or back cluster is compared with the supplied cluster
+   and the appropriate side’s cluster area number is returned.
+
+	\param cluster The cluster index in which to locate the area.
+	\param areanum A global area number; may refer to a normal area or a portal.
+	\return An integer representing the area number relative to the cluster context.
+*/
 __inline int AAS_ClusterAreaNum( int cluster, int areanum )
 {
 	int side, areacluster;
@@ -153,12 +182,13 @@ __inline int AAS_ClusterAreaNum( int cluster, int areanum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the travel flag lookup table in the AAS world.
+
+	The function clears the entire travel flag array by setting each entry to an invalid value. It then assigns the correct travel flag for each defined travel type, such as walk, jump, ladder, and
+   other movement actions. This prepared table is used later for pathfinding and movement logic.
+
+*/
 void AAS_InitTravelFlagFromType()
 {
 	int i;
@@ -188,12 +218,6 @@ void AAS_InitTravelFlagFromType()
 	( *aasworld ).travelflagfortype[TRAVEL_FUNCBOB]		 = TFL_FUNCBOB;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_TravelFlagForType( int traveltype )
 {
 	if( traveltype < 0 || traveltype >= MAX_TRAVELTYPES ) {
@@ -203,35 +227,41 @@ int AAS_TravelFlagForType( int traveltype )
 	return ( *aasworld ).travelflagfortype[traveltype];
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Return the current AAS routing time.
+
+	The function provides the current routing time reported by the system’s time function. It acts as a thin wrapper that forwards the value returned by AAS_Time, allowing callers to obtain the
+   routing timestamp without knowing the underlying implementation. The returned value is a float in the same units used by AAS_Time, typically milliseconds or a game‑specific time unit.
+
+	\return A float value representing the current AAS routing time.
+*/
 __inline float AAS_RoutingTime()
 {
 	return AAS_Time();
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Release a routing cache and adjust the global cache size counter.
+
+	The function reduces the global variable routingcachesize by the cache’s size and then frees the memory associated with the cache using AAS_RoutingFreeMemory. After this call, the caller must not
+   access the cache pointer.
+
+	\param cache Pointer to the routing cache structure to be freed.
+*/
 void AAS_FreeRoutingCache( aas_routingcache_t* cache )
 {
 	routingcachesize -= cache->size;
 	AAS_RoutingFreeMemory( cache );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Removes all routing cache entries for the specified cluster
+
+	If the global cluster area cache exists, this function iterates over all areas in the designated cluster and frees each routing cache node in the linked list. After freeing, the cache pointers for
+   each area are set to null. The operation has no effect when the cluster area cache is not present. It performs no returning value and modifies the global aaworld cluster area cache structure.
+
+	\param clusternum Index of the cluster whose routing cache should be removed; must be a valid cluster number in the current world data
+*/
 void AAS_RemoveRoutingCacheInCluster( int clusternum )
 {
 	int					i;
@@ -254,12 +284,15 @@ void AAS_RemoveRoutingCacheInCluster( int clusternum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Removes all routing cache entries that depend on a specified area.
+
+	The function first determines the cluster that the area belongs to. If the area has a normal positive cluster number, the routing cache for that cluster is cleared. If the cluster number is
+   negative, the area is considered a portal and the cache for both the front and back side clusters linked to the portal is cleared. After handling cluster‑specific cache, the function iterates
+   through all portal cache lists and frees each cache element, effectively resetting the portal cache for the world.
+
+	\param areanum The numeric identifier of the area whose routing cache should be removed.
+*/
 void AAS_RemoveRoutingCacheUsingArea( int areanum )
 {
 	int					i, clusternum;
@@ -291,12 +324,6 @@ void AAS_RemoveRoutingCacheUsingArea( int areanum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_EnableRoutingArea( int areanum, int enable )
 {
 	int flags;
@@ -331,12 +358,15 @@ int AAS_EnableRoutingArea( int areanum, int enable )
 	return !flags;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Builds reversed reachability links for every area by inverting the original reachability references.
+
+	First, any previously allocated reversed reachability data is freed. Then a memory block large enough to hold an array of reversed reachability structures and a list of reversed link entries is
+   obtained. The function iterates over all areas, inspecting each area's list of directly reachable areas. For every such link, a reversed link entry is created pointing back to the source area.
+   These entries are inserted at the head of a linked list per destination area, and the link count for that area is incremented. When DEBUG mode is enabled the time taken for this process is printed.
+   The resulting data structure allows quick determination of which areas can reach a given area.
+
+*/
 void AAS_CreateReversedReachability()
 {
 	int					i, n;
@@ -388,23 +418,20 @@ void AAS_CreateReversedReachability()
 #endif // DEBUG
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns a scaling factor that adjusts movement distance based on the ground steepness of an area.
+
+	The function looks up the area settings in the global world structure and multiplies the stored groundsteepness value by (GROUNDSTEEPNESS_TIMESCALE-1), then adds one. This factor is later used to
+   modify travel distances or times for that area.
+
+	\param areanum Area index whose ground steepness scaling is requested.
+	\return A floating‑point scaling factor applied to distances traveled within the area.
+*/
 float AAS_AreaGroundSteepnessScale( int areanum )
 {
 	return ( 1.0 + ( *aasworld ).areasettings[areanum].groundsteepness * ( float )( GROUNDSTEEPNESS_TIMESCALE - 1 ) );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 unsigned short int AAS_AreaTravelTime( int areanum, vec3_t start, vec3_t end )
 {
 	int	   intdist;
@@ -442,12 +469,14 @@ unsigned short int AAS_AreaTravelTime( int areanum, vec3_t start, vec3_t end )
 	return intdist;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Rebuilds the travel time matrix for all area reachabilities within the AAS world, allocating the required memory and storing the computed times.
+
+	The function first releases any previously allocated travel time data. It then calculates the total amount of memory needed to hold a per‑area, per‑reachable‑area, per‑link travel time array.
+   After allocating a contiguous block, it iterates over each area, sets up the pointer structure, and calculates the travel time between the area and each of its reachable areas using the distance
+   from the area’s start to the link’s endpoint. These values are stored in a tri‑dimensional array that the AAS system uses for routing. A debug message reports the elapsed time for the operation.
+
+*/
 void AAS_CalculateAreaTravelTimes()
 {
 	int							i, l, n, size;
@@ -515,12 +544,15 @@ void AAS_CalculateAreaTravelTimes()
 #endif // DEBUG
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns the maximum travel time from a portal area to any reachable area via reversed reachabilities.
+
+	The function obtains the portal’s area number, then iterates through all areas reachable from it. For each reachable area, it walks through all reversed link entries associated with that area. It
+   looks up the travel time stored in the areatraveltimes array for the portal area and the reachable area, keeping track of the largest value encountered. The maximum travel time is then returned.
+
+	\param portalnum index of the portal for which to calculate the maximum travel time.
+	\return The maximum travel time value as an integer.
+*/
 int AAS_PortalMaxTravelTime( int portalnum )
 {
 	int							l, n, t, maxt;
@@ -550,12 +582,14 @@ int AAS_PortalMaxTravelTime( int portalnum )
 	return maxt;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reinitializes the portal maximum travel times table for the navigation system
+
+	The function first frees any existing memory allocated for portal maximum travel times. It then allocates a new array sized by the current number of portals and stores the pointer in the global
+   aasworld structure. For every portal, it calculates the maximum travel time using the helper AAS_PortalMaxTravelTime and populates the array accordingly. The resulting table is accessible via
+   aasworld->portalmaxtraveltimes.
+
+*/
 void AAS_InitPortalMaxTravelTimes()
 {
 	int i;
@@ -572,12 +606,14 @@ void AAS_InitPortalMaxTravelTimes()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees the oldest routing cache entry and returns whether a cache was freed
+
+	It searches the cluster area caches first, looking for the oldest cache that does not lead to a portal. If found, it removes that cache from its linked list and frees its memory. If no suitable
+   cluster cache is found, it looks through the portal caches for the oldest entry, removes it, and frees it. Finally it returns a flag indicating if a cache was freed.
+
+	\return An integer value: 1 if a cache was freed, 0 otherwise
+*/
 int AAS_FreeOldestCache()
 {
 	int					i, j, bestcluster, bestarea, freed;
@@ -664,12 +700,17 @@ int AAS_FreeOldestCache()
 	return freed;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Allocates a routing cache structure used to store travel times and reachability information.
+
+	The function calculates the total amount of memory needed for a routing cache by adding the size of the aas_routingcache_t header to two arrays: one of unsigned short ints for travel times and one
+   of unsigned chars for reachabilities. It increments the global counter that tracks the cumulative size of all routing caches. Then it obtains a block of the required size from AAS_RoutingGetMemory.
+   The reachabilities pointer inside the header is set to immediately follow the travel time array, and the size field of the structure is written. The fully constructed cache is returned as a
+   pointer. If the allocation routine fails, the returned pointer will be NULL.
+
+	\param numtraveltimes Number of travel time buckets to store in the cache
+	\return Pointer to the allocated aas_routingcache_t or NULL if the allocation fails.
+*/
 aas_routingcache_t* AAS_AllocRoutingCache( int numtraveltimes )
 {
 	aas_routingcache_t* cache;
@@ -686,12 +727,14 @@ aas_routingcache_t* AAS_AllocRoutingCache( int numtraveltimes )
 	return cache;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Releases all routing caches for every cluster area in the world data structure.
+
+	The function checks whether a cluster area cache exists. If it does, it iterates over every cluster and each of its areas, freeing each routing cache via AAS_FreeRoutingCache. After all caches
+   have been freed, the 2‑D array of cache pointers itself is deallocated with AAS_RoutingFreeMemory and the global pointer is cleared. The function performs no further error handling and guarantees
+   that no cached routing data remains in memory.
+
+*/
 void AAS_FreeAllClusterAreaCache()
 {
 	int					i, j;
@@ -722,12 +765,14 @@ void AAS_FreeAllClusterAreaCache()
 	( *aasworld ).clusterareacache = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the cluster area cache for the AAS world structure.
+
+	First the function counts how many area entries exist across all clusters in the world. It then allocates a single block of memory that holds two layers of pointers: an array of cluster pointers
+   and, for each cluster, an array of area pointers. The allocations are done in one call to AAS_RoutingGetMemory, and afterwards the clusterareacache field of the world structure is set to point to
+   this nested pointer table. After this function runs, clusterareacache[cluster][area] can be used for routing cache lookups.
+
+*/
 void AAS_InitClusterAreaCache()
 {
 	int	  i, size;
@@ -750,12 +795,13 @@ void AAS_InitClusterAreaCache()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees all portal routing caches that belong to the AAS world.
+
+	The function first verifies that a portal cache exists. If present, it iterates over every area of the world, freeing each routing cache linked to that area. After all caches are released, the
+   memory that held the array of pointers is freed and the global portal cache pointer is set to null.
+
+*/
 void AAS_FreeAllPortalCache()
 {
 	int					i;
@@ -780,25 +826,27 @@ void AAS_FreeAllPortalCache()
 	( *aasworld ).portalcache = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the portal cache for the area system by allocating memory for routing cache pointers per area.
+
+	The function obtains a pointer to the global area system structure and requests allocation from the routing memory manager. It multiplies the number of defined areas by the size of a routing cache
+   pointer to compute the required block size, then stores the returned pointer in the portalcache field of the global structure. No per-area initialization occurs here, but the allocated block is
+   ready for subsequent population by other functions.
+
+*/
 void AAS_InitPortalCache()
 {
 	//
 	( *aasworld ).portalcache = ( aas_routingcache_t** )AAS_RoutingGetMemory( ( *aasworld ).numareas * sizeof( aas_routingcache_t* ) );
 }
 
-//
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Releases memory allocated for area visibility structures in the global AAS world.
+
+	If the global area visibility array is allocated, each per‑area visibility pointer is freed when present. After the per‑area data, the array itself is freed and the pointer cleared. The compressed
+   visibility buffer is also freed if present. No errors are propagated.
+
+*/
 void AAS_FreeAreaVisibility()
 {
 	int i;
@@ -824,12 +872,13 @@ void AAS_FreeAreaVisibility()
 	( *aasworld ).decompressedvis = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes routing update structures by freeing existing memory and allocating fresh update arrays for areas and portals.
+
+	This function operates on the global AAS world structure. It first checks for and frees any previously allocated routing update data for areas and portals. Then it allocates new buffers sized to
+   the current number of areas and the number of portals plus one, using the custom memory allocation helper. The function has no return value and does not throw exceptions.
+
+*/
 void AAS_InitRoutingUpdate()
 {
 	//	int i, maxreachabilityareas;
@@ -865,13 +914,20 @@ void AAS_InitRoutingUpdate()
 	( *aasworld ).portalupdate = ( aas_routingupdate_t* )AAS_RoutingGetMemory( ( ( *aasworld ).numportals + 1 ) * sizeof( aas_routingupdate_t ) );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates routing caches for all navigable areas by marking eligible areas and precomputing travel times between them.
 
+	The function iterates over each AAS world area, first checking whether the area has reachability information. It then examines the area’s settings to find a reachable area that satisfies the
+   allowed travel flags. The travel flags are derived by taking the default flags and excluding various jumpable or hazardous terrain types, a change made to account for slime no longer being deadly.
+   If such a reachable area is found, the area’s use‑for‑routing flag is set and a counter of routing areas is increased.
+
+	After marking all eligible areas, the function loops again over every pair of different areas that are flagged for routing. For each pair, it calls AAS_AreaTravelTimeToGoalArea to compute how long
+   it takes to travel between the two via the allowed travel types. The frame routing update counter is reset before each computation. This establishes a full routing cache that can be used by the AI
+   for pathfinding.
+
+	No value is returned; all effects are made through global state modifications and a log message emitted by botimport.Print.
+
+*/
 void AAS_CreateAllRoutingCache()
 {
 	int					i, j, k, t, tfl, numroutingareas;
@@ -930,12 +986,6 @@ void AAS_CreateAllRoutingCache()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 unsigned short CRC_ProcessString( unsigned char* data, int length );
 
 // the route cache header
@@ -959,6 +1009,14 @@ typedef struct routecacheheader_s {
 void AAS_DecompressVis( byte* in, int numareas, byte* decompressed );
 int	 AAS_CompressVis( byte* vis, int numareas, byte* dest );
 
+/*!
+	\brief Creates and saves the current world’s routing cache to a file
+
+	The function constructs a header containing identifiers, version, area and cluster counts, and CRC checksums of the world data. It then writes, in order, all portal cache entries, cluster area
+   cache entries, visibility bitsets for each area (compressed), and the waypoint vectors for every area. The output file is named "maps/<mapname>.rcd" based on the world’s map name. After
+   successfully writing, it outputs a confirmation message. The function interacts with global data such as the world structure, portal cache, cluster area cache, and visibility arrays.
+
+*/
 void AAS_WriteRouteCache()
 {
 	int					i, j, numportalcache, numareacache, size;
@@ -1051,18 +1109,16 @@ void AAS_WriteRouteCache()
 	botimport.Print( PRT_MESSAGE, "\nroute cache written to %s\n", filename );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reads a routing cache from a file and converts it to a native format.
+
+	The function begins by reading the cache size from the file and allocating a buffer to hold the serialized data. It reads the remaining bytes of the cache and calculates the number of travel time
+   entries. On 32‑bit systems the raw data can be used directly; on 64‑bit or big‑endian systems the data is byte‑swapped into a newly allocated native structure. After copying the travel times and
+   reachabilities into the native structure, any temporary buffer is freed before returning the fully populated cache object.
+
+	\param fp file handle from which the cache data is read.
+	\return Pointer to an allocated aas_routingcache_t containing the decoded cache data; the caller is responsible for freeing the memory.
+*/
 aas_routingcache_t* AAS_ReadCache( fileHandle_t fp )
 {
 	int						 i, size, numtraveltimes;
@@ -1119,12 +1175,16 @@ aas_routingcache_t* AAS_ReadCache( fileHandle_t fp )
 	return nativecache;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Loads and validates a route cache file for the current map, reconstructing routing data structures.
+
+	The function attempts to open a file named "maps/<mapname>.rcd" and reads its header. It verifies the header’s identifier, version, and that area/cluster counts match the loaded AAS world. On
+   Windows, CRC checks are performed for areas, clusters, and reachability data. If validation fails, the file is closed and the function returns false. On success, it reads and rebuilds portal
+   caches, cluster area caches, visarea data, and area waypoints, allocating memory as necessary and storing the information in the global AAS world structure. The function finally closes the file and
+   returns true to indicate a successful load.
+
+	\return qtrue on success, qfalse on failure
+*/
 int AAS_ReadRouteCache()
 {
 	int					i, clusterareanum, size;
@@ -1258,13 +1318,17 @@ int AAS_ReadRouteCache()
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void AAS_CreateVisibility();
+
+/*!
+	\brief Initializes routing by setting up travel flags, caches, reachability, and precomputing travel times
+
+	AAS_InitRouting performs a comprehensive setup of the routing subsystem. The function initializes travel flags based on travel types, establishes routing update data structures, and creates
+   reversed reachability links to support the update algorithm. It also builds cluster and portal caches and calculates area travel times as well as the maximum travel times through portals. If a
+   route cache is unavailable, the function generates visibility data, constructs the full routing cache, and writes it to disk for future use. In debug builds, counters for area cache and portal
+   cache updates are reset, and routing cache limits are set using configuration variables.
+
+*/
 void AAS_InitRouting()
 {
 	AAS_InitTravelFlagFromType();
@@ -1303,12 +1367,14 @@ void AAS_InitRouting()
 	// done.
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees all routing caches and related data used by the AI area system.
+
+	This function deallocates cluster area, portal, and area visibility caches, releases memory for cached travel times within areas and maximum travel times through cluster portals, deletes reversed
+   reachability links, frees routing algorithm memory for area and portal updates, and removes area waypoint data. After each deallocation it nulls the corresponding global pointer to prevent dangling
+   references.
+
+*/
 void AAS_FreeRoutingCaches()
 {
 	// free all the existing cluster area cache
@@ -1360,14 +1426,17 @@ void AAS_FreeRoutingCaches()
 	( *aasworld ).areawaypoints = NULL;
 }
 
-//===========================================================================
-// this function could be replaced by a bubble sort or for even faster
-// routing by a B+ tree
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds a routing update to the end of a doubly-linked list if it is not already present.
+
+	When the supplied update structure is not flagged as being in the list, this function appends it to the tail referenced by the provided start and end pointers. If the list is empty, the new update
+   becomes both the first and last node. The update’s previous pointer is set to the current tail, its next pointer to null, and the inlist flag is set to true. If the update is already in the list,
+   the function does nothing.
+
+	\param updateliststart Pointer to the variable holding the head of the list
+	\param updatelistend Pointer to the variable holding the tail of the list
+	\param update Pointer to the update node to be added
+*/
 __inline void AAS_AddUpdateToList( aas_routingupdate_t** updateliststart, aas_routingupdate_t** updatelistend, aas_routingupdate_t* update )
 {
 	if( !update->inlist ) {
@@ -1385,12 +1454,6 @@ __inline void AAS_AddUpdateToList( aas_routingupdate_t** updateliststart, aas_ro
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaContentsTravelFlag( int areanum )
 {
 	int contents, tfl;
@@ -1422,13 +1485,17 @@ int AAS_AreaContentsTravelFlag( int areanum )
 	return tfl;
 }
 
-//===========================================================================
-// update the given routing cache
-//
-// Parameter:			areacache		: routing cache to update
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief updates the routing cache for a specific area within its cluster by computing minimal travel times to reachable areas
+
+	The function expands the routing cache starting from the area specified in the cache.  It walks all reversed reachability links for the current area, filtering out undesired travel flags, disabled
+   areas, and areas that would leave the cluster.  For each valid link it calculates the total travel time, consisting of the already travelled time, the time to move through the current area, and the
+   travel time of the link itself, and updates the cache if the new time is shorter.  The algorithm proceeds breadth‑first, maintaining a list of areas whose travel time has been updated until the
+   list is empty.  The cache holds per‑cluster travel times and indexes to the reachability links that provide the best route.
+
+
+	\param areacache the routing cache entry for the area to be updated; must point to a valid aas_routingcache_t structure
+*/
 void AAS_UpdateAreaRoutingCache( aas_routingcache_t* areacache )
 {
 	int							i, nextareanum, cluster, badtravelflags, clusterareanum, linknum;
@@ -1564,12 +1631,21 @@ void AAS_UpdateAreaRoutingCache( aas_routingcache_t* areacache )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Retrieves or creates a routing cache entry for a specified area within a cluster, respecting travel flag constraints and per-frame update limits.
+
+	The function first calculates the local area number inside the cluster and then looks up the existing cache list for that cluster-area pair. It searches the list for an entry whose travel flags
+   match the requested flags; if found, that cache is reused. If no matching cache exists, the function checks whether the per-frame routing update count has exceeded the allowed maximum; if the
+   caller has not forced an update and the limit has been hit, the function returns null. Otherwise, it allocates a new routing cache, initializes its fields—including cluster, area number, origin,
+   start travel time, and flags—links it into the cluster’s cache list, stores it, and then calls a routine to populate the cache’s data. Finally, the cache’s access time is updated to the current
+   routing time and the cache pointer is returned.
+
+	\param clusternum The index of the cluster in which the area resides.
+	\param areanum The global area index for which the cache is requested.
+	\param travelflags Bitmask indicating the types of movement permitted for this cache lookup.
+	\param forceUpdate If true, forces allocation and update of the cache regardless of the per-frame update limit.
+	\return Pointer to the routing cache structure for the requested area and cluster; null if allocation is rejected due to update limits or an error occurs.
+*/
 aas_routingcache_t* AAS_GetAreaRoutingCache( int clusternum, int areanum, int travelflags, qboolean forceUpdate )
 {
 	int					clusterareanum;
@@ -1617,12 +1693,16 @@ aas_routingcache_t* AAS_GetAreaRoutingCache( int clusternum, int areanum, int tr
 	return cache;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Updates the portal routing cache by computing minimal travel times and reachabilities from a source area through connected portals
+
+	Starting from the source area stored in the supplied portalcache, the function performs a traversal over all portals belonging to the same cluster. For each traversed portal, it calculates the
+   total travel time via the portal’s reachability area, updating the cache only if a shorter route is found. It handles cluster‑portal start areas specially, records travel times into the cache’s
+   traveltimes array, and stores the associated reachability data in the reachabilities array. The algorithm uses portalupdate structures as a work queue to manage frontier updates, iterating until no
+   further improvements remain.
+
+	\param portalcache Pointer to a routing cache structure to be updated; contains the start area, travel time, and arrays for traversal results.
+*/
 void AAS_UpdatePortalRoutingCache( aas_routingcache_t* portalcache )
 {
 	int					 i, portalnum, clusterareanum, clusternum;
@@ -1737,12 +1817,18 @@ void AAS_UpdatePortalRoutingCache( aas_routingcache_t* portalcache )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Retrieves or allocates a portal routing cache for a specific cluster, area, and travel flags.
+
+	The function searches the global portal cache list for the requested area and travel flags. If a matching cache is found, it is reused. If not, a new cache is allocated, initialized with the
+   cluster number, area number, the center of the area as its origin, a starting travel time of one, and the specified travel flags. The new cache is inserted at the front of the area's cache list and
+   updated by calling AAS_UpdatePortalRoutingCache. Finally, the cache’s timestamp is set to the current routing time and a pointer to the cache is returned.
+
+	\param clusternum Cluster identifier that the cache will be associated with.
+	\param areanum Area identifier whose portal cache list is inspected or extended.
+	\param travelflags Flags describing the traversal characteristics for which the cache is relevant.
+	\return Pointer to the portal routing cache entry matching the given cluster, area, and travel flags; may be an existing entry or a newly created one.
+*/
 aas_routingcache_t* AAS_GetPortalRoutingCache( int clusternum, int areanum, int travelflags )
 {
 	aas_routingcache_t* cache;
@@ -1780,12 +1866,30 @@ aas_routingcache_t* AAS_GetPortalRoutingCache( int clusternum, int areanum, int 
 	return cache;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates the optimal travel time and reachability number from a source area to a goal area, using cluster and portal routing caches.
+
+	The function first handles trivial cases such as when the source and goal areas are identical and validates that both area indices are within bounds. It also limits the size of the routing cache
+   pool and adjusts travel flags when either area is marked as non-enter or large non-enter.
+
+	It then retrieves the cluster information for the source and goal areas. If the areas share a cluster, the routine queries the cluster‑route cache to obtain the travel time and reachability index
+   directly. If the source area is a portal, it obtains the portal‑route cache to compute the time and reachability.
+
+	For inter‑cluster routing, the function iterates over the portals of the source cluster, checking each portal’s cached travel time to the goal cluster. For each viable portal, it obtains a routing
+   cache for the portal area, and if a route exists from the source area to that portal, it combines the portal’s travel time to the goal with the route from the source area to the portal. The
+   shortest composite travel time is chosen as the result.
+
+	The computed travel time (including any intra‑area movement from the origin point to the start of the first reachability) is written to *traveltime, and the index of the final reachability leading
+   into the goal area is written to *reachnum. The function returns a boolean‑style integer: true (non‑zero) if a route was found, false (zero) otherwise.
+
+	\param areanum Source area number
+	\param origin Origin point within the source area (may be a vector or null for direct calculation)
+	\param goalareanum Target goal area number
+	\param travelflags Bitmask controlling travel restrictions (e.g., non‑enter, large non‑enter)
+	\param traveltime Pointer to an integer where the total travel time will be stored if a route is found
+	\param reachnum Pointer to an integer where the reachability index that leads into the goal area will be stored
+	\return 1 if a route exists, 0 otherwise
+*/
 int AAS_AreaRouteToGoalArea( int areanum, vec3_t origin, int goalareanum, int travelflags, int* traveltime, int* reachnum )
 {
 	int					clusternum, goalclusternum, portalnum, i, clusterareanum, bestreachnum;
@@ -2015,12 +2119,6 @@ int AAS_AreaRouteToGoalArea( int areanum, vec3_t origin, int goalareanum, int tr
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaTravelTimeToGoalArea( int areanum, vec3_t origin, int goalareanum, int travelflags )
 {
 	int traveltime, reachnum;
@@ -2032,12 +2130,6 @@ int AAS_AreaTravelTimeToGoalArea( int areanum, vec3_t origin, int goalareanum, i
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaTravelTimeToGoalAreaCheckLoop( int areanum, vec3_t origin, int goalareanum, int travelflags, int loopareanum )
 {
 	int					traveltime, reachnum;
@@ -2056,12 +2148,19 @@ int AAS_AreaTravelTimeToGoalAreaCheckLoop( int areanum, vec3_t origin, int goala
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns the reachability number between an area and a goal area or zero if no path exists
+
+	This function attempts to find a route from a specified origin in area areanum to goalareanum using the traversal flags passed in travelflags. It delegates the calculation to
+   AAS_AreaRouteToGoalArea, which calculates the travel time and reachability number. If a route is found, the reachability index is returned; otherwise zero is returned, indicating that no reachable
+   path exists.
+
+	\param areanum numeric identifier of the starting area
+	\param origin 3‑dimensional starting position within the area
+	\param goalareanum numeric identifier of the destination area
+	\param travelflags flags controlling traversal options such as movement type or restrictions
+	\return reachability index of the found route, or 0 if no reachable route could be determined
+*/
 int AAS_AreaReachabilityToGoalArea( int areanum, vec3_t origin, int goalareanum, int travelflags )
 {
 	int traveltime, reachnum;
@@ -2073,12 +2172,6 @@ int AAS_AreaReachabilityToGoalArea( int areanum, vec3_t origin, int goalareanum,
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ReachabilityFromNum( int num, struct aas_reachability_s* reach )
 {
 	if( !( *aasworld ).initialized ) {
@@ -2095,12 +2188,6 @@ void AAS_ReachabilityFromNum( int num, struct aas_reachability_s* reach )
 	;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_NextAreaReachability( int areanum, int reachnum )
 {
 	aas_areasettings_t* settings;
@@ -2134,12 +2221,6 @@ int AAS_NextAreaReachability( int areanum, int reachnum )
 	return reachnum;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_NextModelReachability( int num, int modelnum )
 {
 	int i;
@@ -2171,12 +2252,6 @@ int AAS_NextModelReachability( int num, int modelnum )
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_RandomGoalArea( int areanum, int travelflags, int* goalareanum, vec3_t goalorigin )
 {
 	int			i, n, t;
@@ -2239,13 +2314,22 @@ int AAS_RandomGoalArea( int areanum, int travelflags, int* goalareanum, vec3_t g
 	return qfalse;
 }
 
-//===========================================================================
-// run-length compression on zeros
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Compresses a byte array using run‑length encoding.
+
+	The function processes the input array of bytes and encodes consecutive identical values as a pair of the value and its run length. For each run it writes the byte value followed by a byte
+   indicating how many times the value repeats (up to 255). The result is stored in the destination buffer. This provides a simple RLE compression for visibility data in the AAS subsystem.
+
+	If the input is empty, zero bytes are written. The destination buffer must be large enough; the maximum possible size is twice the number of input bytes, since in the worst case every byte is a
+   separate run.
+
+	The function does not perform bounds checking or throw exceptions; callers must ensure that the dest array is large enough.
+
+	\param vis Pointer to the source array of bytes to be compressed
+	\param numareas Number of bytes in the source array
+	\param dest Pointer to the buffer that will receive the compressed data
+	\return The number of bytes written to the destination buffer
+*/
 int AAS_CompressVis( byte* vis, int numareas, byte* dest )
 {
 	int	  j;
@@ -2281,12 +2365,20 @@ int AAS_CompressVis( byte* vis, int numareas, byte* dest )
 	return dest_p - dest;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Decompresses a run‑length encoded visibility map into a full byte array.
+
+	The function initializes the output buffer to zero. It then iterates over the input,
+	where each pair of bytes encodes a run length. The first byte is a flag indicating whether
+	the run consists of visible (1) bits; if it is non‑zero, the following byte specifies the
+	number of bits to set to 1 in the output. The function continues until the total number of
+	bytes written equals numareas. A zero count causes an error via AAS_Error.
+
+	\param decompressed Pointer to buffer that will receive the decompressed visibility data; must be
+pre‑allocated to at least numareas bytes.
+	\param in Pointer to compressed visibility data (each run encoded as two bytes: flag and count).
+	\param numareas Total number of bytes expected in the decompressed visibility map.
+*/
 void AAS_DecompressVis( byte* in, int numareas, byte* decompressed )
 {
 	byte  c;
@@ -2319,12 +2411,18 @@ void AAS_DecompressVis( byte* in, int numareas, byte* decompressed )
 	} while( out < end );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Check if a destination area is visible from a source area, decompressing visibility data if needed.
+
+	The function operates on a global world structure that contains precomputed visibility lists for each area. If the cached decompressed visibility for the source area is not yet up to date, it will
+   decompress that list and store it for future use. Once the visibility bit vector for the source area is available, the function simply checks the bit corresponding to the destination area and
+   returns whether it is set. A missing visibility list for the source area results in an immediate non‑visible return. This process is used throughout the navigation code to determine line‑of‑sight
+   and hiding opportunities.
+
+	\param srcarea Index of the source area whose visibility is being queried.
+	\param destarea Index of the destination area to test for visibility.
+	\return An integer that evaluates to true (non‑zero) if the destination area is visible from the source area, and false (zero) otherwise.
+*/
 int AAS_AreaVisible( int srcarea, int destarea )
 {
 	if( srcarea != ( *aasworld ).decompressedvisarea ) {
@@ -2339,14 +2437,16 @@ int AAS_AreaVisible( int srcarea, int destarea )
 	return ( *aasworld ).decompressedvis[destarea];
 }
 
-//===========================================================================
-// just center to center visibility checking...
-// FIXME: implement a correct full vis
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates and stores a compressed visibility table for every valid area in the AAS world.
+
+	For each area that is reachable, the function first finds a valid navigation waypoint by tracing from the center of the area down to a non‑solid point. It then tests visibility between every pair
+   of valid areas: the function uses the potential‑visible set (PVS) for a quick pre‑check and, when necessary, performs a precise trace between their waypoints. If the trace is unobstructed or the
+   areas are the same, the pair is marked visible. The visibility data for each area is stored in a temporary, decompressible array, compressed with AAS_CompressVis, and the resulting compressed
+   buffer is copied into the AAS world’s visibility structures. The function cleans up temporary memory and reports the total compressed size. The computation avoids duplicate checks by keeping a
+   symmetric area table and uses the compressed format to keep memory usage low.
+
+*/
 void AAS_CreateVisibility()
 {
 	int			i, j, size, totalsize;
@@ -2450,14 +2550,29 @@ void AAS_CreateVisibility()
 	botimport.Print( PRT_MESSAGE, "AAS_CreateVisibility: compressed vis size = %i\n", totalsize );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 float		VectorDistance( vec3_t v1, vec3_t v2 );
 extern void ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vEnd, vec3_t vProj );
+
+/*!
+	\brief Finds the nearest area that the given entity can use to hide from a specified enemy while respecting travel constraints.
+
+	The routine performs a breadth‑first traversal of the navigation graph, starting from the origin in areanum and expanding to neighboring reachabilities.  It discards moves that use forbidden
+   travel flags, pass through ladder or disabled areas, or result in a node that is in or adjacent to the enemy’s area.  Lines of sight to the enemy are checked using the visibility cache, and
+   distances to the enemy are examined to avoid standing too close or in the enemy’s direct line.  The algorithm records the travel time to each area and keeps a per‑frame static limit to prevent
+   excessive CPU usage, returning 0 if no suitable area is found or if the loop count exceeds the maximum.
+
+	A negative srcnum forces the routine to run regardless of the frame counter, resetting the static timer.  The function returns the area number of the closest valid hiding area, or 0 if none can be
+   found.
+
+	\param srcnum Entity number of the searching bot or observer
+	\param origin 3‑D position of the searching entity
+	\param areanum Area number containing the origin
+	\param enemynum Entity number of the opponent or threat
+	\param enemyorigin 3‑D position of the opponent
+	\param enemyareanum Area number containing the opponent; zero if unknown
+	\param travelflags Bitmask of allowed travel types for movement
+	\return The area number that represents the nearest valid hiding spot, or zero if no hiding area can be reached under the constraints.
+*/
 int			AAS_NearestHideArea( int srcnum, vec3_t origin, int areanum, int enemynum, vec3_t enemyorigin, int enemyareanum, int travelflags )
 {
 	int					 i, j, nextareanum, badtravelflags, numreach, bestarea;
@@ -2718,12 +2833,29 @@ int			AAS_NearestHideArea( int srcnum, vec3_t origin, int areanum, int enemynum,
 	return bestarea;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Finds an appropriate attack position for an entity within a certain range of another entity.
+
+	Starting from the source entity’s current area, the function performs a depth‑first search over adjacent reachability edges to locate a suitable attack spot that can be reached from the source and
+   can see the enemy entity. It filters edges based on travel flags, ladder usage, disabled areas, and the enemy’s area. Only positions within a specified distance from a secondary entity (the range
+   reference) are considered. For each candidate area the function computes travel times from source and ensures the total time is less than any previously found. It also checks the visibility of the
+   candidate area to the enemy and verifies that attacking from that spot is permissible using an external attack‑ability test. If a spot satisfying all criteria is found, its waypoint coordinate is
+   written into *outpos and its area number is returned; otherwise zero is returned.
+
+	The search is bounded by a maximum loop count to guard against pathological worlds, and a per‑frame cache prevents re‑exploration of already processed areas. The function should not be called more
+   than once per frame for a single world.
+
+	Typical usage occurs when AI needs to pick a combat position near a leader while staying within a maximum distance.
+
+
+	\param srcnum Identifier of the entity performing the search (agent)
+	\param rangenum Identifier of an entity used to constrain the search radius from this entity
+	\param enemynum Identifier of the target entity (enemy) that the spot must be able to attack
+	\param rangedist Maximum distance from rangenum that a candidate spot may be located
+	\param travelflags Bitmask of allowed travel types; bits not set are prohibited
+	\param outpos Output parameter; on success receives 3‑component world coordinates of the chosen attack spot
+	\return Area number of the chosen attack spot (0 if no suitable spot was found)
+*/
 int AAS_FindAttackSpotWithinRange( int srcnum, int rangenum, int enemynum, float rangedist, int travelflags, float* outpos )
 {
 	int					 i, nextareanum, badtravelflags, numreach, bestarea;
@@ -2924,12 +3056,20 @@ int AAS_FindAttackSpotWithinRange( int srcnum, int rangenum, int enemynum, float
 	return bestarea;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Finds the first point along a route from a source to a destination that can observe the destination
+
+	The function determines the reachability areas containing the source and destination positions. If the source area is directly visible to the destination area, the source position is returned.
+   Otherwise it iteratively follows the route produced by AAS_AreaRouteToGoalArea, examining each consecutive reachability segment. At each step it checks whether the current area or its reachability
+   end point can see the destination area; if found, that point is returned. The process stops when a loop is detected, the route exhausts, or the maximum iteration count is reached. In such cases the
+   function returns false and the output position is unchanged.
+
+	\param srcpos Source position in world coordinates
+	\param destpos Destination position in world coordinates
+	\param travelflags Flags controlling traversal behavior for routing
+	\param retpos Output vector that receives the first visible position on the route
+	\return Returns true if a visible position was found; otherwise returns false.
+*/
 qboolean AAS_GetRouteFirstVisPos( vec3_t srcpos, vec3_t destpos, int travelflags, vec3_t retpos )
 {
 	int				   srcarea, destarea, travarea;

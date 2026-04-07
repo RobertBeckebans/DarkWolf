@@ -59,12 +59,19 @@ aas_t*		 defaultaasworld = aasworlds;
 // FIXME: these might change
 enum { ET_GENERAL, ET_PLAYER, ET_ITEM, ET_MISSILE, ET_MOVER };
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Updates entity information in the AI awareness system using the supplied state.
+
+	The function first ensures the default AAS world is loaded; if not, it prints a message and returns BLERR_NOAASFILE. It then updates the internal entity structure with data from the state
+   parameter, recording timestamps and copying origins, flags, solid type, model indices and animations.  It flags the entity as valid and, depending on the number of AAS frames, determines whether a
+   relink is necessary.  For solid BSP models it recomputes mins/maxs with the current angles; for solid BBOX models it checks if the bounding box dimensions changed.  If the origin changes or if any
+   of the above properties changed, it sets the relink flag.  When relinking, the entity is unlinked from its previous areas and BSP leaves, then relinked using the largest bounding box, and finally
+   reinserted into the world’s BSP tree. It returns BLERR_NOERROR on successful update.
+
+	\param entnum the identifier of the entity to be updated
+	\param state a pointer to a bot_entitystate_t structure containing the new entity state
+	\return BLERR_NOERROR on success or BLERR_NOAASFILE if the AAS world is not loaded.
+*/
 int AAS_UpdateEntity( int entnum, bot_entitystate_t* state )
 {
 	int			  relink;
@@ -161,12 +168,6 @@ int AAS_UpdateEntity( int entnum, bot_entitystate_t* state )
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_EntityInfo( int entnum, aas_entityinfo_t* info )
 {
 	if( !( *defaultaasworld ).initialized ) {
@@ -184,12 +185,6 @@ void AAS_EntityInfo( int entnum, aas_entityinfo_t* info )
 	memcpy( info, &( *defaultaasworld ).entities[entnum].i, sizeof( aas_entityinfo_t ) );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_EntityOrigin( int entnum, vec3_t origin )
 {
 	if( entnum < 0 || entnum >= ( *defaultaasworld ).maxentities ) {
@@ -201,12 +196,6 @@ void AAS_EntityOrigin( int entnum, vec3_t origin )
 	VectorCopy( ( *defaultaasworld ).entities[entnum].i.origin, origin );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_EntityModelindex( int entnum )
 {
 	if( entnum < 0 || entnum >= ( *defaultaasworld ).maxentities ) {
@@ -217,12 +206,6 @@ int AAS_EntityModelindex( int entnum )
 	return ( *defaultaasworld ).entities[entnum].i.modelindex;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_EntityType( int entnum )
 {
 	if( !( *defaultaasworld ).initialized ) {
@@ -237,12 +220,6 @@ int AAS_EntityType( int entnum )
 	return ( *defaultaasworld ).entities[entnum].i.type;
 } // end of the AAS_EntityType
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_EntityModelNum( int entnum )
 {
 	if( !( *defaultaasworld ).initialized ) {
@@ -257,12 +234,6 @@ int AAS_EntityModelNum( int entnum )
 	return ( *defaultaasworld ).entities[entnum].i.modelindex;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_OriginOfEntityWithModelNum( int modelnum, vec3_t origin )
 {
 	int			  i;
@@ -282,12 +253,6 @@ int AAS_OriginOfEntityWithModelNum( int modelnum, vec3_t origin )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_EntitySize( int entnum, vec3_t mins, vec3_t maxs )
 {
 	aas_entity_t* ent;
@@ -306,12 +271,15 @@ void AAS_EntitySize( int entnum, vec3_t mins, vec3_t maxs )
 	VectorCopy( ent->i.maxs, maxs );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Populates a bsp_entdata_t structure with the specified entity's data.
+
+	The function looks up the entity in the global AAS world structure using entnum, then copies its local origin and angles. It calculates the world-space bounding box by adding the origin to the
+   entity's local mins and maxs, storing the results in absmins and absmaxs. Finally it stores the entity's solid flag and model index (offset by one) in the provided structure.
+
+	\param entnum The index of the entity to query.
+	\param entdata Pointer to the structure to receive entity data.
+*/
 void AAS_EntityBSPData( int entnum, bsp_entdata_t* entdata )
 {
 	aas_entity_t* ent;
@@ -325,12 +293,12 @@ void AAS_EntityBSPData( int entnum, bsp_entdata_t* entdata )
 	entdata->modelnum = ent->i.modelindex - 1;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Resets each entity's area and leaf link information in the default AAS world.
+
+	Iterates over all entities stored in the global AAS world and clears the associations to area and leaf structures by assigning NULL to the respective pointers.
+
+*/
 void AAS_ResetEntityLinks()
 {
 	int i;
@@ -341,12 +309,13 @@ void AAS_ResetEntityLinks()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Marks all entities in the global AAS world as invalid and resets their indices.
+
+	Iterates over all entities up to the maximum defined in defaultaasworld, setting each entity's valid flag to false and storing its index as the entity number. This prepares the entity list for a
+   subsequent rebuild or update process.
+
+*/
 void AAS_InvalidateEntities()
 {
 	int i;
@@ -357,12 +326,17 @@ void AAS_InvalidateEntities()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Searches for the nearest entity with a specified model index relative to a given point.
+
+	The function iterates through all entities in the world, filtering by the provided modelindex. For each matching entity, it computes the vector from the input origin to the entity's origin and
+   restricts consideration to entities whose x and y differences are less than 40 units. It then calculates the Euclidean length of that vector and keeps track of the smallest distance found. The
+   index of the closest entity is returned; if no qualified entity is found, 0 is returned.
+
+	\param origin the location from which distances are measured
+	\param modelindex the model identifier used to select candidate entities
+	\return the index of the nearest matching entity, or 0 if none found
+*/
 int AAS_NearestEntity( vec3_t origin, int modelindex )
 {
 	int			  i, bestentnum;
@@ -397,12 +371,6 @@ int AAS_NearestEntity( vec3_t origin, int modelindex )
 	return bestentnum;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_BestReachableEntityArea( int entnum )
 {
 	aas_entity_t* ent;
@@ -411,12 +379,6 @@ int AAS_BestReachableEntityArea( int entnum )
 	return AAS_BestReachableLinkArea( ent->areas );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_NextEntity( int entnum )
 {
 	if( !( *defaultaasworld ).loaded ) {
@@ -436,12 +398,6 @@ int AAS_NextEntity( int entnum )
 	return 0;
 }
 
-// Ridah, used to find out if there is an entity touching the given area, if so, try and avoid it
-/*
-============
-AAS_EntityInArea
-============
-*/
 int AAS_IsEntityInArea( int entnumIgnore, int entnumIgnore2, int areanum )
 {
 	aas_link_t*	  link;
@@ -499,12 +455,30 @@ int AAS_IsEntityInArea( int entnumIgnore, int entnumIgnore2, int areanum )
 	return qfalse;
 }
 
-/*
-=============
-AAS_SetAASBlockingEntity
-=============
+/*!
+	\brief Updates the routing status of a specified area, optionally returning its previous state
+
+	Validates that the supplied area number is within the valid range of the world. If the area number is invalid, an error message is printed (when bot developer mode is active) and the function
+   returns 0. When enable is negative, the function merely reports whether the area was previously enabled or disabled, returning non‑zero if it was enabled and zero otherwise. For non‑negative
+   values, the AREA_DISABLED flag is cleared (enable) or set (disable). If the area’s disabled flag changes as a result, all routing cache entries that reference this area are purged to maintain
+   consistency. The function then returns the former enabled status of the area – non‑zero if it was enabled before the call, zero if it was disabled.
+
+	\param areanum number of the area to modify
+	\return Non‑zero if the area was enabled before the call; zero if it was disabled or if the area number is out of range.
 */
 int	 AAS_EnableRoutingArea( int areanum, int enable );
+
+/*!
+	\brief Marks or clears blocking status for AAS areas inside a bounding box
+
+	If the bounding box is degenerate (min equals max) and the blocking flag is negative, the function clears all area blocking for every loaded world and restores routing. Otherwise, for each loaded
+   world the function identifies all AAS areas that overlap the supplied bounding box and sets their routing state to the opposite of the blocking flag. A value of qtrue for blocking disables routing
+   through those areas; qfalse enables routing again.
+
+	\param absmin minimum corner of the bounding box
+	\param absmax maximum corner of the bounding box
+	\param blocking qboolean indicating desired blocking state; if negative and bounding box is degenerate a global reset is performed
+*/
 void AAS_SetAASBlockingEntity( vec3_t absmin, vec3_t absmax, qboolean blocking )
 {
 	int areas[128];

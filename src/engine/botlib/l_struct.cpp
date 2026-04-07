@@ -57,12 +57,16 @@ If you have questions concerning this license or the applicable additional terms
 	#define qfalse false
 #endif // BSPC
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Finds a field definition by name in a null-terminated array of fielddef_t structures.
+
+	The function performs a linear scan over the array pointed to by defs. Each element is examined until its name member is null, marking the end of the array. If an element’s name matches the
+   provided name using a case-sensitive string comparison, a pointer to that element is returned. If no element matches, the function returns NULL.
+
+	\param defs Array of field definitions terminated by an element whose name field is NULL.
+	\param name C string containing the name to search for.
+	\return Pointer to the matching fielddef_t structure or NULL when the name is not present.
+*/
 fielddef_t* FindField( fielddef_t* defs, char* name )
 {
 	int i;
@@ -76,12 +80,21 @@ fielddef_t* FindField( fielddef_t* defs, char* name )
 	return NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reads a numeric token from the source, converts it according to the field definition, and stores the result at the supplied location.
+
+	The function first retrieves any token. If the token is a minus sign it is consumed and a negative flag is set – this is rejected for unsigned fields. The next token must be a numeric token. For
+   floating point tokens the value is validated against the field’s type and optional bounds. Integer tokens are converted, signedness is applied, and the appropriate bounds are chosen based on field
+   type (char, int) and unsigned flag. Bounded fields enforce min/max limits derived from the field definition or the token’s floatmin/floatmax if present. Out-of-range values trigger a source error
+   and cause the function to return false. On success the numeric value is written to the destination pointer using the proper type cast.
+
+	The parser signals errors by calling SourceError; it does not throw exceptions. The function returns true (non‑zero) on success and false (zero) on failure.
+
+	\param source pointer to the token source used by the parser
+	\param fd field definition describing expected type, signedness, boundedness, and limits
+	\param p pointer to the destination where the parsed value is written; concrete type depends on the field definition
+	\return Non‑zero if the number was successfully read and stored; zero otherwise.
+*/
 qboolean ReadNumber( source_t* source, fielddef_t* fd, void* p )
 {
 	token_t	 token;
@@ -218,12 +231,18 @@ qboolean ReadNumber( source_t* source, fielddef_t* fd, void* p )
 	return 1;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reads a single character from the source token stream and stores it in the supplied location.
+
+	The function consumes a token from the source stream. If the token is a literal, surrounding single quotes are stripped and the first character of the resulting string is copied to the destination
+   pointer. If the token is not a literal, the token is put back onto the stream and ReadNumber is called to interpret the token as a numeric constant; the numeric value is stored as a character.
+   Return a non‑zero value when the read succeeds and zero otherwise.
+
+	\param source pointer to the source from which to read tokens
+	\param fd field definition used when interpreting non‑literal values
+	\param p pointer to memory where the resulting character should be stored; the caller should provide a pointer to a char
+	\return non‑zero if the character was read successfully, zero on failure
+*/
 qboolean ReadChar( source_t* source, fielddef_t* fd, void* p )
 {
 	token_t token;
@@ -248,12 +267,20 @@ qboolean ReadChar( source_t* source, fielddef_t* fd, void* p )
 	return 1;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reads a quoted string token from the source and stores it in the provided buffer.
+
+	The function first attempts to read the next token from the source, expecting it to be of string type. On success, the surrounding quotation marks are stripped and the resulting string is copied
+   into the buffer passed via p, with a maximum of MAX_STRINGFIELD bytes. The final byte is always set to the null character to guarantee a properly terminated C string. The function returns 1 if the
+   string was successfully read and copied, otherwise 0.
+
+	This routine is used by the structure parsing logic to fill string fields within data structures during a source file load.
+
+	\param source Pointer to the source context from which tokens are read
+	\param fd Descriptor of the field being read (unused in this implementation but kept for API consistency)
+	\param p Pointer to the destination buffer that should be at least MAX_STRINGFIELD bytes long
+	\return 1 on successful read; 0 if the expected string token was not found.
+*/
 int ReadString( source_t* source, fielddef_t* fd, void* p )
 {
 	token_t token;
@@ -272,12 +299,6 @@ int ReadString( source_t* source, fielddef_t* fd, void* p )
 	return 1;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int ReadStructure( source_t* source, structdef_t* def, char* structure )
 {
 	token_t		token;
@@ -396,12 +417,6 @@ int ReadStructure( source_t* source, structdef_t* def, char* structure )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int WriteIndent( FILE* fp, int indent )
 {
 	while( indent-- > 0 ) {
@@ -413,12 +428,6 @@ int WriteIndent( FILE* fp, int indent )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int WriteFloat( FILE* fp, float value )
 {
 	char buf[128];
@@ -449,12 +458,20 @@ int WriteFloat( FILE* fp, float value )
 	return 1;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Writes the formatted contents of a structure to a file with indentation
+
+	This function outputs the data of a structure, as described by a struct definition, to a FILE stream. It starts by writing the opening brace and then iterates over each field in the definition.
+   For each field it prints the field name followed by its value: integers, floats, characters, and strings are printed directly, array fields are enclosed in braces and comma‑separated, and nested
+   struct fields are emitted recursively with increased indentation. After all fields are processed the function writes a closing brace. All newlines and indentation are handled by the helper
+   WriteIndent. The function returns qtrue on success and qfalse if any I/O operation fails.
+
+	\param fp pointer to the file where the struct is written
+	\param def metadata describing the structure's fields
+	\param structure pointer to the actual data instance to serialize
+	\param indent current indentation depth (0 for top level)
+	\return qtrue (non‑zero) on successful write, qfalse (zero) on failure
+*/
 int WriteStructWithIndent( FILE* fp, structdef_t* def, char* structure, int indent )
 {
 	int			i, num;
@@ -575,12 +592,6 @@ int WriteStructWithIndent( FILE* fp, structdef_t* def, char* structure, int inde
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int WriteStructure( FILE* fp, structdef_t* def, char* structure )
 {
 	return WriteStructWithIndent( fp, def, structure, 0 );

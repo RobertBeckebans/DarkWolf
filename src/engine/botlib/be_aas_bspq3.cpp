@@ -134,13 +134,7 @@ void	PrintContents( int contents )
 }
 
 #endif // BSP_DEBUG
-//===========================================================================
-// traces axial boxes of any size through the world
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+
 bsp_trace_t AAS_Trace( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int passent, int contentmask )
 {
 	bsp_trace_t bsptrace;
@@ -148,24 +142,27 @@ bsp_trace_t AAS_Trace( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int p
 	return bsptrace;
 }
 
-//===========================================================================
-// returns the contents at the given point
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_PointContents( vec3_t point )
 {
 	return botimport.PointContents( point );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Tests whether a bounding box traveling from start to end intersects a specified entity before the current trace fraction and updates the trace if it does.
+
+	The function performs an entity trace using the provided bounding box parameters and compares the resulting fraction with that of the supplied trace. If the entity trace fraction is smaller,
+   indicating an earlier collision, the full trace information is copied to the supplied trace structure and the function returns true. If not, the original trace remains unchanged and the function
+   returns false.
+
+	\param entnum Index of the entity to test
+	\param start Starting position of the trace
+	\param boxmins Minimum extents of the bounding box
+	\param boxmaxs Maximum extents of the bounding box
+	\param end End point of the trace
+	\param contentmask Mask of content types to consider in the trace
+	\param trace Pointer to a trace structure that will be updated if this entity is the closest hit
+	\return true if the entity was hit before the current trace fraction, qfalse otherwise
+*/
 qboolean AAS_EntityCollision( int entnum, vec3_t start, vec3_t boxmins, vec3_t boxmaxs, vec3_t end, int contentmask, bsp_trace_t* trace )
 {
 	bsp_trace_t enttrace;
@@ -180,80 +177,55 @@ qboolean AAS_EntityCollision( int entnum, vec3_t start, vec3_t boxmins, vec3_t b
 	return qfalse;
 }
 
-//===========================================================================
-// returns true if in Potentially Hearable Set
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 qboolean AAS_inPVS( vec3_t p1, vec3_t p2 )
 {
 	return botimport.inPVS( p1, p2 );
 }
 
-//===========================================================================
-// returns true if in Potentially Visible Set
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 qboolean AAS_inPHS( vec3_t p1, vec3_t p2 )
 {
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_BSPModelMinsMaxsOrigin( int modelnum, vec3_t angles, vec3_t mins, vec3_t maxs, vec3_t origin )
 {
 	botimport.BSPModelMinsMaxsOrigin( modelnum, angles, mins, maxs, origin );
 }
 
-//===========================================================================
-// unlinks the entity from all leaves
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief unlinks the entity from all leaves
+
+	The function iterates over each leaf provided in the list and removes the entity from them, updating any global data structures as necessary.
+
+	\param leaves pointer to a linked list of leaf nodes
+*/
 void AAS_UnlinkFromBSPLeaves( bsp_link_t* leaves )
 {
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns a bsp_link_t pointer for the specified entity or NULL if linking is not performed.
+
+	This function is intended to create or retrieve a linking structure that connects an entity to the BSP tree based on its absolute bounding box. The current implementation is a placeholder and
+   unconditionally returns NULL. The actual linking logic would use the provided entity number, model index, and bounding coordinates to locate or create the appropriate bsp_link_t structure within
+   the world BSP. TODO: clarify how the linkage should be established and what data the returned structure should contain.
+
+	\param absmins Minimum coordinates of the entity's bounding box (vec3_t).
+	\param absmaxs Maximum coordinates of the entity's bounding box (vec3_t).
+	\param entnum Unique identifier for the entity in the world (int).
+	\param modelnum Model index associated with the entity (int).
+	\return Pointer to a bsp_link_t structure, currently NULL.
+*/
 bsp_link_t* AAS_BSPLinkEntity( vec3_t absmins, vec3_t absmaxs, int entnum, int modelnum )
 {
 	return NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_BoxEntities( vec3_t absmins, vec3_t absmaxs, int* list, int maxcount )
 {
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_NextBSPEntity( int ent )
 {
 	ent++;
@@ -265,12 +237,15 @@ int AAS_NextBSPEntity( int ent )
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Verifies that a BSP entity index falls within the valid range of loaded entities.
+
+	If the supplied index is less than or equal to zero or greater than or equal to the total number of entities in the world, an error message is printed and the function returns a false indicator.
+   For a valid index the function returns true.
+
+	\param ent Entity index to validate.
+	\return Integer value representing true (entity exists) or false (index out of range).
+*/
 int AAS_BSPEntityInRange( int ent )
 {
 	if( ent <= 0 || ent >= bspworld.numentities ) {
@@ -281,12 +256,6 @@ int AAS_BSPEntityInRange( int ent )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int AAS_ValueForBSPEpairKey( int ent, char* key, char* value, int size )
 {
 	bsp_epair_t* epair;
@@ -308,12 +277,6 @@ int AAS_ValueForBSPEpairKey( int ent, char* key, char* value, int size )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_VectorForBSPEpairKey( int ent, char* key, vec3_t v )
 {
 	char   buf[MAX_EPAIRKEY];
@@ -334,12 +297,6 @@ int AAS_VectorForBSPEpairKey( int ent, char* key, vec3_t v )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_FloatForBSPEpairKey( int ent, char* key, float* value )
 {
 	char buf[MAX_EPAIRKEY];
@@ -354,12 +311,6 @@ int AAS_FloatForBSPEpairKey( int ent, char* key, float* value )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_IntForBSPEpairKey( int ent, char* key, int* value )
 {
 	char buf[MAX_EPAIRKEY];
@@ -374,12 +325,12 @@ int AAS_IntForBSPEpairKey( int ent, char* key, int* value )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees memory used for BSP entities and resets the entity count.
+
+	This function releases any allocated entity buffer memory, if it exists, and then sets the global entity count to zero. It is typically called when the BSP world data is no longer needed.
+
+*/
 void AAS_FreeBSPEntities()
 {
 	// RF, optimized memory allocation
@@ -408,12 +359,15 @@ void AAS_FreeBSPEntities()
 	bspworld.numentities = 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Parses entity data from a BSP file into global structures.
+
+	The function first scans the entity data to compute the amount of memory required for storing all entity key/value pairs and then allocates a single contiguous block. It reloads the script and
+   parses each entity, building linked lists of key/value epairs. Parsed entities are placed into the global bspworld structure. Errors during parsing trigger cleanup of allocated resources.
+
+	This routine does not return a value but updates global state used elsewhere in the engine.
+
+*/
 void AAS_ParseBSPEntities()
 {
 	script_t*	  script;
@@ -530,23 +484,30 @@ void AAS_ParseBSPEntities()
 	FreeScript( script );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief TODO: clarify the purpose and behavior of AAS_BSPTraceLight.
+
+	TODO: clarify how the start, end, and endpos parameters are interpreted, what values are written to red, green, blue, and what the integer return value signifies.
+
+	\param start TODO: clarify parameter usage.
+	\param end TODO: clarify parameter usage.
+	\param endpos TODO: clarify parameter usage.
+	\param red TODO: clarify parameter usage.
+	\param green TODO: clarify parameter usage.
+	\param blue TODO: clarify parameter usage.
+	\return TODO: clarify return value.
+*/
 int AAS_BSPTraceLight( vec3_t start, vec3_t end, vec3_t endpos, int* red, int* green, int* blue )
 {
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Releases BSP entity data and resets the world state.
+
+	This function frees any allocated memory for BSP entities, clears the world data structure, and marks the world as not loaded.
+
+*/
 void AAS_DumpBSPData()
 {
 	AAS_FreeBSPEntities();
@@ -562,13 +523,15 @@ void AAS_DumpBSPData()
 	memset( &bspworld, 0, sizeof( bspworld ) );
 }
 
-//===========================================================================
-// load an bsp file
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Loads a BSP file into memory and parses the embedded entity data.
+
+	This routine first dumps any existing BSP data structures, then determines the size of the entity block within the BSP file. It allocates a cleared memory block, copies the entity data into this
+   buffer, and parses it to build the entity list. Finally, it records the BSP world as loaded and returns a success code. The function does not throw exceptions or handle errors beyond signaling a
+   no–error return.
+
+	\return The function returns a status code; BLERR_NOERROR indicates the BSP file was successfully loaded.
+*/
 int AAS_LoadBSPFile()
 {
 	AAS_DumpBSPData();

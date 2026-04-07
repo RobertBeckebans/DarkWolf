@@ -44,31 +44,170 @@ int	 AAS_ContinueInitReachability( float time );
 int	 AAS_BestReachableLinkArea( aas_link_t* areas );
 #endif // AASINTERN
 
-// returns true if the are has reachabilities to other areas
+/*!
+	\brief Returns the number of reachable areas for the specified area, or zero if the area is out of range or disabled.
+
+	If the area number is outside the valid range or the area is flagged as disabled, the function logs an error and returns zero. Otherwise, it returns the stored count of reachable areas for that
+   area.
+
+	\param areanum Index of the area whose reachability count is requested.
+	\return Number of reachable areas for the specified area; zero indicates no reachabilities or an invalid/disabled area.
+*/
 int	  AAS_AreaReachability( int areanum );
-// returns the best reachable area and goal origin for a bounding box at the given origin
+
+/*!
+	\brief Finds a reachable AAS area for a bounding box placed at a given origin and sets a goal origin within that area.
+
+	The function attempts to locate an AAS area that can be reached by a client bounding box positioned at the supplied origin. It first tries to find a valid point directly in an area; if none is
+   found it offsets the origin slightly in a neighbourhood and retries. Once an area is found, it traces a crouch bounding box downwards to locate the ground area and uses the trace end position as
+   the goal origin. If the initial search fails, it links an invisible entity representing the bounding box and obtains the best reachable link area; this area number is returned. The provided
+   goalorigin is updated to a position inside the chosen area. If the AAS world is not loaded or no area can be found, 0 is returned and an error message is printed.
+
+	\param origin the base position for the bounding box; the origin point of the entity to be placed
+	\param mins the minimum extents of the bounding box relative to the origin
+	\param maxs the maximum extents of the bounding box relative to the origin
+	\param goalorigin output variable that will receive a point inside the reachable area
+	\return the area number of a reachable AAS area; 0 if no such area can be found
+*/
 int	  AAS_BestReachableArea( vec3_t origin, vec3_t mins, vec3_t maxs, vec3_t goalorigin );
-// returns the next reachability using the given model
+
+/*!
+	\brief Finds the next reachability entry associated with a given model index.
+
+	The function iterates over the global reachability array of the current AAS world, starting from the supplied index (or the next one if the supplied index is in bounds). It searches for a
+   reachability whose travel type matches either an elevator or a bobbing platform and whose face number refers to the supplied model index: for elevators the face number must equal the model index;
+   for bobbing platforms the lower 16 bits of the face number must equal the model index. If a matching entry is found, its array index is returned; otherwise the function returns zero. An index of
+   zero is also returned if the supplied index lies beyond the end of the reachability list.
+
+	If the supplied index is less than or equal to zero, the search begins at index one. If the supplied index is greater than or equal to the reachability size, the function immediately returns zero,
+   indicating that no further entries exist.
+
+	The function has no side effects other than reading the global `aasworld` state.
+
+	\param num The current reachability index; zero indicates a start search, values larger than zero specify the last found index to continue from; values equal to or greater than the reachability
+   size terminate the search immediately. \param modelnum The model index to match against reachability entries. \return An integer index of the next matching reachability entry; zero if none is
+   found.
+*/
 int	  AAS_NextModelReachability( int num, int modelnum );
-// returns the total area of the ground faces of the given area
+
+/*!
+	\brief Computes the total area of all ground faces within the specified area
+
+	The function accesses the global AAS world data to locate the area with the supplied index. It iterates over each face referenced by that area, retrieves the face structure, and checks the
+   FACE_GROUND flag. Only faces marked as ground contribute to the sum. The area for each qualifying face is obtained via the AAS_FaceArea routine and accumulated. The result is returned as a float.
+   Negative face indices are converted to positive with abs – the meaning of a negative index is not specified in the source. No other state is modified.
+
+	\param areanum Index of the area whose ground face area is being calculated
+	\return Total area of ground faces, or zero if the area has no ground faces
+*/
 float AAS_AreaGroundFaceArea( int areanum );
-// returns true if the area is crouch only
+
+/*!
+	\brief Determines if the supplied area number designates a crouch‑only region.
+
+	The function checks the area's presence type. If the area lacks a normal presence flag, it is considered crouch‑only. This value is used when constructing reachabilities to adjust travel times for
+   entering crouch areas.
+
+	\param areanum a numeric identifier of the area to examine
+	\return non‑zero if the area is crouch‑only; zero otherwise
+*/
 int	  AAS_AreaCrouch( int areanum );
-// returns true if a player can swim in this area
+
+/*!
+	\brief Returns true if the specified area contains liquid and can be swimmable.
+
+	AAS_AreaSwim queries the area settings of the given area number in the global AAS world data. If the AREA_LIQUID flag is present, the function returns qtrue (non-zero); otherwise it returns qfalse
+   (zero). The result is used by other reachability logic to identify swim‑capable areas.
+
+	\param areanum The numeric identifier of the area to test for swim capability.
+	\return An integer, non‑zero (qtrue) if the area is suitable for swimming, otherwise zero (qfalse).
+*/
 int	  AAS_AreaSwim( int areanum );
-// returns true if the area is filled with a liquid
+
+/*!
+	\brief Checks whether the specified AAS area is flooded with liquid
+
+	The function examines the area settings of the given area number in the current AAS world. If the AREA_LIQUID flag is present in the areaflags of that area, it returns the constant qtrue;
+   otherwise it returns qfalse. The return type is an int used as a boolean value.
+
+	\param areanum index of the area within the AAS world
+	\return an integer that is qtrue if the area contains liquid, otherwise qfalse
+*/
 int	  AAS_AreaLiquid( int areanum );
-// returns true if the area contains lava
+
+/*!
+	\brief Returns nonzero if the specified area contains lava.
+
+	Queries the area settings bitmask for the lava flag. If the AREACONTENTS_LAVA bit is set in the area’s contents, a nonzero value is returned.
+
+	\param areanum Index of the area being queried.
+	\return Nonzero integer if the area contains lava, zero otherwise.
+*/
 int	  AAS_AreaLava( int areanum );
-// returns true if the area contains slime
+
+/*!
+	\brief Checks if the specified navigation area contains slime content.
+
+	The AAS world stores settings for each area, including content flags. This function accesses the AREACONTENTS_SLIME flag in the contents field of the area’s settings and performs a bitwise AND. A
+   non‑zero result indicates that the area contains slime content; zero means it does not.
+
+	\param areanum The numeric identifier of the area within the navigation mesh.
+	\return Non‑zero if the area’s contents include slime; otherwise zero.
+*/
 int	  AAS_AreaSlime( int areanum );
-// returns true if the area has one or more ground faces
+
+/*!
+	\brief Checks whether a specified area has at least one ground face.
+
+	The function examines the area flags in the AAS world data structure. It returns a non‑zero value if the AREA_GROUNDED bit is set, indicating that the area contains one or more ground faces, and
+   zero otherwise. The return value should be interpreted as a Boolean, with non‑zero meaning true. The function assumes that areanum is a valid area index; passing an out‑of‑range value may result in
+   undefined behavior.
+
+	\param areanum the numeric index of the area to examine
+	\return An integer that is non‑zero if the area has a ground face, zero otherwise.
+*/
 int	  AAS_AreaGrounded( int areanum );
-// returns true if the area has one or more ladder faces
+
+/*!
+	\brief Checks if a specified area contains ladder geometry
+
+	The function reads the area flags for the given area number from the global world structure and tests against the AREA_LADDER flag. A non‑zero result indicates that the area has one or more faces
+   that allow ladder traversal; a zero return means no ladder faces are present.
+
+	\param areanum The numeric identifier of the area to inspect
+	\return A non‑zero integer when the AREA_LADDER flag is present; zero otherwise
+*/
 int	  AAS_AreaLadder( int areanum );
-// returns true if the area is a jump pad
+
+/*!
+	\brief Determines whether a specified area contains a jump pad.
+
+	Checks the contents bits of the supplied area for the AREACONTENTS_JUMPPAD flag and returns the flag value. A non‑zero result indicates the area is a jump pad; zero indicates it is not. The area
+   number should reference a valid area within the current world settings.
+
+	\param areanum Index of the area to test
+	\return Non‑zero if the area contains a jump pad, zero otherwise.
+*/
 int	  AAS_AreaJumpPad( int areanum );
-// returns true if the area is donotenter
+
+/*!
+	\brief Determines whether a given area is flagged as no-enter.
+
+	Checks the area's contents bitmask for the AREACONTENTS_DONOTENTER flag.
+
+	\param areanum The numeric identifier of the area to query.
+	\return Non‑zero if the area is marked as no-enter, otherwise zero.
+*/
 int	  AAS_AreaDoNotEnter( int areanum );
-// returns true if the area is donotenterlarge
+
+/*!
+	\brief Checks whether a specified area has the donotenter large flag set.
+
+	The function accesses the global AAS world structure, retrieves the area settings for the given area number, and performs a bitwise AND between the area’s contents field and the
+   AREACONTENTS_DONOTENTER_LARGE flag mask. It returns the result of this operation, so a non‑zero value indicates that the flag is present. The behavior is undefined if the area number is not within
+   the bounds of the area settings array.
+
+	\param areanum Index of the area to test.
+	\return An integer where any non‑zero value indicates that the area is marked with the donotenter large flag.
+*/
 int	  AAS_AreaDoNotEnterLarge( int areanum );

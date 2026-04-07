@@ -54,12 +54,6 @@ typedef struct logfile_s {
 
 static logfile_t logfile;
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void			 Log_AlwaysOpen( char* filename )
 {
 	if( !filename || !strlen( filename ) ) {
@@ -83,12 +77,6 @@ void			 Log_AlwaysOpen( char* filename )
 	botimport.Print( PRT_MESSAGE, "Opened log %s\n", logfile.filename );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void Log_Open( char* filename )
 {
 	if( !LibVarValue( "log", "0" ) ) {
@@ -98,12 +86,6 @@ void Log_Open( char* filename )
 	Log_AlwaysOpen( filename );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void Log_Close()
 {
 	if( !logfile.fp ) {
@@ -119,12 +101,6 @@ void Log_Close()
 	botimport.Print( PRT_MESSAGE, "Closed log %s\n", logfile.filename );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void Log_Shutdown()
 {
 	if( logfile.fp ) {
@@ -132,12 +108,6 @@ void Log_Shutdown()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void QDECL Log_Write( char* fmt, ... )
 {
 	va_list ap;
@@ -153,12 +123,6 @@ void QDECL Log_Write( char* fmt, ... )
 	fflush( logfile.fp );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void QDECL Log_WriteTimeStamped( char* fmt, ... )
 {
 	va_list ap;
@@ -182,23 +146,11 @@ void QDECL Log_WriteTimeStamped( char* fmt, ... )
 	fflush( logfile.fp );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 FILE* Log_FilePointer()
 {
 	return logfile.fp;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void Log_Flush()
 {
 	if( logfile.fp ) {

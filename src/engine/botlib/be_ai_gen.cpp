@@ -49,12 +49,18 @@ If you have questions concerning this license or the applicable additional terms
 #include "be_interface.h"
 #include "botshared/be_ai_gen.h"
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Selects an element index based on an array of ranking values, using weighted probability when positive rankings exist, otherwise choosing randomly.
+
+	The function iterates over the provided rankings array and ignores any entries that are negative. It first computes the sum of all non‑negative rankings. If the sum is greater than zero, a
+   weighted random choice is performed: a random value scaled to the sum determines the point at which the cumulative sum of rankings reaches at least that value, and the corresponding index is
+   returned. If all rankings are negative or the sum is zero, the function simply picks a random index between 0 and numranks‑1 and then scans forward (wrapping around) until it finds a non‑negative
+   ranking. If none are found, it returns 0. The random() function used here is expected to generate a float uniformly in the range [0,1).
+
+	\param numranks Number of ranking entries to consider; the function expects rankings to contain at least numranks elements.
+	\param rankings Array of float values indexed from 0 to numranks‑1; negative values are ignored during selection.
+	\return The zero‑based index of the chosen entry. If all rankings are negative, the returned index will be 0 because no suitable entry was found in the fallback selection.
+*/
 int GeneticSelection( int numranks, float* rankings )
 {
 	float sum, select;
@@ -102,12 +108,6 @@ int GeneticSelection( int numranks, float* rankings )
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int GeneticParentsAndChildSelection( int numranks, float* ranks, int* parent1, int* parent2, int* child )
 {
 	float rankings[256], max;

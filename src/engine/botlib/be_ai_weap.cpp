@@ -120,12 +120,15 @@ typedef struct bot_weaponstate_s {
 bot_weaponstate_t* botweaponstates[MAX_CLIENTS + 1];
 weaponconfig_t*	   weaponconfig;
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
+/*!
+	\brief Checks if the supplied weapon number lies within the valid range defined by weaponconfig and reports an error if it does not.
+
+	The function examines the global weapon configuration to see if the provided weapon number is greater than zero and not larger than the number of weapons available. If the number is out of range
+   it prints an error message via botimport.Print and returns qfalse; otherwise it returns qtrue. The return value is interpreted as a boolean, where non‑zero indicates a valid weapon number.
+
+	\param weaponnum The 1‑based index of the weapon to validate.
+	\return An integer indicating validity: non‑zero if the weapon number is valid, zero if it is out of range.
+*/
 int				   BotValidWeaponNumber( int weaponnum )
 {
 	if( weaponnum <= 0 || weaponnum > weaponconfig->numweapons ) {
@@ -136,12 +139,15 @@ int				   BotValidWeaponNumber( int weaponnum )
 	return qtrue;
 }
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
+/*!
+	\brief Returns the weapon state for a given handle, or null if the handle is invalid.
+
+	The function checks that the handle is within the valid range of 1 to MAX_CLIENTS, inclusive. If the handle is out of range or the corresponding entry in the botweaponstates array is null, a fatal
+   message is printed and the function returns null. Otherwise it returns the pointer stored in botweaponstates at the given index.
+
+	\param handle An integer identifier for a bot weapon state, expected to be between 1 and MAX_CLIENTS inclusive.
+	\return Pointer to a bot_weaponstate_t instance, or null when the handle is out of bounds or uninitialized.
+*/
 bot_weaponstate_t* BotWeaponStateFromHandle( int handle )
 {
 	if( handle <= 0 || handle > MAX_CLIENTS ) {
@@ -187,12 +193,30 @@ void DumpWeaponConfig( weaponconfig_t* wc )
 }
 
 #endif // DEBUG_AI_WEAP
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+
+/*!
+	\brief Loads a weapon configuration file, parses its contents into a weaponconfig_t structure, and returns a pointer to it.
+
+	The function first obtains the limits for weapons and projectiles, defaulting to 32 if unset or negative, and corrects any out‑of‑range values. It copies the provided filename into a local
+   buffer and attempts to load the file via LoadSourceFile. If the file cannot be opened the function logs an error and returns NULL.
+
+	Memory for a weaponconfig_t structure and contiguous arrays of weaponinfo_t and projectileinfo_t entries is allocated from the hunk allocator. The file is parsed token by token. For a
+   "weaponinfo" token a structure is read, its number is validated against the maximum, and it is copied into the weaponinfo array where the entry is marked as valid. For a "projectileinfo" token
+   the array is filled similarly, ensuring the number of projectiles does not exceed the limit.
+
+	When an unexpected token occurs the function cleans up any allocated memory, frees the source, logs an error, and returns NULL.
+
+	After parsing, the function validates each weapon entry that was marked as valid: it must have a non‑empty name and a non‑empty projectile string. For each such weapon it searches the
+   projectile array for a matching projectile name and copies that projectile’s data into the weapon’s proj field. If the referenced projectile is missing, or if any other validation fails, the
+   function cleans up and returns NULL.
+
+	If no weapon entries were loaded a warning is logged; otherwise a message indicating success is printed. The parsed configuration structure is returned to the caller, which is responsible for
+   freeing it with FreeMemory.
+
+
+	\param filename Path to the weapon configuration file to load.
+	\return A pointer to the allocated weaponconfig_t structure, or NULL if loading or validation fails.
+*/
 weaponconfig_t* LoadWeaponConfig( char* filename )
 {
 	int				max_weaponinfo, max_projectileinfo;
@@ -324,12 +348,16 @@ weaponconfig_t* LoadWeaponConfig( char* filename )
 	return wc;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates an array of weapon weight indices based on the provided weight and weapon configurations.
+
+	This function allocates an integer array sized to the number of weapons in the weapon configuration. For each weapon it calls FindFuzzyWeight with the weight configuration and the weapon's name to
+   obtain an index representing that weapon's weight. The resulting array is returned, with each position corresponding to the weapon index in the weapon configuration.
+
+	\param wwc pointer to the weight configuration used to determine weapon weights
+	\param wc pointer to the weapon configuration that provides the list of weapons and their names
+	\return pointer to newly allocated integer array of size wc->numweapons containing the matched weight indices
+*/
 int* WeaponWeightIndex( weightconfig_t* wwc, weaponconfig_t* wc )
 {
 	int *index, i;
@@ -344,12 +372,14 @@ int* WeaponWeightIndex( weightconfig_t* wwc, weaponconfig_t* wc )
 	return index;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees weapon weight configuration and index data for the specified bot weapon state handle
+
+	The function obtains a bot weapon state structure from its handle. If the handle is invalid it simply returns. When valid, it deallocates the weight configuration if it exists, and then frees the
+   weight index array, ensuring no memory leaks remain for that weapon state.
+
+	\param weaponstate Integer handle referencing a bot weapon state whose data should be released
+*/
 void BotFreeWeaponWeights( int weaponstate )
 {
 	bot_weaponstate_t* ws;
@@ -369,12 +399,6 @@ void BotFreeWeaponWeights( int weaponstate )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotLoadWeaponWeights( int weaponstate, char* filename )
 {
 	bot_weaponstate_t* ws;
@@ -429,12 +453,6 @@ void BotGetWeaponInfo( int weaponstate, int weapon, weaponinfo_t* weaponinfo )
 	memcpy( weaponinfo, &weaponconfig->weaponinfo[weapon], sizeof( weaponinfo_t ) );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotChooseBestFightWeapon( int weaponstate, int* inventory )
 {
 	int				   i, index, bestweapon;
@@ -484,12 +502,6 @@ int BotChooseBestFightWeapon( int weaponstate, int* inventory )
 	return bestweapon;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotResetWeaponState( int weaponstate )
 {
 	struct weightconfig_s* weaponweightconfig;
@@ -510,12 +522,6 @@ void BotResetWeaponState( int weaponstate )
 	ws->weaponweightindex  = weaponweightindex;
 }
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
 int BotAllocWeaponState()
 {
 	int i;
@@ -530,12 +536,15 @@ int BotAllocWeaponState()
 	return 0;
 }
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
+/*!
+	\brief Releases the allocated resources for a specific weapon state handle
+
+	The function first verifies that the supplied handle is within the valid client range and that a state exists for that handle. If either check fails, a fatal error message is printed and execution
+   returns immediately. For a valid handle, it first frees any weapon weights associated with the state by calling BotFreeWeaponWeights, then deallocates the memory for the state itself and clears its
+   pointer in the global array.
+
+	\param handle The identifier of the weapon state to free, which must be a valid, allocated handle.
+*/
 void BotFreeWeaponState( int handle )
 {
 	if( handle <= 0 || handle > MAX_CLIENTS ) {
@@ -553,12 +562,6 @@ void BotFreeWeaponState( int handle )
 	botweaponstates[handle] = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotSetupWeaponAI()
 {
 	char* file;
@@ -578,12 +581,6 @@ int BotSetupWeaponAI()
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotShutdownWeaponAI()
 {
 	int i;

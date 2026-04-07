@@ -54,12 +54,6 @@ aas_settings_t		   aassettings;
 
 // #define AAS_MOVE_DEBUG
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int					   AAS_DropToFloor( vec3_t origin, vec3_t mins, vec3_t maxs )
 {
 	vec3_t		end;
@@ -77,12 +71,6 @@ int					   AAS_DropToFloor( vec3_t origin, vec3_t mins, vec3_t maxs )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_InitSettings()
 {
 	aassettings.sv_friction			 = 6;
@@ -106,13 +94,6 @@ void AAS_InitSettings()
 									// done.
 }
 
-//===========================================================================
-// returns qtrue if the bot is against a ladder
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AgainstLadder( vec3_t origin, int ms_areanum )
 {
 	int			 areanum, i, facenum, side;
@@ -188,13 +169,6 @@ int AAS_AgainstLadder( vec3_t origin, int ms_areanum )
 	return qfalse;
 }
 
-//===========================================================================
-// returns qtrue if the bot is on the ground
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_OnGround( vec3_t origin, int presencetype, int passent )
 {
 	aas_trace_t	 trace;
@@ -232,13 +206,6 @@ int AAS_OnGround( vec3_t origin, int presencetype, int passent )
 	return qtrue;
 }
 
-//===========================================================================
-// returns qtrue if a bot at the given position is swimming
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_Swimming( vec3_t origin )
 {
 	vec3_t testorg;
@@ -253,12 +220,6 @@ int AAS_Swimming( vec3_t origin )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 vec3_t VEC_UP		= { 0, -1, 0 };
 vec3_t MOVEDIR_UP	= { 0, 0, 1 };
 vec3_t VEC_DOWN		= { 0, -2, 0 };
@@ -277,12 +238,17 @@ void   AAS_SetMovedir( vec3_t angles, vec3_t movedir )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Predicts the starting position for a jump reach by simulating client movement from the reach start point along the horizontal direction.
+
+	The function first determines the horizontal direction from the reach end to its start, normalizes it, and offsets the start point by one unit in the vertical axis. It then scales the direction by
+   a speed factor to create a command movement vector. Using the AAS_PredictClientMovement routine, the function simulates the client moving from the adjusted start point under the influence of this
+   command vector. The resulting end position of the simulated movement is stored in runstart. If the simulation stops because the client would enter lava or take ground‑hit damage, runstart is reset
+   to the original start position to avoid invalid jump starts. The procedure ignores slime as a lethal threat, a change reflected in its event handling.
+
+	\param reach pointer to a reachability structure containing the start and end points used to define the horizontal direction and movement origin
+	\param runstart output vector to receive the calculated jump run start position
+*/
 void AAS_JumpReachRunStart( aas_reachability_t* reach, vec3_t runstart )
 {
 	vec3_t			 hordir, start, cmdmove;
@@ -309,13 +275,17 @@ void AAS_JumpReachRunStart( aas_reachability_t* reach, vec3_t runstart )
 	}
 }
 
-//===========================================================================
-// returns the Z velocity when rocket jumping at the origin
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the Z component of velocity a bot receives when rocket‑jumping at the given position, accounting for weapon damage radius.
+
+	The function casts a downward trace from the bot’s eye location to determine the impact point of the expanding blast. It estimates damage points based on the distance to the impact, halves the
+   damage for the owner, and treats the resulting damage as a knockback force. The knockback, scaled by the bot’s mass, yields a velocity vector; the function returns the Z component of this vector
+   plus the engine’s base jump velocity.
+
+	\param origin bot's 3‑D position
+	\param radiusdamage damage radius of the weapon (e.g., 120 for rockets)
+	\return vertical velocity component that results from the rocket or BFG jump
+*/
 float AAS_WeaponJumpZVelocity( vec3_t origin, float radiusdamage )
 {
 	vec3_t		kvel, v, start, end, forward, right, viewangles, dir;
@@ -366,37 +336,30 @@ float AAS_WeaponJumpZVelocity( vec3_t origin, float radiusdamage )
 	return kvel[2] + aassettings.sv_jumpvel;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float AAS_RocketJumpZVelocity( vec3_t origin )
 {
 	// rocket radius damage is 120 (p_weapon.c: Weapon_RocketLauncher_Fire)
 	return AAS_WeaponJumpZVelocity( origin, 120 );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float AAS_BFGJumpZVelocity( vec3_t origin )
 {
 	// bfg radius damage is 1000 (p_weapon.c: weapon_bfg_fire)
 	return AAS_WeaponJumpZVelocity( origin, 120 );
 }
 
-//===========================================================================
-// applies ground friction to the given velocity
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Accelerates a velocity vector toward a desired direction, up to a target speed, using the specified acceleration and frame time.
+
+	This routine calculates the current component of the velocity along the desired direction. If the desired speed is greater than this component, it increases the velocity by an amount proportional
+   to the acceleration factor and the elapsed frame time, but never exceeding the difference between the desired speed and the current speed. The velocity vector is modified in place.
+
+	\param accel acceleration scaling factor
+	\param frametime time elapsed for this frame
+	\param velocity velocity vector to be modified
+	\param wishdir desired direction unit vector
+	\param wishspeed target speed along wishdir
+*/
 void AAS_Accelerate( vec3_t velocity, float frametime, vec3_t wishdir, float wishspeed, float accel )
 {
 	// q2 style
@@ -421,12 +384,17 @@ void AAS_Accelerate( vec3_t velocity, float frametime, vec3_t wishdir, float wis
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the direction vector from start to end.
+
+	The function calculates the vector dir by subtracting the start point from the end point. Currently it only stores this value in a local variable and does not use it further. The velocity and
+   cmdmove parameters are not referenced, suggesting that further logic is intended but not yet implemented. TODO: clarify the intended use of velocity and cmdmove.
+
+	\param cmdmove output command movement vector (currently unused)
+	\param end three‑dimensional destination point
+	\param start three‑dimensional starting point
+	\param velocity current velocity vector (currently unused)
+*/
 void AAS_AirControl( vec3_t start, vec3_t end, vec3_t velocity, vec3_t cmdmove )
 {
 	vec3_t dir;
@@ -434,13 +402,18 @@ void AAS_AirControl( vec3_t start, vec3_t end, vec3_t velocity, vec3_t cmdmove )
 	VectorSubtract( end, start, dir );
 }
 
-//===========================================================================
-// applies ground friction to the given velocity
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Applies horizontal ground friction to a velocity vector.
+
+	The function first calculates the horizontal speed from the xy components of the vector. If the speed is non‑zero, it determines a control speed that is at least the stopspeed. The new speed is
+   reduced by the product of frame time, control speed, and the friction coefficient. The velocity is clamped to zero if the new speed becomes negative. Finally the velocity components are scaled
+   proportionally to the new speed, leaving the vertical component unchanged.
+
+	\param vel the velocity vector that is modified in place
+	\param friction coefficients controlling the rate of deceleration
+	\param stopspeed the minimum speed threshold for applying friction
+	\param frametime the elapsed time this frame is used to scale the effect
+*/
 void AAS_ApplyFriction( vec3_t vel, float friction, float stopspeed, float frametime )
 {
 	float speed, control, newspeed;
@@ -462,24 +435,6 @@ void AAS_ApplyFriction( vec3_t vel, float friction, float stopspeed, float frame
 	}
 }
 
-//===========================================================================
-// predicts the movement
-// assumes regular bounding box sizes
-// NOTE: out of water jumping is not included
-// NOTE: grappling hook is not included
-//
-// Parameter:				origin			: origin to start with
-//								presencetype	: presence type to start with
-//								velocity			: velocity to start with
-//								cmdmove			: client command movement
-//								cmdframes		: number of frame cmdmove is valid
-//								maxframes		: maximum number of predicted frames
-//								frametime		: duration of one predicted frame
-//								stopevent		: events that stop the prediction
-//						stopareanum		: stop as soon as entered this area
-// Returns:					aas_clientmove_t
-// Changes Globals:		-
-//===========================================================================
 int AAS_PredictClientMovement( struct aas_clientmove_s* move,
 	int													entnum,
 	vec3_t												origin,
@@ -945,12 +900,18 @@ int AAS_PredictClientMovement( struct aas_clientmove_s* move,
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Tests client movement prediction for a given entity and direction.
+
+	The function clears a local velocity vector and normalises the supplied direction. If the starting point is not in water, the vertical component of the direction is zeroed before normalisation.
+   The direction is scaled to create a movement command vector with horizontal speed 400 and a fixed vertical component of 224. After clearing any debug lines, the function calls
+   AAS_PredictClientMovement to estimate the entity’s movement over a short time, using the supplied entity number, start position, normal presence flag, and other parameters. If the prediction
+   indicates a leave‑ground event, a message is printed.
+
+	\param dir Desired movement direction vector, possibly modified to have zero vertical component when not swimming
+	\param entnum Entity number whose movement is to be predicted
+	\param origin Starting world position of the entity
+*/
 void AAS_TestMovementPrediction( int entnum, vec3_t origin, vec3_t dir )
 {
 	vec3_t			 velocity, cmdmove;
@@ -973,17 +934,6 @@ void AAS_TestMovementPrediction( int entnum, vec3_t origin, vec3_t dir )
 	}
 }
 
-//===========================================================================
-// calculates the horizontal velocity needed to perform a jump from start
-// to end
-//
-// Parameter:				zvel		: z velocity for jump
-//								start		: start position of jump
-//								end		: end position of jump
-//								*speed	: returned speed for jump
-// Returns:					qfalse if too high or too far from start to end
-// Changes Globals:		-
-//===========================================================================
 int AAS_HorizontalVelocityForJump( float zvel, vec3_t start, vec3_t end, float* velocity )
 {
 	float  sv_gravity, sv_maxvelocity;

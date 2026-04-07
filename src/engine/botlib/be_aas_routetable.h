@@ -152,11 +152,79 @@ typedef struct {
 
 #endif // RT_DEFINED
 
-//....................................................................
+/*!
+	\brief Builds or loads the AAS route table used for navigation
 
+	The function first attempts to load a prebuilt route table from a file named after the current map.  If the file is not present or cannot be loaded, it constructs a new route table by creating a
+   list of routable areas, determining visibility between these areas, and selecting parent-child relationships to minimize local travel paths.  It calculates visibility lists, optionally checks
+   travel times when compiled with special flags, and records memory usage statistics.  In the current code a short‑circuit return prevents any further work, but the remaining logic shows the intended
+   routine for constructing the table.
+
+*/
 void			AAS_RT_BuildRouteTable();
+
+/*!
+	\brief Shows a debug visualization of a route between two areas in the AAS system.
+
+	The function clears previously shown polygons and debug lines, then highlights the source and destination area polygons. It computes the reachability from the source to the destination area using
+   the current goal position and then displays that reachability as a debug route. The routine is active only when compiled with DEBUG enabled and does nothing otherwise.
+
+	\param srcpos Vector specifying the source position used for the route display
+	\param srcnum Index of the source area in the AAS navigation graph
+	\param destnum Index of the destination area in the AAS navigation graph
+*/
 void			AAS_RT_ShowRoute( vec3_t srcpos, int srcnum, int destnum );
+
+/*!
+	\brief Returns a route structure between two specified areas or NULL when none is available.
+
+	AAS_RT_GetRoute maintains a static array of 64 route structures that are reused in a round‑robin fashion. Each call increments a static index, wraps it, and selects a fresh entry in the array. The
+   function first verifies that a global route table exists and that route table usage is not disabled. It then calls AAS_AreaRouteToGoalArea with a set of traversal flags that exclude jump pads,
+   rockets, and other special movement types. If a reachable path is found, the obtained reachability index and travel time are stored in the chosen route structure and a pointer to that structure is
+   returned. If no route can be calculated, the function returns NULL. Callers must copy or use the returned data before making another call that could overwrite the same array entry.
+
+	\param srcnum source area number
+	\param origin beginning position in world coordinates
+	\param destnum destination area number
+	\return A pointer to an internal route structure containing reachability and travel time, or NULL if no routetable is present or no route can be found.
+*/
 aas_rt_route_t* AAS_RT_GetRoute( int srcnum, vec3_t origin, int destnum );
+
+/*!
+	\brief Shuts down the route table by freeing its dynamic data structures and clearing the global reference
+
+	If the route table exists, each allocated array (area child indexes, child pointers, parent pointers, parent–child links, visible parents, etc.) is released with AAS_RT_FreeMemory. After all
+   components are freed, the root table itself is deallocated and the global pointer is set to null to prevent dangling references.
+
+*/
 void			AAS_RT_ShutdownRouteTable();
+
+/*!
+	\brief Finds a suitable hiding position between a source and a destination.
+
+	The function performs a breadth‑first search to locate the nearest hide area that can be reached from the source area while remaining out of sight from the destination position.  A static set of
+   movement flags excludes certain jump and projectile routes to avoid unsafe traversal.  When a valid hide area is identified, its waypoint position is written to returnPos and the function returns
+   true; otherwise it returns false and returnPos is left unchanged.
+
+	\param destarea the destination area's number in the navigation geometry
+	\param destnum the entity number associated with the destination, used for visibility checks
+	\param destpos the position the source wants to hide from
+	\param returnPos output buffer into which the chosen hide position is written when the function succeeds
+	\param srcarea the source area's number in the navigation geometry
+	\param srcnum the entity number associated with the source, used for visibility checks
+	\param srcpos the source position in world coordinates
+	\return true if a hide position was found and written to returnPos; false otherwise
+*/
 qboolean		AAS_RT_GetHidePos( vec3_t srcpos, int srcnum, int srcarea, vec3_t destpos, int destnum, int destarea, vec3_t returnPos );
+
+/*!
+	\brief returns the reachability index for the specified area
+
+	The function is meant to calculate an overall reachability index by adding the start offset of the reachable areas for a particular area number to the supplied reachIndex. The current
+   implementation simply returns the reachIndex value, ignoring the area number; TODO: clarify intended behaviour.
+
+	\param areanum the numeric identifier of the area
+	\param reachIndex the local reachability index within that area
+	\return the resulting reachability index (currently the same as the supplied reachIndex)
+*/
 int				AAS_RT_GetReachabilityIndex( int areanum, int reachIndex );

@@ -57,12 +57,6 @@ int		   numdebuglines;
 
 static int debugpolygons[MAX_DEBUGPOLYGONS];
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void	   AAS_ClearShownPolygons()
 {
 	int i;
@@ -86,12 +80,16 @@ void	   AAS_ClearShownPolygons()
 	*/
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates a debug polygon using the given color and vertices.
+
+	Iterates through the global debug polygon array and, when it finds a free slot, calls botimport.DebugPolygonCreate with the specified color, number of points, and vertex list. It only creates a
+   polygon in the first available slot and then stops searching.
+
+	\param color The color index for the new debug polygon
+	\param numpoints The number of vertices that define the polygon
+	\param points A pointer to an array of vec3_t structures containing the vertex coordinates
+*/
 void AAS_ShowPolygon( int color, int numpoints, vec3_t* points )
 {
 	int i;
@@ -104,12 +102,6 @@ void AAS_ShowPolygon( int color, int numpoints, vec3_t* points )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ClearShownDebugLines()
 {
 	int i;
@@ -125,12 +117,6 @@ void AAS_ClearShownDebugLines()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_DebugLine( vec3_t start, vec3_t end, int color )
 {
 	int line;
@@ -150,12 +136,6 @@ void AAS_DebugLine( vec3_t start, vec3_t end, int color )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void AAS_PermanentLine( vec3_t start, vec3_t end, int color )
 {
 	int line;
@@ -164,12 +144,6 @@ void AAS_PermanentLine( vec3_t start, vec3_t end, int color )
 	botimport.DebugLineShow( line, start, end, color );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void AAS_DrawPermanentCross( vec3_t origin, float size, int color )
 {
 	int	   i, debugline;
@@ -186,12 +160,6 @@ void AAS_DrawPermanentCross( vec3_t origin, float size, int color )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_DrawPlaneCross( vec3_t point, vec3_t normal, float dist, int type, int color )
 {
 	int	   n0, n1, n2, j, line, lines[2];
@@ -237,12 +205,6 @@ void AAS_DrawPlaneCross( vec3_t point, vec3_t normal, float dist, int type, int 
 	botimport.DebugLineShow( lines[1], start2, end2, color );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ShowBoundingBox( vec3_t origin, vec3_t mins, vec3_t maxs )
 {
 	vec3_t bboxcorners[8];
@@ -296,12 +258,6 @@ void AAS_ShowBoundingBox( vec3_t origin, vec3_t mins, vec3_t maxs )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ShowFace( int facenum )
 {
 	int			 i, color, edgenum;
@@ -355,12 +311,17 @@ void AAS_ShowFace( int facenum )
 	AAS_DebugLine( start, end, LINECOLOR_RED );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Displays a face polygon in the debug view, optionally reversing the vertex order
+
+	This function retrieves a face by its index from the AAS world data. It first verifies that the index is within bounds, printing an error if not. It then walks through the edges of the face,
+   collecting the vertex positions for each edge into an array. When the flip flag is set, the edges are processed in reverse order to reverse the winding of the polygon. Finally, the collected points
+   are passed to AAS_ShowPolygon together with the desired color to render the polygon.
+
+	\param facenum Index of the face to display
+	\param color Color value used to draw the polygon
+	\param flip If non-zero, the vertices are processed in reverse order
+*/
 void AAS_ShowFacePolygon( int facenum, int color, int flip )
 {
 	int			i, edgenum, numpoints;
@@ -399,12 +360,6 @@ void AAS_ShowFacePolygon( int facenum, int color, int flip )
 	AAS_ShowPolygon( color, numpoints, points );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ShowArea( int areanum, int groundfacesonly )
 {
 	int			areaedges[MAX_DEBUGLINES];
@@ -507,12 +462,6 @@ void AAS_ShowArea( int areanum, int groundfacesonly )
 	} // end for*/
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ShowAreaPolygons( int areanum, int color, int groundfacesonly )
 {
 	int			i, facenum;
@@ -550,12 +499,6 @@ void AAS_ShowAreaPolygons( int areanum, int color, int groundfacesonly )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_DrawCross( vec3_t origin, float size, int color )
 {
 	int	   i;
@@ -570,12 +513,6 @@ void AAS_DrawCross( vec3_t origin, float size, int color )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_PrintTravelType( int traveltype )
 {
 #ifdef DEBUG
@@ -656,12 +593,6 @@ void AAS_PrintTravelType( int traveltype )
 #endif // DEBUG
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_DrawArrow( vec3_t start, vec3_t end, int linecolor, int arrowcolor )
 {
 	vec3_t dir, cross, p1, p2, up = { 0, 0, 1 };
@@ -688,12 +619,17 @@ void AAS_DrawArrow( vec3_t start, vec3_t end, int linecolor, int arrowcolor )
 	AAS_DebugLine( p2, end, arrowcolor );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Displays visual information about a reachability including area polygons, directional arrows, and predicted client movement based on its travel type.
+
+	The function begins by drawing the polygons of the area related to the reachability and an arrow from its start point to its end point. It then handles several travel types: for jumps or walking
+   off edges, it computes a horizontal velocity and predicts movement, optionally drawing a cross if the travel type is a normal jump. For rocket jumps it determines the vertical component of the jump
+   velocity, calculates the horizontal velocity, and predicts the resulting movement. For jump pads it sets velocity components from struct fields and also predicts movement. The predictions use
+   AAS_PredictClientMovement with appropriate flags for entering water, slime, lava, hitting ground damage and other surface transitions.
+
+	\param reach a pointer to an aas_reachability_s structure that describes the reachability, including its start and end points, travel type, area number, and edge or face data used for velocity
+   calculations.
+*/
 void AAS_ShowReachability( aas_reachability_t* reach )
 {
 	vec3_t			 dir, cmdmove, velocity;
@@ -779,12 +715,6 @@ void AAS_ShowReachability( aas_reachability_t* reach )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_ShowReachableAreas( int areanum )
 {
 	aas_areasettings_t*		  settings;

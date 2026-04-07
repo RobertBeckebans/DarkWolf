@@ -87,5 +87,13 @@ extern botlib_globals_t botlibglobals;
 extern botlib_import_t	botimport;
 extern int				bot_developer; // true if developer is on
 
-//
+/*!
+	\brief Returns the number of milliseconds elapsed since the first call of Sys_MilliSeconds() on Windows, or since program start on other platforms.
+
+	On Windows the function records the value of timeGetTime() the first time it is invoked and stores this as a base value. Each subsequent call returns the difference between the current
+   timeGetTime() value and that base, yielding a running count of elapsed milliseconds that resets when the program starts. On non‑Windows platforms the function computes milliseconds using clock()
+   multiplied by 1000 and divided by CLOCKS_PER_SEC. The function takes no parameters, performs no allocation, and cannot throw exceptions.
+
+	\return An integer representing milliseconds elapsed since the first call (on Windows) or since the program began (on other systems).
+*/
 int						Sys_MilliSeconds();

@@ -42,12 +42,19 @@ If you have questions concerning this license or the applicable additional terms
 // list with library variables
 libvar_t* libvarlist;
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Parses a decimal numeric string into a float, returning 0 if the string is invalid.
+
+	The function scans the input string character by character, accumulating the numeric value. An optional decimal point is allowed and is handled by a ‘dotfound’ multiplier that initially is 0 and
+   becomes 10 when a dot is encountered. If any non‑digit character is found after the dot or a second dot appears, the function returns 0 to indicate failure. The result is returned as a float.
+
+	The function is tolerant only to simple decimal representations and treats any deviation (e.g., embedded letters, multiple decimal points, leading or trailing non‑digits) as an error.
+
+	The implementation performs its parsing in a single pass and does not modify the input string.
+
+	\param string Null‑terminated C‑style string containing the numeric value to interpret.
+	\return The floating‑point value represented by the string, or 0 if the string is not a valid decimal number.
+*/
 float	  LibVarStringValue( char* string )
 {
 	int	  dotfound = 0;
@@ -78,12 +85,17 @@ float	  LibVarStringValue( char* string )
 	return value;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates and registers a new library variable with the given name.
+
+	Allocates a block of memory large enough to hold a libvar_t structure followed by a copy of the variable name.
+	The newly allocated structure is zeroed and its name pointer is set to the string portion of the allocation.
+	The supplied name is copied into that memory.
+	The variable is inserted at the head of the global libvarlist and the function returns a pointer to it.
+
+	\param var_name The C string containing the variable name to allocate; the function copies this string into the new struct.
+	\return A pointer to the newly allocated libvar_t structure, or null if allocation fails (though the code does not explicitly handle failure).
+*/
 libvar_t* LibVarAlloc( char* var_name )
 {
 	libvar_t* v;
@@ -98,12 +110,14 @@ libvar_t* LibVarAlloc( char* var_name )
 	return v;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Releases the memory allocated for a libvar_t structure, including its string field if present.
+
+	The function expects a valid libvar_t pointer. If the string member is non-null, FreeMemory is invoked to free that memory, followed by freeing the libvar_t structure itself. No value is returned.
+   Passing a null pointer results in undefined behavior due to dereference.
+
+	\param v pointer to the libvar_t instance to deallocate
+*/
 void LibVarDeAlloc( libvar_t* v )
 {
 	if( v->string ) {
@@ -113,12 +127,6 @@ void LibVarDeAlloc( libvar_t* v )
 	FreeMemory( v );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void LibVarDeAllocAll()
 {
 	libvar_t* v;
@@ -131,12 +139,6 @@ void LibVarDeAllocAll()
 	libvarlist = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 libvar_t* LibVarGet( char* var_name )
 {
 	libvar_t* v;
@@ -150,12 +152,6 @@ libvar_t* LibVarGet( char* var_name )
 	return NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 char* LibVarGetString( char* var_name )
 {
 	libvar_t* v;
@@ -170,12 +166,6 @@ char* LibVarGetString( char* var_name )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float LibVarGetValue( char* var_name )
 {
 	libvar_t* v;
@@ -190,12 +180,6 @@ float LibVarGetValue( char* var_name )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 libvar_t* LibVar( char* var_name, char* value )
 {
 	libvar_t* v;
@@ -218,12 +202,6 @@ libvar_t* LibVar( char* var_name, char* value )
 	return v;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 char* LibVarString( char* var_name, char* value )
 {
 	libvar_t* v;
@@ -232,12 +210,6 @@ char* LibVarString( char* var_name, char* value )
 	return v->string;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float LibVarValue( char* var_name, char* value )
 {
 	libvar_t* v;
@@ -246,12 +218,6 @@ float LibVarValue( char* var_name, char* value )
 	return v->value;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void LibVarSet( char* var_name, char* value )
 {
 	libvar_t* v;
@@ -274,12 +240,6 @@ void LibVarSet( char* var_name, char* value )
 	v->modified = qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 qboolean LibVarChanged( char* var_name )
 {
 	libvar_t* v;
@@ -294,12 +254,6 @@ qboolean LibVarChanged( char* var_name )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void LibVarSetNotModified( char* var_name )
 {
 	libvar_t* v;

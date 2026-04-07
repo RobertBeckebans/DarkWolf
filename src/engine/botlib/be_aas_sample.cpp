@@ -63,12 +63,6 @@ typedef struct aas_tracestack_s {
 	int	   nodenum;	 // node found after splitting with planenum
 } aas_tracestack_t;
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_PresenceTypeBoundingBox( int presencetype, vec3_t mins, vec3_t maxs )
 {
 	int	   index;
@@ -91,12 +85,14 @@ void AAS_PresenceTypeBoundingBox( int presencetype, vec3_t mins, vec3_t maxs )
 	VectorCopy( boxmaxs[index], maxs );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Sets up the link heap used by the AAS world, allocating memory if necessary and linking the heap entries into a free list.
+
+	The function first determines the desired size of the link heap from the current linkheapsize value. If no heap has been allocated yet, it uses a default size of 4096, ensuring non‑negative
+   values, updates linkheapsize, and allocates an array of aas_link_t structures in hunk memory. It then initializes a doubly‑linked list that connects each element of the heap array, thereby
+   establishing a free list. Finally, it points the freelinks member of the world structure to the first free link, marking the entire heap as available for use.
+
+*/
 void AAS_InitAASLinkHeap()
 {
 	int i, max_aaslinks;
@@ -130,12 +126,13 @@ void AAS_InitAASLinkHeap()
 	( *aasworld ).freelinks = &( *aasworld ).linkheap[0];
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees the memory reserved for the link heap in the AAS world and resets its pointers.
+
+	The function checks whether the AAS world has a link heap allocated. If so, it frees that memory. Afterwards it clears the global link heap pointer and sets the heap size to zero to avoid dangling
+   references. The operation ensures no leaked heap memory remains when the link heap is no longer required.
+
+*/
 void AAS_FreeAASLinkHeap()
 {
 	if( ( *aasworld ).linkheap ) {
@@ -146,12 +143,14 @@ void AAS_FreeAASLinkHeap()
 	( *aasworld ).linkheapsize = 0;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Allocate a link from the free AAS link pool.
+
+	The AAS world keeps a linked list of unused link structures. This function removes the first node from that list, updates the head pointer, and clears the previous pointer of the new head. If the
+   list is empty, it signals a fatal error and returns a null pointer. The returned link must be initialized before use.
+
+	\return A pointer to an available aas_link_t from the pool, or a null pointer if the pool has been exhausted.
+*/
 aas_link_t* AAS_AllocAASLink()
 {
 	aas_link_t* link;
@@ -174,12 +173,14 @@ aas_link_t* AAS_AllocAASLink()
 	return link;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds the given link to the global free list of AAS links.
+
+	Resets the pointers of the supplied link and inserts it at the front of the global list of free links. After calling this function the link can be reused for new connections between AAS areas. The
+   function assumes that the provided link is valid and not currently in use.
+
+	\param link The link to be returned to the free list; must not be NULL.
+*/
 void AAS_DeAllocAASLink( aas_link_t* link )
 {
 	if( ( *aasworld ).freelinks ) {
@@ -193,12 +194,13 @@ void AAS_DeAllocAASLink( aas_link_t* link )
 	( *aasworld ).freelinks = link;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the linked entity array for each area in the AAS world
+
+	If the AAS world is not loaded the function exits immediately. If a previous array of linked entities exists it is freed. A new array of pointers is then allocated from hunk memory, cleared to
+   zero, and assigned to the AAS world structure. Each entry in the array will later hold a list of entities linked to its area.
+
+*/
 void AAS_InitAASLinkedEntities()
 {
 	if( !( *aasworld ).loaded ) {
@@ -212,12 +214,12 @@ void AAS_InitAASLinkedEntities()
 	( *aasworld ).arealinkedentities = ( aas_link_t** )GetClearedHunkMemory( ( *aasworld ).numareas * sizeof( aas_link_t* ) );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees the globally stored area linked entity array
+
+	If the global arealinkedentities pointer is valid, the function releases its memory through FreeMemory and then resets the pointer to null to avoid dangling references.
+
+*/
 void AAS_FreeAASLinkedEntities()
 {
 	if( ( *aasworld ).arealinkedentities ) {
@@ -227,13 +229,6 @@ void AAS_FreeAASLinkedEntities()
 	( *aasworld ).arealinkedentities = NULL;
 }
 
-//===========================================================================
-// returns the AAS area the point is in
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_PointAreaNum( vec3_t point )
 {
 	int			 nodenum;
@@ -288,12 +283,6 @@ int AAS_PointAreaNum( vec3_t point )
 	return -nodenum;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaCluster( int areanum )
 {
 	if( areanum <= 0 || areanum >= ( *aasworld ).numareas ) {
@@ -304,13 +293,6 @@ int AAS_AreaCluster( int areanum )
 	return ( *aasworld ).areasettings[areanum].cluster;
 }
 
-//===========================================================================
-// returns the presence types of the given area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AreaPresenceType( int areanum )
 {
 	if( !( *aasworld ).loaded ) {
@@ -325,13 +307,6 @@ int AAS_AreaPresenceType( int areanum )
 	return ( *aasworld ).areasettings[areanum].presencetype;
 }
 
-//===========================================================================
-// returns the presence type at the given point
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_PointPresenceType( vec3_t point )
 {
 	int areanum;
@@ -349,12 +324,22 @@ int AAS_PointPresenceType( vec3_t point )
 	return ( *aasworld ).areasettings[areanum].presencetype;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Tests whether an entity collision occurs along a line segment inside a given AAS area using a specified presence type
+
+	The function retrieves the bounding box for the supplied presence type and then iterates over each entity linked to the specified area.  It skips any entity that matches the passed‑entity number.
+   For each remaining entity the helper AAS_EntityCollision is called to check for a collision between the start and end points of the segment, taking the presence type’s bounding box into account. If
+   a collision is detected the supplied trace structure is filled with the collision details—startsolid flag, entity number, end position, and placeholder values for area and planenum—and the function
+   returns true.  If no collision is found the trace structure is left untouched and the function returns false.
+
+	\param areanum identifier of the AAS area to probe
+	\param start starting point of the segment in world coordinates
+	\param end ending point of the segment in world coordinates
+	\param presencetype type used to compute the bounding box for collision checks
+	\param passent entity number to ignore during collision detection
+	\param trace pointer to a structure that receives collision details when a collision occurs
+	\return true if a collision was found; false otherwise. When true the trace structure contains startsolid, ent, endpos, area=0 and planenum=0
+*/
 qboolean AAS_AreaEntityCollision( int areanum, vec3_t start, vec3_t end, int presencetype, int passent, aas_trace_t* trace )
 {
 	int			collision;
@@ -393,13 +378,6 @@ qboolean AAS_AreaEntityCollision( int areanum, vec3_t start, vec3_t end, int pre
 	return qfalse;
 }
 
-//===========================================================================
-// recursive subdivision of the line by the BSP tree.
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 aas_trace_t AAS_TraceClientBBox( vec3_t start, vec3_t end, int presencetype, int passent )
 {
 	int				  side, nodenum, tmpplanenum;
@@ -678,13 +656,6 @@ aas_trace_t AAS_TraceClientBBox( vec3_t start, vec3_t end, int presencetype, int
 	//	return trace;
 }
 
-//===========================================================================
-// recursive subdivision of the line by the BSP tree.
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_TraceAreas( vec3_t start, vec3_t end, int* areas, vec3_t* points, int maxareas )
 {
 	int				  side, nodenum, tmpplanenum;
@@ -902,15 +873,22 @@ int AAS_TraceAreas( vec3_t start, vec3_t end, int* areas, vec3_t* points, int ma
 	( res )[0] = ( ( v1 )[1] * ( v2 )[2] ) - ( ( v1 )[2] * ( v2 )[1] ); \
 	( res )[1] = ( ( v1 )[2] * ( v2 )[0] ) - ( ( v1 )[0] * ( v2 )[2] ); \
 	( res )[2] = ( ( v1 )[0] * ( v2 )[1] ) - ( ( v1 )[1] * ( v2 )[0] );
-//===========================================================================
-// tests if the given point is within the face boundaries
-//
-// Parameter:				face		: face to test if the point is in it
-//								pnormal	: normal of the plane to use for the face
-//								point		: point to test if inside face boundaries
-// Returns:					qtrue if the point is within the face boundaries
-// Changes Globals:		-
-//===========================================================================
+
+/*!
+	\brief Determines if a point lies inside the planar boundaries of a specified face.
+
+	The function first verifies that the point‑plane data structure is loaded, returning false if it is not. It then iterates over every edge of the given face, constructing for each edge the vector
+   that is orthogonal to both the edge direction and the face’s normal – this vector defines a half‑space that contains the interior of the face. By projecting the vector from the edge’s first vertex
+   to the point onto this separator normal via the dot product, the function checks whether the point lies on the outside side of any edge. If the dot product is smaller than –epsilon for any edge,
+   the point is considered outside and the function returns false. If all edges are satisfied, the point is inside the face and the function returns true. The epsilon parameter allows for a small
+   numerical tolerance in the dot‑product comparison.
+
+	\param face reference to the face to test
+	\param pnormal normal vector of the plane containing the face
+	\param point point to test for containment
+	\param epsilon margin of error for the dot‑product check
+	\return qboolean true if the point is within the face boundaries, false otherwise
+*/
 qboolean AAS_InsideFace( aas_face_t* face, vec3_t pnormal, vec3_t point, float epsilon )
 {
 	int			i, firstvertex, edgenum;
@@ -964,12 +942,19 @@ qboolean AAS_InsideFace( aas_face_t* face, vec3_t pnormal, vec3_t point, float e
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether a point lies inside the polygonal area of a specified face, using an epsilon tolerance.
+
+	The function first checks that the AAS world data is loaded, returning false otherwise. It then retrieves the face and its associated plane. For each edge of the face, it constructs the vector
+   along the edge and a vector from the edge's first vertex to the test point. By computing the cross product of the edge vector and the plane normal, a separator normal is produced. The dot product
+   of the point vector with this separator normal is compared against -epsilon: if it is less, the point is outside the face by more than the allowed tolerance and the function returns false
+   immediately. If all edges pass this test, the point is considered to be inside the face and the function returns true.
+
+	\param facenum Index of the face to test; must be a non‑negative face index, as negative values would refer to mirrored faces and are not handled by the function.
+	\param point Coordinates of the point to check against the face's polygon.
+	\param epsilon Margin of tolerance; points that lie within epsilon of the face’s edge on the outside are treated as inside.
+	\return qtrue if the point is inside the face (or within epsilon of being inside); otherwise qfalse.
+*/
 qboolean AAS_PointInsideFace( int facenum, vec3_t point, float epsilon )
 {
 	int			 i, firstvertex, edgenum;
@@ -1010,13 +995,16 @@ qboolean AAS_PointInsideFace( int facenum, vec3_t point, float epsilon )
 	return qtrue;
 }
 
-//===========================================================================
-// returns the ground face the given point is above in the given area
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Locate the ground face that lies beneath a given point within a specific area.
+
+	The function first verifies that the navigation world data has been loaded. It then retrieves the area corresponding to <areanum> and iterates over all its faces. For each face flagged as a ground
+   face, it determines the orientation of the face’s up normal based on its plane and tests whether the point falls inside the face polygon within a small tolerance using AAS_InsideFace. If a matching
+   face is found, a pointer to that face is returned immediately. If no such face exists or the world is not loaded, the function returns null.
+
+	\param areanum Index of the navigation area to search
+	\return Pointer to the ground face containing the point, or null if none is found.
+*/
 aas_face_t* AAS_AreaGroundFace( int areanum, vec3_t point )
 {
 	int			i, facenum;
@@ -1055,13 +1043,6 @@ aas_face_t* AAS_AreaGroundFace( int areanum, vec3_t point )
 	return NULL;
 }
 
-//===========================================================================
-// returns the face the trace end position is situated in
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_FacePlane( int facenum, vec3_t normal, float* dist )
 {
 	aas_plane_t* plane;
@@ -1071,13 +1052,17 @@ void AAS_FacePlane( int facenum, vec3_t normal, float* dist )
 	*dist = plane->dist;
 }
 
-//===========================================================================
-// returns the face the trace end position is situated in
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief determines the navigation face that contains a trace’s end position
+
+	The function first checks that a navigation world has been loaded and that the trace did not start inside a solid region; otherwise it returns null. It then uses the trace’s last area to iterate
+   over all faces belonging to that area. For each face, it compares the face’s plane number (ignoring the side bit) with the trace’s plane number; if they match it tests whether the trace’s end
+   position lies inside the face using a small tolerance of 0.01. The first face that contains the point is returned. The function does not perform the commented out optimization that prefers faces
+   with fewer edges, so it simply returns the first matching face or null if none are found.
+
+	\param trace the trace structure containing the end position, the last area visited, the plane number of the last hit plane, and a flag indicating if the trace started inside a solid region.
+	\return a pointer to the navigation face that encloses the trace’s end position, or null if no such face exists
+*/
 aas_face_t* AAS_TraceEndFace( aas_trace_t* trace )
 {
 	int			i, facenum;
@@ -1140,12 +1125,20 @@ aas_face_t* AAS_TraceEndFace( aas_trace_t* trace )
 	return firstface;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Returns a bit mask indicating on which side(s) a bounding box lies relative to a plane.
+
+	The function first selects two opposite vertices of the box that are most likely to be on opposite sides of the plane by checking the sign of each normal component. It then computes the signed
+distance from each vertex to the plane. If the first distance is non‑negative, the box touches or lies on the front side of the plane and the mask includes the front flag (1). If the second distance
+is negative, the box also touches or lies on the back side, adding the back flag (2). The resulting mask therefore can be 1 (only front), 2 (only back), or 3 (both sides).
+
+	\param absmins Minimum corner of the axis‑aligned bounding box
+(absmins[i] is the smallest extent in dimension i).
+	\param absmaxs Maximum corner of the axis‑aligned bounding box
+(absmaxs[i] is the largest extent in dimension i).
+	\param p Pointer to an AAS plane structure that contains a normal vector and a distance value used to define the plane equation.
+	\return An integer bit mask: 1 means the box touches or lies on the plane’s front side, 2 means it touches or lies on the back side, and 3 indicates that the box straddles the plane.
+*/
 int AAS_BoxOnPlaneSide2( vec3_t absmins, vec3_t absmaxs, aas_plane_t* p )
 {
 	int	   i, sides;
@@ -1178,23 +1171,18 @@ int AAS_BoxOnPlaneSide2( vec3_t absmins, vec3_t absmaxs, aas_plane_t* p )
 	return sides;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 // int AAS_BoxOnPlaneSide(vec3_t absmins, vec3_t absmaxs, aas_plane_t *p)
 #define AAS_BoxOnPlaneSide( absmins, absmaxs, p )                                                                                                       \
 	( ( ( p )->type < 3 ) ? ( ( ( p )->dist <= ( absmins )[( p )->type] ) ? ( 1 ) : ( ( ( p )->dist >= ( absmaxs )[( p )->type] ) ? ( 2 ) : ( 3 ) ) ) : \
 							( AAS_BoxOnPlaneSide2( ( absmins ), ( absmaxs ), ( p ) ) ) )
-//===========================================================================
-// remove the links to this entity from all areas
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief removes an entity's area links from the global area linked lists
+
+	Iterates through the entity's linked list of area references. For each link, it updates the previous and next pointers of neighboring entities in that area to bypass the current link, and if the
+   link was the first in the list it updates the area's linked list head. After clearing the link from the area lists the link structure is freed.
+
+	\param areas pointer to the head of the entity's linked list of area references
+*/
 void AAS_UnlinkFromAreas( aas_link_t* areas )
 {
 	aas_link_t *link, *nextlink;
@@ -1234,6 +1222,22 @@ typedef struct {
 	int nodenum; // node found after splitting
 } aas_linkstack_t;
 
+/*!
+	\brief Links an entity into all AAS areas intersected by its bounding box and returns the head of the resulting list of area links.
+
+	The function traverses the AAS node tree using an explicit stack to locate all leaf nodes whose area intersects the provided bounding box. For each intersecting area, it creates an aas_link_t
+   structure and inserts it into the doubly linked entity list of the area and into the singly linked list of area links belonging to the entity. The function ensures that duplicate links for the same
+   area are not created. Solid leaf nodes are ignored, and when the world is not loaded an error is printed and a NULL pointer is returned. If memory allocation for a link fails, the already gathered
+   links are returned. The returned list is linked via the next_area member and can be iterated by callers. The function modifies global area data structures. Stack usage limits are checked and an
+   error is printed if overflow would occur. The entity number may be a valid entity or an invalid value such as -1 used for temporary purposes. This routine is not thread safe and should be called in
+   a single‑threaded context.
+
+
+	\param absmins Box minimum corner in world coordinates
+	\param absmaxs Box maximum corner in world coordinates
+	\param entnum Entity number to link; may be an invalid value such as -1
+	\return Pointer to the first aas_link_t of the linked list for the entity, or NULL if the world is not loaded or an error occurs.
+*/
 aas_link_t* AAS_AASLinkEntity( vec3_t absmins, vec3_t absmaxs, int entnum )
 {
 	int				 side, nodenum;
@@ -1352,12 +1356,25 @@ aas_link_t* AAS_AASLinkEntity( vec3_t absmins, vec3_t absmaxs, int entnum )
 	return areas;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Links an entity’s bounding box, adjusted for a specific presence type, to the AAS area graph.
+
+	The function first obtains the bounding offsets for the specified presence type via AAS_PresenceTypeBoundingBox. It then expands the supplied absolute bounding coordinates by these offsets to
+   create a new set of bounds that represent the space that the entity will occupy in the AAS system. Finally, it calls AAS_AASLinkEntity with the expanded bounds and the entity number, which performs
+   the actual insertion into the area graph and returns a linked list of aas_link_t structures that represent the areas the entity now occupies.
+
+	If the entity is not located within any relevant AAS area, AAS_AASLinkEntity returns NULL and this function propagates that value. The caller may later call AAS_UnlinkFromAreas to remove the
+   linking or use the return value to iterate over the affected areas.
+
+	Parameters are expected to be absolute values; the calling code typically passes the entity’s world-space mins/maxs after adding its current origin. The presence type indicates how large the
+   agent’s bounding box should be considered (e.g., normal posture, crouch, or other special states).
+
+	\param absmins absolute minimum coordinates of the entity’s bounding box
+	\param absmaxs absolute maximum coordinates of the entity’s bounding box
+	\param entnum entity number used for linking; typically the entity’s identifier but can be -1 for special triggers
+	\param presencetype integer representing the presence type; valid values are those accepted by AAS_PresenceTypeBoundingBox
+	\return Pointer to the first aas_link_t of the linked areas or NULL if the entity is not in any area.
+*/
 aas_link_t* AAS_LinkEntityClientBBox( vec3_t absmins, vec3_t absmaxs, int entnum, int presencetype )
 {
 	vec3_t mins, maxs;
@@ -1370,12 +1387,16 @@ aas_link_t* AAS_LinkEntityClientBBox( vec3_t absmins, vec3_t absmaxs, int entnum
 	return AAS_AASLinkEntity( newabsmins, newabsmaxs, entnum );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Return a pointer to the plane indicated by planenum, or NULL if the world is not loaded.
+
+	The function first checks whether the global aasworld structure has been loaded. If it hasn't, NULL is returned. Otherwise it returns a pointer to the aas_plane_t object located at the provided
+   planenum index within the aasworld.plan arrays. The caller can then examine the plane's properties such as its normal vector. This function does not perform range checking on planenum, so the
+   caller must ensure the index is valid.
+
+	\param planenum The index of the plane within the global planes array.
+	\return A pointer to the corresponding aas_plane_t, or NULL if the world has not been loaded.
+*/
 aas_plane_t* AAS_PlaneFromNum( int planenum )
 {
 	if( !( *aasworld ).loaded ) {
@@ -1385,11 +1406,6 @@ aas_plane_t* AAS_PlaneFromNum( int planenum )
 	return &( *aasworld ).planes[planenum];
 }
 
-/*
-=============
-AAS_BBoxAreas
-=============
-*/
 int AAS_BBoxAreas( vec3_t absmins, vec3_t absmaxs, int* areas, int maxareas )
 {
 	aas_link_t *linkedareas, *link;

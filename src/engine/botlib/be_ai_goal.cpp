@@ -184,14 +184,16 @@ int				 g_gametype;
 
 // Rafael gameskill
 int				 g_gameskill;
-// done
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
+/*!
+	\brief Retrieve the goal state associated with a handle, returning null if the handle is invalid or unused.
+
+	The function first verifies that the handle is within the valid range (1 to MAX_CLIENTS). If the handle is out of bounds, it logs a fatal error and returns null. It then checks whether a goal
+   state exists at that handle in the global botgoalstates array; if not, it logs another fatal error and returns null. If a goal state is present, the function returns a pointer to it.
+
+	\param handle Index of the goal state to retrieve.
+	\return Pointer to the corresponding bot_goalstate_t, or null on error.
+*/
 bot_goalstate_t* BotGoalStateFromHandle( int handle )
 {
 	if( handle <= 0 || handle > MAX_CLIENTS ) {
@@ -254,12 +256,19 @@ void BotMutateGoalFuzzyLogic( int goalstate, float range )
 	EvolveWeightConfig( gs->itemweightconfig );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Loads item configuration data from a specified file into memory and returns the resulting configuration structure.
+
+	The function first obtains a maximum number of item entries from a library variable, enforcing a sane default if the value is invalid. It copies the supplied file name into a fixed‑size buffer and
+   attempts to open the source file. On success, it allocates a contiguous memory block large enough to hold an itemconfig structure followed by an array of iteminfo structures. The file is parsed
+   token by token; whenever the keyword "iteminfo" is encountered, a new entry is created. The class name string is read, surrounding quotes are stripped, and the name is copied into the structure,
+   after which the remaining fields are populated by a call to ReadStructure. If the number of entries exceeds the maximum, required tokens are missing, or parsing fails, the function frees any
+   allocated memory and the source handle before returning NULL. After successful parsing, the source file is closed, a warning is printed if no entries were loaded, and a success message containing
+   the file path is displayed. The populated itemconfig structure is then returned.
+
+	\param filename The path or name of the configuration file to load.
+	\return A pointer to an itemconfig_t object containing the loaded item information, or NULL if an error occurred.
+*/
 itemconfig_t* LoadItemConfig( char* filename )
 {
 	int			  max_iteminfo;
@@ -340,13 +349,18 @@ itemconfig_t* LoadItemConfig( char* filename )
 	return ic;
 }
 
-//===========================================================================
-// index to find the weight function of an iteminfo
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates an array mapping each iteminfo to its associated fuzzy weight index
+
+	The function allocates a new array of int, sized to the number of iteminfos in the supplied item configuration. It then iterates over every iteminfo, calling FindFuzzyWeight to locate the
+   corresponding weight function in the provided weight configuration. If a weight function cannot be found, a diagnostic message is written via Log_Write and the array entry is left negative. The
+   returned array contains the index of the weight function for each iteminfo, or a negative value when none exists. The caller is responsible for freeing this memory.
+
+	\param iwc The weight configuration used to resolve weight indices
+	\param ic The item configuration containing the list of iteminfos to process
+	\return A pointer to a newly allocated int array whose length equals ic->numiteminfo. Each element holds the index of the fuzzy weight function for the corresponding iteminfo, or a negative value
+   if no weight function could be found.
+*/
 int* ItemWeightIndex( weightconfig_t* iwc, itemconfig_t* ic )
 {
 	int *index, i;
@@ -365,12 +379,14 @@ int* ItemWeightIndex( weightconfig_t* iwc, itemconfig_t* ic )
 	return index;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes or resets the global level item heap.
+
+	If an existing heap exists, it is freed first. The maximum number of level items is obtained from the variable "max_levelitems" (defaulting to 256). Memory sufficient for that many levelitem_t
+   structures is allocated. The structures are then linked together into a singly linked free list by assigning each element's next pointer to the following one; the last element’s next is set to
+   null. The global pointer freelevelitems is set to the head of this list, preparing the system for future item allocations.
+
+*/
 void InitLevelItemHeap()
 {
 	int i, max_levelitems;
@@ -391,12 +407,14 @@ void InitLevelItemHeap()
 	freelevelitems = levelitemheap;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Allocates and returns a level item from the free list, or NULL if none are available.
+
+	The function grabs the first element in the global free list. If no element exists, it logs a fatal error and returns NULL. Otherwise it advances the free list head, zeros the memory of the chosen
+   item with memset, and returns its pointer.
+
+	\return Pointer to the allocated levelitem_t or NULL when no free items remain.
+*/
 levelitem_t* AllocLevelItem()
 {
 	levelitem_t* li;
@@ -414,24 +432,28 @@ levelitem_t* AllocLevelItem()
 	return li;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds a level item back to the global free list for later reuse.
+
+	The function inserts the provided levelitem_t pointed to by li at the head of the free list. It assigns li->next to the current free list head and then updates the free list head pointer to li.
+   This operation merely recycles the item; no memory deallocation occurs.
+
+	\param li Pointer to the level item to be returned to the free list.
+*/
 void FreeLevelItem( levelitem_t* li )
 {
 	li->next	   = freelevelitems;
 	freelevelitems = li;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Insert a level item node at the beginning of the global levelitems list and update its links.
+
+	If the list already contains nodes, the previous head’s prev pointer is set to the new node. The new node’s prev pointer is set to NULL and its next pointer is set to the former head. Finally, the
+   global head pointer is updated to the new node, ensuring the list remains consistent.
+
+	\param li pointer to the level item to be added; the caller must have allocated and initialized the node prior to the call.
+*/
 void AddLevelItemToList( levelitem_t* li )
 {
 	if( levelitems ) {
@@ -443,12 +465,15 @@ void AddLevelItemToList( levelitem_t* li )
 	levelitems = li;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Detaches a level item from the doubly linked list and updates the list head if necessary.
+
+	The function adjusts the neighboring nodes’ pointers: if the removed item has a previous node it connects that node’s next pointer to the removed node’s next; otherwise the global head pointer
+   levelitems is set to the removed node’s next. Finally, if a next node exists its prev pointer is set to the removed node’s previous. This operation removes the node from the list without
+   deallocating it.
+
+	\param li Pointer to the level item to be removed; must already belong to the list and not be null.
+*/
 void RemoveLevelItemFromList( levelitem_t* li )
 {
 	if( li->prev ) {
@@ -463,12 +488,13 @@ void RemoveLevelItemFromList( levelitem_t* li )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Releases all allocated map location and camp spot structures and resets the global lists.
+
+	The function iterates over the linked lists of map locations and camp spots, freeing each node using FreeMemory. After all nodes are freed, the global pointers representing the lists are set to
+   null to indicate that no entities remain.
+
+*/
 void BotFreeInfoEntities()
 {
 	maplocation_t *ml, *nextml;
@@ -489,12 +515,14 @@ void BotFreeInfoEntities()
 	campspots = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes map location and camp spot entities for bot pathfinding.
+
+	First clears any existing entity information, then walks through all entities in the map's BSP data. For each entity named "target_location" it stores its position, name and area number in a
+   linked list of map locations. For each entity named "info_camp" it collects camp spot parameters such as origin, name, range, weight, wait, and random, verifies that the spot is in a valid area,
+   and then adds it to a list of camp spots. If developer mode is enabled it reports the counts of locations and spots processed. Invalid camp spots are discarded with a message message.
+
+*/
 void BotInitInfoEntities()
 {
 	char		   classname[MAX_EPAIRKEY];
@@ -554,12 +582,6 @@ void BotInitInfoEntities()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void BotInitLevelItems()
 {
 	int			  i, spawnflags;
@@ -663,12 +685,6 @@ void BotInitLevelItems()
 	botimport.Print( PRT_MESSAGE, "found %d level items\n", numlevelitems );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotGoalName( int number, char* name, int size )
 {
 	levelitem_t* li;
@@ -690,12 +706,6 @@ void BotGoalName( int number, char* name, int size )
 	return;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotResetAvoidGoals( int goalstate )
 {
 	bot_goalstate_t* gs;
@@ -710,12 +720,6 @@ void BotResetAvoidGoals( int goalstate )
 	memset( gs->avoidgoaltimes, 0, MAX_AVOIDGOALS * sizeof( float ) );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotDumpAvoidGoals( int goalstate )
 {
 	int				 i;
@@ -736,12 +740,16 @@ void BotDumpAvoidGoals( int goalstate )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds an avoidance goal to the bot’s goal state and records its expiration time.
+
+	The function iterates over the array of stored avoidance goals and finds the first slot whose timestamp has passed relative to the current time returned by AAS_Time(). Once found, it stores the
+   provided goal number in that slot and sets its timeout to the current time plus the specified avoidtime. This marks the goal as one that the bot should avoid for the given period.
+
+	\param gs Pointer to the bot’s goal state structure in which avoidance goals are tracked.
+	\param number Identifier of the goal that the bot should avoid.
+	\param avoidtime Duration in seconds that the goal should be avoided before it can be considered again.
+*/
 void BotAddToAvoidGoals( bot_goalstate_t* gs, int number, float avoidtime )
 {
 	int i;
@@ -756,12 +764,6 @@ void BotAddToAvoidGoals( bot_goalstate_t* gs, int number, float avoidtime )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void BotRemoveFromAvoidGoals( int goalstate, int number )
 {
 	int				 i;
@@ -782,12 +784,6 @@ void BotRemoveFromAvoidGoals( int goalstate, int number )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float BotAvoidGoalTime( int goalstate, int number )
 {
 	int				 i;
@@ -809,12 +805,18 @@ float BotAvoidGoalTime( int goalstate, int number )
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Retrieves the goal data for a level item matching a specified classname and index, returning the item's number or -1 if not found.
+
+	The function iterates over the global levelitems list starting with the first item whose number exceeds the supplied index. For each candidate it verifies that the item is appropriate to the
+   current gametype: non‑single‑player, team or free play items are skipped as needed. When the classname matches the item’s name from itemconfig, the goal structure is populated with the item's area,
+   origin, entity number, bounding boxes, and number, and that number is returned. If itemconfig is missing or no matching item is found, the function returns -1.
+
+	\param index The index after which to start searching; items with numbers less than or equal to this value are ignored.
+	\param name The classname to match against the level item's name.
+	\param goal Pointer to a bot_goal_t structure that will receive the goal information for the matched item.
+	\return The unique number of the matched level item, or -1 if no matching item is found.
+*/
 int BotGetLevelItemGoal( int index, char* name, bot_goal_t* goal )
 {
 	levelitem_t* li;
@@ -861,12 +863,6 @@ int BotGetLevelItemGoal( int index, char* name, bot_goal_t* goal )
 	return -1;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int BotGetMapLocationGoal( char* name, bot_goal_t* goal )
 {
 	maplocation_t* ml;
@@ -886,12 +882,6 @@ int BotGetMapLocationGoal( char* name, bot_goal_t* goal )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int BotGetNextCampSpotGoal( int num, bot_goal_t* goal )
 {
 	int			i;
@@ -917,13 +907,6 @@ int BotGetNextCampSpotGoal( int num, bot_goal_t* goal )
 
 	return 0;
 }
-
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 
 // NOTE: enum entityType_t in bg_public.h
 #define ET_ITEM 2
@@ -1069,12 +1052,6 @@ void BotUpdateEntityItems()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotDumpGoalStack( int goalstate )
 {
 	int				 i;
@@ -1093,12 +1070,6 @@ void BotDumpGoalStack( int goalstate )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotPushGoal( int goalstate, bot_goal_t* goal )
 {
 	bot_goalstate_t* gs;
@@ -1119,12 +1090,6 @@ void BotPushGoal( int goalstate, bot_goal_t* goal )
 	memcpy( &gs->goalstack[gs->goalstacktop], goal, sizeof( bot_goal_t ) );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotPopGoal( int goalstate )
 {
 	bot_goalstate_t* gs;
@@ -1140,12 +1105,6 @@ void BotPopGoal( int goalstate )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotEmptyGoalStack( int goalstate )
 {
 	bot_goalstate_t* gs;
@@ -1159,12 +1118,6 @@ void BotEmptyGoalStack( int goalstate )
 	gs->goalstacktop = 0;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotGetTopGoal( int goalstate, bot_goal_t* goal )
 {
 	bot_goalstate_t* gs;
@@ -1395,12 +1348,6 @@ int BotChooseLTGItem( int goalstate, vec3_t origin, int* inventory, int travelfl
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotChooseNBGItem( int goalstate, vec3_t origin, int* inventory, int travelflags, bot_goal_t* ltg, float maxtime )
 {
 	int				 areanum, t, weightnum, ltg_time;
@@ -1579,12 +1526,6 @@ int BotChooseNBGItem( int goalstate, vec3_t origin, int* inventory, int travelfl
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotTouchingGoal( vec3_t origin, bot_goal_t* goal )
 {
 	int	   i;
@@ -1611,12 +1552,6 @@ int BotTouchingGoal( vec3_t origin, bot_goal_t* goal )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotItemGoalInVisButNotVisible( int viewer, vec3_t eye, vec3_t viewangles, bot_goal_t* goal )
 {
 	aas_entityinfo_t entinfo;
@@ -1657,12 +1592,6 @@ int BotItemGoalInVisButNotVisible( int viewer, vec3_t eye, vec3_t viewangles, bo
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotResetGoalState( int goalstate )
 {
 	bot_goalstate_t* gs;
@@ -1678,12 +1607,6 @@ void BotResetGoalState( int goalstate )
 	BotResetAvoidGoals( goalstate );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotLoadItemWeights( int goalstate, char* filename )
 {
 	bot_goalstate_t* gs;
@@ -1713,12 +1636,6 @@ int BotLoadItemWeights( int goalstate, char* filename )
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotFreeItemWeights( int goalstate )
 {
 	bot_goalstate_t* gs;
@@ -1738,12 +1655,6 @@ void BotFreeItemWeights( int goalstate )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotAllocGoalState( int client )
 {
 	int i;
@@ -1759,12 +1670,6 @@ int BotAllocGoalState( int client )
 	return 0;
 }
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
 void BotFreeGoalState( int handle )
 {
 	if( handle <= 0 || handle > MAX_CLIENTS ) {
@@ -1782,12 +1687,6 @@ void BotFreeGoalState( int handle )
 	botgoalstates[handle] = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotSetupGoalAI()
 {
 	char* filename;
@@ -1808,12 +1707,6 @@ int BotSetupGoalAI()
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void BotShutdownGoalAI()
 {
 	int i;

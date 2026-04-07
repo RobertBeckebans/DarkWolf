@@ -73,9 +73,15 @@ static unsigned short int* rev_filtered_areas;
 // misc defines
 unsigned short			   CRC_ProcessString( unsigned char* data, int length );
 
-//===========================================================================
-// Memory debugging/optimization
+/*!
+	\brief Allocates a zero‑initialized block of the given size, increments a global counter, and returns the pointer.
 
+	The function uses malloc to obtain a raw block, then uses memset to clear the memory. This helper is employed during route‑table deserialization to allocate structures such as child and parent
+   links. The global variable memorycount is updated to reflect the total bytes requested, which aids in memory debugging or profiling. If the allocation fails, the returned pointer is NULL.
+
+	\param size number of bytes to allocate
+	\return Pointer to the allocated zeroed memory block, or NULL on failure.
+*/
 void*					   AAS_RT_GetClearedMemory( unsigned long size )
 {
 	void* ptr;
@@ -92,6 +98,18 @@ void*					   AAS_RT_GetClearedMemory( unsigned long size )
 	return ptr;
 }
 
+/*!
+	\brief Frees a previously allocated memory block and updates global memory counters.
+
+	The function records the total memory size before freeing the block, then calls the standard free to release the memory. After the free, it updates a global counter that tracks the number of
+   allocated blocks or memory usage, reducing it by the amount of memory freed.
+
+	This routine depends on global variables such as totalmemorysize and memorycount, so it should be used only in contexts where those globals are correctly maintained.
+
+	No return value is produced because the function has a void return type.
+
+	\param ptr Pointer to the memory block to release.
+*/
 void AAS_RT_FreeMemory( void* ptr )
 {
 	int before;
@@ -105,6 +123,13 @@ void AAS_RT_FreeMemory( void* ptr )
 	memorycount -= before - totalmemorysize;
 }
 
+/*!
+	\brief Prints the current memory usage of the AAS runtime, if enabled.
+
+	When the AAS_RT_MEMORY_USAGE flag is defined, this function writes a newline using botimport.Print and is intended to display the memory usage of each aas_rt_t lump. The actual listing of usage is
+   not yet implemented and is marked as a TODO.
+
+*/
 void AAS_RT_PrintMemoryUsage()
 {
 #ifdef AAS_RT_MEMORY_USAGE
@@ -116,15 +141,16 @@ void AAS_RT_PrintMemoryUsage()
 #endif
 }
 
-//===========================================================================
+/*!
+	\brief Computes the number of visible sub‑areas that have not yet been assigned to a parent, including the area itself.
 
-//===========================================================================
-// return the number of unassigned areas that are in the given area's visible list
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+	The function starts by assuming the area can reach itself, then iterates over the visible area indices stored in the supplied localinfo structure. For each visible area whose child local data
+   entry is NULL—indicating it has not yet been linked—the count is increased. The final count reflects how many areas in the visibility list remain unassigned.
+
+	\param localinfo Pointer to the area’s build‑time local information, which contains the list of visible area indices.
+	\param childlocaldata Array of pointers to child local data structures; a NULL value for a given index means the corresponding area is not yet assigned to a parent.
+	\return The number of visible areas that are currently unassigned, starting with 1 for the area itself.
+*/
 int AAS_RT_GetValidVisibleAreasCount( aas_area_buildlocalinfo_t* localinfo, aas_area_childlocaldata_t** childlocaldata )
 {
 	int i, cnt;
@@ -152,13 +178,17 @@ static aas_rt_route_t** routetable;
 
 int						AAS_AreaRouteToGoalArea( int areanum, vec3_t origin, int goalareanum, int travelflags, int* traveltime, int* reachnum );
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates travel times from child areas to the specified goal area and updates the route table entries accordingly.
 
+	The function iterates over all child route entries, retrieving the corresponding route table record and calling AAS_AreaRouteToGoalArea to determine reachability and travel time. For each child,
+   if the goal area is reachable, the reachable index and travel time are stored in the route table; otherwise the reachable index is set to -1 and the travel time to 0. The static travel flag
+   variable declared at the top is unused.
+
+	This operation populates the route table so that subsequent pathfinding can query the time and reachability information for destinations relative to the goal area.
+
+	\param goalarea Index of the goal area for which travel times are being calculated.
+*/
 void					AAS_RT_CalcTravelTimesToGoalArea( int goalarea )
 {
 	int				i;
@@ -182,15 +212,13 @@ void					AAS_RT_CalcTravelTimesToGoalArea( int goalarea )
 	}
 }
 
-//===========================================================================
-// calculate the initial route-table for each filtered area to all other areas
-//
-// FIXME: this isn't fully operational yet, for some reason not all routes are found
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates the initial route table for each filtered area to all others.
+
+	Assigns the supplied route table pointer to a global variable and then iterates over all filtered child areas, invoking travel time computation for each target area.
+
+	\param parmroutetable Pointer to a pointer where the route table will be stored.
+*/
 void AAS_RT_CalculateRouteTable( aas_rt_route_t** parmroutetable )
 {
 	int i;
@@ -202,12 +230,16 @@ void AAS_RT_CalculateRouteTable( aas_rt_route_t** parmroutetable )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds a new parent link to a child area child local data node.
+
+	Creates a fresh parent link structure using the runtime memory allocator and assigns it to the child pointer. The new link stores the specified parent and child indices and links back to any
+   previously existing parent link, effectively inserting it at the head of the list. The original parent list is preserved through the next pointer.
+
+	\param child pointer to the child area child local data structure to which the new link will be attached
+	\param parentindex numeric index identifying the parent area to link to
+	\param childindex numeric index identifying the position of the child within its parent
+*/
 void AAS_RT_AddParentLink( aas_area_childlocaldata_t* child, int parentindex, int childindex )
 {
 	aas_parent_link_t* oldparentlink;
@@ -221,12 +253,15 @@ void AAS_RT_AddParentLink( aas_area_childlocaldata_t* child, int parentindex, in
 	child->parentlink->next		  = oldparentlink;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Writes a 16‑bit integer to a file in little‑endian byte order.
+
+	The value is transformed into little‑endian form with LittleShort before being written via botimport.FS_Write. This function is intended for serializing data structures for the AAS runtime to
+   file.
+
+	\param fp the file handle to write the value to
+	\param si the 16‑bit integer to serialise
+*/
 void AAS_RT_WriteShort( unsigned short int si, fileHandle_t fp )
 {
 	unsigned short int lsi;
@@ -235,12 +270,15 @@ void AAS_RT_WriteShort( unsigned short int si, fileHandle_t fp )
 	botimport.FS_Write( &lsi, sizeof( lsi ), fp );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Writes the low byte of an integer to a specified file stream.
+
+	The function casts the provided integer to an unsigned char, limiting the value to 0–255, and writes this single byte to the file referenced by the file handle using the botimport.FS_Write call.
+   It does not perform any buffering or error checking beyond the underlying write operation.
+
+	\param fp A valid file handle to which the byte is written.
+	\param si The integer value whose least‑significant byte is written; values above 255 are truncated to fit into a byte.
+*/
 void AAS_RT_WriteByte( int si, fileHandle_t fp )
 {
 	unsigned char uc;
@@ -249,13 +287,15 @@ void AAS_RT_WriteByte( int si, fileHandle_t fp )
 	botimport.FS_Write( &uc, sizeof( uc ), fp );
 }
 
-//===========================================================================
-//	writes the current route-table data to a .rtb file in tne maps folder
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief writes the current route table data to a .rtb file in the maps folder
+
+	The function builds the filename using the current map name and attempts to open it for writing. If the file cannot be opened, it logs an error and returns. On success, it writes a header
+   consisting of an identifier, version number, and a CRC checksum of the aasworld area data. Following the header, it serializes the route table structure by writing the number of children, followed
+   by the child entries, then the number of parents and parent entries, the parent–child relationships, visible parent indices, and finally the parent link entries. The file is closed before the
+   function exits. All data is written in little-endian format using the provided file system utilities.
+
+*/
 void AAS_RT_WriteRouteTable()
 {
 	int			   ident, version;
@@ -311,25 +351,35 @@ void AAS_RT_WriteRouteTable()
 	return;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reads a specified number of bytes from a file descriptor into a buffer.
+
+	The function forwards the call to botimport.FS_Read, passing along the provided buffer, size, and file descriptor. It provides a convenient interface within the AAS_RT_DBG submodule.
+
+	\param buf Destination buffer to receive the read data.
+	\param fp File descriptor from which to read.
+	\param size Number of bytes to read.
+*/
 void AAS_RT_DBG_Read( void* buf, int size, int fp )
 {
 	botimport.FS_Read( buf, size, fp );
 }
 
-//===========================================================================
-//	reads the given file, and creates the structures required for the route-table system
-//
-// Parameter:				-
-// Returns:					qtrue if succesful, qfalse if not
-// Changes Globals:		-
-//===========================================================================
 #define DEBUG_READING_TIME
+
+/*!
+	\brief Reads a route table from a file into the current world object and validates its consistency with the current AAS data.
+
+	The function begins by loading a header that contains an identifier and a version number; it verifies that both match the expected constants, and signals an error if they do not. It then reads a
+   16‑bit CRC from the file and computes a CRC on the in‑memory AAS area data; if the CRCs do not equal the route table is rejected as incompatible with the current AAS file, an error is reported and
+   the function exits. Upon successful validation the function reads the lists that make up the route table: children, parents, parentChildren, visibleParents, and parentLinks. For each list it
+   allocates the appropriate amount of memory, reads the raw data from the file, and if the data may have been written on a different endianness, converts all multi‑byte fields to host order. After
+   all structures are populated an array mapping each area to its child index is constructed. Finally the function logs the number of parents, children, and the total memory used, closes the file and
+   returns a success flag. Any failure in the validation or reading process results in the file being closed and a failure flag returned.
+
+	\param fp handle of the file from which the route table should be read
+	\return qtrue if the route table was read and validated successfully, qfalse otherwise
+*/
 qboolean AAS_RT_ReadRouteTable( fileHandle_t fp )
 {
 	int					  ident, version, i;
@@ -479,6 +529,15 @@ qboolean AAS_RT_ReadRouteTable( fileHandle_t fp )
 	return qtrue;
 }
 
+/*!
+	\brief Counts the number of parent links attached to the supplied child area data.
+
+	The function traverses the singly linked list of parent links stored in child->parentlink. It walks the chain, incrementing a counter for each link encountered, and returns the total count. If the
+   child has no parent links, the function returns zero. The algorithm is linear in the number of links, O(n).
+
+	\param child pointer to the child area local data structure whose parent link list is to be counted
+	\return the number of parent links linked to the child
+*/
 int AAS_RT_NumParentLinks( aas_area_childlocaldata_t* child )
 {
 	aas_parent_link_t* plink;
@@ -1013,13 +1072,6 @@ void AAS_RT_BuildRouteTable()
 	botimport.Print( PRT_MESSAGE, "---------------------------------\n" );
 }
 
-//===========================================================================
-//	free permanent memory used by route-table system
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void AAS_RT_ShutdownRouteTable()
 {
 	if( !aasworld->routetable ) {
@@ -1043,23 +1095,29 @@ void AAS_RT_ShutdownRouteTable()
 	aasworld->routetable = NULL;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Retrieves the first parent link associated with a given child routing structure.
+
+	The function indexes the global route table’s parentLinks array using the child’s startParentLinks field and returns a pointer to the corresponding parent link. It assumes that child is a valid
+   pointer and that startParentLinks references a valid index within the array. No bounds checking is performed.
+
+	\param child pointer to the child routing structure whose first parent link is requested
+	\return pointer to the first parent link of the specified child
+*/
 aas_rt_parent_link_t* AAS_RT_GetFirstParentLink( aas_rt_child_t* child )
 {
 	return &aasworld->routetable->parentLinks[child->startParentLinks];
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Return the runtime child data for a given area number if one exists, otherwise return null
+
+	The function looks up the child index for the specified area in the runtime route table. The routetable stores child indices offset by one, so the function subtracts one to obtain a zero‑based
+   index. If the resulting index is negative or zero, indicating the area has no child, the function returns NULL. Otherwise it returns a pointer to the child structure for that area.
+
+	\param areanum area number for which to retrieve child data
+	\return pointer to the aas_rt_child_t structure representing the child of the area, or NULL if the area has no child
+*/
 aas_rt_child_t* AAS_RT_GetChild( int areanum )
 {
 	int i;
@@ -1127,6 +1185,28 @@ aas_rt_route_t* AAS_RT_GetRoute( int srcnum, vec3_t origin, int destnum )
 //===========================================================================
 #include "botshared/be_ai_goal.h"
 
+/*!
+	\brief Selects the most accessible reachability from the current area toward the goal while respecting area restrictions and avoidance rules.
+
+	The function first validates that the current area is numeric; if not, it returns zero.  It propagates travel‑blocking flags ("do not enter" and "do not enter large") when either the current or
+   goal area carries those restrictions.  Then it iterates over all reachabilities originating from the current area.  For each link, it may be skipped if it is marked in the avoid lists or if an
+   attempt counter exceeds the threshold.  If a movement test fails or the arrival area is not reachable from the destination area, the link is ignored.  It also avoids stepping back into the previous
+   area when the goal remains unchanged.  Travel time to the goal area is computed with a loop‑checking routine; if reachable, the link’s travel time plus the link’s own travel time is used to rank
+   candidates.  The link with the lowest accumulated travel time is selected and its numeric identifier is returned; if none satisfies the constraints, zero is returned.
+
+	\param origin The bot's current position in world coordinates.
+	\param areanum The area number the bot is currently in.
+	\param entnum Entity number of the bot (used for per‑entity area checks).
+	\param lastgoalareanum The area number of the goal in the previous hop (used to avoid returning to the same goal).
+	\param lastareanum The area number the bot came from in the previous hop.
+	\param avoidreach Array of reachability numbers to temporarily skip.
+	\param avoidreachtimes Parallel array of timestamps until which each avoid reachability remains blocked.
+	\param avoidreachtries Parallel array counting how many times each avoid entry has been attempted.
+	\param goal Pointer to the goal structure containing its area number and origin.
+	\param travelflags Bitmask of travel flags influencing traversal eligibility.
+	\param movetravelflags Bitmask used for movement‑specific travel validation.
+	\return A reachability number that leads closer to the goal, or zero if no suitable link is found.
+*/
 int	 BotGetReachabilityToGoal( vec3_t origin,
 	 int							  areanum,
 	 int							  entnum,
@@ -1506,11 +1586,6 @@ qboolean AAS_RT_GetHidePos( vec3_t srcpos, int srcnum, int srcarea, vec3_t destp
 #endif
 }
 
-/*
-=================
-AAS_RT_GetReachabilityIndex
-=================
-*/
 int AAS_RT_GetReachabilityIndex( int areanum, int reachIndex )
 {
 	//	return (*aasworld).areasettings[areanum].firstreachablearea + reachIndex;

@@ -109,12 +109,16 @@ int Sys_MilliSeconds()
 #endif
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Validates a client number against the allowed range and logs an error when it is outside this range.
+
+	The function ensures that the supplied client number falls between 0 and the maximum number of supported clients (inclusive). If it lies outside this inclusive boundary, an error message is output
+   using botimport.Print, indicating the provided number and the valid range, and the function returns false. A valid number causes the function to return true.
+
+	\param num the client number to be validated
+	\param str a contextual string used in the error message
+	\return Returns true if the client number is within the valid range, false otherwise.
+*/
 qboolean ValidClientNumber( int num, char* str )
 {
 	if( num < 0 || num > botlibglobals.maxclients ) {
@@ -126,12 +130,17 @@ qboolean ValidClientNumber( int num, char* str )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Verifies that a supplied entity number is in the valid range and logs an error if it is not.
+
+	The function checks whether the entity number falls within the inclusive interval [0, maxentities] as defined by botlibglobals.maxentities. If the number is outside this range, it logs an error
+   using botimport.Print, including the supplied string for context, the invalid number, and the maximum allowed value. After reporting the error it returns false, otherwise it returns true to
+   indicate a valid entity number.
+
+	\param num the entity number to validate
+	\param str a context string used as a prefix in the error message
+	\return true if the number is in the valid range, false otherwise
+*/
 qboolean ValidEntityNumber( int num, char* str )
 {
 	if( num < 0 || num > botlibglobals.maxentities ) {
@@ -142,12 +151,15 @@ qboolean ValidEntityNumber( int num, char* str )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Checks whether the bot library has been initialized and reports an error if not.
+
+	The function verifies the global flag that signals whether the bot library has been set up. If the flag is false, it prints a message indicating that the bot library was used before being set up,
+   using the supplied string to identify the calling function, and returns false. If the flag is true, it returns true.
+
+	\param str Identifier of the calling function, used in the error message.
+	\return True if the bot library is set up; otherwise false.
+*/
 qboolean BotLibSetup( char* str )
 {
 	//	return qtrue;
@@ -160,12 +172,15 @@ qboolean BotLibSetup( char* str )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the bot library and runs setup for AI, entity assistance, movement, and related subsystems.
+
+	The function first updates the bot developer flag from a configuration variable, then performs byte‑swapping initialization and opens the botlib log file. A message announcing the start of
+   initialization is printed. Global limits for clients and entities are loaded from configuration values. Sequentially, the core setup routines for AAS, EA, and movement AI are invoked; any error
+   returned by these functions causes early exit with that error. If all steps succeed, flags indicating completion of botlib setup are set to true and a success code is returned.
+
+	\return On success returns BLERR_NOERROR; otherwise returns the specific error code from the first failing subsystem.
+*/
 int Export_BotLibSetup()
 {
 	int errnum;
@@ -210,12 +225,17 @@ int Export_BotLibSetup()
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Shuts down the bot library, releasing all associated resources and subsystems.
+
+	The function first ensures the library was previously initialized via BotLibSetup; if not, it returns BLERR_LIBRARYNOTSETUP. A recursion guard protects against re‑entrant calls; subsequent
+   invocations merely return BLERR_NOERROR. On a clean shutdown, it sequentially deactivates chat, movement, goal, weapon, weights, and character AI modules, shuts down the AAS and elementary actions
+   systems, deallocates all libvars, removes global pre‑compiler defines, and shuts down the logging facility. Global flags botlibsetup and botlibglobals.botlibsetup are reset, the recursion counter
+   cleared, and any still‑open source handles are reported. In a debug build, memory usage is logged before final shutdown.
+
+
+	\return An error code; BLERR_NOERROR on success, BLERR_LIBRARYNOTSETUP if the library had not been set up.
+*/
 int Export_BotLibShutdown()
 {
 	static int recursive = 0;
@@ -262,24 +282,33 @@ int Export_BotLibShutdown()
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Sets a bot library variable identified by name to a supplied value and signals success via return code.
+
+	The function forwards the variable name and value to the underlying LibVarSet mechanism, which updates the associated global state within the bot framework. After the update, it returns a status
+   code indicating that the operation completed successfully. There are no conditional failure paths in this implementation; it always reports success.
+
+	\param var_name C style string containing the name of the variable to set
+	\param value C style string containing the new value for the variable
+	\return Zero (BLERR_NOERROR) to indicate the variable was set without error
+*/
 int Export_BotLibVarSet( char* var_name, char* value )
 {
 	LibVarSet( var_name, value );
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Retrieve a bot library variable string into a supplied buffer
+
+	The function obtains the value of a bot library variable named by var_name using LibVarGetString, then copies up to size-1 characters into the buffer pointed to by value, ensuring the buffer is
+   null terminated. It returns BLERR_NOERROR to indicate success.
+
+	\param var_name Name of the variable whose value is to be retrieved
+	\param value Pointer to a buffer where the retrieved string will be stored
+	\param size Maximum length of the destination buffer, including space for the terminating null character
+	\return BLERR_NOERROR on success
+*/
 int Export_BotLibVarGet( char* var_name, char* value, int size )
 {
 	char* varvalue;
@@ -290,12 +319,17 @@ int Export_BotLibVarGet( char* var_name, char* value, int size )
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Starts a new frame for the bot library, ensuring initialization before delegating to AAS_StartFrame.
+
+	The function first calls BotLibSetup with the name "BotStartFrame" to make sure the bot library is properly initialized.
+	If the setup fails, it immediately returns the error code BLERR_LIBRARYNOTSETUP.
+	On success, it forwards the supplied time to AAS_StartFrame and returns the status code obtained from that call.
+	Thus, the function acts as a guard and wrapper around the core frame‑starting routine.
+
+	\param time the current frame time used by AAS_StartFrame
+	\return An integer status code: BLERR_LIBRARYNOTSETUP if the library is not initialized, otherwise the result of AAS_StartFrame.
+*/
 int Export_BotLibStartFrame( float time )
 {
 	if( !BotLibSetup( "BotStartFrame" ) ) {
@@ -305,12 +339,15 @@ int Export_BotLibStartFrame( float time )
 	return AAS_StartFrame( time );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Loads the bot infrastructure for a map, initializing AAS data and level items.
+
+	The function first ensures that the bot library is properly set up. If setup succeeds, it prints a header, loads AAS data for the specified map, and returns an error code if the load fails. On
+   success, it initializes level items and brush model types, prints a footer, and may output timing information in debug builds. Finally it returns a zero error code indicating success.
+
+	\param mapname Name of the map to load; a C‑style string
+	\return Zero on success or a BLERR_ error code indicating the nature of the failure.
+*/
 int Export_BotLibLoadMap( const char* mapname )
 {
 #ifdef DEBUG
@@ -343,12 +380,16 @@ int Export_BotLibLoadMap( const char* mapname )
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Updates the state of a specified entity in the bot library after confirming setup and validity.
+
+	The routine first ensures that the bot library is initialized by calling BotLibSetup. If the library is not set up, it returns BLERR_LIBRARYNOTSETUP. It then checks that the provided entity number
+   is valid; if not, it returns BLERR_INVALIDENTITYNUMBER. When both checks pass, the update request is forwarded to AAS_UpdateEntity, whose return value is propagated back to the caller.
+
+	\param ent The identifier of the entity to update.
+	\param state A pointer to the new bot entity state data that will be used for the update.
+	\return The integer result from AAS_UpdateEntity, which may indicate success or specific error codes such as BLERR_LIBRARYNOTSETUP or BLERR_INVALIDENTITYNUMBER.
+*/
 int Export_BotLibUpdateEntity( int ent, bot_entitystate_t* state )
 {
 	if( !BotLibSetup( "BotUpdateEntity" ) ) {
@@ -362,12 +403,6 @@ int Export_BotLibUpdateEntity( int ent, bot_entitystate_t* state )
 	return AAS_UpdateEntity( ent, state );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void	 AAS_TestMovementPrediction( int entnum, vec3_t origin, vec3_t dir );
 void	 ElevatorBottomCenter( aas_reachability_t* reach, vec3_t bottomcenter );
 int		 BotGetReachabilityToGoal( vec3_t origin,
@@ -400,6 +435,19 @@ qboolean AAS_GetRouteFirstVisPos( vec3_t srcpos, vec3_t destpos, int travelflags
 
 void	 AAS_SetAASBlockingEntity( vec3_t absmin, vec3_t absmax, qboolean blocking );
 
+/*!
+	\brief Perform diagnostic visualizations and debug logging based on global settings for a specified world location.
+
+	This function examines several global debug flags and, depending on their values, performs visual tracing and logging for various aspects of the AI navigation world. It typically displays the
+   current area, the target area, a hide area, or a route visibility area, and prints travel times or area properties. In all cases, it returns 0, so the integer return value is not used for any
+   further logic.
+
+	\param parm0 Bitfield flags controlling which diagnostics to perform; bit 0 requests setting a new goal area based on the supplied coordinates.
+	\param parm1 Unreferenced string parameter; historically intended for an optional label or identifier but currently unused.
+	\param parm2 3‑D position vector used as the reference point for diagnostics; normally the enemy or test location.
+	\param parm3 Unreferenced 3‑D vector; reserved for future extensions but not used in the present implementation.
+	\return Zero, indicating success (the return value is not used elsewhere).
+*/
 int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 {
 	//	return AAS_PointLight(parm2, NULL, NULL, NULL);
@@ -755,10 +803,14 @@ int		 BotExportTest( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 )
 	return 0;
 }
 
-/*
-============
-Init_AAS_Export
-============
+/*!
+	\brief Populate the AAS export structure with pointers to the AAS subsystem implementation functions.
+
+	The function assigns each function pointer field in the aas_export_t structure to the corresponding implementation function located in various source files such as be_aas_entity.c, be_aas_main.c,
+   be_aas_sample.c, be_aas_bspq3.c, be_aas_reach.c, be_aas_route.c, be_aas_move.c, and be_aas_routetable.c. By doing so it exposes the AAS API to other parts of the engine or game code. The routine
+   should be invoked once during initialization before any code attempts to use the exported AAS functions.
+
+	\param aas pointer to the export table to populate
 */
 static void Init_AAS_Export( aas_export_t* aas )
 {
@@ -816,10 +868,13 @@ static void Init_AAS_Export( aas_export_t* aas )
 	// done.
 }
 
-/*
-============
-Init_EA_Export
-============
+/*!
+	\brief Initializes an ea_export_t instance with function pointers to client command actions.
+
+	This function populates all members of the ea_export_t structure with the appropriate EA_ prefixed functions. Each member pointer such as EA_Say, EA_Talk, or EA_Move is set to the corresponding
+   implementation function. The structure then provides a table of callbacks that the rest of the system can use to invoke client commands.
+
+	\param ea pointer to the structure that will be initialized and populated with function callbacks
 */
 static void Init_EA_Export( ea_export_t* ea )
 {
@@ -854,10 +909,14 @@ static void Init_EA_Export( ea_export_t* ea )
 	ea->EA_ResetInput	= EA_ResetInput;
 }
 
-/*
-============
-Init_AI_Export
-============
+/*!
+	\brief Sets all function pointers in an ai_export_t instance to the corresponding AI subsystem implementations.
+
+	The function assigns each function pointer field of the supplied ai_export_t structure to the matching implementation from the character, chat, goal, movement, weapon, and genetics modules. It
+   prepares the ai object for use by the game engine, ensuring that any AI queries will delegate to the correct subsystem functions. The function assumes the caller has allocated and passed a valid
+   ai_export_t pointer; no additional memory is allocated or freed within this routine.
+
+	\param ai A pointer to the ai_export_t structure that will be populated with function pointers. It must be non‑null when passed to this function.
 */
 static void Init_AI_Export( ai_export_t* ai )
 {

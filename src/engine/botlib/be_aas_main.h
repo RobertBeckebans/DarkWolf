@@ -53,17 +53,66 @@ int		   AAS_LoadMap( const char* mapname );
 int		   AAS_StartFrame( float time );
 #endif // AASINTERN
 
-// returns true if AAS is initialized
+/*!
+	\brief Return a nonzero value when the AAS system has been initialized.
+
+	The function accesses the global AAS world structure and returns its initialized flag. An initialized value of zero indicates that the AAS data has not been loaded, while any non‑zero value
+   signals that the AAS is ready for use. This check is performed by the bot libraries before performing AAS queries.
+
+	\return An integer that is zero when the AAS is not initialized; otherwise a non‑zero value indicates initialization.
+*/
 int	  AAS_Initialized();
-// returns true if the AAS file is loaded
+
+/*!
+	\brief Returns a value indicating whether the AAS file is loaded.
+
+	The function checks the global aasworld structure's loaded flag and returns its value. A non-zero return signifies that the AAS data has been successfully loaded, while zero indicates it is not
+   loaded.
+
+	\return int; non-zero if the AAS file is loaded, otherwise zero.
+*/
 int	  AAS_Loaded();
-// returns the model name from the given index
+
+/*!
+	\brief retrieves the model name for a given index
+
+	Historically this function returned a pointer to the model name string from the configuration strings using a lookup helper. The CS_MODELS defines were removed, so the function currently returns a
+   null pointer and acts as a placeholder for a future implementation. It should return the model name or null if the index is out of bounds or not implemented.
+
+	\param index the index into the model configuration strings
+	\return a pointer to the model name string for the given index, or null if the index is invalid or the function is not yet implemented
+*/
 char* AAS_ModelFromIndex( int index );
-// returns the index from the given model name
+
+/*!
+	\brief Obtains the AAS numeric index for a specified model name
+
+	Historically this function searched the AI navigation system's model configuration strings for the given filename and returned its corresponding index. Within this code base the lookup logic has
+   been removed, leaving the function as a placeholder that currently returns zero. The intended behavior is to map a model string such as \"models/weapons/grapple/hook/tris.md2\" to the internal
+   model index used by the AAS system, returning 0 when the model is not present. TODO: clarify whether this placeholder should be replaced with working logic or deprecated.
+
+	\param modelname The model file name, including path and extension, to look up in the AAS configuration
+	\return The numeric configuration index for the specified model, or 0 if the model is not found or the function is in its placeholder form.
+*/
 int	  AAS_IndexFromModel( char* modelname );
-// returns the current time
+
+/*!
+	\brief Returns the current AAS world time.
+
+	This function accesses the global AAS world structure and retrieves the value stored in its time member. The returned value is a floating point representation of the current simulation time within
+   the AAS system.
+
+	\return The current time value from the AAS world time field.
+*/
 float AAS_Time();
 
-// Ridah
+/*!
+	\brief Sets the current AAS world to the world at the given index.
+
+	The function verifies that the supplied index lies within the valid range [0, MAX_AAS_WORLDS-1]. If the index is outside this range an error message is emitted via AAS_Error and the function exits
+   without changing the current world. On success it sets the global pointer to the corresponding world entry.
+
+	\param index zero‑based index of the world to activate
+*/
 void  AAS_SetCurrentWorld( int index );
 // done.

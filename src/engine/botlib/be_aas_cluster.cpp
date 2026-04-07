@@ -60,12 +60,13 @@ extern botlib_import_t botimport;
 // do not flood through area faces, only use reachabilities
 int	 nofaceflood = qtrue;
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Resets the cluster identifiers for all defined AAS areas to zero.
+
+	The function iterates over every area in the AAS world whose index is greater than zero and assigns a cluster value of zero. This removes any cluster association that might have been previously
+   assigned to those areas. Area zero is left untouched, presumably because it has a special role or is not intended to belong to a cluster. After execution, no area will be associated with a cluster.
+
+*/
 void AAS_RemoveClusterAreas()
 {
 	int i;
@@ -75,12 +76,14 @@ void AAS_RemoveClusterAreas()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Resets all area cluster assignments equal to a specified cluster number to zero.
+
+	The function iterates over all areas in the global world except the first, checks each area's cluster setting, and if it matches the provided cluster number, the cluster is cleared by setting it
+   to zero. This effectively removes the specified cluster from all areas that were using it.
+
+	\param clusternum The cluster number whose assignments should be cleared.
+*/
 void AAS_ClearCluster( int clusternum )
 {
 	int i;
@@ -92,12 +95,15 @@ void AAS_ClearCluster( int clusternum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Clears references to the specified cluster in the AAS world portal list.
+
+	The function loops over all portals in the global AAS world data structure, starting at index 1. For each portal, it checks whether either the front or back cluster matches the supplied cluster
+   number. If a match is found, the corresponding cluster field is set to 0, effectively removing the connection to that cluster. This is typically used when a cluster is being deleted or detached
+   from the navigation graph.
+
+	\param clusternum The cluster ID whose portal references are to be cleared.
+*/
 void AAS_RemovePortalsClusterReference( int clusternum )
 {
 	int portalnum;
@@ -113,12 +119,18 @@ void AAS_RemovePortalsClusterReference( int clusternum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Associates an area with a portal and updates the portal's cluster links, returning success status
+
+	The function iterates through all portals to find one belonging to the supplied area. If the portal already has either front or back cluster matching the provided cluster number, the function
+   reports success. If the portal has no clusters yet, it assigns the missing side; otherwise, if both sides are occupied it reports that the portal separates more than two clusters and clears the
+   cluster portal flag for the area. It then records the portal in the cluster's index, increments cluster portal counts, and records the portal's negative number as the area's cluster value. Errors
+   are logged when the portal cannot be found or when the portal index size limit is exceeded.
+
+	\param areanum the index of the area whose portal is being updated
+	\param clusternum the index of the cluster to associate with the portal side
+	\return 1 if the portal is already updated or has been successfully updated, 0 if an error occurs (portal belongs to more than two clusters or portal not found)
+*/
 int AAS_UpdatePortal( int areanum, int clusternum )
 {
 	int			   portalnum;
@@ -181,12 +193,21 @@ int AAS_UpdatePortal( int areanum, int clusternum )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively adds an area and all areas connected through faces or reachabilities to a cluster, updating cluster information and handling portal adjustments
+
+	The function verifies that the supplied area number is within bounds and that the area has not already been assigned to a different cluster. If the area is part of a cluster portal it delegates to
+   AAS_UpdatePortal. Otherwise it records the cluster number and the index within the cluster for the area, increments the cluster’s area count, and then propagates the assignment recursively.
+
+	For non‑portal areas the flood proceeds in two stages: first, through adjacent faces unless the global nofaceflood flag suppresses this step; second, through the reachability list for the area. In
+   either stage the function calls itself recursively for each target area, returning false if any recursion fails. If all recursive calls succeed, it returns true.
+
+	An error is logged when an area is found to belong to a cluster different from the target cluster, indicating an unintended cross‑cluster reachability, and the function then returns false.
+
+	\param areanum The index of the area to start the flood from
+	\param clusternum The cluster identifier to which the area and its neighbors should be assigned
+	\return Non‑zero if the flood succeeded and the area was added to the cluster; zero if an error occurred or the area was already linked to a different cluster.
+*/
 int AAS_FloodClusterAreas_r( int areanum, int clusternum )
 {
 	aas_area_t* area;
@@ -262,13 +283,15 @@ int AAS_FloodClusterAreas_r( int areanum, int clusternum )
 	return qtrue;
 }
 
-//===========================================================================
-// try to flood from all areas without cluster into areas with a cluster set
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Floods unclustered areas by propagating cluster assignments from neighboring clustered areas via reachability data.
+
+	The function iterates over all areas in the world except the first one.  For each area that has no cluster set and is not itself a cluster portal, it scans the list of reachable areas.  If a
+   reachable area is a cluster portal it is ignored; otherwise, if that area already has a cluster set, the function calls the recursive flood routine to propagate the current cluster to the area in
+   question.  Failure of any recursive call causes the function to return qfalse immediately; otherwise it continues.  After all areas have been processed, the function returns qtrue.
+
+	\param clusternum The cluster index that will be assigned to unclustered areas when the flood proceeds
+*/
 int AAS_FloodClusterAreasUsingReachabilities( int clusternum )
 {
 	int i, j, areanum;
@@ -309,12 +332,15 @@ int AAS_FloodClusterAreasUsingReachabilities( int clusternum )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Assigns unique area numbers to each portal of a specified cluster.
+
+	For the cluster identified by clusternum, the function walks through its list of portal indices. For each portal, it determines whether the given cluster occupies the portal’s front or back side.
+   Depending on that side, the portal’s clusterareanum field is set to the current numareas value of the cluster, and then the cluster’s numareas counter is incremented. This establishes a sequential
+   numbering of portal sides within the cluster.
+
+	\param clusternum Index of the cluster whose portals should be numbered
+*/
 void AAS_NumberClusterPortals( int clusternum )
 {
 	int			   i, portalnum;
@@ -336,12 +362,18 @@ void AAS_NumberClusterPortals( int clusternum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Numbers all areas and portals in a cluster, assigning internal cluster area numbers and differentiating reachable from unreachable ones.
+
+	The function first resets the cluster’s area counters. It then scans every area; if an area belongs to the cluster and is reachable, it receives a cluster‑specific number and contributes to both
+   the total area count and the reachability count. Next, all portals of the cluster that lead to a reachable area are numbered and the reachability count is incremented. After that, any areas that
+   are not reachable are numbered, increasing only the total area count. Finally, all portals that lead to unreachable areas are numbered without affecting the reachability count. The numbering is
+   stored in the world’s data structures: each area’s clusterareanum field and each portal’s clusterareanum entries.
+
+	The routine assumes a valid cluster index and no bounds checking is performed. The numbering scheme is used later for pathfinding and navigation within the cluster.
+
+	\param clusternum The index of the cluster to number its areas and portals.
+*/
 void AAS_NumberClusterAreas( int clusternum )
 {
 	int			   i, portalnum;
@@ -429,12 +461,16 @@ void AAS_NumberClusterAreas( int clusternum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Builds connected area clusters by flooding the world and recording their boundaries
+
+	The function first removes any previously stored cluster data, then iterates over all non‑dummy areas in the world. For each area that is not already assigned to a cluster, does not contain a
+   portal, and satisfies reachability conditions when nofaceflood is enabled, it starts a new cluster. It initializes a fresh cluster structure, performs a recursive flood to collect all reachable
+   areas, augments that list using reachabilities, numbers the cluster areas, and increments the global cluster count. If the maximum cluster limit is exceeded or a flood operation fails, the function
+   returns "qfalse" and logs an error.
+
+	\return qtrue if all clusters were successfully created, otherwise qfalse
+*/
 int AAS_FindClusters()
 {
 	int			   i;
@@ -491,12 +527,14 @@ int AAS_FindClusters()
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates portal entries for all cluster portal areas and logs each portal.
+
+	Iterates over all areas starting from index 1 and for any area flagged as a cluster portal, creates a portal record in the global AAS world structure. Each portal record is initialized with the
+   area number, and front and back cluster identifiers set to 0. If the total number of portals would exceed the maximum allowed, the function calls AAS_Error and aborts. Each created portal is logged
+   and the global portal count is incremented.
+
+*/
 void AAS_CreatePortals()
 {
 	int			  i;
@@ -520,12 +558,21 @@ void AAS_CreatePortals()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively marks all connected areas from a starting area through non‑solid faces.
+
+	The function takes a list of area identifiers and, starting from a specified index within that list, traverses each face of the current area. Non‑solid faces are inspected to find the adjacent
+   area on the other side of the face. If that adjacent area is also in the supplied list and has not yet been marked, the function recurses with that adjacent area as the new starting point. As a
+   side effect, the "connectedareas" array is used both as a visited set and as the result, storing a boolean value for each index in the area list. After the function returns, "connectedareas[i]" is
+   true for every area in the list that can be reached from the original area via a path of non‑solid faces.
+
+	The algorithm assumes that "areanums" and "connectedareas" are of length "numareas" and that the global AAS world data structures are correctly initialized.
+
+	\param areanums array of area identifiers to consider in the search
+	\param numareas number of elements in the areanums and connectedareas arrays
+	\param connectedareas boolean array marking whether each area has been reached; used as both visitation flag and result
+	\param curarea index into areanums indicating the area currently being expanded
+*/
 void AAS_ConnectedAreas_r( int* areanums, int numareas, int* connectedareas, int curarea )
 {
 	int			i, j, otherareanum, facenum;
@@ -574,12 +621,17 @@ void AAS_ConnectedAreas_r( int* areanums, int numareas, int* connectedareas, int
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determine whether a set of area numbers is fully connected through portals.
+
+	The function starts by clearing an array that will record which areas are reachable. If the number of areas is less than 1, it immediately returns false. For a single area it returns true. For
+   multiple areas it calls the recursive helper to mark all areas reachable from the first one. After traversal, it verifies that every supplied area was marked; if any area was left unreachable, it
+   returns false; otherwise it returns true.
+
+	\param areanums An array of area identifiers to test for connectivity.
+	\param numareas The number of identifiers in the areanums array.
+	\return True if every area can reach every other, false otherwise.
+*/
 qboolean AAS_ConnectedAreas( int* areanums, int numareas )
 {
 	int connectedareas[MAX_PORTALAREAS], i;
@@ -605,13 +657,20 @@ qboolean AAS_ConnectedAreas( int* areanums, int numareas )
 	return qtrue;
 }
 
-//===========================================================================
-// gets adjacent areas with less presence types recursively
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively collects adjacent areas that have a subset of presence types, storing their identifiers in a supplied array.
+
+	The function begins by adding the current area to the list and then iterates over each face of that area. Faces marked as solid are skipped. For each non‑solid face it determines the area on the
+   opposite side of the face. If that neighboring area has a presencetype that is a proper subset of the current area's presencetype (i.e., the current area contains all the presence bits of the
+   neighbor but no additional bits) and it is not already in the list, the function recurses on that neighbor. The recursion stops when there are no further qualifying adjacent areas or when the
+   number of collected areas would exceed the defined limit of MAX_PORTALAREAS. In that case AAS_Error is invoked and the current count is returned. This mechanism is used to gather connected areas
+   that share the same or a smaller set of presence types for further processing in cluster creation.
+
+	\param areanums array that receives the area numbers identified during the recursion
+	\param numareas current count of areas already stored in the array, incremented as new areas are added
+	\param curareanum area identifier for the area being processed in the current recursion step
+	\return The total number of areas found and stored in the array after the recursion completes
+*/
 int AAS_GetAdjacentAreasWithLessPresenceTypes_r( int* areanums, int numareas, int curareanum )
 {
 	int			i, j, presencetype, otherpresencetype, otherareanum, facenum;
@@ -666,12 +725,17 @@ int AAS_GetAdjacentAreasWithLessPresenceTypes_r( int* areanums, int numareas, in
 	return numareas;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether the specified area can form part of a cluster portal and, if so, marks the area and its adjacent areas as portal and route areas.
+
+	The function first confirms the area is not already flagged as a portal and is ground‑connected. It collects all adjacent areas that share faces with fewer presence types. For each of these
+   neighboring areas it examines their shared faces to separate them into front and back groups, ensuring each group contains at least one face and that all front faces share a common plane and all
+   back faces share another. It checks connectivity of the front and back groups, then guarantees that no edge of a front face is shared by a back face. If all conditions are met, the function flags
+   each area in the set with the cluster portal and route portal bits, logs the action, and returns the number of areas added. If any check fails the function returns 0 and makes no changes.
+
+	\param areanum Index of the area to evaluate for potential portal inclusion.
+	\return The number of areas that were successfully marked as part of a new cluster portal; returns 0 if the area cannot serve as a portal.
+*/
 int AAS_CheckAreaForPossiblePortals( int areanum )
 {
 	int			i, j, k, fen, ben, frontedgenum, backedgenum, facenum;
@@ -854,12 +918,13 @@ int AAS_CheckAreaForPossiblePortals( int areanum )
 	return numareas;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Counts all potential portals in the current AAS world and reports the total.
+
+	Iterates through each area of the AAS world (starting from area 1) and calls AAS_CheckAreaForPossiblePortals to determine how many portals that area can form. Sums those counts and prints the
+   total number of possible portals to the bot output stream.
+
+*/
 void AAS_FindPossiblePortals()
 {
 	int i, numpossibleportals;
@@ -873,12 +938,13 @@ void AAS_FindPossiblePortals()
 	botimport.Print( PRT_MESSAGE, "\r%6d possible portals\n", numpossibleportals );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Clears the cluster portal flag for all areas in the current AAS world.
+
+	Iterates over all area entries in the AAS world, starting from index 1 up to but not including the total number of areas, and removes the AREACONTENTS_CLUSTERPORTAL flag from each area's contents
+   field.
+
+*/
 void AAS_RemoveAllPortals()
 {
 	int i;
@@ -888,12 +954,15 @@ void AAS_RemoveAllPortals()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Validates that every non‑dummy portal has both a front and a back cluster, cleaning up area flags and logging missing links as it does so.
+
+	This function walks through the portal array starting after the placeholder at index 0. For each portal it checks whether both the frontcluster and backcluster members are non‑zero. If one of them
+   is missing the function removes the AREACONTENTS_CLUSTERPORTAL flag from the area settings of that portal, logs a message describing the missing cluster, and immediately returns with a false
+   result. If all portals have both connections, the function returns a true value. The function performs no external side‑effects besides the area flag manipulation and log output.
+
+	\return Non‑zero value if every portal has connected front and back clusters; zero otherwise.
+*/
 int AAS_TestPortals()
 {
 	int			  i;
@@ -918,12 +987,13 @@ int AAS_TestPortals()
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Counts the forced cluster portals in the world and prints the total.
+
+	Iterates over all areas defined in the global world and increments a counter for each area that has the cluster portal flag set. After counting, the value is output using botimport.Print with a
+   formatted message.
+
+*/
 void AAS_CountForcedClusterPortals()
 {
 	int num, i;
@@ -939,12 +1009,13 @@ void AAS_CountForcedClusterPortals()
 	botimport.Print( PRT_MESSAGE, "%6d forced portals\n", num );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Sets the AREACONTENTS_VIEWPORTAL flag on all area settings that currently have the AREACONTENTS_CLUSTERPORTAL flag.
+
+	The function iterates over each area setting in the global aasworld structure except the first entry. For each area, it checks whether the AREACONTENTS_CLUSTERPORTAL bit is set in the contents
+   field. If that bit is present, it sets the AREACONTENTS_VIEWPORTAL bit in the same field, enabling the area to be treated as a viewport portal for rendering purposes.
+
+*/
 void AAS_CreateViewPortals()
 {
 	int i;
@@ -956,12 +1027,12 @@ void AAS_CreateViewPortals()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds the cluster portal flag to any area that is already marked as a viewportal.
+
+	Iterates through all areas in the AAS world, and for each area whose settings contain the view portal flag, it also sets the cluster portal flag in that area's content bitmap.
+
+*/
 void AAS_SetViewPortalsAsClusterPortals()
 {
 	int i;
@@ -973,12 +1044,24 @@ void AAS_SetViewPortalsAsClusterPortals()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes portal and cluster structures for the AAS system using the current world geometry and configuration settings.
+
+	If the world has not been loaded it exits immediately.  When clustering already exists it will skip initialization unless the configuration variables "forceclustering" or "forcereachability"
+   demand it; for the BSPC build the function always returns early.
+
+	The routine counts the forced cluster portals then removes any existing portal and cluster markers, and searches for possible portals, building view portals for the bot.  Memory for portals,
+   portal indices and clusters is cleared and allocated fresh.
+
+	In a loop it repeatedly creates portals, finds clusters, tests the portals and continues until a successful configuration is found.  Each iteration increments a counter that tracks how many times
+   the portal area was removed.
+
+	After a valid configuration is achieved it marks the AAS file as needing to be saved, dumps statistics of portals, clusters and reachability areas, and reports an efficiency metric based on the
+   number of reachability areas and portals.  The function does not return any value.
+
+	TODO: clarify the purpose of the removedPortalAreas counter that is printed during the loop.
+
+*/
 void AAS_InitClustering()
 {
 	int i, removedPortalAreas;

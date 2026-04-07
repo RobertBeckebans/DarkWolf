@@ -132,12 +132,6 @@ int				 BotAllocMoveState()
 	return 0;
 }
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
 void BotFreeMoveState( int handle )
 {
 	if( handle <= 0 || handle > MAX_CLIENTS ) {
@@ -154,12 +148,15 @@ void BotFreeMoveState( int handle )
 	botmovestates[handle] = NULL;
 }
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
+/*!
+	\brief Looks up a bot move state by its handle after validating the handle.
+
+	The function expects the handle to be an integer index into the global botmovestates array. It checks that the handle is positive and does not exceed MAX_CLIENTS. If the handle is out of bounds or
+   the corresponding entry in the array is null, it logs a fatal message and returns null. Otherwise, it returns the pointer to the move state.
+
+	\param handle An integer identifying the bot's move state.
+	\return Pointer to the bot's move state, or null if the handle is invalid.
+*/
 bot_movestate_t* BotMoveStateFromHandle( int handle )
 {
 	if( handle <= 0 || handle > MAX_CLIENTS ) {
@@ -249,12 +246,16 @@ void BotInitMoveState( int handle, bot_initmove_t* initmove )
 	}
 }
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
+/*!
+	\brief Computes the minimal signed angle difference between two angles given in degrees.
+
+	The function subtracts the second angle from the first and then adjusts the result so it lies within the range of -180 to 180 degrees. It corrects for cases where the raw difference exceeds that
+   range by adding or subtracting 360 degrees.
+
+	\param ang1 First angle in degrees.
+	\param ang2 Second angle in degrees.
+	\return The signed difference in degrees, in the range -180 to 180.
+*/
 float AngleDiff( float ang1, float ang2 )
 {
 	float diff;
@@ -275,12 +276,6 @@ float AngleDiff( float ang1, float ang2 )
 	return diff;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int BotFuzzyPointReachabilityArea( vec3_t origin )
 {
 	int	   firstareanum, j, x, y, z;
@@ -349,12 +344,6 @@ int BotFuzzyPointReachabilityArea( vec3_t origin )
 	return firstareanum;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int BotReachabilityArea( vec3_t origin, int client )
 {
 	int				   modelnum, modeltype, reachnum, areanum;
@@ -419,89 +408,18 @@ int BotReachabilityArea( vec3_t origin, int client )
 	return BotFuzzyPointReachabilityArea( origin );
 }
 
-//===========================================================================
-// returns the reachability area the bot is in
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-/*
-int BotReachabilityArea(vec3_t origin, int testground)
-{
-	int firstareanum, i, j, x, y, z;
-	int areas[10], numareas, areanum, bestareanum;
-	float dist, bestdist;
-	vec3_t org, end, points[10], v;
-	aas_trace_t trace;
+/*!
+	\brief Checks whether a point is on a moving platform identified by a reachability structure.
 
-	firstareanum = 0;
-	for (i = 0; i < 2; i++)
-	{
-		VectorCopy(origin, org);
-		//if test at the ground (used when bot is standing on an entity)
-		if (i > 0)
-		{
-			VectorCopy(origin, end);
-			end[2] -= 800;
-			trace = AAS_TraceClientBBox(origin, end, PRESENCE_CROUCH, -1);
-			if (!trace.startsolid)
-			{
-				VectorCopy(trace.endpos, org);
-			}
-		}
+	The function retrieves the model number from the reachability face number and fetches the bounding box of that model. It then verifies that the entity’s origin lies within a 32x32x16 box slightly
+   offset from the model’s origin; if not, it immediately returns false. Otherwise, it performs a trace with a narrow vertical box from 24 units above the origin to 48 units below it, looking for a
+   solid or playerclip volume. If the trace ends on the same entity that owns the model, the function returns true, indicating the point is on an active mover.
 
-		firstareanum = 0;
-		areanum = AAS_PointAreaNum(org);
-		if (areanum)
-		{
-			firstareanum = areanum;
-			if (AAS_AreaReachability(areanum)) return areanum;
-		}
-		bestdist = 999999;
-		bestareanum = 0;
-		for (z = 1; z >= -1; z -= 1)
-		{
-			for (x = 1; x >= -1; x -= 1)
-			{
-				for (y = 1; y >= -1; y -= 1)
-				{
-					VectorCopy(org, end);
-					end[0] += x * 8;
-					end[1] += y * 8;
-					end[2] += z * 12;
-					numareas = AAS_TraceAreas(org, end, areas, points, 10);
-					for (j = 0; j < numareas; j++)
-					{
-						if (AAS_AreaReachability(areas[j]))
-						{
-							VectorSubtract(points[j], org, v);
-							dist = VectorLength(v);
-							if (dist < bestdist)
-							{
-								bestareanum = areas[j];
-								bestdist = dist;
-							}
-						}
-					}
-				}
-			}
-			if (bestareanum) return bestareanum;
-		}
-		if (!testground) break;
-	}
-//#ifdef DEBUG
-	//botimport.Print(PRT_MESSAGE, "no reachability area\n");
-//#endif //DEBUG
-	return firstareanum;
-}*/
-
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+	\param origin The 3‑D location to test for placement on a moving platform.
+	\param entnum The entity number of the moving platform candidate, typically the bot’s own entity.
+	\param reach A reachability structure containing the face number (which encodes the model number) and end point information for the platform.
+	\return Non‑zero if the origin is on the mover platform, zero otherwise (qtrue/qfalse).
+*/
 int BotOnMover( vec3_t origin, int entnum, aas_reachability_t* reach )
 {
 	int			i, modelnum;
@@ -549,12 +467,15 @@ int BotOnMover( vec3_t origin, int entnum, aas_reachability_t* reach )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether the moving platform associated with the given reachability is currently down.
+
+	The function extracts the model number from the lower 16 bits of reach->facenum and retrieves the model’s bounds and origin. It verifies that an entity with that model number exists, and if the
+   top surface of the platform lies below the start point of the reachability, it reports that the platform is down. Otherwise it reports that the platform is not down.
+
+	\param reach Pointer to a reachability structure used to identify the moving platform.
+	\return true (nonzero) if the platform is down, false (zero) otherwise.
+*/
 int MoverDown( aas_reachability_t* reach )
 {
 	int	   modelnum;
@@ -579,12 +500,6 @@ int MoverDown( aas_reachability_t* reach )
 	return qfalse;
 }
 
-//========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//========================================================================
 void BotSetBrushModelTypes()
 {
 	int	 ent, modelnum;
@@ -623,12 +538,16 @@ void BotSetBrushModelTypes()
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Detects whether an entity sits directly below the bot and returns its entity number.
+
+	The function builds a bounding box that matches the bot’s current presence type, then casts a short trace straight downward from the bot’s origin by three units. If the trace doesn’t start in
+   solid space and intersects an entity other than the world or a special NONE marker, the entity’s number is returned. Otherwise, the function returns –1 to indicate no valid entity was found below
+   the bot.
+
+	\param ms Pointer to the bot’s movement state, which contains its current origin, presence type and entity number.
+	\return The entity number beneath the bot or –1 if there is none.
+*/
 int BotOnTopOfEntity( bot_movestate_t* ms )
 {
 	vec3_t		mins, maxs, end, up = { 0, 0, 1 };
@@ -645,12 +564,18 @@ int BotOnTopOfEntity( bot_movestate_t* ms )
 	return -1;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines if a reachability is suitable for traveling based on specified travel flags.
+
+	The routine verifies that the reachability’s travel type matches one of the permitted flags supplied in travelflags. It then checks that the area the reachability leads to contains travel flags
+   consistent with the same mask. If either test fails the function returns qfalse; otherwise it returns qtrue. The origin parameter represents the bot’s current position but is not used in the logic
+   of this function.
+
+	\param origin The bot's current position in world coordinates (unused in this routine).
+	\param reach Pointer to the reachability structure that is being evaluated for validity.
+	\param travelflags Bitmask specifying which travel types are allowed for the destination.
+	\return qtrue (1) if the reachability is valid for the given flags, otherwise qfalse (0).
+*/
 int BotValidTravel( vec3_t origin, aas_reachability_t* reach, int travelflags )
 {
 	// if the reachability uses an unwanted travel type
@@ -666,12 +591,18 @@ int BotValidTravel( vec3_t origin, aas_reachability_t* reach, int travelflags )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds or refreshes a reachability that the bot should temporarily avoid during movement.
+
+	The function scans the bot's avoid list for an existing entry matching the given reachability number. If found and the stored avoidance time has not expired, it increments the retry counter;
+   otherwise it resets the counter to one. In either case it updates the expire time to the current time plus the specified avoidance duration. If no matching entry exists, the function looks for the
+   first entry whose expire time is already in the past, replaces it with the new reachability number, resets the counter, and sets a new expire time. The function leaves the state unchanged if all
+   list slots are currently active and none match the number.
+
+	\param ms pointer to the bot's movement state containing the avoid list arrays
+	\param number the identifier of the reachability to add or refresh
+	\param avoidtime time in seconds for which the reachability should be avoided
+*/
 void BotAddToAvoidReach( bot_movestate_t* ms, int number, float avoidtime )
 {
 	int i;
@@ -700,14 +631,6 @@ void BotAddToAvoidReach( bot_movestate_t* ms, int number, float avoidtime )
 		}
 	}
 }
-
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-//__inline int AAS_AreaContentsTravelFlag(int areanum);
 
 int BotGetReachabilityToGoal( vec3_t origin,
 	int								 areanum,
@@ -822,12 +745,25 @@ int BotGetReachabilityToGoal( vec3_t origin,
 	return bestreachnum;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adds a waypoint into a target path while respecting a maximum cumulative distance, returning whether the limit was reached.
+
+	The function computes the direction from ``start`` to ``end`` and normalizes it. It then updates the running distance ``*dist`` by the segment length. If the updated distance stays below
+   ``maxdist`` the entire segment is added: the target position is set to ``end`` and the function returns 0 (false). When the segment would exceed the limit, only the portion up to ``maxdist`` is
+   added by stepping from ``start`` along the direction vector. In this case the running distance is capped at ``maxdist``, the target is set to the partial position, and the function returns 1
+   (true). This allows callers to know when the look‑ahead distance has been exhausted.
+
+	The function is used by the bot movement logic to progressively build a view target while traversing reachability links, ensuring that the total traversal length does not exceed the specified
+   lookahead.
+
+
+	\param start Start point of the segment, used to compute direction.
+	\param end End point of the segment; its position is copied if the segment fits within the remaining distance.
+	\param maxdist Maximum allowed cumulative distance from the start of the overall path.
+	\param dist Pointer to the current cumulative distance; it is increased by the segment length or capped at ``maxdist``.
+	\param target Output vector set to the final target position, either the full end point or the partial point when the limit is reached.
+	\return An integer used as a boolean: 0 (false) if the segment was fully added and the limit was not reached; 1 (true) if the cumulative distance had to be truncated and the limit was reached.
+*/
 int BotAddToTarget( vec3_t start, vec3_t end, float maxdist, float* dist, vec3_t target )
 {
 	vec3_t dir;
@@ -907,12 +843,17 @@ int BotMovementViewTarget( int movestate, bot_goal_t* goal, int travelflags, flo
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether a target point is visible from an eye position, optionally ignoring a specific entity.
+
+	The function performs a trace from the eye vector to the target vector using AAS_Trace, treating the supplied entity as a non‑solid reference. If the trace does not hit any solid or player clip
+   objects, the target is considered visible and qtrue (1) is returned; otherwise qfalse (0) is returned.
+
+	\param ent The entity number that should be ignored or treated specially during the trace.
+	\param eye The starting position for the visibility check.
+	\param target The destination point to test visibility against.
+	\return qtrue if the target is visible from the eye position, otherwise qfalse.
+*/
 int BotVisible( int ent, vec3_t eye, vec3_t target )
 {
 	bsp_trace_t trace;
@@ -926,12 +867,6 @@ int BotVisible( int ent, vec3_t eye, vec3_t target )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int BotPredictVisiblePosition( vec3_t origin, int areanum, bot_goal_t* goal, int travelflags, vec3_t target )
 {
 	aas_reachability_t reach;
@@ -1001,12 +936,17 @@ int BotPredictVisiblePosition( vec3_t origin, int areanum, bot_goal_t* goal, int
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the world‑space position of the bottom‑center point for a mover reachability and stores it in the provided array.
+
+	The function extracts the model number from the reachability's face number and retrieves the model's bounding box and origin using zero angles. It then obtains the entity origin corresponding to
+   that model number. By averaging the model's minimum and maximum extents, it calculates a local midpoint. This midpoint is added to the entity origin to get a global center point which is then
+   copied into the bottomcenter array. The vertical component of the point is finally set to the reachability's starting height, ensuring the result lies on the platform's bottom at the reachability's
+   y coordinate.
+
+	\param reach pointer to the reachability struct used to compute the bottom‑center point
+	\param bottomcenter array to receive the resulting world‑space coordinates
+*/
 void MoverBottomCenter( aas_reachability_t* reach, vec3_t bottomcenter )
 {
 	int	   modelnum;
@@ -1028,12 +968,18 @@ void MoverBottomCenter( aas_reachability_t* reach, vec3_t bottomcenter )
 	bottomcenter[2] = reach->start[2];
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines the horizontal distance to the next gap the bot could fall into from a given position.
+
+	The function first performs a downward trace to determine if the bot can step down; if no surface is hit, it reports a value of 1 indicating a clear drop. It then steps forward in increments of
+   eight units, performing a vertical trace for each position to detect obstacles and potential drops. If a gap is found (the trace ends below the expected step height and the point is not water or
+   slime), the distance to that gap is returned. If no such gap is detected within 100 units, it returns 0.
+
+	\param origin current position of the bot
+	\param hordir normalized horizontal direction vector for movement
+	\param entnum entity number used for trace queries
+	\return If a gap is detected ahead, the horizontal distance to the gap in units; returns 1 if the area below the bot is free of solid, otherwise returns 0.
+*/
 float BotGapDistance( vec3_t origin, vec3_t hordir, int entnum )
 {
 	float		dist, startz;
@@ -1088,12 +1034,19 @@ float BotGapDistance( vec3_t origin, vec3_t hordir, int entnum )
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether a bot can execute a barrier jump and commands the jump and movement if possible.
+
+	The function first traces upward from the bot’s current position to confirm that a barrier of sufficient height exists. If the vertical clearance is adequate, it traces horizontally in the desired
+   direction to locate the barrier’s top surface. A downward trace then verifies that the target surface is high enough to stand on. When all traces succeed, the bot performs a jump and moves forward
+   with the requested speed, and the BARRIERJUMP flag is set. The routine returns a true value if the jump was performed; otherwise it returns false. All traces are performed with the client’s
+   bounding box and respect solid geometry and maximum step/barrier limits.
+
+	\param ms The bot’s movement state structure.
+	\param dir Desired horizontal direction vector for the potential jump.
+	\param speed Speed to use for forward motion associated with the jump.
+	\return Non‑zero if the barrier jump was executed; zero otherwise.
+*/
 int BotCheckBarrierJump( bot_movestate_t* ms, vec3_t dir, float speed )
 {
 	vec3_t		start, hordir, end;
@@ -1160,12 +1113,18 @@ int BotCheckBarrierJump( bot_movestate_t* ms, vec3_t dir, float speed )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Moves a bot through water along a specified direction at a given speed.
+
+	The function normalizes the provided direction vector and uses the entity animation system to apply movement to the bot's client. It returns a non‑zero value to indicate the motion was
+   successfully applied. The supplied movement type parameter is currently unused.
+
+	\param ms Pointer to the bot's movement state structure
+	\param dir Desired movement direction as a vector
+	\param speed Target speed in units per second
+	\param type Indicator of movement type, ignored in this implementation
+	\return Non‑zero on success (qtrue).
+*/
 int BotSwimInDirection( bot_movestate_t* ms, vec3_t dir, float speed, int type )
 {
 	vec3_t normdir;
@@ -1176,12 +1135,21 @@ int BotSwimInDirection( bot_movestate_t* ms, vec3_t dir, float speed, int type )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Attempts to move the bot in a specified direction, handling jumping and crouching when required, and returns whether the movement was successful.
+
+	The function first checks if the bot is on the ground. If so, it evaluates potential barrier jumps and sets a presence type based on crouch or normal movement. It calculates a horizontal direction
+   vector and may decide to jump if a gap is detected. A command movement vector is constructed, and if a jump is needed the vertical component is set accordingly. Prediction parameters such as
+   maximum frames and stop events are configured. The function then calls the AAS movement prediction routine. If the prediction exceeds the allowed frames, if a hazardous event would occur, or if a
+   ground hit would leave the bot near a gap, the function signals failure. When movement is clear, it issues the appropriate entity‐action commands for jump, crouch, and moving. If the bot is in the
+   air, a simpler air‐control path may be taken. The function returns a non‑zero result on successful motion and zero on failure.
+
+	\param ms Pointer to the bot's current movement state
+	\param dir Desired horizontal direction vector
+	\param speed Desired movement speed
+	\param type Bitwise flags indicating movement type, such as jump or crouch
+	\return Non‑zero if the movement succeeded, zero otherwise
+*/
 int BotWalkInDirection( bot_movestate_t* ms, vec3_t dir, float speed, int type )
 {
 	vec3_t			 hordir, cmdmove, velocity, tmpdir, origin;
@@ -1317,12 +1285,6 @@ int BotWalkInDirection( bot_movestate_t* ms, vec3_t dir, float speed, int type )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int BotMoveInDirection( int movestate, vec3_t dir, float speed, int type )
 {
 	bot_movestate_t* ms;
@@ -1342,12 +1304,21 @@ int BotMoveInDirection( int movestate, vec3_t dir, float speed, int type )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates the intersection point of two lines defined by point pairs and reports whether the lines intersect
+
+	The function treats (p1,p2) and (p3,p4) as two line segments but solves for the intersection of the infinite lines passing through each pair.
+	It computes the determinant d = dy1 * dx2 - dx1 * dy2; if d is non‑zero the lines are not parallel and the intersection coordinates are found using Cramer's rule.
+	The resulting coordinates are cast to int before being stored in out, so truncation occurs.
+	If d is zero the lines are parallel or coincident and no intersection is reported.
+
+	\param p1 starting point of the first line
+	\param p2 ending point of the first line
+	\param p3 starting point of the second line
+	\param p4 ending point of the second line
+	\param out output vector to receive the intersection point
+	\return qtrue if the two lines intersect (d != 0), qfalse otherwise; the intersection coordinates are written into out
+*/
 int Intersection( vec2_t p1, vec2_t p2, vec2_t p3, vec2_t p4, vec2_t out )
 {
 	float x1, dx1, dy1, x2, dx2, dy2, d;
@@ -1371,12 +1342,24 @@ int Intersection( vec2_t p1, vec2_t p2, vec2_t p3, vec2_t p4, vec2_t out )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines whether a bot’s planned movement direction is blocked and stores any blocking entity information.
+
+	This routine is intended to test the bot’s path for obstacles. It would normally compute a bounding box for the bot’s presence type, adjust it for step height, and trace a line in the desired
+   direction for collisions with solid or player‑clip objects. If an entity is found, the result structure is marked blocked and the entity number recorded. An additional check is performed when the
+   bot may be standing on an obstacle, setting a flag for top‑of‑obstacle blockage. In the current Wolf AI build, the body is replaced by an early return, so no checking occurs.
+
+	The function operates on global collision data via the AAS_Trace and AAS_AreaReachability helpers and writes results into the provided bot_moveresult_t structure. It does not return a value but
+   may modify the result structure.
+
+	\param checkbottom Flag indicating whether to perform an additional check for bottom‑side obstacles when the bot isn’t reachable.
+	\param dir Unit direction vector along which the bot intends to move.
+	\param ms Pointer to the bot’s movement state, providing its current origin, entity number, and presence type.
+	\param result Pointer to a structure that receives information about any blocking entity and flags.
+	\param result->blocked Boolean set by this function to indicate a blockage was detected.
+	\param result->blockentity Entity number that is blocking the bot, if any.
+	\param result->flags Bitfield to be updated with flags such as MOVERESULT_ONTOPOFOBSTACLE when a top obstacle is detected.
+*/
 void BotCheckBlocked( bot_movestate_t* ms, vec3_t dir, int checkbottom, bot_moveresult_t* result )
 {
 	vec3_t		mins, maxs, end, up = { 0, 0, 1 };
@@ -1424,12 +1407,16 @@ void BotCheckBlocked( bot_movestate_t* ms, vec3_t dir, int checkbottom, bot_move
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reset all fields of a bot move result to the default state.
+
+	This function clears the status information associated with a bot's attempted movement. It sets the failure flag, blocked flag, travel type, and various internal flags to their zeroed or false
+   values and clears the block entity reference.
+
+	After calling this routine the resulting bot_moveresult_t instance is ready to be populated with new movement data.
+
+	\param moveresult Pointer to the moveresult structure to be reset.
+*/
 void BotClearMoveResult( bot_moveresult_t* moveresult )
 {
 	moveresult->failure		= qfalse;
@@ -1440,12 +1427,20 @@ void BotClearMoveResult( bot_moveresult_t* moveresult )
 	moveresult->flags		= 0;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief returns a bot_moveresult_t that represents walking movement toward a reachability node
+
+	The function first calculates a horizontal direction vector from the bot’s current position to the start of the specified reachability node and normalizes it, producing a distance value. It then
+   checks whether the path is blocked; if it is blocked, the move result is updated accordingly and the function returns. If the bot is close enough to the start (less than 32 units), the target point
+   is changed to the reachability’s end instead. When the destination area requires crouching and the bot is within 20 units, a crouch action is issued. The gap distance to the next obstacle is then
+   computed to adjust the target speed: on a pure walk move the speed calculation is based on a base of 200 units (with a tweak that subtracts 180 minus the distance), whereas a faster move uses a
+   base of 400 units and subtracts 360 minus twice the distance. Finally, a move command is issued in the calculated direction and speed, the finished direction is stored in the result structure, and
+   the structure is returned.
+
+	\param ms pointer to the bot’s current movement state
+	\param reach pointer to the reachability node the bot should travel toward
+	\return a bot_moveresult_t containing the resulting move direction and any state updates
+*/
 bot_moveresult_t BotTravel_Walk( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	float			 dist, speed;
@@ -1513,12 +1508,17 @@ bot_moveresult_t BotTravel_Walk( bot_movestate_t* ms, aas_reachability_t* reach 
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Directs the bot toward the end of a given walkability reachability and returns the resulting movement direction.
+
+	The function clears any prior move result and calculates a horizontal direction vector from the bot’s current origin to the end point of the supplied reachability. The direction is normalised and
+   the distance is capped at 100 units. The movement speed is set to three times the capped distance, yielding a maximum of 300. An EA_Move command is issued with this direction and speed, and the
+   movedir is copied into the result structure which is then returned.
+
+	\param ms Pointer to the bot's movement state, containing its current position and client information.
+	\param reach Pointer to the reachability representing the area the bot is finishing walking to.
+	\return A bot_moveresult_t structure holding the movement direction used in the EA_Move call.
+*/
 bot_moveresult_t BotFinishTravel_Walk( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 hordir;
@@ -1556,12 +1556,17 @@ bot_moveresult_t BotFinishTravel_Walk( bot_movestate_t* ms, aas_reachability_t* 
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Moves a bot while crouched toward the end of a reachability segment.
+
+	The routine first clears any previous move result data. It then sets a fixed walking speed of 400 and computes the horizontal direction vector from the bot's current origin to the reachability's
+   end point, ignoring height differences. After normalising the vector, it checks whether that direction is blocked for the bot. It issues commands to make the bot crouch and to move in the computed
+   direction at the chosen speed. Finally, it copies the direction vector into the returned result structure, which the caller can use to understand the direction and status of the movement action.
+
+	\param ms pointer to the current bot movement state
+	\param reach pointer to the reachability data that describes the desired travel segment
+	\return a bot_moveresult_t structure that contains information about the performed move, including the movement direction that was set.
+*/
 bot_moveresult_t BotTravel_Crouch( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	float			 speed;
@@ -1587,12 +1592,19 @@ bot_moveresult_t BotTravel_Crouch( bot_movestate_t* ms, aas_reachability_t* reac
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Travels toward a barrier, optionally performing a jump and then moving forward to cross it.
+
+	The function first clears a movement result and determines a horizontal direction from the bot’s current position to the start of the specified reachability. It normalizes that vector and checks
+   for obstructions. If the bot is within a very short distance (less than 9 units), it issues a jump command and then computes a forward direction from the reachability start to its end. It
+   normalizes this vector, clamps the travel distance to a maximum of 60 units, computes a forward speed proportional to that distance (up to a maximum of 360 units per second), and issues a move
+   command to apply momentum onto the barrier. If the bot is farther away, it similarly clamps the distance and moves forward along the initial heading with speed proportional to distance. Finally it
+   records the chosen heading in the result and returns that structure.
+
+	\param ms The bot’s current movement state used to read position and to issue movement commands.
+	\param reach The reachability structure that describes the barrier to be traversed, including its start and end positions.
+	\return A bot_moveresult_t structure describing the performed movement, such as the direction moved.
+*/
 bot_moveresult_t BotTravel_BarrierJump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	float			 dist, speed;
@@ -1637,12 +1649,21 @@ bot_moveresult_t BotTravel_BarrierJump( bot_movestate_t* ms, aas_reachability_t*
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Completes a barrier jump by moving the bot horizontally toward the reachability end when near the top or falling.
+
+	The function starts by clearing the movement result structure. It checks the bot’s vertical velocity; if the bot is close to the top of the jump or descending (velocity below 250), it extends the
+   target reachability end a short distance outward to ensure the ledge is cleared. A horizontal direction vector is calculated from the bot’s current position to this adjusted endpoint, normalized,
+   and its magnitude is capped at 60 units. The movement speed is set proportionally to this distance (6 units per distance step), and an EA_Move command is issued with that direction and speed. The
+   BotCheckBlocked routine is called to detect any obstacles that might block the movement, potentially altering the result before it is returned. If the velocity condition is not met, the function
+   simply returns an empty result.
+
+	The returned bot_moveresult_t contains the executed movement direction and any blocking information that may have been detected.
+
+	\param ms Pointer to the bot’s current movement state, including position, velocity and client context.
+	\param reach Pointer to the reachability defining the start and end points of the jump target.
+	\return An initialized bot_moveresult_t describing the movement performed and any blocking status.
+*/
 bot_moveresult_t BotFinishTravel_BarrierJump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	float			 dist, speed;
@@ -1684,12 +1705,17 @@ bot_moveresult_t BotFinishTravel_BarrierJump( bot_movestate_t* ms, aas_reachabil
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates a swim movement result toward the start of a reachability.
+
+	The function starts by clearing a result structure. It computes a vector from the bot's current origin to the reachability's start point and normalises it. A blocked check is performed in that
+   direction. An EA_Move action is issued with the normalized direction and a speed of 400 units. The result is populated with the movement direction, converted to view angles for the ideal
+   orientation, and a flag marking a swim view is set. Finally the populated result is returned.
+
+	\param ms pointer to the bot’s movement state, including current origin and client handle
+	\param reach pointer to the reachability structure representing the target swim region
+	\return A bot_moveresult_t structure containing the computed movement direction, ideal view angles, and flags indicating swim view
+*/
 bot_moveresult_t BotTravel_Swim( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 dir;
@@ -1711,12 +1737,18 @@ bot_moveresult_t BotTravel_Swim( bot_movestate_t* ms, aas_reachability_t* reach 
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates a movement direction and view angles for a bot to perform a water jump toward a reachability endpoint.
+
+	Starting from the bot’s current position, the function computes a vector pointing from the bot towards the reachability’s end point. The horizontal component of this vector is used to determine a
+   proximity test, while the vertical component is increased by a base value plus a small random range to simulate a jump. After normalizing the vector, the bot issues a forward move command; if the
+   horizontal distance to the target is small, it also issues an upward move command. The resulting direction and ideal view angles are stored in a bot_moveresult_t, and a flag is set to indicate that
+   the movement view has been established.
+
+	\param ms Pointer to the bot’s current movement state, containing its origin and client identifier.
+	\param reach Pointer to the target reachability, providing the endpoint to which the bot should move.
+	\return A bot_moveresult_t structure that includes the movement direction, ideal view angles, and flags indicating the movement behavior.
+*/
 bot_moveresult_t BotTravel_WaterJump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 dir, hordir;
@@ -1750,12 +1782,25 @@ bot_moveresult_t BotTravel_WaterJump( bot_movestate_t* ms, aas_reachability_t* r
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Steers a bot through the final phase of a water jump toward a target point while updating movement and view parameters.
+
+	The function first clears a movement result structure. If the bot’s movement flags still contain a water‑jump flag, it returns immediately because the jump process is already considered finished.
+   Otherwise it verifies that the bot is still inside a liquid volume (water, lava, or slime) by checking a point slightly below its current origin; if it has exited the liquid the function does
+   nothing.
+
+	When the bot remains submerged, the function calculates a direction vector from the bot’s current origin to the end point of the supplied reachability. It adds a small random horizontal
+   perturbation and a fixed upward component to model a realistic jump arc, then normalises the vector. The EA_Move call issues this movement command to the bot controller.
+
+	Finally, it converts the final direction vector into ideal view angles, stores them along with the movement direction into the result structure, flags the move result to indicate that the view
+   should follow the movement, and returns the filled result.
+
+	This routine is used by the travel logic when a bot has just left the water and needs to propel itself to the destination point at the surface.
+
+	\param ms Current state of the bot including position, movement flags, and a client handle
+	\param reach Reachability structure whose end point defines the surface target of the water jump
+	\return A bot_moveresult_t containing the movement direction, ideal view angles, and flags for following the movement
+*/
 bot_moveresult_t BotFinishTravel_WaterJump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 dir, pnt;
@@ -1796,12 +1841,19 @@ bot_moveresult_t BotFinishTravel_WaterJump( bot_movestate_t* ms, aas_reachabilit
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines the horizontal direction and speed for a bot to walk off a ledge from a given reachability
+
+	The function first clears a move result structure and checks whether an obstacle blocks the path from the bot’s current position to the start of the reachability. It then computes the horizontal
+   difference between the reachability’s start and end points to determine the overall direction of the ledge. Based on the distance to the start point and the dot product of directional vectors, the
+   routine chooses whether to walk directly toward the start or to steer toward the end. The chosen horizontal vector is normalized and used to calculate an appropriate walking speed: small steps use
+   a speed of around 200, longer steps up to 400 with additional scaling for distances below 128 units. The bot is instructed to crouch before moving, which helps the ledge transition look smoother.
+   Finally, an elementary move command is issued with the computed direction and speed, the result’s direction is stored, and the populated result structure is returned.
+
+	\param ms Pointer to the bot’s current movement state
+	\param reach Pointer to the reachability describing the ledge to walk off
+	\return A bot_moveresult_t structure containing the computed movement direction and status information
+*/
 bot_moveresult_t BotTravel_WalkOffLedge( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 hordir, dir;
@@ -1884,12 +1936,21 @@ bot_moveresult_t BotTravel_WalkOffLedge( bot_movestate_t* ms, aas_reachability_t
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes an air control vector and speed for a bot to reach a goal point under gravity.
+
+	The function simulates the bot's motion for up to 50 steps by applying a scaled velocity and gravity. If the simulated trajectory would cross below the vertical position of the goal while moving
+   downward, it adjusts the velocity to land exactly at the goal, computes the direction toward the goal, clamps the distance to 32 units, and then determines a speed based on that distance. When a
+   suitable trajectory is found, the function outputs the direction, speed, and returns true. If no such trajectory is found after the simulation, it outputs a zero direction, sets a default speed of
+   400, and returns false.
+
+	\param origin Starting position of the bot.
+	\param velocity Current velocity of the bot; used as a base for the simulation.
+	\param goal Target position the bot aims to reach.
+	\param dir Output vector giving the direction to move; set only if a viable trajectory is found.
+	\param speed Output speed to use; set based on distance if a trajectory is found, otherwise set to 400.
+	\return Returns an integer value indicating success (true) or failure (false) of finding an air‑controlled path to the goal.
+*/
 int BotAirControl( vec3_t origin, vec3_t velocity, vec3_t goal, vec3_t dir, float* speed )
 {
 	vec3_t org, vel;
@@ -1926,12 +1987,17 @@ int BotAirControl( vec3_t origin, vec3_t velocity, vec3_t goal, vec3_t dir, floa
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Completes the final movement step for a bot walking off a ledge
+
+	The function first calculates the directional vector to the reachability end point and uses that to check whether the path is blocked. It then selects a landing point a short distance from the
+   endpoint and attempts to compute an air control vector and speed; if air control is not possible it defaults to moving straight toward the endpoint at a fixed speed. The bot is commanded to crouch
+   and a move action is issued with the chosen heading and speed. The resulting movement state, including the selected heading, is returned in a bot_moveresult_t structure.
+
+	\param ms pointer to the bot's movement state, containing current position, velocity and client information
+	\param reach pointer to the reachability structure that defines the ledge the bot is navigating toward
+	\return a bot_moveresult_t structure describing the movement performed
+*/
 bot_moveresult_t BotFinishTravel_WalkOffLedge( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 dir, hordir, end, v;
@@ -1973,6 +2039,19 @@ bot_moveresult_t BotFinishTravel_WalkOffLedge( bot_movestate_t* ms, aas_reachabi
 	return result;
 }
 
+/*!
+	\brief Calculates and initiates a bot’s jump movement towards a reachability target.
+
+	The function first determines a horizontal start point for the jump based on the provided reachability area and normalizes the direction vector toward that point. It then checks for gaps and
+   adjusts the run start position accordingly. By comparing the bot’s current position with the run start and reach start, it decides whether to perform a normal or delayed jump and applies the
+   appropriate jump elementary action (EA_Jump or EA_DelayedJump). If the bot is still approaching the start, it moves directly toward the run start point with a speed limiting at 80 units; otherwise,
+   it moves toward the final reach end point. The function records the chosen movement direction in the result structure and updates the bot’s jump reach state. It also sets the result’s movedir field
+   before returning.
+
+	\param ms Pointer to the bot’s current movement state and information such as origin and reach area number.
+	\param reach Pointer to the target reachability structure containing start and end positions and area number.
+	\return The resulting bot movement decision structure containing the movement direction and other flags set by the function.
+*/
 bot_moveresult_t BotTravel_Jump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 hordir, dir1, dir2, start, end, runstart;
@@ -2100,12 +2179,18 @@ bot_moveresult_t BotFinishTravel_Jump( bot_movestate_t* ms, aas_reachability_t* 
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the bot’s movement and view angles to traverse a ladder, including approach to the ladder base and fine adjustments to stay centered.
+
+	When the bot is already against a ladder or not on the ground, the function sets the view to face the ladder horizontally and issues climbing movement commands. It also checks the bot’s
+   lateral position relative to the ladder and issues left or right moves to keep the bot near the ladder’s center. If the bot is not yet against the ladder, it first moves to a position behind
+   the ladder base, then, once within a short distance, switches to climbing toward the ladder top. During this approach, it calculates a horizontal movement direction and speed based on its
+   distance from the base, and commands the bot to move accordingly. The movement direction is recorded, an ideal view angle is computed, and a movement view flag is set in the returned structure.
+
+	\param ms Pointer to the bot’s current movement state
+	\param reach Pointer to the ladder reachability in the AAS graph
+	\return A bot_moveresult_t containing the chosen movement direction, ideal view angles, and flags indicating a movement view.
+*/
 bot_moveresult_t BotTravel_Ladder( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	// float dist, speed;
@@ -2237,12 +2322,18 @@ bot_moveresult_t BotTravel_Ladder( bot_movestate_t* ms, aas_reachability_t* reac
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Moves a bot toward the center of a teleport reachability area when not already teleported, optionally setting a swim view flag
+
+	The function first checks whether the bot has already been moved by a teleport; if so, it returns an empty move result. Otherwise it computes the vector from the bot’s current location to the
+   reachability’s start point, zeroing the vertical component when the bot is not swimming. This vector is normalized and used to check for blocked paths. Depending on the distance to the target,
+   an EA_Move command is issued with a shorter or longer speed. If the bot is swimming, a swim view flag is added to the result. The final movedirection is stored in the result structure and
+   returned.
+
+	\param ms Pointer to the current bot movement state, which includes the bot’s position, flags, and client reference
+	\param reach Pointer to the reachability structure that defines the teleport area
+	\return A bot_moveresult_t value describing the performed move, including move direction and any special flags such as swim view
+*/
 bot_moveresult_t BotTravel_Teleport( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 hordir;
@@ -2282,12 +2373,19 @@ bot_moveresult_t BotTravel_Teleport( bot_movestate_t* ms, aas_reachability_t* re
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Moves a bot toward an elevator platform, handling standing on the elevator, moving toward its center or end, and waiting when it is still moving up.
+
+	The routine first checks if the bot is currently on the elevator platform. If it is, the bot either moves toward the elevator's end point when it is vertically close enough, or toward the
+   platform's center otherwise, while performing barrier checks to avoid obstacles. If the bot is not on the elevator, the function measures how close it is to the reachability endpoint and issues
+   travel commands at a speed scaled to that distance; swimming bots receive a swim view flag. When the elevator is still moving up, the bot waits and the result type is set to indicate an
+   elevator still up. The function also covers the case where the elevator is down, moving the bot toward the reachability start or the platform center based on distance and direction, and checks
+   for blockages. Throughout the routine the movement result direction, flags, and type are set appropriately before returning.
+
+	\param ms pointer to the bot's movement state structure
+	\param reach pointer to range data describing the elevator platform reachability
+	\return a bot_moveresult_t with the chosen movement direction, result type and flags for the bot
+*/
 bot_moveresult_t BotTravel_Elevator( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 dir, dir1, dir2, hordir, bottomcenter;
@@ -2479,12 +2577,17 @@ bot_moveresult_t BotTravel_Elevator( bot_movestate_t* ms, aas_reachability_t* re
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Finalizes elevator movement for a bot by choosing the direction with the smallest vertical displacement and issuing a move event
+
+	The function clears a move result container then obtains the bottom center point of the elevator reachability. It constructs two direction vectors: one towards the elevator bottom and one
+   towards the elevator’s end point. By comparing the absolute vertical components of these vectors, it selects the shorter vertical path. The chosen direction is normalized and a move event is
+   issued for the bot client at a fixed speed of 300 units. The function returns the cleared result structure, usually containing no pending move actions.
+
+	\param ms Current state of the bot, including its origin and associated client controller
+	\param reach Reachability data describing the elevator’s geometry and endpoints
+	\return Cleared bot move result object, typically containing no pending move actions
+*/
 bot_moveresult_t BotFinishTravel_Elevator( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 bottomcenter, bottomdir, topdir;
@@ -2510,12 +2613,23 @@ bot_moveresult_t BotFinishTravel_Elevator( bot_movestate_t* ms, aas_reachability
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes start, end, and origin vectors for a reachability area based on model data and spawn flags.
+
+	The function uses the reachability structure to locate the model associated with the current reachability. It first extracts the model number from the lower 16 bits of facenum. If an entity
+   with that model number is found, the function obtains its bounding box and computes the middle point; this point is copied into the start and end parameters. The upper 16 bits of facenum encode
+   spawn flags. Depending on these flags, the function interprets the two 16‑bit halves of edgenum as signed indices for the start and end vectors along one of the XYZ axes, and it also adjusts
+   the origin vector accordingly, placing it at the computed middle with an offset along the selected axis.
+
+	If no entity with the expected model number can be located, the function logs an error, zeroes start and end, and exits.
+
+	The result is that start and end represent the extremities of the reachability along the chosen axis, while origin is positioned at the model’s center with a shift along that axis.
+
+	\param reach reachability data structure containing facenum and edgenum fields used to derive model number, spawn flags and edge indices
+	\param start output vector initialized to the middle of the model’s bounding box and then adjusted based on spawn flags
+	\param end output vector initialized similarly to start and later adjusted along an axis specified by spawn flags
+	\param origin input vector overwritten with the position of the entity’s origin, then shifted along the axis indicated by spawn flags
+*/
 void BotFuncBobStartEnd( aas_reachability_t* reach, vec3_t start, vec3_t end, vec3_t origin )
 {
 	int	   spawnflags, modelnum;
@@ -2575,12 +2689,19 @@ void BotFuncBobStartEnd( aas_reachability_t* reach, vec3_t start, vec3_t end, ve
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes the bot's movement when traversing a moving platform (func_bobbing), selecting direction and speed while handling special cases such as being on the platform, near the
+   platform's center or end, swimming, and obstacle avoidance.
+
+	The function first clears the output result and obtains the bobbing platform's start, end, and current origin positions. It then checks whether the bot is standing on the moving platform. If
+   so, it drives the bot toward the platform's end point when close enough, or toward the center of the platform otherwise, adjusting the speed based on distance. If the bot is not on the platform
+   it attempts to move toward the reachability end or start, swimming or jumping as needed. The routine performs barrier‑jump checks, adjusts for vertical motion, and adds swim‑view or waiting
+   flags depending on the situation. It ultimately returns a bot_moveresult_t containing a movement direction vector, flags, and movement type information.
+
+	\param ms pointer to the bot's current movement state
+	\param reach pointer to the reachability data describing the func_bobbing platform
+	\return A bot_moveresult_t record describing the bot’s movement direction, any relevant flags (e.g., swim view, waiting), and the type of movement taken during the func_bobbing travel.
+*/
 bot_moveresult_t BotTravel_FuncBobbing( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 dir, dir1, dir2, hordir, bottomcenter, bob_start, bob_end, bob_origin;
@@ -2779,12 +2900,20 @@ bot_moveresult_t BotTravel_FuncBobbing( bot_movestate_t* ms, aas_reachability_t*
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Adjusts a bot’s position after travelling through a func_bobbing platform and reports the movement performed
+
+	The function calculates the remaining distance to the end of the bobbing effect by examining the reachability’s start, end and origin points.  If the bot is within 16 units of the bob’s end,
+   it aligns the bot toward the platform’s goal and issues a move command whose speed scales with the remaining distance but is capped.  If the bot is farther away, it targets the centre of the
+   moving platform, similarly normalising direction, clamping distances, and setting a movement speed proportional to distance.  Swimming conditions are respected by zeroing the vertical component
+   when not swimming, and a flag indicating a swimming view is set when appropriate.  The movement direction and any flags are stored in a bot_moveresult_t and returned.
+
+	The routine does not perform any I/O other than through the EA_Move call and does not throw exceptions.
+
+	\param ms Pointer to the bot’s current movement state, providing its origin position and movement flags such as swimming
+	\param reach Pointer to the reachability information for the func_bobbing entity, used to retrieve the start, end, and bob origin for calculations
+	\return A bot_moveresult_t struct that contains the movement direction vector chosen and any flags that were set (e.g., indicating swimming view).
+*/
 bot_moveresult_t BotFinishTravel_FuncBobbing( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 bob_origin, bob_start, bob_end, dir, hordir, bottomcenter;
@@ -2854,15 +2983,18 @@ bot_moveresult_t BotFinishTravel_FuncBobbing( bot_movestate_t* ms, aas_reachabil
 	return result;
 }
 
-//===========================================================================
-// 0  no valid grapple hook visible
-// 1  the grapple hook is still flying
-// 2  the grapple hooked into a wall
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Determines the current status of a bot’s grapple hook relative to a reachability.
+
+	The function scans all AAS entities for a grapple hook model and checks whether the hook is still in flight or has successfully hooked a surface. It uses a static model index to locate the
+   hook entity and, for each candidate, compares its origin with the original visible origin. If the origin has not changed it calculates the distance to the reachability end point; a distance
+   less than 32 units indicates the hook has attached, so 2 is returned. If the origin differs, the hook is still being fired, yielding 1. If no valid hook is found, 0 is returned. The function
+   also respects the optional laserhook configuration, although that path is currently commented out.
+
+	\param ms Pointer to the bot’s movement state structure.
+	\param reach Pointer to the reachability data used for calculating distances.
+	\return An integer: 0 for no visible hook, 1 for a hook that is still flying, 2 for a hook that has successfully attached to a surface.
+*/
 int GrappleState( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	static int		 grapplemodelindex;
@@ -2905,12 +3037,15 @@ int GrappleState( bot_movestate_t* ms, aas_reachability_t* reach )
 	return 0;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Resets the bot's grapple state when it is no longer using a grapple hook.
+
+	The function retrieves the reachability associated with the bot's last reach number. If that reachability is not of type TRAVEL_GRAPPLEHOOK and the bot currently has an active grapple or a
+   remaining grapple visible time, it sends the "hook off" command to the bot’s client, clears the MFL_ACTIVEGRAPPLE flag, and resets the grapple visible time. A debug message may be printed when
+   DEBUG_GRAPPLE is enabled.
+
+	\param ms Pointer to the bot's movement state structure, from which the last reach number, movement flags and grapple visibility timer are accessed.
+*/
 void BotResetGrapple( bot_movestate_t* ms )
 {
 	aas_reachability_t reach;
@@ -2930,12 +3065,19 @@ void BotResetGrapple( bot_movestate_t* ms )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Manages a bot’s grapple travel, handling activation, state progression, movement toward the target, and release conditions.
+
+	When a grapple reset flag is active the bot is forced to hook off and the active grapple flag cleared. If the bot is already grabbing, the function checks the grapple state and distance; if
+   too close or no progress is made, it releases the grapple and resets the state. If the grapple becomes invisible after a timeout it is also released. When the grapple is inactive the bot
+   computes a direction to the grapple target, activates the grapple when within a small distance and the view is aligned, otherwise it moves toward the target with a speed modulated by distance,
+   checking for blocked movement. The reachability status is updated if the bot enters a different area. All actions are recorded in a bot_moveresult_t which indicates movement direction, ideal
+   view angles and relevant flags.
+
+	\param ms Pointer to the bot’s current movement state
+	\param reach Pointer to the reachability information defining the grapple route
+	\return A bot_moveresult_t describing the movement direction, view angles, and movement flags generated during the grapple operation.
+*/
 bot_moveresult_t BotTravel_Grapple( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	bot_moveresult_t result;
@@ -3066,12 +3208,19 @@ bot_moveresult_t BotTravel_Grapple( bot_movestate_t* ms, aas_reachability_t* rea
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Executes a rocket‑jump to reach a target, selecting the rocket launcher, moving toward the destination, and attacking.
+
+	The routine first calculates the horizontal vector from the bot’s current location to the start point of the specified reachability. If the bot is within 5 units of that start point, it
+   instead targets the reachability’s end point and triggers a short jump combined with an attack and forward movement. For more distant cases it limits the distance to 80 units, derives a speed
+   that increases with distance, and commands the bot to move in that direction at the computed speed. After issuing movement commands, the function sets the bot’s ideal view to match the travel
+   direction, forces a 90‑degree pitch to look straight down, and records that the view was set. It then guarantees the rocket launcher is selected and records this choice as the movement weapon.
+   Finally, it populates the result struct with the movement direction, view angles, weapon, and relevant flags before returning it.
+
+	\param ms Current state of the bot, containing origin coordinates and client information for issuing commands
+	\param reach Reachability structure describing the target segment, including start and end coordinates
+	\return A bot_moveresult_t object that records the movement direction, ideal view angles, chosen weapon, and flags indicating that the view and weapon were set for movement.
+*/
 bot_moveresult_t BotTravel_RocketJump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 hordir;
@@ -3129,12 +3278,16 @@ bot_moveresult_t BotTravel_RocketJump( bot_movestate_t* ms, aas_reachability_t* 
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes and returns an empty bot move result for a BFG jump
+
+	The function currently creates a bot_moveresult_t structure, clears it using BotClearMoveResult, and returns it without performing any movement logic or modifying the movement state or
+   reachability data. This appears to be a placeholder for future implementation.
+
+	\param ms Pointer to the bot's current movement state
+	\param reach Pointer to the reachability data for the destination
+	\return A cleared bot_moveresult_t indicating no movement action performed
+*/
 bot_moveresult_t BotTravel_BFGJump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	bot_moveresult_t result;
@@ -3144,12 +3297,17 @@ bot_moveresult_t BotTravel_BFGJump( bot_movestate_t* ms, aas_reachability_t* rea
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Finishes a weapon jump by issuing a horizontal move toward the destination defined by the reachability.
+
+	If the bot has not yet performed its jump, the function returns an empty move result. Otherwise it calculates a horizontal direction vector from the bot's current position to the end point of
+   the provided reachability, normalises this vector, and sends an EA_Move command with a maximum speed of 800 units per second. The resulting movement direction is stored in the move result
+   before it is returned.
+
+	\param ms Pointer to the bot's movement state, containing the current origin, client reference, and jump status.
+	\param reach Pointer to an AAS reachability structure, providing the target end location for the jump.
+	\return A move result structure with the computed direction that the bot should use to finish the weapon jump.
+*/
 bot_moveresult_t BotFinishTravel_WeaponJump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 hordir;
@@ -3174,12 +3332,18 @@ bot_moveresult_t BotFinishTravel_WeaponJump( bot_movestate_t* ms, aas_reachabili
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes a bot movement result by walking horizontally toward a jump pad’s start point at a fixed speed.
+
+	The function begins by clearing the move result structure. It then calculates a horizontal direction vector from the bot’s current origin to the start point of the provided reachability,
+   normalizes the vector, and records the distance. It checks whether any obstacles block the path using BotCheckBlocked. If the path is clear, it issues a move command to the bot client in the
+   calculated direction at a constant speed of 400 units using EA_Move. The horizontal direction vector is copied into the result’s movedir field. The resulting bot_moveresult_t, which may include
+   failure status set by the blocked‑check, is returned.
+
+	\param ms Pointer to the bot movement state information
+	\param reach Pointer to the reachability structure containing the jump pad start point
+	\return A bot_moveresult_t object that holds the movement direction and any status information produced during the move
+*/
 bot_moveresult_t BotTravel_JumpPad( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	float			 dist, speed;
@@ -3202,12 +3366,17 @@ bot_moveresult_t BotTravel_JumpPad( bot_movestate_t* ms, aas_reachability_t* rea
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes and executes the final movement toward a jump pad, determining direction and speed with air control or a fallback, checking for obstacles, and recording the resulting move.
+
+	The function first clears any previous move result. It attempts to use air control to adjust the bot's velocity so that it reaches the specified reachability endpoint. If air control fails, it
+   defaults to a horizontal direction from the bot's current position to the target endpoint and sets a fixed speed of 400. Before issuing the move, it checks whether that direction is blocked,
+   recording any failures in the result structure. The move is then issued via EA_Move, and the chosen direction is stored in result.movedir. Finally the completed result is returned.
+
+	\param ms Current movement state of the bot, including its position, velocity, and client information.
+	\param reach Destination reachability node that represents the jump pad target location.
+	\return A bot_moveresult_t structure containing the executed move's direction, any set failure flags, and other related data.
+*/
 bot_moveresult_t BotFinishTravel_JumpPad( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	float			 speed;
@@ -3232,13 +3401,23 @@ bot_moveresult_t BotFinishTravel_JumpPad( bot_movestate_t* ms, aas_reachability_
 	return result;
 }
 
-//===========================================================================
-// time before the reachability times out
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Calculates the number of ticks before a reachability becomes invalid based on its travel type.
+
+	The function examines the travel type of the given reachability and returns a predefined timeout value expressed in ticks.
+	- WALK, CROUCH, BARRIERJUMP, WALKOFFLEDGE, JUMP, SWIM, WATERJUMP, TELEPORT all return 5 ticks.
+	- LADDER returns 6 ticks.
+	- ELEVATOR returns 10 ticks.
+	- GRAPPLEHOOK returns 8 ticks.
+	- ROCKETJUMP returns 6 ticks.
+	- JUMPPAD and FUNCBOB each return 10 ticks.
+	If the travel type is unrecognized, an error is printed via botimport.Print and a default value of 8 ticks is returned.
+	The returned value is intended to be added to the function AAS_Time() to set a reachability timeout.
+
+
+	\param reach Pointer to the reachability structure whose traveltype field determines the timeout value.
+	\return The timeout duration in ticks.
+*/
 int BotReachabilityTime( aas_reachability_t* reach )
 {
 	switch( reach->traveltype ) {
@@ -3292,12 +3471,18 @@ int BotReachabilityTime( aas_reachability_t* reach )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Moves the bot directly toward a goal area by calculating direction, speed and travel type.
+
+	The function computes a vector from the bot’s current position to the goal’s origin, normalises it to obtain a unit direction, and determines whether the bot should walk or swim based on its
+   movement flags. The distance to the goal is capped at 100 units unless the goal disables slowing, from which a speed is derived; speeds below 10 units are set to zero to avoid negligible
+   motion. Obstacle checks are performed, a move action is issued with the computed direction and speed, and the resulting move data is stored. For swimming movement, the function also updates
+   view angles and sets an appropriate flag. Finally, the bot state is updated with bookkeeping information such as the last area and time of the move.
+
+	\param ms Current movement state of the bot, to be updated with new position and move information.
+	\param goal Target goal area the bot should move toward.
+	\return A bot_moveresult_t object describing the performed movement, including direction, speed, travel type, and any special flags such as swim view.
+*/
 bot_moveresult_t BotMoveInGoalArea( bot_movestate_t* ms, bot_goal_t* goal )
 {
 	bot_moveresult_t result;
@@ -3360,12 +3545,6 @@ bot_moveresult_t BotMoveInGoalArea( bot_movestate_t* ms, bot_goal_t* goal )
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int			 AAS_AreaRouteToGoalArea( int areanum, vec3_t origin, int goalareanum, int travelflags, int* traveltime, int* reachnum );
 extern float VectorDistance( vec3_t v1, vec3_t v2 );
 void		 BotMoveToGoal( bot_moveresult_t* result, int movestate, bot_goal_t* goal, int travelflags )
@@ -3934,12 +4113,6 @@ void		 BotMoveToGoal( bot_moveresult_t* result, int movestate, bot_goal_t* goal,
 	return;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotResetAvoidReach( int movestate )
 {
 	bot_movestate_t* ms;
@@ -3960,12 +4133,6 @@ void BotResetAvoidReach( int movestate )
 	ms->lastreachnum	= 0;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotResetLastAvoidReach( int movestate )
 {
 	int				 i, latest;
@@ -3997,12 +4164,6 @@ void BotResetLastAvoidReach( int movestate )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void BotResetMoveState( int movestate )
 {
 	bot_movestate_t* ms;
@@ -4016,12 +4177,6 @@ void BotResetMoveState( int movestate )
 	memset( ms, 0, sizeof( bot_movestate_t ) );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 int BotSetupMoveAI()
 {
 	BotSetBrushModelTypes();
@@ -4031,12 +4186,6 @@ int BotSetupMoveAI()
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void BotShutdownMoveAI()
 {
 	int i;

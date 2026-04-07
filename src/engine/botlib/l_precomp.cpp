@@ -128,12 +128,6 @@ token_t *freetokens;					//free tokens from the heap
 // list with global defines added to every source loaded
 define_t*  globaldefines;
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void QDECL SourceError( source_t* source, char* str, ... )
 {
 	char	text[1024];
@@ -153,12 +147,6 @@ void QDECL SourceError( source_t* source, char* str, ... )
 #endif // BSPC
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void QDECL SourceWarning( source_t* source, char* str, ... )
 {
 	char	text[1024];
@@ -178,12 +166,16 @@ void QDECL SourceWarning( source_t* source, char* str, ... )
 #endif // BSPC
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Adds a new indentation context to the source’s stack.
+
+	Creates an indent node containing the indentation type, a reference to the current script stack, and a flag indicating whether subsequent code should be skipped.
+	The new node is inserted at the front of the source’s indentation list, and the source’s skip counter is increased when appropriate.
+
+	\param source Source data structure containing the current parsing state, including script and indentation stacks.
+	\param type Integer identifier for the indentation type.
+	\param skip Nonzero value that signals the following block should be skipped.
+*/
 void PC_PushIndent( source_t* source, int type, int skip )
 {
 	indent_t* indent;
@@ -197,12 +189,17 @@ void PC_PushIndent( source_t* source, int type, int skip )
 	source->indentstack = indent;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Removes the top indentation entry from a source stack and returns its type and skip values; if none is present or the entry does not belong to the current script, zero is returned.
+
+	The function starts by resetting the output parameters to zero and then checks whether the source has an indentation stack to pop. It only proceeds if the top indentation belongs to the currently
+   active script; otherwise the function exits without changing the outputs. When the correct indentation is found, its type and skip fields are copied out, the indentation node is removed from the
+   stack, the source’s cumulative skip counter is adjusted, and the node’s memory is freed.
+
+	\param source Pointer to a source_t structure that contains the indentation stack and related state.
+	\param type Pointer to an int where the indentation type value will be written if a valid indentation is found.
+	\param skip Pointer to an int where the indentation skip value will be written if a valid indentation is found.
+*/
 void PC_PopIndent( source_t* source, int* type, int* skip )
 {
 	indent_t* indent;
@@ -228,12 +225,17 @@ void PC_PopIndent( source_t* source, int* type, int* skip )
 	FreeMemory( indent );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Pushes a script onto the source's stack after detecting recursive inclusion and reports an error if the script is already on the stack.
+
+	The function iterates over the current script stack of the provided source, comparing the filename of each stack element with the filename of the script to be added in a case-insensitive manner.
+   If a match is found, it calls SourceError to notify that the script would be recursively included, then exits without modifying the stack. If no recursive inclusion is detected, the new script is
+   linked to the front of the stack, maintaining LIFO order. The comparison is performed using Q_stricmp for case-insensitive string comparison. No state is returned; the function simply updates the
+   source structure in place.
+
+	\param source Pointer to the source whose script stack is to be updated
+	\param script Script to be added to the stack
+*/
 void PC_PushScript( source_t* source, script_t* script )
 {
 	script_t* s;
@@ -250,12 +252,14 @@ void PC_PushScript( source_t* source, script_t* script )
 	source->scriptstack = script;
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Initializes the global token heap the first time it is called, setting up a linked list of free token structures.
+
+	The function creates a singly linked list of all token objects stored in the static array token_heap.  It clears the freetokens pointer, then iterates over the array, linking each element’s next
+   pointer to the current head of the free list and updating the head.  After all elements are linked, tokenheapinitialized is set to true so that subsequent calls return immediately without
+   rebuilding the list.  This prepares the token heap for allocation by other parts of the parser.
+
+*/
 void PC_InitTokenHeap()
 {
 	/*
@@ -272,12 +276,15 @@ void PC_InitTokenHeap()
 	*/
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Creates a copy of the given token by allocating a new token and copying its contents.
+
+	The function allocates memory for a new token structure using GetMemory, copies all fields from the supplied token via memcpy, resets the next pointer of the new token to NULL, increments the
+   global count of tokens, and returns a pointer to the new token. If memory allocation fails, a fatal error is reported and NULL is returned.
+
+	\param token The token to duplicate
+	\return Pointer to the new token that is a copy of the original, or NULL if allocation failed.
+*/
 token_t* PC_CopyToken( token_t* token )
 {
 	token_t* t;
@@ -302,12 +309,14 @@ token_t* PC_CopyToken( token_t* token )
 	return t;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Releases a token and updates the global token counter.
+
+	The function takes a pointer to a token structure, frees the memory allocated for that token and decrements a global count of active tokens. It does not place the token back into any free list;
+   the memory is simply released.
+
+	\param token Pointer to the token to be freed.
+*/
 void PC_FreeToken( token_t* token )
 {
 	// free(token);
@@ -317,12 +326,18 @@ void PC_FreeToken( token_t* token )
 	numtokens--;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads the next token from a source stack, loading from nested scripts as necessary
+
+	The function consumes tokens from the source’s token queue. If the queue is empty it first attempts to read a new token from the current script using PS_ReadToken. When the current script
+   finishes, it cleans up any pending indents associated with that script, then pops the script off the stack and frees its memory. If the stack is exhausted, the function signals end-of-input. When a
+   token is available it copies it into the supplied token structure, removes it from the queue, and frees the temporary token. If a token was successfully retrieved, it returns qtrue; otherwise it
+   returns qfalse.
+
+	\param source Parsing context; may be advanced to the next script and have its indent stack updated
+	\param token Output container supplied by the caller, which will receive the read token
+	\return qtrue when a token was read, qfalse if no more tokens are available
+*/
 int PC_ReadSourceToken( source_t* source, token_t* token )
 {
 	token_t*  t;
@@ -365,12 +380,16 @@ int PC_ReadSourceToken( source_t* source, token_t* token )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Adds a copy of the supplied token to the front of the source's token list.
+
+	The function creates a duplicate of the token passed in by calling PC_CopyToken and then places this duplicate at the beginning of the source's token linked list. The next read operation on the
+   source will retrieve this token first. The operation returns a boolean success value, qtrue, indicating that the token was successfully re‑inserted.
+
+	\param source The source whose token list will receive the new token
+	\param token The token to be un‑read; it is copied before insertion
+	\return qtrue on success
+*/
 int PC_UnreadSourceToken( source_t* source, token_t* token )
 {
 	token_t* t;
@@ -381,12 +400,20 @@ int PC_UnreadSourceToken( source_t* source, token_t* token )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads and records the parameter list of a macro definition from the source stream.
+
+	The routine first verifies that the macro declaration begins with an open parenthesis and that the declared number of parameters does not exceed the supplied limit. It then iterates through the
+   token stream, handling nested parentheses and commas: each comma denotes the end of a parameter token list, while parentheses may be nested within a parameter. For each actual parameter token, a
+   linked list of token structures is built and stored in the provided parms array. Mismatched parentheses, too many or too few parameters relative to the definition, or an incomplete definition
+   trigger source‑level warnings or errors. On success, qtrue (non‑zero) is returned; on failure, qfalse is returned.
+
+	\param source the context from which tokens are read
+	\param define the macro definition being processed, providing its name and declared parameter count
+	\param parms output array that will receive up to maxparms token chains, one per actual parameter
+	\param maxparms the maximum number of parameter token chains that can be stored; used to detect excessive parameters
+	\return qtrue on success, qfalse on failure
+*/
 int PC_ReadDefineParms( source_t* source, define_t* define, token_t** parms, int maxparms )
 {
 	token_t token, *t, *last;
@@ -491,12 +518,16 @@ int PC_ReadDefineParms( source_t* source, define_t* define, token_t** parms, int
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Creates a quoted string token by concatenating a list of tokens
+
+	The function sets the token type to string, clears any existing whitespace information, and initializes the string content. It then surrounds the concatenated token strings with double quotes,
+   ensuring that the buffer does not overflow by respecting the MAX_TOKEN limit. Finally, it returns a truth value indicating success.
+
+	\param tokens list of tokens that are to be concatenated into the string
+	\param token token structure that will receive the resulting quoted string
+	\return an integer truth value (qtrue) indicating success
+*/
 int PC_StringizeTokens( token_t* tokens, token_t* token )
 {
 	token_t* t;
@@ -515,12 +546,17 @@ int PC_StringizeTokens( token_t* tokens, token_t* token )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Merges two token objects by concatenating their string values when the combination is legal, returning a success status
+
+	The function supports merging a name token with another name or a numeric token by appending the second token’s string to the first. It also handles concatenating two string tokens: the trailing
+   quote of the first and the leading quote of the second are removed before concatenation. If the token types do not allow merging, the function returns false. The merge operation modifies the first
+   token’s string buffer in place.
+
+	\param t1 The token that will receive the merged result; its string buffer is modified.
+	\param t2 The token whose string is appended or whose data is incorporated into the first token.
+	\return An integer where a non‑zero value indicates successful merge (qtrue) and zero indicates failure (qfalse).
+*/
 int PC_MergeTokens( token_t* t1, token_t* t2 )
 {
 	// merging of a name with a name or number
@@ -542,12 +578,6 @@ int PC_MergeTokens( token_t* t1, token_t* t2 )
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 /*
 void PC_PrintDefine(define_t *define)
 {
@@ -561,12 +591,14 @@ void PC_PrintDefine(define_t *define)
 }
 */
 #if DEFINEHASHING
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Prints the contents of the define hash table for debugging purposes.
+
+	The function iterates over every bucket of a hash table that stores define_t structures. For each bucket it writes the bucket index followed by the names of all entries stored in that bucket. The
+   output is generated using Log_Write, with each bucket’s data ending on a new line. This is typically used during development to inspect the state of the define table.
+
+	\param definehash an array of pointers to define_t structures, representing the hash table buckets.
+*/
 void PC_PrintDefineHashTable( define_t** definehash )
 {
 	int		  i;
@@ -583,14 +615,16 @@ void PC_PrintDefineHashTable( define_t** definehash )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
-// char primes[16] = {1, 3, 5, 7, 11, 13, 17, 19, 23, 27, 29, 31, 37, 41, 43, 47};
+/*!
+	\brief Computes a hash value for a null-terminated string.
 
+	The function processes each character in the input name by adding the product of the character's ASCII value and a weight that increases with the character position. After all characters are
+   processed, it mixes the accumulated value using XOR operations with right‑shifted versions of itself and then constrains the result to the range defined by the global DEFINEHASHSIZE constant. The
+   final integer is returned as the hash index suitable for hash tables sized according to DEFINEHASHSIZE.
+
+	\param name A null-terminated C string to be hashed.
+	\return An integer hash index in the range [0, DEFINEHASHSIZE-1].
+*/
 int PC_NameHash( char* name )
 {
 	int register hash, i;
@@ -607,12 +641,15 @@ int PC_NameHash( char* name )
 	return hash;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Adds a define entry to the hashtable bucket list according to its name hash
+
+	The function calculates the hash value from the define's name using PC_NameHash. It then inserts the entry at the beginning of the bucket list in the definehash array, updating the hashnext link
+   to maintain the chain. This operation does not allocate memory or perform any other side effects beyond pointer updates.
+
+	\param define The define_t structure representing the entry to insert
+	\param definehash An array of define_t pointers used as hash table buckets
+*/
 void PC_AddDefineToHash( define_t* define, define_t** definehash )
 {
 	int hash;
@@ -622,12 +659,18 @@ void PC_AddDefineToHash( define_t* define, define_t** definehash )
 	definehash[hash] = define;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Searches a hashed define table for a definition with the given name.
+
+	Computes a hash value for the name, then traverses the linked list at that hash bucket in the table. Each node’s name field is compared to the target using string comparison. If a match is found,
+   the pointer to that node is returned; otherwise, the function returns null.
+
+	If the name field is null or the table contains empty buckets, the function simply returns null, as there is no matching definition.
+
+	\param definehash array of buckets, each bucket is a chained list of define_t structures hashed by name
+	\param name name of the define to locate
+	\return pointer to the matching define_t, or null if no such definition exists
+*/
 define_t* PC_FindHashedDefine( define_t** definehash, char* name )
 {
 	define_t* d;
@@ -645,12 +688,17 @@ define_t* PC_FindHashedDefine( define_t** definehash, char* name )
 }
 
 #endif // DEFINEHASHING
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+
+/*!
+	\brief Looks up a define by name in a linked list and returns a pointer to it or NULL if not found.
+
+	The function iterates through the linked list pointed to by 'defines', comparing each node's 'name' field against the supplied 'name' argument using strcmp. When a match is found, the
+   corresponding node pointer is returned. If the entire list is traversed without finding a match, the function returns NULL.
+
+	\param defines head of a singly linked list of define_t structures to search
+	\param name name of the define to find
+	\return pointer to the matching define_t node, or NULL if no match
+*/
 define_t* PC_FindDefine( define_t* defines, char* name )
 {
 	define_t* d;
@@ -664,13 +712,16 @@ define_t* PC_FindDefine( define_t* defines, char* name )
 	return NULL;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					number of the parm
-//								if no parm found with the given name -1 is returned
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Returns the index of a define parameter matching the given name or -1 if it does not exist.
+
+	Iterates over the linked list of parameter tokens stored in the provided define structure. For each token, it compares the token's string with the supplied name. When a match is found, the current
+   position in the list, expressed as a zero‑based index, is returned. If the entire list is traversed without finding a match, the function returns –1 to indicate the absence of such a parameter.
+
+	\param define pointer to a define structure that contains the list of parameter tokens
+	\param name name of the parameter to search for
+	\return index of the matching parameter, or –1 when not found
+*/
 int PC_FindDefineParm( define_t* define, char* name )
 {
 	token_t* p;
@@ -689,12 +740,14 @@ int PC_FindDefineParm( define_t* define, char* name )
 	return -1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Frees a define structure and all tokens it owns.
+
+	The function walks through the list of parameter tokens attached to the define, frees each token, then does the same for the list of tokens that make up the body of the define, and finally
+   releases the memory for the define structure itself. Both token lists are singly linked and can be empty.
+
+	\param define Pointer to the define to deallocate; may not be null.
+*/
 void PC_FreeDefine( define_t* define )
 {
 	token_t *t, *next;
@@ -715,12 +768,6 @@ void PC_FreeDefine( define_t* define )
 	FreeMemory( define );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PC_AddBuiltinDefines( source_t* source )
 {
 	int		  i;
@@ -752,12 +799,23 @@ void PC_AddBuiltinDefines( source_t* source )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Expands built‑in preprocessor macros such as __LINE__, __FILE__, __DATE__, and __TIME__ into a token list and reports success.
+
+	The function creates a copy of the macro invocation token and, depending on the builtin type specified in the definition, replaces its contents with the appropriate value. For __LINE__ a numeric
+   token containing the source line number is generated; for __FILE__ the current script filename is inserted; for __DATE__ an 11‑character string containing the month, day, and year is produced; for
+   __TIME__ an 8‑character string containing the hour, minute, and second is produced. The token type and subtype are set to reflect the generated value. The created token is returned via the
+   firsttoken and lasttoken output parameters. If the builtin is unknown or a special case such as __STDC__, the output pointers are set to NULL. The function always returns a non‑zero value to
+   indicate successful expansion.
+
+
+	\param source Context of the source token stream; used for diagnostics
+	\param deftoken Token representing the original macro invocation
+	\param define Macro definition containing builtin information
+	\param firsttoken Output pointer receiving the first token of the expanded list
+	\param lasttoken Output pointer receiving the last token of the expanded list
+	\return Non‑zero on success, zero on failure
+*/
 int PC_ExpandBuiltinDefine( source_t* source, token_t* deftoken, define_t* define, token_t** firsttoken, token_t** lasttoken )
 {
 	token_t*	  token;
@@ -829,12 +887,21 @@ int PC_ExpandBuiltinDefine( source_t* source, token_t* deftoken, define_t* defin
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Expands a preprocessor define into a linked list of tokens and returns the first and last token of the expansion.
+
+	The function handles both builtin and user‑defined macros. For user macros it first reads any argument lists. It then walks through the macro replacement text, substituting argument tokens and
+   handling the stringizing ("#") and token‑pasting ("##") operators. Tokens are copied into a new linked list, which is returned via the firsttoken and lasttoken pointers. If an error occurs, any
+   allocated tokens are freed and qfalse is returned. Built‑in macros are delegated to a separate routine. The function does not modify the original source token stream – it only produces the expanded
+   token list for further insertion.
+
+	\param source A context describing the source token stream and error handling facilities
+	\param deftoken The token where the macro invocation occurs, used mainly for error reporting
+	\param define The definition object containing the replacement text and metadata
+	\param firsttoken Output pointer set to the first token of the expanded list
+	\param lasttoken Output pointer set to the last token of the expanded list
+	\return qtrue to indicate successful expansion and list allocation, qfalse if an error was detected or a builtin macro failed to expand.
+*/
 int PC_ExpandDefine( source_t* source, token_t* deftoken, define_t* define, token_t** firsttoken, token_t** lasttoken )
 {
 	token_t *parms[MAX_DEFINEPARMS], *dt, *pt, *t;
@@ -988,12 +1055,18 @@ int PC_ExpandDefine( source_t* source, token_t* deftoken, define_t* define, toke
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Expands a define macro into the source token stream and inserts the resulting tokens at the front of the source's token list.
+
+	The function first calls PC_ExpandDefine to perform the macro expansion, obtaining the first and last tokens of the expanded sequence.  If the expansion succeeds and returns a non‑empty token
+   list, the newly created tokens are linked before the current source->tokens list, effectively inserting the macro expansion at the head of the token stream.  If PC_ExpandDefine fails or produces no
+   tokens, the function returns false, leaving the source token list unchanged.  The return value is the integer constant qtrue on success and qfalse on failure.
+
+	\param source The source object whose token list will be modified to include the expanded macro tokens.
+	\param deftoken The token that triggered the macro expansion; it is passed to PC_ExpandDefine to allow context‑specific handling of the expansion.
+	\param define Descriptor of the macro definition that is to be expanded; contains the definition’s body and associated metadata.
+	\return qtrue if the macro expansion produced tokens and they were inserted into the source, otherwise qfalse.
+*/
 int PC_ExpandDefineIntoSource( source_t* source, token_t* deftoken, define_t* define )
 {
 	token_t *firsttoken, *lasttoken;
@@ -1011,12 +1084,17 @@ int PC_ExpandDefineIntoSource( source_t* source, token_t* deftoken, define_t* de
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Normalizes a file path string by collapsing duplicate separators and converting all slashes to the OS‑specific separator.
+
+	The function iterates over the supplied null‑terminated string, first removing any consecutive slash or backslash characters by moving the remainder of the string one position to the left. After
+   all duplicates are eliminated, it replaces every slash or backslash with the value defined by the macro PATHSEPERATOR_CHAR, ensuring the path uses the native separator for the current platform. The
+   input is modified in place.
+
+	This routine is intended for use throughout the Wolfenstein source tree wherever user‑supplied or configuration paths need to be rendered compatible with the running operating system.
+
+	\param path Pointer to a mutable null‑terminated C string that will be transformed in place.
+*/
 void PC_ConvertPath( char* path )
 {
 	char* ptr;
@@ -1041,12 +1119,16 @@ void PC_ConvertPath( char* path )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Processes an \#include directive by loading the specified file and adding it to the script stack.
+
+	The function reads the next token after the #include keyword, determining whether the file name is given as a string literal or within angle brackets.  It strips quotes, converts the path, and
+   attempts to load the file.  If the file is not found, it reports an error (unless a special build flag allows a warning).  On success the loaded script is pushed onto the source stack so that its
+   contents will be parsed next.  The function also honors a skip flag on the source to skip includes when required.
+
+	\param source The current source object from which tokens are read and to which the new script will be added.
+	\return Returns qtrue (1) on success or when the source skip flag is set; returns qfalse (0) if the include file cannot be located or another error occurs.
+*/
 int PC_Directive_include( source_t* source )
 {
 	script_t* script;
@@ -1142,14 +1224,6 @@ int PC_Directive_include( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-// reads a token from the current line, continues reading on the next
-// line only if a backslash '\' is encountered.
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_ReadLine( source_t* source, token_t* token )
 {
 	int crossline;
@@ -1172,23 +1246,19 @@ int PC_ReadLine( source_t* source, token_t* token )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_WhiteSpaceBeforeToken( token_t* token )
 {
 	return token->endwhitespace_p - token->whitespace_p > 0;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reset the whitespace information stored in a token
+
+	The function clears the whitespace metadata of a token by setting both the start and end whitespace pointers to null and resetting the line count cross counter to zero. This prepares the token for
+   fresh processing without any residual whitespace state.
+
+	\param token Pointer to the token whose whitespace data should be cleared.
+*/
 void PC_ClearTokenWhiteSpace( token_t* token )
 {
 	token->whitespace_p	   = NULL;
@@ -1196,12 +1266,17 @@ void PC_ClearTokenWhiteSpace( token_t* token )
 	token->linescrossed	   = 0;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Processes a #undef directive by removing the specified definition from the source's define table.
+
+	When invoked, the function first checks if the source is currently skipping content; if so it reports success immediately. It then reads the next token and expects it to be a name; otherwise it
+   signals an error. Using either a hashed or linear search depending on compile time configuration, it looks for a define entry with that name. If found and marked as a fixed (i.e., cannot be
+   altered) the function issues a warning; otherwise the entry is unlinked from the list and its memory deallocated. If no matching define exists the function simply returns a success code. The
+   routine always signals success unless it encounters a read or validation failure.
+
+	\param source The parsing context containing the define list and related flags.
+	\return Non‑zero if the undef operation succeeded; zero if an error such as a missing name was encountered.
+*/
 int PC_Directive_undef( source_t* source )
 {
 	token_t	  token;
@@ -1278,12 +1353,20 @@ int PC_Directive_undef( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Parses a #define directive from a script source, creating or replacing a definition in the source's define table.
+
+	If the source's skip counter is positive the directive is ignored and the function immediately reports success. The function reads the token following #define, expecting a token of type TT_NAME;
+   failure to provide a proper name results in a source error and failure. It checks for an existing definition with the same name; if the existing definition is not fixed the function warns, unmasks
+   the old definition by invoking PC_Directive_undef, and then proceeds. A new define_t structure is allocated, its name field populated, and it is inserted into the source's define list or hash. The
+   function then reads the remaining line to see whether the directive contains parameters, indicated by an opening parenthesis. If parameters are present it parses a comma‑separated name list,
+   rejecting duplicates, and stores each as a token linked to the define's parms list. After the parameter list, the body tokens are read until the end of the line, copying each token into the
+   define's tokens list while checking for recursive definitions and misplaced token‑pasting operators (##). Any parsing error causes a source error and a failure result. On success, the newly defined
+   structure is fully populated and the function returns success.
+
+	\param source Pointer to a source_t structure representing the script being parsed, whose define table will be modified.
+	\return Returns non‑zero (true) on success and zero (false) on failure.
+*/
 int PC_Directive_define( source_t* source )
 {
 	token_t	  token, *t, *last;
@@ -1451,12 +1534,16 @@ int PC_Directive_define( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Parse a null-terminated string that contains a preprocessor directive and return the define created from it
+
+	The function initializes the token heap, loads the supplied source text into a temporary script buffer with a placeholder filename, and then calls PC_Directive_define to interpret the directive.
+   After parsing, any tokens that were not consumed are freed and the resulting define is extracted from the temporary source structure or from a hash table if hashing is enabled. The temporary script
+   buffer and associated memory are then released. If the parse was successful the newly created define is returned; otherwise any partially created define is released and a null pointer is returned.
+
+	\param string the source text containing a #define directive to parse
+	\return a pointer to the created define_t structure, or NULL if parsing failed
+*/
 define_t* PC_DefineFromString( char* string )
 {
 	script_t* script;
@@ -1543,13 +1630,6 @@ int PC_AddDefine( source_t* source, char* string )
 	return qtrue;
 }
 
-//============================================================================
-// add a globals define that will be added to all opened sources
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_AddGlobalDefine( char* string )
 {
 	define_t* define;
@@ -1565,13 +1645,6 @@ int PC_AddGlobalDefine( char* string )
 	return qtrue;
 }
 
-//============================================================================
-// remove the given global define
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_RemoveGlobalDefine( char* name )
 {
 	define_t* define;
@@ -1586,13 +1659,6 @@ int PC_RemoveGlobalDefine( char* name )
 	return qfalse;
 }
 
-//============================================================================
-// remove all globals defines
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PC_RemoveAllGlobalDefines()
 {
 	define_t* define;
@@ -1603,12 +1669,19 @@ void PC_RemoveAllGlobalDefines()
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Creates a deep copy of a define structure, including its name, flags, tokens, and parameters.
+
+	The function allocates a new define_t object with enough space to store the define name. It copies the name string, flag values, builtin flag, and number of parameters from the original define.
+   The new define is left unlinked and its hashnext field is cleared. It then iterates through the token list of the original define, using PC_CopyToken to duplicate each token and links them into a
+   new list. The same process is performed for the define’s parameter list.
+
+	The source parameter is present for context compatibility but is not used by the current implementation. The resulting define_t structure is returned to the caller.
+
+	\param source Pointer to the current source context; currently unused.
+	\param define The define structure to be duplicated.
+	\return Pointer to the newly allocated and fully duplicated define_t structure.
+*/
 define_t* PC_CopyDefine( source_t* source, define_t* define )
 {
 	define_t* newdefine;
@@ -1661,12 +1734,14 @@ define_t* PC_CopyDefine( source_t* source, define_t* define )
 	return newdefine;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Copies every global preprocessor define into the specified source’s list of defines.
+
+	The function iterates over the global list of preprocessor definitions, duplicates each definition for the target source using PC_CopyDefine, and then inserts the copy into the source’s define
+   list or hash table, depending on whether DEFINEHASHING is enabled. This ensures that all globally defined macros are available during preprocessing of the individual source file.
+
+	\param source Pointer to the source_t structure to which the global defines will be attached.
+*/
 void PC_AddGlobalDefinesToSource( source_t* source )
 {
 	define_t *define, *newdefine;
@@ -1682,12 +1757,17 @@ void PC_AddGlobalDefinesToSource( source_t* source )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Handles an #ifdef or #ifndef directive by parsing the following name token, checking if the token names a defined symbol, and updating the source's indentation state accordingly.
+
+	The function first reads a line from the source and expects a name token; if the token is missing or not a name, an error is recorded. It then looks up the name in the source's define table,
+   optionally using a hash. Based on whether the directive type is INDENT_IFDEF or INDENT_IFNDEF and whether the define was found, it computes a skip flag and pushes an indentation record onto the
+   source's stack. The function returns true (qtrue) when the directive is processed successfully, otherwise false (qfalse).
+
+	\param source Pointer to the current source context being parsed
+	\param type An integer constant indicating the directive type, either INDENT_IFDEF or INDENT_IFNDEF
+	\return Integer status: true (qtrue) if the directive was processed successfully, false (qfalse) on error.
+*/
 int PC_Directive_if_def( source_t* source, int type )
 {
 	token_t	  token;
@@ -1715,34 +1795,43 @@ int PC_Directive_if_def( source_t* source, int type )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Processes a conditional #ifdef directive in the source
+
+	This function forwards the handling to PC_Directive_if_def, passing an indentation flag that denotes an #ifdef construct. The outcome returned reflects whether the directive was processed
+   successfully.
+
+	\param source Pointer to the source context being parsed
+	\return Integer result code from PC_Directive_if_def; typically 0 indicates success, non‑zero signals an error.
+*/
 int PC_Directive_ifdef( source_t* source )
 {
 	return PC_Directive_if_def( source, INDENT_IFDEF );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Handles an #ifndef directive by delegating to a generic if/definition handler.
+
+	Invokes PC_Directive_if_def with the current source and the INDENT_IFNDEF flag, returning its result.
+
+	\param source Pointer to the source structure representing the current parser state.
+	\return Integer status code provided by PC_Directive_if_def.
+*/
 int PC_Directive_ifndef( source_t* source )
 {
 	return PC_Directive_if_def( source, INDENT_IFNDEF );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Handles the preprocessing #else directive by adjusting the indentation stack and reporting errors for misplaced or duplicate #else directives.
+
+	The function first pops the most recent indentation entry from the source stack. If no entry was present, it reports a misplaced #else error. If the entry was already an #else indentation, it
+   reports a duplicate #else error. Otherwise, it pushes a new indentation entry of type INDENT_ELSE, with the skip flag inverted from the popped entry. It returns qtrue on success or qfalse when an
+   error occurs.
+
+	\param source The source context for the preprocessor operation.
+	\return qtrue if the #else was processed successfully, qfalse otherwise.
+*/
 int PC_Directive_else( source_t* source )
 {
 	int type, skip;
@@ -1763,12 +1852,15 @@ int PC_Directive_else( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Ends an #if block by popping the indentation state and reports an error if there is no matching start.
+
+	Invokes the stack-pop routine to remove the most recent indentation level. If the pop returns an empty type, a misplaced #endif is reported via SourceError. The function returns a boolean value,
+   true if a matching start was found, false otherwise.
+
+	\param source pointer to the source context being processed
+	\return indicates whether an #endif was valid (true) or misplaced (false)
+*/
 int PC_Directive_endif( source_t* source )
 {
 	int type, skip;
@@ -1783,12 +1875,6 @@ int PC_Directive_endif( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 typedef struct operator_s {
 	int				   _operator;
 	int				   priority;
@@ -1803,6 +1889,17 @@ typedef struct value_s {
 	struct value_s *prev, *next;
 } value_t;
 
+/*!
+	\brief Returns the precedence priority for a given operator code.
+
+	The function maps operator subtype constants to integer precedence levels used when parsing expressions. For example, multiplication and division have a priority of 15, addition and subtraction
+   14, logical and bitwise operators have varying priorities, and conditional operators return 5.
+
+	If an operator code does not match any known case the function returns zero (qfalse).
+
+	\param op operator subtype code
+	\return integer priority value of the operator, or zero if unknown
+*/
 int PC_OperatorPriority( int op )
 {
 	switch( op ) {
@@ -1903,6 +2000,22 @@ int PC_OperatorPriority( int op )
 	}
 #define FreeOperator( op )
 
+/*!
+	\brief Evaluates a list of preprocessor tokens as an expression, storing the integer or floating result.
+
+	The function walks a linked list of tokens that represent a #if or #elif expression. It builds a value and operator chain while performing syntax checks such as matching parentheses, correct
+   placement of operators, and preventing disallowed operations on floating‑point operands. The special token "defined" is handled by looking up symbols in the source’s define table. After the token
+   list is processed, the expression is evaluated using standard operator precedence and the result is written to the supplied intvalue or floatvalue pointer. When "integer" is non‑zero the expression
+   is interpreted as an integer expression; otherwise floating‑point operators are permitted. The function returns 1 on successful evaluation and 0 if a syntax error was detected or evaluation could
+   not be completed.
+
+	\param source pointer to the source context used for error reporting
+	\param tokens head of a linked list of token_t describing the expression to evaluate
+	\param intvalue pointer to store the integer result, set to 0 if NULL
+	\param floatvalue pointer to store the floating‑point result, set to 0.0 if NULL
+	\param integer flag indicating whether to evaluate as an integer expression (non‑zero) or allow floating point operations
+	\return 1 if the expression was evaluated successfully; 0 on error.
+*/
 int PC_EvaluateTokens( source_t* source, token_t* tokens, signed long int* intvalue, double* floatvalue, int integer )
 {
 	operator_t *o, *firstoperator, *lastoperator;
@@ -2493,12 +2606,24 @@ int PC_EvaluateTokens( source_t* source, token_t* tokens, signed long int* intva
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Parse and evaluate the expression following a preprocessor directive, storing the result as an integer or float if requested.
+
+	The routine begins by resetting any provided integer or float output pointers to zero. It then expects at least one token after the directive; otherwise an error is reported. Tokens are read one
+   at a time, expanding identifiers, handling the special "defined" construct, and converting numbers and punctuation directly into a linked list. If a token is an undefined name, an error is emitted.
+   Once all tokens are gathered, the token list is handed to PC_EvaluateTokens, which performs the actual arithmetic evaluation. On success, optional output pointers are updated and the temporary
+   token list is freed. Debug traces can be emitted if DEBUG_EVAL is enabled. The function returns a non-zero value to indicate success and zero to indicate failure.
+
+	The integer parameter selects whether the evaluation should produce an integer result (qtrue) or a floating‐point result. If both intvalue and floatvalue are NULL the function still performs the
+   parse step but discards the value.
+
+
+	\param source the preprocessor source context containing definitions and the current script position
+	\param intvalue pointer to receive the evaluated integer result; may be NULL if the caller does not need an integer value
+	\param floatvalue pointer to receive the evaluated floating‑point result; may be NULL if the caller does not need a float value
+	\param integer flag indicating that the expression should be evaluated as an integer (non‑zero) or as a floating‑point number (zero)
+	\return non‑zero if evaluation succeeded; zero if an error occurred
+*/
 int PC_Evaluate( source_t* source, signed long int* intvalue, double* floatvalue, int integer )
 {
 	token_t	  token, *firsttoken, *lasttoken;
@@ -2625,12 +2750,20 @@ int PC_Evaluate( source_t* source, signed long int* intvalue, double* floatvalue
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Evaluates a dollar expression directive and stores the resulting integer or float value.
+
+	The function is used for parsing $evalint and $evalfloat pre‑compiler directives. It first expects a leading '(' token following the directive keyword, then reads and expands tokens until the
+   matching ')' is found, handling macro definitions and the "defined" keyword. A linked list of the parsed tokens is built and passed to PC_EvaluateTokens, which performs the arithmetic evaluation.
+   If the evaluation succeeds, the result is written to either *intvalue or *floatvalue depending on the integer flag; otherwise the error is reported via SourceError and the function returns false.
+   The supplied output pointers may be NULL if the caller is interested only in one type of result.
+
+	\param source Context and stream from which the directive is read; used to fetch and report tokens.
+	\param intvalue Pointer to a signed long int where the integer result will be stored, or NULL if not needed.
+	\param floatvalue Pointer to a double where the floating‑point result will be stored, or NULL if not needed.
+	\param integer Flag indicating whether to evaluate the expression as an integer (true) or as a float (false).
+	\return Non‑zero if the expression was successfully parsed and evaluated, zero if an error occurred. The result is written to the provided output pointers.
+*/
 int PC_DollarEvaluate( source_t* source, signed long int* intvalue, double* floatvalue, int integer )
 {
 	int		  indent, defined = qfalse;
@@ -2774,12 +2907,17 @@ int PC_DollarEvaluate( source_t* source, signed long int* intvalue, double* floa
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Processes a preprocessor #elif directive by evaluating its expression and updating the indentation stack.
+
+	The function first removes the current indentation state. If there is no current state or the current state is an #else, a mis‑placed #elif error is reported and the function returns failure. It
+   then attempts to evaluate the expression that follows the #elif. If the evaluation fails, the function returns failure. The result of the evaluation determines whether the code block following the
+   #elif should be skipped (zero means skip). A new indentation record of type INDENT_ELIF is then pushed onto the stack with the computed skip flag. The function returns a success value if all steps
+   succeed.
+
+	\param source pointer to the current source context used for parsing and error reporting.
+	\return qtrue on success, qfalse on failure such as a mis‑placed #elif or a failed expression evaluation.
+*/
 int PC_Directive_elif( source_t* source )
 {
 	signed long int value;
@@ -2801,12 +2939,19 @@ int PC_Directive_elif( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Evaluates a conditional "if" directive from the source and records whether the following block should be executed.
+
+	The function first evaluates the expression supplied by the source using PC_Evaluate.  If evaluation fails it returns a failure code.  Otherwise it checks the resulting value: if the value is zero
+   the block is marked as skipped.  It then pushes a new indentation level with the skip flag using PC_PushIndent and returns a success code.  The push stores state needed for nested directives and to
+   control parsing of the body.
+
+	The function uses a signed long integer to hold the evaluated value, and a Boolean-like int for the skip flag.  The return type follows the convention used elsewhere in the parser, where qtrue (1)
+   indicates success and qfalse (0) indicates failure.
+
+	\param source pointer to the source file data structure being parsed
+	\return 1 if the directive was evaluated successfully, 0 otherwise
+*/
 int PC_Directive_if( source_t* source )
 {
 	signed long int value;
@@ -2821,24 +2966,34 @@ int PC_Directive_if( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reports an unsupported #line directive from a source file.
+
+	The function is called when a #line directive is encountered while parsing source files. It logs an error message indicating the directive is not supported and signals failure by returning false.
+   No further processing of the directive occurs.
+
+	\param source Pointer to the source structure from which the directive was read.
+	\return False, indicating the directive is unsupported; qfalse is typically defined as 0.
+*/
 int PC_Directive_line( source_t* source )
 {
 	SourceError( source, "#line directive not supported" );
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads the token following an #error directive and reports a source error.
+
+	The function retrieves the following source token, then calls SourceError with the token string prefixed by "#error directive:". It finally returns a false indicator.
+
+	Because it performs a source error report, callers should treat the return value as a failure status.
+
+	Note: The token string is cleared before reading, ensuring that only the newly read token is used.
+
+
+	\param source Source context from which to read the next token and to report errors.
+	\return An integer value of zero indicating failure.
+*/
 int PC_Directive_error( source_t* source )
 {
 	token_t token;
@@ -2849,12 +3004,15 @@ int PC_Directive_error( source_t* source )
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Issues a warning for an unsupported #pragma directive and skips its line contents.
+
+	The function uses SourceWarning to inform the user that the #pragma directive is not supported. It then calls PC_ReadLine repeatedly until the end of the line is reached, effectively ignoring the
+   rest of the directive. Finally, it returns qtrue to indicate successful handling.
+
+	\param source pointer to the current source context parsing the directive
+	\return int value qtrue (1) indicating the directive was processed
+*/
 int PC_Directive_pragma( source_t* source )
 {
 	token_t token;
@@ -2867,12 +3025,14 @@ int PC_Directive_pragma( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reinserts a minus sign token into the source stream for parsing.
+
+	Creates a token_t reflecting the current script position, sets its string to "-", designates it as a punctuation token, and then pushes it back into the source queue via PC_UnreadSourceToken. This
+   allows the parser to later process the sign as a separate token. The token inherits line number and whitespace information from the source's scriptstack.
+
+	\param source Pointer to a source_t structure, providing context such as the script stack for token creation and unread operations.
+*/
 void UnreadSignToken( source_t* source )
 {
 	token_t token;
@@ -2887,12 +3047,16 @@ void UnreadSignToken( source_t* source )
 	PC_UnreadSourceToken( source, &token );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Evaluates a script expression and inserts the numeric result into the source token stream, providing a sign token when the result is negative
+
+	The function calls PC_Evaluate to compute the value of the current expression. If the evaluation fails it returns an error flag. On success it creates a token representing the absolute value of
+   the result, sets its type to an integer token, and pushes it back onto the source token stream using PC_UnreadSourceToken. If the original value was negative, a separate sign token is also unread.
+   The function returns a success indicator.
+
+	\param source the source context containing the script stack and token stream
+	\return qtrue if the expression was successfully evaluated and the result token was inserted; otherwise qfalse
+*/
 int PC_Directive_eval( source_t* source )
 {
 	signed long int value;
@@ -2919,12 +3083,17 @@ int PC_Directive_eval( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Evaluate a floating‑point value from the script and unread a number token representing its absolute value, restoring a preceding minus sign if necessary.
+
+	This routine first evaluates the next expression from the script source using PC_Evaluate, storing the result in a double. If the evaluation fails it returns false.
+
+	It then creates a token with the absolute value formatted to two decimal digits, records the current script position, and pushes the token back onto the source stack with PC_UnreadSourceToken. If
+   the original value was negative, UnreadSignToken is used to place a minus sign token back. The function returns true on success and false when any failure occurs.
+
+	\param source script source structure containing the script stack and current parsing state
+	\return nonzero if evaluation succeeded and token was unread, zero otherwise.
+*/
 int PC_Directive_evalfloat( source_t* source )
 {
 	double	value;
@@ -2950,12 +3119,6 @@ int PC_Directive_evalfloat( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 directive_t directives[20] = { { "if", PC_Directive_if },
 	{ "ifdef", PC_Directive_ifdef },
 	{ "ifndef", PC_Directive_ifndef },
@@ -2972,6 +3135,16 @@ directive_t directives[20] = { { "if", PC_Directive_if },
 	{ "evalfloat", PC_Directive_evalfloat },
 	{ NULL, NULL } };
 
+/*!
+	\brief Reads and processes a preprocessor directive from the source input.
+
+	The function consumes the next token from the source and expects it to be the name of a recognized directive. It verifies that the name token does not span multiple lines, then looks up the
+   corresponding directive in a global table. If found, it invokes the associated handler function, passing the same source, and returns the handler's success flag. If the token is missing, spans a
+   line break, or does not match any known directive, an error is reported via SourceError and the function returns a failure flag.
+
+	\param source Pointer to the source stream from which tokens are read and directives are parsed.
+	\return Non‑zero (true) if the directive was successfully handled; zero (false) otherwise.
+*/
 int			PC_ReadDirective( source_t* source )
 {
 	token_t token;
@@ -3004,12 +3177,16 @@ int			PC_ReadDirective( source_t* source )
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Evaluates a $ directive expression and pushes its integer result onto the token stream
+
+	This routine interprets a $ directive that should produce a numeric result. It uses PC_DollarEvaluate to compute a signed long integer. If the evaluation fails, the function returns a zero flag.
+   When successful, it constructs a token containing the absolute value of the result, marking it as an integer token and storing the original numeric value when NUMBERVALUE is defined. The token is
+   then placed back on the source's token stack. If the evaluated value was negative, a separate sign token is also unread. The function signals success by returning a non‑zero value.
+
+	\param source pointer to the source structure used for reading and writing tokens
+	\return non‑zero if the expression was evaluated successfully and the token was pushed; otherwise 0
+*/
 int PC_DollarDirective_evalint( source_t* source )
 {
 	signed long int value;
@@ -3040,12 +3217,16 @@ int PC_DollarDirective_evalint( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Evaluates the current script dollar directive and produces a floating‑point token.
+
+	The function first invokes PC_DollarEvaluate to compute a numeric value. If the evaluation fails, it reports failure. When successful it creates a token containing the absolute value of that
+   number, formatted to two decimal places, and pushes the token back onto the source stream. If the computed value was negative, it also inserts a minus sign token. An optional NUMBERVALUE section
+   may store the numeric value in the token’s integer and float fields. The function then returns an integer flag indicating success (qtrue) or failure (qfalse).
+
+	\param source Pointer to the source_t structure that provides the current script context and token stream.
+	\return A non‑zero value indicates success (the token was created and placed back on the stream); zero indicates failure.
+*/
 int PC_DollarDirective_evalfloat( source_t* source )
 {
 	double	value;
@@ -3075,14 +3256,20 @@ int PC_DollarDirective_evalfloat( source_t* source )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 directive_t dollardirectives[20] = { { "evalint", PC_DollarDirective_evalint }, { "evalfloat", PC_DollarDirective_evalfloat }, { NULL, NULL } };
 
+/*!
+	\brief Processes a precompiler directive that starts with $ from the provided source input.
+
+	The function first reads the next token from the source. If the token cannot be read, an error indicating a $ without a name is reported and the function returns false. It then checks that the
+   directive name is on the same line; if the token spans multiple lines, the token is unread, an error is reported, and false is returned. When the token is a name, the function searches a global
+   table of known dollar directives for a matching entry and invokes its associated handler function, returning the handler's result. If no matching handler is found or the token is not a valid name,
+   the directive is considered unknown, the token is returned to the source stream, an appropriate error is emitted, and the function returns false. A true value indicates successful handling, while
+   false signifies an error or unknown directive.
+
+	\param source pointer to the source context from which tokens are read
+	\return true if the directive was recognized and handled; false otherwise
+*/
 int			PC_ReadDollarDirective( source_t* source )
 {
 	token_t token;
@@ -3141,12 +3328,6 @@ int BuiltinFunction( source_t* source )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int QuakeCMacro( source_t* source )
 {
 	int		i;
@@ -3174,12 +3355,7 @@ int QuakeCMacro( source_t* source )
 }
 
 #endif // QUAKEC
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+
 int PC_ReadToken( source_t* source, token_t* token )
 {
 	define_t* define;
@@ -3273,12 +3449,6 @@ int PC_ReadToken( source_t* source, token_t* token )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_ExpectTokenString( source_t* source, char* string )
 {
 	token_t token;
@@ -3296,12 +3466,6 @@ int PC_ExpectTokenString( source_t* source, char* string )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_ExpectTokenType( source_t* source, int type, int subtype, token_t* token )
 {
 	char str[MAX_TOKEN];
@@ -3386,12 +3550,6 @@ int PC_ExpectTokenType( source_t* source, int type, int subtype, token_t* token 
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_ExpectAnyToken( source_t* source, token_t* token )
 {
 	if( !PC_ReadToken( source, token ) ) {
@@ -3403,12 +3561,6 @@ int PC_ExpectAnyToken( source_t* source, token_t* token )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_CheckTokenString( source_t* source, char* string )
 {
 	token_t tok;
@@ -3427,12 +3579,6 @@ int PC_CheckTokenString( source_t* source, char* string )
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_CheckTokenType( source_t* source, int type, int subtype, token_t* token )
 {
 	token_t tok;
@@ -3452,12 +3598,6 @@ int PC_CheckTokenType( source_t* source, int type, int subtype, token_t* token )
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PC_SkipUntilString( source_t* source, char* string )
 {
 	token_t token;
@@ -3471,34 +3611,16 @@ int PC_SkipUntilString( source_t* source, char* string )
 	return qfalse;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PC_UnreadLastToken( source_t* source )
 {
 	PC_UnreadSourceToken( source, &source->token );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PC_UnreadToken( source_t* source, token_t* token )
 {
 	PC_UnreadSourceToken( source, token );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PC_SetIncludePath( source_t* source, char* path )
 {
 	strncpy( source->includepath, path, _MAX_PATH );
@@ -3509,23 +3631,11 @@ void PC_SetIncludePath( source_t* source, char* path )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PC_SetPunctuations( source_t* source, punctuation_t* p )
 {
 	source->punctuations = p;
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
 source_t* LoadSourceFile( const char* filename )
 {
 	source_t* source;
@@ -3558,12 +3668,6 @@ source_t* LoadSourceFile( const char* filename )
 	return source;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 source_t* LoadSourceMemory( char* ptr, int length, char* name )
 {
 	source_t* source;
@@ -3596,12 +3700,6 @@ source_t* LoadSourceMemory( char* ptr, int length, char* name )
 	return source;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void FreeSource( source_t* source )
 {
 	script_t* script;
@@ -3665,13 +3763,6 @@ void FreeSource( source_t* source )
 	FreeMemory( source );
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
-
 #define MAX_SOURCEFILES 64
 
 source_t* sourceFiles[MAX_SOURCEFILES];
@@ -3702,12 +3793,6 @@ int		  PC_LoadSourceHandle( const char* filename )
 	return i;
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
 int PC_FreeSourceHandle( int handle )
 {
 	if( handle < 1 || handle >= MAX_SOURCEFILES ) {
@@ -3723,12 +3808,17 @@ int PC_FreeSourceHandle( int handle )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads the next token from the source file identified by the given handle and stores it in the supplied token structure.
+
+	The function first checks that the supplied handle is within the valid range and that a source file is open for that handle; otherwise it returns zero. It then calls PC_ReadToken on the underlying
+   source file, storing the result in a temporary token_t structure. The token’s fields are copied into the pc_token argument. If the token type indicates a string, the surrounding double quotes are
+   removed to provide the raw string value. The function returns the integer from PC_ReadToken, where a non‑zero result signifies a successful read and zero indicates failure or end of file.
+
+	\param handle Integer identifier for the source file; must be between 1 and MAX_SOURCEFILES‑1 and correspond to an open file.
+	\param pc_token Pointer to a pc_token_t structure that will receive the token’s data.
+	\return Non‑zero if a token was successfully read; zero if the handle is invalid, no file is open for the handle, or no token could be read.
+*/
 int PC_ReadTokenHandle( int handle, pc_token_t* pc_token )
 {
 	token_t token;
@@ -3756,12 +3846,6 @@ int PC_ReadTokenHandle( int handle, pc_token_t* pc_token )
 	return ret;
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
 int PC_SourceFileAndLine( int handle, char* filename, int* line )
 {
 	if( handle < 1 || handle >= MAX_SOURCEFILES ) {
@@ -3784,23 +3868,11 @@ int PC_SourceFileAndLine( int handle, char* filename, int* line )
 	return qtrue;
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
 void PC_SetBaseFolder( char* path )
 {
 	PS_SetBaseFolder( path );
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
 void PC_CheckOpenSourceHandles()
 {
 	int i;

@@ -61,12 +61,15 @@ midrangearea_t* midrangeareas;
 int*			clusterareas;
 int				numclusterareas;
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively adds all connected mid‑range areas to the current cluster.
+
+	Starting at the specified area number, this function records the area as part of the current flood cluster and disables it as a mid‑range candidate. It then examines every face of the area,
+   determining the neighbor on the other side of each face. If that neighboring area is still valid a mid‑range area, the function recursively processes that neighbor, propagating the flood throughout
+   the connected component. Areas with no neighbor or already removed from the mid‑range list are ignored. The recursion terminates when no further valid neighboring areas remain.
+
+	\param areanum the area number from which to begin the flood
+*/
 void			AAS_AltRoutingFloodCluster_r( int areanum )
 {
 	int			i, otherareanum;
@@ -107,12 +110,6 @@ void			AAS_AltRoutingFloodCluster_r( int areanum )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int AAS_AlternativeRouteGoals( vec3_t start, vec3_t goal, int travelflags, aas_altroutegoal_t* altroutegoals, int maxaltroutegoals, int color )
 {
 #ifndef ENABLE_ALTROUTING
@@ -258,12 +255,14 @@ int AAS_AlternativeRouteGoals( vec3_t start, vec3_t goal, int travelflags, aas_a
 #endif
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Initializes the data structures used for alternative routing, allocating new memory for mid‑range and cluster area arrays and freeing any existing ones.
+
+	This function is compiled only when alternative routing support is enabled via ENABLE_ALTROUTING. It frees previously allocated memory for the global midrangeareas and clusterareas arrays if they
+   exist, then allocates fresh memory sized according to the current world’s area count. The new allocations are stored back into these global pointers, preparing them for use by the pathfinding
+   subsystem.
+
+*/
 void AAS_InitAlternativeRouting()
 {
 #ifdef ENABLE_ALTROUTING
@@ -282,12 +281,13 @@ void AAS_InitAlternativeRouting()
 #endif
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Releases resources used for alternative routing and resets related globals when available.
+
+	When the ENABLE_ALTROUTING flag is set, the function frees the memory allocated for the midrange and cluster routing areas if they exist, clears the pointers to those structures, and resets the
+   cluster area count to zero. This cleanup ensures that all temporary routing data is properly discarded before the application shuts down or reinitializes the routing system.
+
+*/
 void AAS_ShutdownAlternativeRouting()
 {
 #ifdef ENABLE_ALTROUTING

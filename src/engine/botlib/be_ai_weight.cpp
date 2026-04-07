@@ -56,12 +56,17 @@ If you have questions concerning this license or the applicable additional terms
 #define MAX_WEIGHT_FILES 128
 weightconfig_t* weightFileList[MAX_WEIGHT_FILES];
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Receives a numeric token from the source, warns on leading minus signs, and writes the parsed float value to the output pointer, returning success or failure as an integer.
+
+	The function first consumes any token from the provided source. If the token read is a minus sign, it emits a warning and consumes the next token which must be a number; this number is then used
+   as the value (the sign is discarded). If the resulting token is not a numerical token, an error is reported and the function signals failure. On success, the numeric value stored in the token is
+   assigned to the supplied float pointer and the function returns true, otherwise it returns false.
+
+	\param source pointer to a token source from which to read the next token
+	\param value output pointer to store the parsed float value
+	\return returns true (qtrue) if a number was successfully parsed and stored, otherwise returns false (qfalse).
+*/
 int				ReadValue( source_t* source, float* value )
 {
 	token_t token;
@@ -87,12 +92,17 @@ int				ReadValue( source_t* source, float* value )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Reads a fuzzy weight expression from source and fills the fuzzyseparator structure, returning true on success.
+
+	The function first checks for a "balance" keyword. If found, it parses a parenthesised list of three comma‑separated values representing weight, minweight and maxweight, sets fs->type to
+   WT_BALANCE, and stores these values. If "balance" is not present, it reads a single value and assigns it to weight, minweight and maxweight while setting fs->type to 0. After the weight
+   information, a semicolon must appear; the function returns qtrue if all parsing steps succeed, otherwise qfalse.
+
+	\param source Pointer to the source tokenizer from which the weight expression is read
+	\param fs Pointer to the fuzzyseperator_t structure that will receive the parsed values
+	\return qtrue if parsing succeeds, otherwise qfalse
+*/
 int ReadFuzzyWeight( source_t* source, fuzzyseperator_t* fs )
 {
 	if( PC_CheckTokenString( source, "balance" ) ) {
@@ -144,12 +154,14 @@ int ReadFuzzyWeight( source_t* source, fuzzyseperator_t* fs )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively frees a fuzzyseperator_t structure and its hierarchical extensions.
+
+	The function checks for a null pointer and immediately returns if the input is null. It then recursively frees any child nodes followed by any next nodes, ensuring a depth‑first cleanup of the
+   linked structure. After all sub‑nodes have been released, the current node is freed using FreeMemory, which should match the allocator used to create the structure.
+
+	\param fs pointer to the fuzzyseperator_t to be freed; its child and next nodes are recursively released before the node itself is freed
+*/
 void FreeFuzzySeperators_r( fuzzyseperator_t* fs )
 {
 	if( !fs ) {
@@ -167,12 +179,13 @@ void FreeFuzzySeperators_r( fuzzyseperator_t* fs )
 	FreeMemory( fs );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Frees a weight configuration and releases all associated resources.
+
+	Iterates over each weight in the configuration, deallocating its fuzzy separators and any allocated name string, then frees the configuration structure itself.
+
+	\param config Pointer to the weight configuration to be freed.
+*/
 void FreeWeightConfig2( weightconfig_t* config )
 {
 	int i;
@@ -188,12 +201,6 @@ void FreeWeightConfig2( weightconfig_t* config )
 	FreeMemory( config );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void FreeWeightConfig( weightconfig_t* config )
 {
 	if( !LibVarGetValue( "bot_reloadcharacters" ) ) {
@@ -203,12 +210,20 @@ void FreeWeightConfig( weightconfig_t* config )
 	FreeWeightConfig2( config );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Parses fuzzy separator definitions from a source stream and builds a linked list of fuzzy separator nodes.
+
+	Starting with an opening parenthesis, the function reads an integer index, then expects an opening brace to begin a list of fuzzy separator entries. Each entry may be a default case, a case with a
+   numerical value, a return entry, a nested switch, or an error condition. For each entry, a fuzzyseperator_t node is allocated, linked into the list, and populated with the appropriate index, value,
+   weight (for return), or child pointer (for nested switches). The function ensures that only a single default case is allowed; a duplicate default triggers a source error, frees any partially built
+   list, and returns null. If a default case is missing, a synthetic default node is added and a warning is issued. Any syntax error results in freeing the list and returning null.
+
+	The function operates recursively when encountering nested switches, and reports errors via SourceError and warnings via SourceWarning. It never throws exceptions.
+
+
+	\param source Pointer to the source object from which tokens are read and errors are reported
+	\return Pointer to the first node of the constructed fuzzy separator list, or NULL if parsing failed
+*/
 fuzzyseperator_t* ReadFuzzySeperators_r( source_t* source )
 {
 	int				  newindent, index, def, founddefault;
@@ -354,12 +369,6 @@ fuzzyseperator_t* ReadFuzzySeperators_r( source_t* source )
 	return firstfs;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 weightconfig_t* ReadWeightConfig( char* filename )
 {
 	int				  newindent, avail = 0, n;
@@ -521,12 +530,6 @@ weightconfig_t* ReadWeightConfig( char* filename )
 }
 
 #if 0
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 qboolean WriteFuzzyWeight( FILE *fp, fuzzyseperator_t* fs )
 {
 	if( fs->type == WT_BALANCE ) {
@@ -575,13 +578,7 @@ qboolean WriteFuzzyWeight( FILE *fp, fuzzyseperator_t* fs )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
-qboolean WriteFuzzySeperators_r( FILE *fp, fuzzyseperator_t* fs, int indent )
+qboolean WriteFuzzySeperators_r( FILE* fp, fuzzyseperator_t* fs, int indent )
 {
 	if( !WriteIndent( fp, indent ) ) {
 		return qfalse;
@@ -671,16 +668,10 @@ qboolean WriteFuzzySeperators_r( FILE *fp, fuzzyseperator_t* fs, int indent )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 qboolean WriteWeightConfig( char* filename, weightconfig_t* config )
 {
-	int i;
-	FILE *fp;
+	int		  i;
+	FILE*	  fp;
 	weight_t* ifw;
 
 	fp = fopen( filename, "wb" );
@@ -725,12 +716,7 @@ qboolean WriteWeightConfig( char* filename, weightconfig_t* config )
 }
 
 #endif
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+
 int FindFuzzyWeight( weightconfig_t* wc, char* name )
 {
 	int i;
@@ -744,12 +730,19 @@ int FindFuzzyWeight( weightconfig_t* wc, char* name )
 	return -1;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively calculates a fuzzy weight from inventory counts using a separator tree, blending weights between thresholds.
+
+	Starting at the supplied separator node, the function compares the inventory value at the node’s index to the node’s threshold. If the value is below the threshold, it descends into the child node
+   if one exists; otherwise it returns the node’s weight. When the value meets or exceeds the threshold and a subsequent node exists, the function checks whether the value lies between the current and
+   the next node’s thresholds. If so, it interpolates a weight by linearly blending the weight (or child weight) of the current node with that of the next node, using the relative position of the
+   value within the interval as the scaling factor. If the value exceeds the next node’s threshold, the recursion proceeds to that next node. The process continues until a terminal node is
+   encountered, whose weight is returned.
+
+	\param inventory Array of integer inventory quantities, indexed by the separator node’s index field
+	\param fs Pointer to the current node in the fuzzy separator tree being evaluated
+	\return A floating point weight computed for the given inventory entry, representing the fuzzy interpolation between separator nodes.
+*/
 float FuzzyWeight_r( int* inventory, fuzzyseperator_t* fs )
 {
 	float scale, w1, w2;
@@ -792,12 +785,19 @@ float FuzzyWeight_r( int* inventory, fuzzyseperator_t* fs )
 	return fs->weight;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Computes a fuzzy weight for an inventory value by recursively traversing separators and blending weights between nodes.
+
+	The function walks a linked list of fuzzy separator nodes. For each node it compares the inventory count at the node’s index to its threshold value. If the count is below the threshold, it
+   recurses into the child node if present; otherwise it returns a random weight between the node’s min and max weight fields. If the count meets or exceeds the threshold and a next node exists, the
+   function checks whether the count is still below the next node’s threshold. In that case it obtains a weight from the current child (or random if none) and a weight from the next child (or random
+   if none), blends them in proportion to how far the count lies between the two thresholds, and returns the blended result. If the count exceeds the next node’s threshold, execution recurses to the
+   next node. When no next node exists the stored weight of the current node is returned. Random values are generated by calling random(), yielding a number between 0 and 1.
+
+	\param inventory Array of inventory counts used to evaluate thresholds for each separator node.
+	\param fs Pointer to a fuzzy separator node that contains threshold information, weight ranges, and links to child and next nodes.
+	\return The floating‑point weight computed for the given inventory state.
+*/
 float FuzzyWeightUndecided_r( int* inventory, fuzzyseperator_t* fs )
 {
 	float scale, w1, w2;
@@ -840,12 +840,6 @@ float FuzzyWeightUndecided_r( int* inventory, fuzzyseperator_t* fs )
 	return fs->weight;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float FuzzyWeight( int* inventory, weightconfig_t* wc, int weightnum )
 {
 #ifdef EVALUATERECURSIVELY
@@ -882,12 +876,6 @@ float FuzzyWeight( int* inventory, weightconfig_t* wc, int weightnum )
 #endif
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 float FuzzyWeightUndecided( int* inventory, weightconfig_t* wc, int weightnum )
 {
 #ifdef EVALUATERECURSIVELY
@@ -924,12 +912,15 @@ float FuzzyWeightUndecided( int* inventory, weightconfig_t* wc, int weightnum )
 #endif
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively adjusts the weights of a fuzzy separator tree node.
+
+	This function descends through the linked list of child and next separator nodes, applying evolutionary changes to nodes of type WT_BALANCE. For each such node, it randomly chooses between a rare
+   full mutation and a less frequent normal mutation, modifying the weight by a random fraction of the weight range. If the weight falls outside its defined bounds after the change, the bounds are
+   tightened to match the new weight values.
+
+	\param fs pointer to the fuzzy separator node being evolved
+*/
 void EvolveFuzzySeperator_r( fuzzyseperator_t* fs )
 {
 	if( fs->child ) {
@@ -958,12 +949,6 @@ void EvolveFuzzySeperator_r( fuzzyseperator_t* fs )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void EvolveWeightConfig( weightconfig_t* config )
 {
 	int i;
@@ -973,12 +958,15 @@ void EvolveWeightConfig( weightconfig_t* config )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively scales the weight of fuzzy separator nodes, clamping the result to the specified bounds.
+
+	The function traverses a linked list of fuzzy separator nodes via child and next pointers. For nodes of type WT_BALANCE, it first applies the scaling factor to the sum of maximum and minimum
+   weights, then restricts the updated weight to lie within the original min and max limits. Child and sibling nodes are processed in depth‑first order.
+
+	\param fs Pointer to the root fuzzy separator node to scale
+	\param scale Scalar multiplier applied to the node weight
+*/
 void ScaleFuzzySeperator_r( fuzzyseperator_t* fs, float scale )
 {
 	if( fs->child ) {
@@ -1002,12 +990,6 @@ void ScaleFuzzySeperator_r( fuzzyseperator_t* fs, float scale )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void ScaleWeight( weightconfig_t* config, char* name, float scale )
 {
 	int i;
@@ -1027,12 +1009,20 @@ void ScaleWeight( weightconfig_t* config, char* name, float scale )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Recursively scales the weight ranges of balance-type fuzzy separators within a separator tree around their midpoints.
+
+	This function walks the fuzzy separator tree, visiting each node in depth‑first order. When a node is of type WT_BALANCE, its minweight and maxweight are adjusted by moving them towards or away
+   from their midpoint according to the supplied scale factor. A scale < 1 contracts the range, whereas a scale > 1 expands it. If the new maximum becomes smaller than the new minimum, the maximum is
+   clamped to match the minimum. The function then recurses to the node's sibling via the next pointer. The operation mutates the minweight and maxweight values of the tree.
+
+	It assumes that the supplied pointer is not null and that the type WT_BALANCE is defined in the surrounding code.
+
+	TODO: clarify whether NULL pointers are allowed and if any synchronization is required.
+
+	\param fs Pointer to the fuzzy separator node (or subtree) to be processed. The function recurses through child and next nodes.
+	\param scale Factor determining how far the weight range moves from its midpoint. Values less than one shrink the range, values greater than one enlarge it.
+*/
 void ScaleFuzzySeperatorBalanceRange_r( fuzzyseperator_t* fs, float scale )
 {
 	if( fs->child ) {
@@ -1054,12 +1044,16 @@ void ScaleFuzzySeperatorBalanceRange_r( fuzzyseperator_t* fs, float scale )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Clamps a scaling factor to the 0–100 range and applies it to the fuzzy balance range of every separator in a weight configuration.
+
+	The function first restricts the supplied scale to the valid interval [0, 100]. It then iterates over all weights stored in the configuration, calling ScaleFuzzySeperatorBalanceRange_r on each
+   weight's first separator. This call adjusts that separator's fuzzy balance range according to the clamped scale factor.
+
+	\param config Pointer to a weightconfig_t structure containing the weights whose separators will be scaled
+	\param scale The scaling factor used when adjusting each separator; values below 0 are treated as 0, values above 100 are treated as 100
+	\return None
+*/
 void ScaleFuzzyBalanceRange( weightconfig_t* config, float scale )
 {
 	int i;
@@ -1076,12 +1070,19 @@ void ScaleFuzzyBalanceRange( weightconfig_t* config, float scale )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Combines two fuzzy separator configurations into a third one, returning a success status.
+
+	The function walks the child and next links of the three separators in parallel.  When a node is of type WT_BALANCE, the weight in fsout is set to the average of the weights from fs1 and fs2, and
+   its min and max bounds are adjusted if necessary.  For all other node types the function simply propagates through the structure, recursing on children and on next nodes.  If any mismatches in
+   structure—such as a missing child or next link, or differing balance types—are detected, the function prints an error message and returns qfalse.  Success occurs only when all corresponding
+   sub‑branches match and all values are merged.
+
+	\param fs1 First fuzzy separator to be merged
+	\param fs2 Second fuzzy separator to be merged
+	\param fsout Destination separator that receives the combined configuration
+	\return qtrue when the two input separators match in structure and the merge succeeds; qfalse otherwise
+*/
 int InterbreedFuzzySeperator_r( fuzzyseperator_t* fs1, fuzzyseperator_t* fs2, fuzzyseperator_t* fsout )
 {
 	if( fs1->child ) {
@@ -1125,13 +1126,6 @@ int InterbreedFuzzySeperator_r( fuzzyseperator_t* fs1, fuzzyseperator_t* fs2, fu
 	return qtrue;
 }
 
-//===========================================================================
-// config1 and config2 are interbreeded and stored in configout
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void InterbreedWeightConfigs( weightconfig_t* config1, weightconfig_t* config2, weightconfig_t* configout )
 {
 	int i;
@@ -1146,12 +1140,6 @@ void InterbreedWeightConfigs( weightconfig_t* config1, weightconfig_t* config2, 
 	}
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void BotShutdownWeights()
 {
 	int i;

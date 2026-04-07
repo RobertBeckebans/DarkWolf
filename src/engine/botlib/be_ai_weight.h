@@ -63,24 +63,116 @@ typedef struct weightconfig_s {
 	char	 filename[MAX_QPATH];
 } weightconfig_t;
 
-// reads a weight configuration
+/*!
+	\brief Parses a weight configuration file and returns a weightconfig_t structure, caching it to avoid duplicate loads.
+
+	If bot_reloadcharacters is false and the file has already been loaded, the function returns the existing configuration. Otherwise it loads the file from disk (or a pak file) with LoadSourceFile,
+   allocates a weightconfig_t, parses "weight" entries, and builds fuzzy separators as needed. On any failure (file missing, memory error, syntax error) all allocated memory is freed and the function
+   returns NULL. The function also logs informational or error messages and, in debug builds, reports loading time. The parsed configuration is stored in the global weightFileList array at the next
+   free slot and later reused until reloading is forced.
+
+	\param filename Path to the weight configuration file to load
+	\return A pointer to the created weightconfig_t or NULL if an error occurs.
+*/
 weightconfig_t* ReadWeightConfig( char* filename );
-// free a weight configuration
+
+/*!
+	\brief Releases a weight configuration when character reloads are enabled.
+
+	The function first checks the 'bot_reloadcharacters' console variable. If the variable is false or unset, the function returns immediately and the configuration is left untouched. When the
+   variable indicates that bots can reload characters, the cleanup work is delegated to FreeWeightConfig2, which actually frees the resources associated with the provided configuration.
+
+	\param config Pointer to the weightconfig_t instance to free.
+*/
 void			FreeWeightConfig( weightconfig_t* config );
 // writes a weight configuration, returns true if successfull
 qboolean		WriteWeightConfig( char* filename, weightconfig_t* config );
-// find the fuzzy weight with the given name
+
+/*!
+	\brief Searches a weight configuration for a weight name and returns its index or -1 if not found
+
+	The function iterates over the first wc->numweights entries of the weight array within the supplied weightconfig_t. For each entry it compares the stored name string with the supplied name using a
+   case‑sensitive strcmp. If a match is found the loop index is returned immediately. When all entries have been examined without a match, the function returns -1 to signal that the weight was not
+   found.
+
+	\param wc pointer to a weight configuration structure containing an array of weight entries and a count of valid entries
+	\param name pointer to a null‑terminated string representing the desired weight name
+	\return an integer representing the position of the matching weight entry within the weight array, or -1 if no match is found
+*/
 int				FindFuzzyWeight( weightconfig_t* wc, char* name );
-// returns the fuzzy weight for the given inventory and weight
+
+/*!
+	\brief Retrieves the fuzzy weight for a given inventory and weight configuration.
+
+	If the requested weight configuration has no separator chain, the function returns 0. Otherwise it walks a linked list of separators: each node describes a threshold on a specific inventory slot.
+   When the inventory value at that slot is less than the node’s threshold the traversal continues through the child pointer; otherwise it proceeds to the next sibling. The function returns the weight
+   stored in the node that has no appropriate child or next link. The traversal continues until a terminal node is reached, guaranteeing a weight value is returned when a valid chain exists. The
+   algorithm is deterministic and has no side effects. The #ifdef EVALUATERECURSIVELY path invokes a recursive helper; otherwise the loop-based implementation is used.
+
+	\param inventory array of item counts indexed by inventory slot
+	\param wc pointer to the weight configuration structure containing the separator chains
+	\param weightnum index selecting the specific weight entry in the configuration
+	\return The computed fuzzy weight as a float
+*/
 float			FuzzyWeight( int* inventory, weightconfig_t* wc, int weightnum );
+
+/*!
+	\brief Compute a fuzzy weight for an item using a separator tree based on the current inventory
+
+	The function walks a tree of fuzzy separators stored in the weight config. For each node it compares the inventory amount at the specified index to a threshold value. If the inventory is less than
+   the threshold, it follows the child link; otherwise it follows the next link. When a leaf node is reached (no child or next pointer) a random weight is chosen uniformly between the leaf’s minweight
+   and maxweight. If the weight configuration has no separator for the given weight number, the function returns zero. The weight may be used to influence bot item selection when the bot is uncertain
+   about the item’s value.
+
+	\param inventory pointer to an array of item counts used as the decision basis
+	\param wc pointer to the weight configuration containing separator definitions
+	\param weightnum index of the weight entry to evaluate in the config
+	\return a floating point weight value, zero if no configuration or the leaf is unreachable, otherwise a random value within the leaf’s specified range
+*/
 float			FuzzyWeightUndecided( int* inventory, weightconfig_t* wc, int weightnum );
-// scales the weight with the given name
+
+/*!
+	\brief Scales a named weight by applying a clamped scale factor to its separator.
+
+	The function first clamps the supplied scale value to the range [0,1]. It then iterates through the weights in the provided configuration until it finds a weight whose name matches the supplied
+   name. When a match is found, it calls ScaleFuzzySeperator_r on the weight's first separator with the clamped scale value and exits the loop. If no matching weight is found, the function does
+   nothing further.
+
+	\param config Pointer to the weight configuration that holds the array of weights and the count of weights.
+	\param name C string containing the name of the weight to be scaled.
+	\param scale Floating‑point scale factor to apply; value is clamped between 0 and 1 before use.
+*/
 void			ScaleWeight( weightconfig_t* config, char* name, float scale );
 // scale the balance range
 void			ScaleBalanceRange( weightconfig_t* config, float scale );
-// evolves the weight configuration
+
+/*!
+	\brief Evolves each weight's fuzzy separator in a weight configuration
+
+	Iterates over the number of weights stored in the configuration and calls EvolveFuzzySeperator_r on the first separator of each weight, updating them in place.
+
+	\param config Pointer to the weight configuration to evolve
+*/
 void			EvolveWeightConfig( weightconfig_t* config );
-// interbreed the weight configurations and stores the interbreeded one in configout
+
+/*!
+	\brief Combine two weight configurations by interpolating their fuzzy separators into a new configuration
+
+	The function first checks that all three configurations have the same number of weight entries. If the number of weights differs, it prints an error message and returns without modifying the
+   output configuration. When the size matches, it iterates through each weight and calls InterbreedFuzzySeperator_r to merge the corresponding fuzzy separators from the two input configurations into
+   the output configuration.
+
+	\param config1 The first source configuration whose weights are being combined
+	\param config2 The second source configuration whose weights are being combined
+	\param configout The configuration that will receive the merged weights; must already have a matching numweights value
+*/
 void			InterbreedWeightConfigs( weightconfig_t* config1, weightconfig_t* config2, weightconfig_t* configout );
-// frees cached weight configurations
+
+/*!
+	\brief Frees and clears all cached weight configurations.
+
+	The function iterates over the global weightFileList array up to the maximum defined by MAX_WEIGHT_FILES. For each non‑null entry it calls FreeWeightConfig2 to release the associated memory and
+   then sets the array slot to null, ensuring no dangling references remain.
+
+*/
 void			BotShutdownWeights();

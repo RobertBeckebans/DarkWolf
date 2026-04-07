@@ -171,12 +171,17 @@ char basefolder[MAX_PATH];
 char basefolder[MAX_QPATH];
 #endif
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Creates a sorted punctuation lookup table for a script from a list of punctuation entries.
+
+	The function first ensures that the script has a pre‑allocated table of 256 entries, each entry pointing to a linked list of punctuation structures. It then iterates through the supplied array of
+   punctuations, inserting each one into the appropriate list based on the first character of the punctuation string. Within each list the punctuations are ordered by length, with longer strings
+   inserted before shorter ones to guarantee correct matching during script parsing. The table is initialized to zero before use, and each new entry is linked either at the front or after the correct
+   predecessor to maintain the order.
+
+	\param script pointer to the script structure that will receive the punctuation table
+	\param punctuations array of punctuation_t objects terminated by an entry with a null string field
+*/
 void PS_CreatePunctuationTable( script_t* script, punctuation_t* punctuations )
 {
 	int			   i;
@@ -225,12 +230,6 @@ void PS_CreatePunctuationTable( script_t* script, punctuation_t* punctuations )
 	}
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 char* PunctuationFromNum( script_t* script, int num )
 {
 	int i;
@@ -244,12 +243,6 @@ char* PunctuationFromNum( script_t* script, int num )
 	return "unkown punctuation";
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void QDECL ScriptError( script_t* script, char* str, ... )
 {
 	char	text[1024];
@@ -273,12 +266,6 @@ void QDECL ScriptError( script_t* script, char* str, ... )
 #endif // BSPC
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void QDECL ScriptWarning( script_t* script, char* str, ... )
 {
 	char	text[1024];
@@ -302,12 +289,6 @@ void QDECL ScriptWarning( script_t* script, char* str, ... )
 #endif // BSPC
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void SetScriptPunctuations( script_t* script, punctuation_t* p )
 {
 #ifdef PUNCTABLE
@@ -329,14 +310,9 @@ void SetScriptPunctuations( script_t* script, punctuation_t* p )
 	}
 }
 
-//============================================================================
-// Reads spaces, tabs, C-like comments etc.
-// When a newline character is found the scripts line counter is increased.
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Consumes whitespace and comments from a script, advancing the script pointer and line counter.
+*/
 int PS_ReadWhiteSpace( script_t* script )
 {
 	while( 1 ) {
@@ -419,14 +395,19 @@ int PS_ReadWhiteSpace( script_t* script )
 	return 1;
 }
 
-//============================================================================
-// Reads an escape character.
-//
-// Parameter:				script		: script to read from
-//								ch				: place to store the read escape character
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads and interprets the next escape sequence in a script and stores the resulting character.
+
+	The function assumes that the script pointer is positioned at the backslash that begins an escape sequence. It then advances past this backslash, examines the following character(s), and converts
+   them into the corresponding single character. Supported escapes include standard C literals such as \\n, \\r, \\t, \\v, \\b, \\f, \\a, as well as escaped quotes and the question mark. Hexadecimal
+   escapes of the form \\xNN are processed by reading subsequent hexadecimal digits; decimal escapes of the form \d+ are also accepted. Values larger than 0xFF trigger a warning and are truncated to
+   0xFF. Any unknown escape character causes an error. After determining the character value, the function stores it through the provided char pointer, moves the script pointer past the processed
+   escape code, and returns 1 to indicate success.
+
+	\param script the script object to read the escape from
+	\param ch pointer to store the resolved character
+	\return 1 to signal that a character was read successfully; callers typically treat a zero return as failure
+*/
 int PS_ReadEscapeCharacter( script_t* script, char* ch )
 {
 	int c, val, i;
@@ -551,16 +532,19 @@ int PS_ReadEscapeCharacter( script_t* script, char* ch )
 	return 1;
 }
 
-//============================================================================
-// Reads C-like string. Escape characters are interpretted.
-// Quotes are included with the string.
-// Reads two strings with a white space between them as one string.
-//
-// Parameter:				script		: script to read from
-//								token			: buffer to store the string
-// Returns:					qtrue when a string was read succesfully
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads a string literal or quoted text from the script while handling escape characters, optional whitespace, and concatenating adjacent strings
+
+	The function identifies the type of the token based on the quote character, then copies characters from the script buffer into the token's string field. It supports escaping characters unless
+   disabled by the script flags, enforces a maximum token length, and allows two strings separated by whitespace to be merged into one token. When a terminating quote is found it appends the quote,
+   null‑terminates the token, sets the subtype to the token length, and returns success. Errors such as missing trailing quote or newline inside a string cause a script error and result in a return of
+   0.
+
+	\param quote the quotation character that marks the start and end of the string
+	\param script pointer to the script state used for reading input
+	\param token buffer where the extracted string and its metadata are stored
+	\return Non‑zero on success, zero on failure
+*/
 int PS_ReadString( script_t* script, token_t* token, int quote )
 {
 	int	  len, tmpline;
@@ -653,12 +637,17 @@ int PS_ReadString( script_t* script, token_t* token, int quote )
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads a name token from a script into the given token structure
+
+	The function marks the token as a name and then consumes characters from the script pointer that are alphabetic, numeric, or underscore. Each consumed character is appended to the token's string
+   buffer, and the function monitors the length to not exceed MAX_TOKEN. If the token would be too long, ScriptError is invoked with an appropriate message and the function returns 0 to indicate
+   failure. Upon successful completion, the token string is null‑terminated, its subtype is set to the name length, and the function returns 1.
+
+	\param script pointer to the script currently being parsed
+	\param token token structure to populate with the name token
+	\return 1 if a name token was successfully read; 0 if the token exceeded MAX_TOKEN and an error was reported
+*/
 int PS_ReadName( script_t* script, token_t* token )
 {
 	int	 len = 0;
@@ -683,12 +672,20 @@ int PS_ReadName( script_t* script, token_t* token )
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Parses a numeric string according to a subtype mask and assigns both integer and floating‑point representations.
+
+	The function interprets the character sequence pointed to by &String based on the bitmask in &subtype, which may indicate a floating‑point number (TT_FLOAT), an ordinary decimal integer
+   (TT_DECIMAL), a hexadecimal integer (TT_HEX), an octal integer (TT_OCTAL), or a binary integer (TT_BINARY). For TT_FLOAT it processes digits and an optional single decimal point, accumulating a
+   long double value; the integer output is then set to the truncation of that value. For the other subtypes it directly converts the digits into an unsigned long integer, skipping the appropriate
+   leading prefixes (0x, 0, 0b). In all cases the floating‑point output is set to the exact same numeric value as the integer output. If a second decimal point is encountered while parsing TT_FLOAT,
+   the function exits early without modifying the outputs beyond the values computed so far.
+
+	\param string String containing the number literal to parse
+	\param subtype Bitmask specifying the numeric format (TT_FLOAT, TT_DECIMAL, TT_HEX, TT_OCTAL, TT_BINARY)
+	\param intvalue Pointer to store the computed integer value
+	\param floatvalue Pointer to store the computed long double value
+*/
 void NumberValue( char* string, int subtype, unsigned long int* intvalue, long double* floatvalue )
 {
 	unsigned long int dotfound = 0;
@@ -772,12 +769,20 @@ void NumberValue( char* string, int subtype, unsigned long int* intvalue, long d
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads the next numeric literal from a script and fills a token with its value and type information.
+
+	The routine begins by marking the token as a number. It first checks for hexadecimal prefixed with 0x or 0X and collects the digits until a non‑digit character is found, flagging the token subtype
+   as hex.  If BINARYNUMBERS is defined it also accepts 0b or 0B followed by binary digits and flags the subtype accordingly.  For all other numbers it parses decimal, octal and floating point forms:
+   an initial 0 sets an octal flag, dots enable a floating point flag, and any digits 8 or 9 clear the octal flag.  The implementation ensures the token string does not exceed MAX_TOKEN characters,
+   emitting ScriptError on overflow and returning 0.  After the main number digits, it scans an optional long "l"/"L" and unsigned "u"/"U" suffix, updating the corresponding subtype flags.  The final
+   character terminator is inserted, and if NUMBERVALUE is defined the numeric string is converted to integer and float values stored in the token.  The token subtype is marked as an integer if no
+   float flag is present.  On success the function returns 1, otherwise 0.
+
+	\param script pointer to the script context being parsed
+	\param token token structure to receive the parsed number and its metadata
+	\return non‑zero on success, zero on failure (e.g., token too long or a script parsing error)
+*/
 int PS_ReadNumber( script_t* script, token_t* token )
 {
 	int	 len = 0, i;
@@ -909,12 +914,18 @@ int PS_ReadNumber( script_t* script, token_t* token )
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Parses a character literal from the script and stores it in the token.
+
+	The function expects the current script position to be at a single quote beginning of a literal. It reads the first quote, checks for end of file, handles an escape sequence if the next character
+   is a backslash, otherwise reads the next character. If the closing quote is missing it emits a warning and skips until the closing quote or a line break. It then stores the trailing quote and a
+   null terminator in the token’s string array and sets the subtype to the literal character value. The function returns 1 on success and 0 if an error such as unexpected end of file or escape read
+   failure occurs.
+
+	\param script script context from which to read characters
+	\param token token to populate with parsed literal
+	\return nonzero on success, zero on failure
+*/
 int PS_ReadLiteral( script_t* script, token_t* token )
 {
 	token->type = TT_LITERAL;
@@ -960,12 +971,17 @@ int PS_ReadLiteral( script_t* script, token_t* token )
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Attempts to read the next punctuation token from the script and stores it in the provided token structure.
+
+	It searches the script’s punctuation table (or array if the table is not used) for a string that matches the text at the current script pointer. If a match is found, the token’s string field is
+   filled up to MAX_TOKEN, the script pointer is advanced by the length of the punctuation, the token type is set to TT_PUNCTUATION, and the token subtype is set to the punctuation’s index number. The
+   function returns 1 on success and 0 if no matching punctuation can be read or the script does not contain enough characters.
+
+	\param script The script context from which to read the next token
+	\param token The token structure to populate when a punctuation is detected
+	\return 1 if a punctuation token was found and copied, otherwise 0
+*/
 int PS_ReadPunctuation( script_t* script, token_t* token )
 {
 	int			   len;
@@ -1001,12 +1017,17 @@ int PS_ReadPunctuation( script_t* script, token_t* token )
 	return 0;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Reads a primitive token from a script buffer into the provided token structure
+
+	The function scans the script data starting at script->script_p and collects characters until a space or a semicolon is encountered. Each character is appended to token->string until the MAX_TOKEN
+   limit is reached. If the token would exceed this limit, ScriptError is invoked and the function returns 0, indicating failure. Upon successful reading, the token string is null‑terminated, the
+   token structure is copied into script->token for quick access by the caller, and a value of 1 is returned.
+
+	\param script Pointer to the script structure used to track the current reading position and state
+	\param token Pointer to a token_t structure that will be filled with the read token string
+	\return 1 if the primitive token was read successfully, 0 if the token exceeded the maximum length and an error was reported
+*/
 int PS_ReadPrimitive( script_t* script, token_t* token )
 {
 	int len;
@@ -1029,12 +1050,6 @@ int PS_ReadPrimitive( script_t* script, token_t* token )
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_ReadToken( script_t* script, token_t* token )
 {
 	// if there is a token available (from UnreadToken)
@@ -1113,12 +1128,6 @@ int PS_ReadToken( script_t* script, token_t* token )
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_ExpectTokenString( script_t* script, char* string )
 {
 	token_t token;
@@ -1136,12 +1145,6 @@ int PS_ExpectTokenString( script_t* script, char* string )
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_ExpectTokenType( script_t* script, int type, int subtype, token_t* token )
 {
 	char str[MAX_TOKEN];
@@ -1229,12 +1232,6 @@ int PS_ExpectTokenType( script_t* script, int type, int subtype, token_t* token 
 	return 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_ExpectAnyToken( script_t* script, token_t* token )
 {
 	if( !PS_ReadToken( script, token ) ) {
@@ -1246,12 +1243,6 @@ int PS_ExpectAnyToken( script_t* script, token_t* token )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_CheckTokenString( script_t* script, char* string )
 {
 	token_t tok;
@@ -1270,12 +1261,6 @@ int PS_CheckTokenString( script_t* script, char* string )
 	return 0;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_CheckTokenType( script_t* script, int type, int subtype, token_t* token )
 {
 	token_t tok;
@@ -1295,12 +1280,6 @@ int PS_CheckTokenType( script_t* script, int type, int subtype, token_t* token )
 	return 0;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int PS_SkipUntilString( script_t* script, char* string )
 {
 	token_t token;
@@ -1314,36 +1293,17 @@ int PS_SkipUntilString( script_t* script, char* string )
 	return 0;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PS_UnreadLastToken( script_t* script )
 {
 	script->tokenavailable = 1;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PS_UnreadToken( script_t* script, token_t* token )
 {
 	memcpy( &script->token, token, sizeof( token_t ) );
 	script->tokenavailable = 1;
 }
 
-//============================================================================
-// returns the next character of the read white space, returns NULL if none
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 char PS_NextWhiteSpaceChar( script_t* script )
 {
 	if( script->whitespace_p != script->endwhitespace_p ) {
@@ -1354,12 +1314,6 @@ char PS_NextWhiteSpaceChar( script_t* script )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void StripDoubleQuotes( char* string )
 {
 	if( *string == '\"' ) {
@@ -1371,12 +1325,6 @@ void StripDoubleQuotes( char* string )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void StripSingleQuotes( char* string )
 {
 	if( *string == '\'' ) {
@@ -1388,12 +1336,6 @@ void StripSingleQuotes( char* string )
 	}
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 long double ReadSignedFloat( script_t* script )
 {
 	token_t		token;
@@ -1412,12 +1354,6 @@ long double ReadSignedFloat( script_t* script )
 	return sign * token.floatvalue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 signed long int ReadSignedInt( script_t* script )
 {
 	token_t			token;
@@ -1436,34 +1372,16 @@ signed long int ReadSignedInt( script_t* script )
 	return sign * token.intvalue;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void SetScriptFlags( script_t* script, int flags )
 {
 	script->flags = flags;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int GetScriptFlags( script_t* script )
 {
 	return script->flags;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void ResetScript( script_t* script )
 {
 	// pointer in script buffer
@@ -1483,35 +1401,37 @@ void ResetScript( script_t* script )
 	memset( &script->token, 0, sizeof( token_t ) );
 }
 
-//============================================================================
-// returns true if at the end of the script
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 int EndOfScript( script_t* script )
 {
 	return script->script_p >= script->end_p;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Returns the numeric difference between a script's current line and its last line position.
+
+	This function subtracts the script's last stored line number from the current line number to determine how many lines have been traversed since the last update. The result can be positive if
+   script processing moves forward, negative if it returns to a previous line, or zero if no movement has occurred.
+
+	\param script Pointer to a script structure whose line and lastline members are accessed.
+	\return An integer representing the change in line count.
+*/
 int NumLinesCrossed( script_t* script )
 {
 	return script->line - script->lastline;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Advances the script pointer until a given string is found, indicating success if located.
+
+	The function repeatedly calls a whitespace‑skipping routine and compares the next characters of the script buffer to the target string.
+	If the target matches the current position it returns 1. If end of the script is reached or the whitespace function fails, it returns 0.
+	The script pointer is advanced step by step until a match or termination condition.
+
+
+	\param script script_t structure representing the current position in the script
+	\param value null‑terminated C string to search for
+	\return 1 when the string is matched, 0 when end of script is reached before finding it
+*/
 int ScriptSkipTo( script_t* script, char* value )
 {
 	int	 len;
@@ -1536,12 +1456,17 @@ int ScriptSkipTo( script_t* script, char* value )
 }
 
 #ifndef BOTLIB
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+
+/*!
+	\brief Determines the size of an open file without modifying the current file position.
+
+	The routine records the current offset of the supplied file pointer, seeks to the end to obtain the file&#39;s total length, restores the original position, and then returns the length.  The
+   size is returned in bytes and is based on the file’s entire contents, regardless of the current read position.  If any of the standard I/O calls fail, the function returns the error code
+   reported by ftell, typically –1.
+
+	\param fp Pointer to an already opened FILE object
+	\return Non‑negative integer representing the file length in bytes, or –1 if an error occurs
+*/
 int FileLength( FILE* fp )
 {
 	int pos;
@@ -1556,12 +1481,7 @@ int FileLength( FILE* fp )
 }
 
 #endif
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+
 script_t* LoadScriptFile( const char* filename )
 {
 #ifdef BOTLIB
@@ -1638,12 +1558,6 @@ script_t* LoadScriptFile( const char* filename )
 	return script;
 }
 
-//============================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//============================================================================
 script_t* LoadScriptMemory( char* ptr, int length, char* name )
 {
 	void*	  buffer;
@@ -1675,12 +1589,6 @@ script_t* LoadScriptMemory( char* ptr, int length, char* name )
 	return script;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void FreeScript( script_t* script )
 {
 #ifdef PUNCTABLE
@@ -1693,12 +1601,6 @@ void FreeScript( script_t* script )
 	FreeMemory( script );
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
 void PS_SetBaseFolder( char* path )
 {
 #ifdef BSPC
