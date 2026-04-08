@@ -58,6 +58,7 @@ from pydantic_ai import (
 from pydantic_ai.mcp import MCPServerStdio
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.ollama import OllamaProvider
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_core import to_jsonable_python
 from termcolor import colored
 from tqdm import tqdm
@@ -195,6 +196,7 @@ class FuncInfo:
     params: List[Tuple[str, Optional[str]]]
     returns: Optional[str]
     brief: str
+    is_pure_virtual: bool = False
 
 
 def get_func_identifier(func: FuncInfo) -> str:
@@ -250,6 +252,8 @@ def parse_doxygen_xml(xml_dir: Path, repo_root: Path, prefer_decl: bool = True) 
             name = md.findtext("name") or ""
             definition = md.findtext("definition") or ""
             argsstring = md.findtext("argsstring") or ""
+            virt_attr = (md.get("virt") or "").lower()
+            is_pure_virtual = virt_attr == "pure-virtual"
 
             # briefdescription
             bd = md.find("briefdescription")
@@ -314,6 +318,7 @@ def parse_doxygen_xml(xml_dir: Path, repo_root: Path, prefer_decl: bool = True) 
                     params=params,
                     returns=returns,
                     brief=brief,
+                    is_pure_virtual=is_pure_virtual,
                 )
             )
     return funcs
@@ -804,10 +809,10 @@ def _build_ollama_model_from_llm(llm: str | None) -> OpenAIChatModel:
 
 ollama_model = _build_ollama_model_from_llm("ollama/gpt-oss:20b")
 
-# llama_cpp_model = OpenAIChatModel(
-#     model_name="gpt-oss:20b", # does not matter
-#     provider=OpenAIProvider(base_url='http://localhost:8080/v1'),
-# )
+llama_cpp_model = OpenAIChatModel(
+    model_name="gpt-oss:20b", # does not matter
+    provider=OpenAIProvider(base_url='http://localhost:8080/v1'),
+)
 
 # Build an MCP stdio server wrapper that will communicate with the subprocess
 # mcp_cpp_server = MCPServerStdio(
@@ -924,7 +929,7 @@ def ai_generate_comment(
     original_comment: str | None = None,
     mcp_context: str | None = None,
     call_examples: List[str] | None = None,
-) -> CommentModel:
+) -> tuple[CommentModel | None, bool]:
     signature = (func.definition + func.argsstring).strip()
 
     system_prompt = (
@@ -956,21 +961,23 @@ def ai_generate_comment(
         "Descriptions must NOT start with '\\param' or '@param', only text.\n"
         "7) 'returns' (if non-void) should be a plain description of the return value "
         "without any Doxygen tags.\n"
-        "8) If information is unknown or ambiguous (e.g. units, ownership), "
+        "8) Do NOT write placeholders like 'None', 'null', or 'N/A' in any field. "
+        "If a field is not applicable, leave it empty.\n"
+        "9) If information is unknown or ambiguous (e.g. units, ownership), "
         "you MUST explicitly write 'TODO: clarify ...' instead of guessing.\n"
-        "9) Never wrap anything in code fences or Markdown. Output is pure data for CommentModel.\n"
-        "10) Never fill returns for a constructor or destructor.\n"
-        "11) Only fill throws if throw is called or it contains an assertation.\n"
-        "12) If mode == 'trivial':\n"
+        "10) Never wrap anything in code fences or Markdown. Output is pure data for CommentModel.\n"
+        "11) Never fill returns for a constructor or destructor.\n"
+        "12) Only fill throws if throw is called or it contains an assertation.\n"
+        "13) If mode == 'trivial':\n"
         "   - Fill ONLY 'brief' with a single clear sentence.\n"
         "   - All other fields must remain empty (defaults).\n"
-        "13) If mode == 'full':\n"
+        "14) If mode == 'full':\n"
         "   - Fill brief and – if sensible – details, params, returns, throws, pre, post, threadsafety.\n"
         "   - No generic phrases, no repetition of the signature in words.\n"
-        "14) If you have get an original_comment than consider it as a viable source for your new comment.\n"
-        "15) If call_examples are provided, use them to improve accuracy and phrasing of usage, "
+        "15) If you have get an original_comment than consider it as a viable source for your new comment.\n"
+        "16) If call_examples are provided, use them to improve accuracy and phrasing of usage, "
         "but do not describe the example code verbatim.\n"
-        "16) If mcp_context is provided, use it to improve accuracy. If it conflicts with the implementation, "
+        "17) If mcp_context is provided, use it to improve accuracy. If it conflicts with the implementation, "
         "prefer the implementation and write 'TODO: clarify ...' for ambiguous details.\n"
         "\n"
         "IMPORTANT: The final Doxygen comment block will be rendered by another component. "
@@ -989,6 +996,7 @@ def ai_generate_comment(
     }
 
     model = _build_ollama_model_from_llm(llm)
+    #model = llama_cpp_model
     agent = Agent(model, output_type=CommentModel, system_prompt=system_prompt)
 
     try:
@@ -1008,10 +1016,54 @@ def ai_generate_comment(
         # chat_name = func_id.replace("::", ".")
         # save_history(chat_name, r.all_messages(), f"ai_generate_comment for {func_id}")
 
-        return r.output
+        def _normalize_optional_text(
+            value: Optional[str], allow_null: bool = False
+        ) -> Optional[str]:
+            if value is None:
+                return None
+            stripped = value.strip()
+            if not stripped:
+                return None
+            lowered = stripped.lower()
+            if lowered in {"none", "n/a"}:
+                return None
+            if lowered == "null" and not allow_null:
+                return None
+            return stripped
+
+        model_out = r.output
+        is_void = (func.returns or "").strip() == "void"
+        if is_void:
+            model_out.returns = None
+        else:
+            model_out.returns = _normalize_optional_text(
+                model_out.returns, allow_null=True
+            )
+        model_out.throws = _normalize_optional_text(model_out.throws)
+        if model_out.throws and "todo" in model_out.throws.lower():
+            model_out.throws = None
+
+        if model_out.params:
+            cleaned = {}
+            for key, val in model_out.params.items():
+                normalized = _normalize_optional_text(val)
+                if normalized:
+                    cleaned[key] = normalized
+            if cleaned:
+                ordered = {}
+                for pname, _ptype in func.params:
+                    if pname in cleaned:
+                        ordered[pname] = cleaned.pop(pname)
+                for pname in sorted(cleaned.keys()):
+                    ordered[pname] = cleaned[pname]
+                model_out.params = ordered
+            else:
+                model_out.params = {}
+
+        return model_out, True
     except Exception as e:
         print(f"AI comment generation error: {e}")
-        return CommentModel()
+        return None, False
 
 
 # -----------------------------------------------------------------------------
@@ -1483,6 +1535,9 @@ def generate_doxygen_comments(
         if func.name == "va":
             continue
 
+        if func.is_pure_virtual:
+            continue
+
         # HACK: only use files whose path contains 'Angles'
         # if (
         #     "Plane" != fpath.stem
@@ -1604,7 +1659,7 @@ def generate_doxygen_comments(
             context_lines=callsite_context_lines,
         )
 
-        model = ai_generate_comment(
+        model, ok = ai_generate_comment(
             func,
             impl,
             llm,
@@ -1613,7 +1668,7 @@ def generate_doxygen_comments(
             mcp_context=mcp_context,
             call_examples=call_examples,
         )
-        if model.brief == "MISSING":
+        if (not ok) or model is None or not model.brief or model.brief == "MISSING":
             continue
         block = render_ai_block(model, trivial)
 
@@ -1816,8 +1871,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--xml-dir", default="doxygen-xml/xml")
     ap.add_argument("--project-root", default=".")
-    ap.add_argument("--scope-dir", default="engine/botlib")
-    ap.add_argument("--llm", default="ollama/gpt-oss:20b")
+    ap.add_argument("--scope-dir", default="shared")
+    ap.add_argument("--llm", default="ollama/qwen3-coder")
     #ap.add_argument("--llm", default="ollama/gemma4")
     ap.add_argument("--max-impl", type=int, default=6000)
     ap.add_argument("--apply", action="store_true")
