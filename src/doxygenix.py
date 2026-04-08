@@ -866,7 +866,7 @@ def save_history(chat_id: str, messages: list[ModelMessage], title: str):
     except IOError as e:
         print(
             colored(
-                f"Fehler beim Speichern der History für chat_id={chat_id}: {e}", "red"
+                f"Error saving history for chat_id={chat_id}: {e}", "red"
             )
         )
 
@@ -1101,37 +1101,37 @@ def strip_inline_non_doxygen_comment(line: str) -> str:
 def find_declaration_line_for_body(
     lines: list[str],
     start_idx: int,
-    func_id: str,  # z.B. "idParallelJobManagerLocal::Init"
+    func_id: str,  # e.g. "idParallelJobManagerLocal::Init"
     max_search_up: int = 80,
 ) -> int:
     """
-    Findet die Implementierungszeile für eine Funktion anhand ihres vollqualifizierten Namens.
-    Beispiel: func_id = "idParallelJobManagerLocal::Init"
+    Finds the implementation line for a function based on its fully qualified name.
+    Example: func_id = "idParallelJobManagerLocal::Init"
     """
     if not lines or start_idx < 0 or start_idx >= len(lines):
         return -1
 
-    # Entferne Parameterliste, falls mitgegeben (manchmal ist func_id = "idClass::Func(int)")
+    # Remove parameter list if provided (sometimes func_id = "idClass::Func(int)")
     base_func_id = func_id.split("(")[0].strip()
 
-    # 1. Lokale Suche nach oben (fast immer ausreichend)
+    # 1. Local upward search (almost always sufficient)
     limit = max(start_idx - max_search_up, -1)
     for i in range(start_idx, limit, -1):
         line = lines[i]
 
-        # Muss den exakten Namen enthalten und eine öffnende Klammer
+        # Must contain the exact name and an opening parenthesis
         if base_func_id in line and "(" in line:
             stripped = line.strip()
 
-            # Ignoriere Kommentare
+            # Ignore comments
             if stripped.startswith(("//", "/*", "*")):
                 continue
 
-            # Ignoriere Forward-Deklarationen
+            # Ignore forward declarations
             if stripped.endswith(";"):
                 continue
 
-            # Wenn { in dieser oder den nächsten 2 Zeilen → das ist die Implementierung
+            # If { is on this or the next two lines → this is the implementation
             if (
                 "{" in line
                 or (i + 1 < len(lines) and "{" in lines[i + 1])
@@ -1139,11 +1139,11 @@ def find_declaration_line_for_body(
             ):
                 return i
 
-            # Oder: wenn es nicht mit ; endet → auch gut
+            # Or: if it doesn't end with ; → also good
             if not stripped.endswith(";"):
                 return i
 
-    # 2. Fallback: ganze Datei nach EXAKTEM vollqualifiziertem Namen + Implementierung durchsuchen
+    # 2. Fallback: scan entire file for EXACT fully qualified name + implementation
     pattern = re.compile(rf"{re.escape(base_func_id)}\s*\([^)]*\)\s*{{")
 
     for idx, line in enumerate(lines):
@@ -1152,22 +1152,22 @@ def find_declaration_line_for_body(
             if stripped.startswith(("//", "/*", "*")) or stripped.endswith(";"):
                 continue
 
-            # Exakter Treffer: Name + ( + Parameter + ) + direkt {
+            # Exact match: name + ( + params + ) + directly {
             # if pattern.search(line):
             return idx
 
-            # Oder: { steht in der nächsten Zeile (häufig wegen const/noexcept/override)
+            # Or: { is on the next line (often due to const/noexcept/override)
             if idx + 1 < len(lines) and "{" in lines[idx + 1]:
                 next_line = lines[idx + 1].strip()
                 if not next_line.startswith(("//", "/*", "*")):
                     return idx
 
-            # Oder: { steht zwei Zeilen später (z.B. bei = default; oder attribute)
+            # Or: { is two lines later (e.g. with = default; or attributes)
             if idx + idx + 2 < len(lines) and "{" in lines[idx + 2]:
                 return idx
 
-    # 3. Letzter Notfall: einfach die erste (und einzige!) Zeile mit dem vollqualifizierten Namen finden,
-    #     die KEINE Forward-Deklaration ist
+    # 3. Last resort: find the first (and only!) line with the fully qualified name
+    #     that is NOT a forward declaration
     for idx, line in enumerate(lines):
         if base_func_id in line and "(" in line:
             stripped = line.strip()
@@ -1176,7 +1176,7 @@ def find_declaration_line_for_body(
             ):
                 return idx
 
-    # Wenn alles scheitert: gib den Body-Start zurück (besser als falsch)
+    # If all else fails: return -1 (better than wrong)
     return -1
 
 
@@ -1478,45 +1478,74 @@ def generate_doxygen_comments(
     num_comments = 0
     ai_candidates = []
 
-    # Build one canonical documentation target per function signature:
+    # ---------------------------------------------------------------------------
+    # 1. Build one canonical documentation target per function signature:
     # - Prefer declarations in header files
+    # - If multiple header declarations exist, prefer the implementation location
     # - Otherwise fall back to first occurrence (typically implementation)
+    # ---------------------------------------------------------------------------
     canonical_target_by_key: Dict[str, Tuple[Path, int, bool]] = {}
+    funcs_by_key: Dict[str, List[FuncInfo]] = {}
     for f in funcs:
-        p = f.file
-        if not p.is_absolute():
-            p = (repo_root / p).resolve()
-        if not p.exists():
-            continue
-
-        # if f.name != "MakeNormalVectors":
-        #     continue
-
         key = make_func_key(f, get_func_identifier(f))
-        is_header = p.suffix.lower() in {".h", ".hpp", ".hh", ".hxx"}
-        current = canonical_target_by_key.get(key)
-        candidate = (p, f.line, is_header)
+        funcs_by_key.setdefault(key, []).append(f)
 
-        if current is None:
-            canonical_target_by_key[key] = candidate
+    for key, fn_list in funcs_by_key.items():
+        candidates: List[Tuple[Path, int, bool]] = []
+        header_candidates: List[Tuple[Path, int, bool]] = []
+        impl_candidate: Optional[Tuple[Path, int, bool]] = None
+
+        for f in fn_list:
+            p = f.file
+            if not p.is_absolute():
+                p = (repo_root / p).resolve()
+            if not p.exists():
+                continue
+
+            is_header = p.suffix.lower() in {".h", ".hpp", ".hh", ".hxx"}
+            cand = (p, f.line, is_header)
+            candidates.append(cand)
+            if is_header:
+                header_candidates.append(cand)
+
+            if f.bodyfile and f.bodystart:
+                bp = f.bodyfile
+                if not bp.is_absolute():
+                    bp = (repo_root / bp).resolve()
+                if bp.exists():
+                    impl_candidate = (bp, int(f.bodystart), False)
+
+        if len(header_candidates) > 1 and impl_candidate:
+            canonical_target_by_key[key] = impl_candidate
             continue
 
         # Prefer header over non-header
-        if candidate[2] and not current[2]:
-            canonical_target_by_key[key] = candidate
+        if header_candidates:
+            chosen = header_candidates[0]
+            for candidate in header_candidates[1:]:
+                cand_path = os.path.normcase(str(candidate[0].resolve()))
+                curr_path = os.path.normcase(str(chosen[0].resolve()))
+                if cand_path < curr_path or (
+                    cand_path == curr_path and candidate[1] < chosen[1]
+                ):
+                    chosen = candidate
+            canonical_target_by_key[key] = chosen
             continue
 
-        # If same kind (both header or both non-header), choose deterministic earliest location
-        if candidate[2] == current[2]:
-            cand_path = os.path.normcase(str(candidate[0].resolve()))
-            curr_path = os.path.normcase(str(current[0].resolve()))
-            if cand_path < curr_path or (
-                cand_path == curr_path and candidate[1] < current[1]
-            ):
-                canonical_target_by_key[key] = candidate
+        # No header; choose deterministic earliest among remaining candidates
+        if candidates:
+            chosen = candidates[0]
+            for candidate in candidates[1:]:
+                cand_path = os.path.normcase(str(candidate[0].resolve()))
+                curr_path = os.path.normcase(str(chosen[0].resolve()))
+                if cand_path < curr_path or (
+                    cand_path == curr_path and candidate[1] < chosen[1]
+                ):
+                    chosen = candidate
+            canonical_target_by_key[key] = chosen
 
     # ------------------------------------------------------
-    # 1. Scan functions if they need Doxygen comments (fast)
+    # 2. Scan functions if they need Doxygen comments (fast)
     # ------------------------------------------------------
     for func in tqdm(funcs, desc="Scanning functions"):
         fpath = func.file
@@ -1621,7 +1650,7 @@ def generate_doxygen_comments(
         )
 
     # ----------------------------------
-    # 2. Generate AI comments (slow)
+    # 3. Generate AI comments (slow)
     # ----------------------------------
     progressbar = tqdm(ai_candidates, desc="AI generating comments")
     for func, func_id, func_key, impl, fpath, bodypath, body_hash in progressbar:
@@ -1698,7 +1727,7 @@ def generate_doxygen_comments(
         #    break
 
     # ----------------------------------
-    # 3. Insert comments
+    # 4. Insert comments
     # ----------------------------------
     total = 0
     for path, items in tqdm(insert_map.items(), desc="Inserting comments"):
@@ -1749,7 +1778,7 @@ def generate_doxygen_comments(
             write_file(path, lines)
 
     # ------------------------------------------------------------------------
-    # 4. Clean up legacy autogenerated comments in implementation (.cpp) files
+    # 5. Clean up legacy autogenerated comments in implementation (.cpp) files
     # ------------------------------------------------------------------------
     for path, items in tqdm(impl_cleanup_map.items(), desc="Cleaning impl comments"):
         if not path.exists():
@@ -1761,18 +1790,18 @@ def generate_doxygen_comments(
 
         changed = False
         for line_1b, func_id in items:
-            # bodystart → meistens erste Codezeile IM Body
+            # bodystart -> usually the first code line in the body
             body_idx = line_1b - 1
             if body_idx < 0 or body_idx >= len(lines):
                 continue
 
-            # 1) Zur Deklarationszeile hochlaufen
+            # 1) Walk up to the declaration line
             decl_idx = find_declaration_line_for_body(lines, body_idx, func_id)
 
             if decl_idx == -1:
                 continue
 
-            # 2) Von dort aus Banner / alte Kommentare oberhalb entfernen
+            # 2) From there, remove banners / old comments above
             new_idx = cleanup_comments_above(
                 lines, decl_idx, func_id, allow_skip_doxygen=True
             )
