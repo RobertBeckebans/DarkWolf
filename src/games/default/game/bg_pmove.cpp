@@ -183,13 +183,6 @@ static void PM_ContinueWeaponAnim( int anim )
 	PM_StartWeaponAnim( anim );
 }
 
-/*
-==================
-PM_ClipVelocity
-
-Slide off of the impacting surface
-==================
-*/
 void PM_ClipVelocity( vec3_t in, vec3_t normal, vec3_t out, float overbounce )
 {
 	float backoff;
@@ -3950,14 +3943,6 @@ static void PM_Weapon()
 						}
 					}
 
-					/*
-					================
-					PM_UpdateViewAngles
-
-					This can be used as another entry point when only the viewangles
-					are being updated isntead of a full move
-					================
-					*/
 					void PM_UpdateViewAngles( playerState_t * ps,
 						usercmd_t * cmd,
 						void( trace )( trace_t * results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask ) )
@@ -4568,13 +4553,6 @@ static void PM_Weapon()
 						// done.
 					}
 
-					/*
-					================
-					Pmove
-
-					Can be called by either the server or the client
-					================
-					*/
 					int Pmove( pmove_t * pmove )
 					{
 						int finalTime;

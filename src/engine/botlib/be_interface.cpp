@@ -1016,11 +1016,6 @@ static void Init_AI_Export( ai_export_t* ai )
 	ai->GeneticParentsAndChildSelection = GeneticParentsAndChildSelection;
 }
 
-/*
-============
-GetBotLibAPI
-============
-*/
 botlib_export_t* GetBotLibAPI( int apiVersion, botlib_import_t* import )
 {
 	botimport = *import;

@@ -306,9 +306,32 @@ typedef struct {
 	int ( *pointcontents )( const vec3_t point, int passEntityNum );
 } pmove_t;
 
-// if a full pmove isn't done on the client, you can just update the angles
+/*!
+	\brief Updates the player's view angles based on user command input and handles angle clamping to prevent excessive pitch rotation.
+
+	This function modifies the player state's view angles by incorporating the user command's angle changes and delta angles. It ensures that the pitch angle does not exceed 90 degrees in either
+   direction by clamping the values. The function also validates that the player state is not in a frozen, intermission, or dead condition before updating the angles. A trace function pointer is set
+   up for potential use in the update process, although it's not directly invoked within this function. The function is designed to work in conjunction with the pmove system and is typically called
+   during client-side simulation updates.
+
+	\param ps Pointer to the player state structure containing view angles and delta angles
+	\param cmd Pointer to the user command structure containing the new angle commands
+	\param trace Function pointer to a trace function used for collision detection
+*/
 void PM_UpdateViewAngles(
 	playerState_t* ps, usercmd_t* cmd, void( trace )( trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask ) );
+
+/*!
+	\brief Performs player movement processing for a single frame with input command handling and physics simulation.
+
+	This function processes player movement by handling various game states and input conditions. It first checks for special flags like EF_DUMMY_PMOVE which bypasses normal processing, and
+   PMF_IGNORE_INPUT which clears input values. The function manages command timing and ensures proper frame rate independent movement by subdividing long time intervals into smaller chunks. It also
+   handles special cases like load game states and sprint speed adjustments. The function returns a surface flag value if the player is on a monster slick surface and the player is dead or has no
+   health.
+
+	\param pmove pointer to the player movement state structure containing player state and command input
+	\return integer value indicating surface flags if player is on monster slick surface and dead, or zero otherwise
+*/
 int Pmove( pmove_t* pmove );
 
 //===================================================================================
@@ -1229,21 +1252,145 @@ typedef struct gitem_s {
 extern gitem_t bg_itemlist[];
 extern int	   bg_numItems;
 
+/*!
+	\brief Finds and returns a game item by its pickup name from the global item list
+
+	This function searches through the global item list starting from the second element to find an item that matches the provided pickup name. The comparison is case-insensitive. If no matching item
+   is found, the function returns NULL. This function is commonly used to retrieve item definitions for weapon and powerup registration
+
+	\param pickupName The name of the item to search for
+	\return A pointer to the matching gitem_t structure if found, or NULL if no item with the specified pickup name exists
+*/
 gitem_t*	   BG_FindItem( const char* pickupName );
-gitem_t*	   BG_FindItem2( const char* name ); //----(SA)	added
+
+/*!
+	\brief Finds and returns a pointer to a gitem_t structure that matches the given item name, searching by pickup name or classname.
+
+	This function iterates through the global item list to locate an item that matches the specified name either by its pickup_name or classname. It performs case-insensitive comparisons using
+   Q_stricmp and Q_strcasecmp. If no matching item is found, an error message is printed to the console and NULL is returned.
+
+	\param name The name of the item to search for, which can match either the pickup_name or classname of items in the global list
+	\return A pointer to the gitem_t structure that matches the specified name, or NULL if no match is found
+*/
+gitem_t*	   BG_FindItem2( const char* name );
+
+/*!
+	\brief Returns the item definition corresponding to a specified weapon type.
+
+	This function uses a lookup table to efficiently find the gitem_t structure that corresponds to a given weapon_t value. The lookup table is initialized once on the first call to this function. The
+   function performs bounds checking on the weapon parameter and will generate an error if the weapon is out of range or if no item is found for the specified weapon. The function is designed to work
+   with the game's item and weapon systems to facilitate weapon-based item spawning and ammunition management.
+
+	\param weapon The weapon type to look up
+	\return A pointer to the gitem_t structure that represents the item corresponding to the specified weapon type
+	\throws ERR_DROP if the weapon parameter is out of range or if no item is found for the specified weapon
+*/
 gitem_t*	   BG_FindItemForWeapon( weapon_t weapon );
+
+/*!
+	\brief Finds the item definition corresponding to a given powerup type
+
+	This function searches through the global item list to locate an item that matches the specified powerup type. It checks both powerup items and team items, returning the first match found. The
+   function is used to retrieve item information for displaying powerup icons and other UI elements.
+
+	\param pw The powerup type to search for
+	\return A pointer to the gitem_t structure matching the powerup type, or NULL if no match is found
+*/
 gitem_t*	   BG_FindItemForPowerup( powerup_t pw );
+
+/*!
+	\brief Returns a pointer to the game item structure corresponding to a given holdable item type
+
+	This function searches through the global item list to find an item that matches the specified holdable type. It iterates through all registered items and checks if the item type is IT_HOLDABLE
+   and if its tag matches the provided holdable type. The function returns a pointer to the matching item structure or NULL if no match is found. The returned pointer is a direct reference to an item
+   in the global item list.
+
+	\param pw The holdable item type to search for
+	\return Pointer to the gitem_t structure for the matching holdable item, or NULL if no match is found
+*/
 gitem_t*	   BG_FindItemForHoldable( holdable_t pw );
-gitem_t*	   BG_FindItemForAmmo( int ammo ); //----(SA)	modified
+
+/*!
+	\brief Finds and returns a pointer to the item in the item list that corresponds to the specified ammo type
+
+	This function searches through the global item list for an item that is of type IT_AMMO and has a giAmmoIndex matching the provided ammo parameter. If such an item is found, a pointer to it is
+   returned. If no matching item is found, the function triggers a fatal error using Com_Error with an ERR_DROP code
+
+	\param ammo The ammo type index to search for in the item list
+	\return A pointer to the gitem_t structure representing the item that matches the specified ammo type
+	\throws ERR_DROP error when no item matching the specified ammo type is found in the item list
+*/
+gitem_t*	   BG_FindItemForAmmo( int ammo );
+
+/*!
+	\brief Finds a key item in the item list that matches the specified key type and returns a pointer to it
+
+	This function searches through the global item list to find an item that is a key (IT_KEY) and matches the specified key type. If found, it updates the provided index pointer with the item's
+   position in the list and returns a pointer to the item. If no matching key is found, it triggers a fatal error.
+
+	\param k The key type to search for
+	\param index Pointer to an integer that will be set to the index of the found item
+	\return A pointer to the gitem_t structure representing the key item that matches the specified key type
+	\throws ERR_DROP error when the specified key type is not found in the item list
+*/
 gitem_t*	   BG_FindItemForKey( wkey_t k, int* index );
+
+/*!
+	\brief Returns the ammo index associated with the specified weapon
+
+	This function looks up the ammo index for a given weapon type using a precomputed lookup table. The table is initialized once on first call and then reused for subsequent calls. The function
+   performs bounds checking on the weapon parameter and will generate an error if the weapon is out of range. The ammo index returned can be used to access ammo quantities in player state arrays.
+
+	\param weapon The weapon type to look up the ammo index for
+	\return The ammo index associated with the specified weapon type
+	\throws ERR_DROP error when weapon parameter is out of range
+*/
 weapon_t	   BG_FindAmmoForWeapon( weapon_t weapon );
+
+/*!
+	\brief Returns the clip index for a given weapon by looking up a precomputed table
+
+	This function uses a static lookup table to quickly determine the clip index associated with a specific weapon type. The table is initialized once on the first call to the function, and subsequent
+   calls retrieve the clip index directly from the table. The function performs bounds checking to ensure the weapon parameter is within valid range, and will trigger a fatal error if an invalid
+   weapon is specified.
+
+	\param weapon The weapon type to look up the clip index for
+	\return The clip index associated with the specified weapon type
+	\throws ERR_DROP if the weapon parameter is out of range
+*/
 weapon_t	   BG_FindClipForWeapon( weapon_t weapon );
 
+/*!
+	\brief Determines whether the left or right hand should fire in an akimbo weapon sequence based on clip ammo counts
+
+	This function implements the logic for alternating fire between two weapons in an akimbo setup. It evaluates the ammo counts in both the akimbo weapon and the colt weapon to determine which weapon
+   should fire next. The function returns true when the left hand (akimbo weapon) should fire, and false when the right hand (colt weapon) should fire. The function is specifically designed for the
+   WP_AKIMBO weapon type and will return false for any other weapon. When clips are disabled via dmflags 64, the function behavior may be affected as noted in the implementation. The alternating
+   pattern is determined by the sum of both clip counts being odd or even.
+
+	\param weapon The weapon type identifier
+	\param akimboClip Ammo count in the akimbo weapon clip
+	\param coltClip Ammo count in the colt weapon clip
+	\return True if the left hand (akimbo weapon) should fire, false if the right hand (colt weapon) should fire
+*/
 qboolean	   BG_AkimboFireSequence( int weapon, int akimboClip, int coltClip );
 // qboolean BG_AkimboFireSequence	( playerState_t *ps );	//----(SA)	added
 
 #define ITEM_INDEX( x ) ( ( x ) - bg_itemlist )
 
+/*!
+	\brief Determines whether a player can pick up a specific item based on their current state and the item type.
+
+	This function evaluates if a player can grab an item from the game world by checking various conditions based on item type. For weapons, it checks if the player has the weapon or if they have
+   enough ammunition to pick up more. For ammo, it checks if the player has enough space in their ammo inventory. For armor, it checks if the player's armor value is already at maximum. For health
+   items, it checks if the player's health is already at maximum. For powerups, it checks if the player already has full fatigue resistance. For team items like flags, it verifies that the player is
+   on the correct team and can legally pick up the flag. For holdable items, clipboards, keys, treasure, and other special items, it allows pickup in all cases. The function also supports multiplayer
+   logic where certain classes can only pick up specific weapons.
+
+	\param ent The entity state of the item being picked up
+	\param ps The player state of the player attempting to pick up the item
+	\return True if the player can pick up the item, false otherwise
+*/
 qboolean BG_CanItemBeGrabbed( const entityState_t* ent, const playerState_t* ps );
 
 // g_dmflags->integer flags
@@ -1383,21 +1530,113 @@ typedef enum {
 	HINT_NUM_HINTS
 } hintType_t;
 
+/*!
+	\brief Evaluates the position of a trajectory at a specific time.
+
+	This function computes the position of a trajectory at the given time by evaluating the trajectory type and applying the appropriate mathematical calculations. It supports various trajectory types
+   including linear, sine, gravity-based, and acceleration/deceleration patterns. The result is stored in the provided vector.
+
+	\param tr Pointer to the trajectory structure containing the trajectory data
+	\param atTime The time at which to evaluate the trajectory, in milliseconds
+	\param result Output vector that will contain the computed position
+	\throws Com_Error if an invalid trajectory type is encountered
+*/
 void	 BG_EvaluateTrajectory( const trajectory_t* tr, int atTime, vec3_t result );
+
+/*!
+	\brief Evaluates the trajectory delta for a given time and trajectory type, storing the result in a 3D vector
+
+	This function calculates the velocity or movement delta for a trajectory at a specific time based on the trajectory type. It handles various trajectory types including stationary, linear, sine,
+   gravity-based movements, and acceleration/deceleration. The result is stored in the provided 3D vector. For some trajectory types, the function may modify the result in-place or clear it entirely
+   depending on the specific logic implemented for each case.
+
+	\param tr Pointer to the trajectory structure containing trajectory data
+	\param atTime The time at which to evaluate the trajectory
+	\param result Output 3D vector to store the calculated trajectory delta
+	\throws ERROR: This function calls Com_Error with ERR_DROP when an unknown trajectory type is encountered
+*/
 void	 BG_EvaluateTrajectoryDelta( const trajectory_t* tr, int atTime, vec3_t result );
+
+/*!
+	\brief Computes a modified direction vector for marking surfaces based on input direction and normal.
+
+	This function calculates an output direction vector that ensures a mark is properly aligned with the impact surface. It takes into account the input direction and surface normal to determine an
+   appropriate marking direction. The function adjusts the direction to maintain a minimum dot product with the normal, ensuring the mark appears on the intended surface. Special handling is included
+   for normals with a z-component greater than 0.8, where the minimum dot product is increased to 0.7.
+
+	\param dir Input direction vector used for calculating the mark direction
+	\param normal Surface normal vector at the impact point
+	\param out Output vector containing the calculated mark direction
+*/
 void	 BG_GetMarkDir( const vec3_t dir, const vec3_t normal, vec3_t out );
 
+/*!
+	\brief Adds a predictable event to the player state for prediction purposes.
+
+	This function stores a new event and its parameter in the player state's event array. The event is added at the position indicated by the event sequence counter, which is then incremented. If the
+   debug console variable "showevents" is enabled, the function will print information about the added event to the console. The function uses a circular buffer approach for storing events by masking
+   the event sequence with (MAX_EVENTS - 1).
+
+	\param newEvent The event identifier to be added
+	\param eventParm The parameter associated with the event
+	\param ps Pointer to the player state structure where the event will be stored
+*/
 void	 BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t* ps );
 
-// void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad );
+/*!
+	\brief Converts a player state structure to an entity state structure for network synchronization and rendering.
 
+	This function maps the player state data to the corresponding entity state fields, handling various game states such as intermission, spectator mode, and limbo. It sets up the entity type based on
+   health and game state, copies origin and view angles, and handles event processing and power-up states. The function also manages the interpolation of movement and animation data, ensuring proper
+   client-side rendering and prediction.
+
+	\param ps Pointer to the player state structure containing the player's current state
+	\param s Pointer to the entity state structure to be filled with player data
+	\param snap Flag indicating whether to snap coordinates to integer values for network transmission
+*/
 void	 BG_PlayerStateToEntityState( playerState_t* ps, entityState_t* s, qboolean snap );
+
+/*!
+	\brief Converts a player state to an entity state with extrapolation for network updates
+
+	This function transforms a player state structure into an entity state structure, applying extrapolation for network interpolation. It handles different player states such as intermission,
+   spectator, and limbo modes by setting appropriate entity types. The function also processes player movement data, animations, events, and power-up states. It supports both snapshot and non-snapshot
+   modes for coordinate precision, and manages event sequencing for client-server synchronization.
+
+	\param ps Pointer to the player state structure to convert
+	\param s Pointer to the destination entity state structure
+	\param time Time value for linear prediction
+	\param snap Flag indicating whether to snap coordinates to integer values
+*/
 void	 BG_PlayerStateToEntityStateExtraPolate( playerState_t* ps, entityState_t* s, int time, qboolean snap );
 
+/*!
+	\brief Checks whether a player touches a given item at a specific time
+
+	This function evaluates if a player's position intersects with an item's position at a specified time. It uses the item's trajectory to determine the item's location and compares it with the
+   player's origin. The comparison considers a bounding box around the item with specific dimensions to determine if the player is close enough to touch it. The function ignores differences in ducked
+   states when making the comparison.
+
+	\param ps Pointer to the player state structure containing the player's origin
+	\param item Pointer to the item's state structure containing the item's trajectory
+	\param atTime The time at which to evaluate the item's position
+	\return True if the player is within the bounding box of the item, false otherwise
+*/
 qboolean BG_PlayerTouchesItem( playerState_t* ps, entityState_t* item, int atTime );
 qboolean BG_PlayerSeesItem( playerState_t* ps, entityState_t* item, int atTime );
 
-//----(SA)	removed PM_ammoNeeded 11/27/00
+/*!
+	\brief Clips a velocity vector against a normal vector with optional overbounce scaling.
+
+	This function modifies a velocity vector by reflecting it off a surface defined by a normal vector. The reflection is adjusted based on the overbounce factor, which determines how much the
+   velocity should be scaled during the reflection. When the dot product of the input velocity and the normal is negative, the overbounce factor is applied to the negative dot product, otherwise it's
+   applied to the positive dot product. The result is stored in the output vector.
+
+	\param in The input velocity vector to be clipped
+	\param normal The normal vector of the surface to clip against
+	\param out The output velocity vector after clipping
+	\param overbounce The overbounce scaling factor applied during clipping
+*/
 void	 PM_ClipVelocity( vec3_t in, vec3_t normal, vec3_t out, float overbounce );
 
 #define ARENAS_PER_TIER 4
@@ -1672,29 +1911,290 @@ typedef enum {
 	NUM_ANIM_COND_IMPACTPOINT
 } animScriptImpactPoint_t;
 
-//------------------------------------------------------------------
-// Global Function Decs
+/*!
+	\brief Retrieves animation model information for a given model name.
 
+	This function searches through the global animation script data to find and return the animation model information that corresponds to the specified model name. It iterates through all available
+   model info entries and performs a case-insensitive string comparison to match the provided model name. If no matching entry is found, it returns NULL.
+
+	\param modelname The name of the model for which to retrieve animation information
+	\return A pointer to the animation model information structure if a match is found, otherwise NULL
+*/
 animModelInfo_t*		BG_ModelInfoForModelname( char* modelname );
+
+/*!
+	\brief Parses animation configuration data from a given input string and populates the animation model information structure.
+
+	This function processes a configuration file or input string to extract animation parameters and store them in the provided animation model information structure. It handles parsing of various
+   animation-related settings such as footstep types, head offset, gender, version, and skeletal model flags. The function also reads animation data including frame counts, loop frames, frame lerp
+   values, move speeds, blending, and priority settings. It supports both legacy and newer animation configuration formats based on the version number.
+
+	\param animModelInfo Pointer to the animation model information structure to be populated
+	\param filename Name of the configuration file being parsed
+	\param input Input string containing the animation configuration data
+	\return qboolean indicating whether the parsing was successful
+*/
 qboolean				BG_AnimParseAnimConfig( animModelInfo_t* animModelInfo, const char* filename, const char* input );
+
+/*!
+	\brief Parses an animation script file and populates the animation model and script data structures for a given client.
+
+	This function processes an animation script input to initialize animation data structures for a specific client. It handles parsing of defines, animation states, movement types, and animation
+   items. The function manages indentation levels to structure the parsing of nested animation data and supports both regular and canned animations. It initializes global parsing state variables and
+   processes tokens to build the internal animation script structure used by the game engine.
+
+	\param modelInfo Pointer to the animation model information structure to be populated
+	\param scriptData Pointer to the animation script data structure containing the script information
+	\param client Index of the client whose animation data is being parsed
+	\param filename Name of the animation script file being parsed
+	\param input Pointer to the character buffer containing the animation script data to parse
+*/
 void					BG_AnimParseAnimScript( animModelInfo_t* modelInfo, animScriptData_t* scriptData, int client, char* filename, char* input );
+
+/*!
+	\brief Executes an animation script command based on the player state, movement type, and animation conditions.
+
+	This function determines the appropriate animation script to play for a player based on their current state, movement type, and animation conditions. It searches through available animations in
+   decreasing order of priority until a valid animation is found. The function handles different animation types such as idle, swimming, climbing, and walking. It also includes debug output when the
+   DBGANIMS flag is enabled. The function returns -1 if no valid animation is found or an error occurs, otherwise it returns the result of executing the animation command.
+
+	\param ps pointer to the player state structure
+	\param state the AI state of the player
+	\param movetype the movement type that determines which animation script to use
+	\param isContinue flag indicating whether to continue or restart the animation
+	\return -1 if no valid animation script is found or an error occurs, otherwise the result of executing the animation command
+*/
 int						BG_AnimScriptAnimation( playerState_t* ps, aistateEnum_t state, scriptAnimMoveTypes_t movetype, qboolean isContinue );
+
+/*!
+	\brief Executes a random canned animation script for the specified player state and AI state.
+
+	This function retrieves and executes a randomized canned animation based on the player's state and movement type. It first checks if the player is dead and returns -1 if so. Then it determines the
+   movement type for the client and fetches the appropriate animation script. If no valid script items exist, it returns -1. Otherwise, it selects a valid animation item and executes a random command
+   from that item's command list.
+
+	\param ps Pointer to the player state structure containing client information
+	\param state The AI state enum indicating the current state of the player
+	\return The result of executing the animation command, or -1 if no valid animation can be found or executed
+*/
 int						BG_AnimScriptCannedAnimation( playerState_t* ps, aistateEnum_t state );
+
+/*!
+	\brief Changes the animation script state for a player based on the transition from an old state to a new state.
+
+	This function handles the transition between different AI states for a player by executing an appropriate animation script. It first checks if the player is dead, and if so, returns -1. Otherwise,
+   it retrieves the model information and script associated with the state change, validates the script existence, and finds the first valid script item that matches the current conditions. If a valid
+   item is found, it selects a random command from the item's commands and executes it. The function returns the duration of the animation in milliseconds.
+
+	\param ps Pointer to the player state structure
+	\param newState The new AI state to transition to
+	\param oldState The previous AI state to transition from
+	\return The return value represents the duration of the animation in milliseconds, or -1 if the transition is invalid or no script is found.
+*/
 int						BG_AnimScriptStateChange( playerState_t* ps, aistateEnum_t newState, aistateEnum_t oldState );
+
+/*!
+	\brief Processes an animation script event for a player state and returns the duration of the animation.
+
+	This function handles animation script events by looking up the appropriate animation script for the given event type, finding a valid script item based on current conditions, and executing a
+   random command from the script item. It returns the duration of the animation that was executed, or -1 if no valid animation was found. The function also handles special cases like death events and
+   dead player states.
+
+	\param ps Pointer to the player state structure
+	\param event Type of animation event to process
+	\param isContinue Flag indicating if the animation should continue from its previous state
+	\param force Flag indicating if the animation should be forced to play regardless of conditions
+	\return Returns the duration of the executed animation, or -1 if no valid animation was found
+*/
 int						BG_AnimScriptEvent( playerState_t* ps, scriptAnimEventTypes_t event, qboolean isContinue, qboolean force );
+
+/*!
+	\brief Finds the index of a token string in an array of animStringItem_t structures, with optional failure handling
+
+	This function searches through an array of animation string items to find a matching token. It uses a hash-based lookup for efficiency, computing the hash value of the input token and comparing it
+   with precomputed hashes in the string array. If a match is found, it returns the index of the matching string item. If no match is found and allowFail is false, it triggers an animation parsing
+   error. The function is commonly used to map string identifiers to numerical indices for animation states and parts.
+
+	\param token The string token to search for in the array
+	\param strings Array of animStringItem_t structures containing string names and their precomputed hash values
+	\param allowFail Flag indicating whether to allow failure (return -1) or trigger an error when token is not found
+	\return The index of the matching string item in the array, or -1 if no match is found and allowFail is true
+	\throws BG_AnimParseError is called when no match is found and allowFail is false
+*/
 int						BG_IndexForString( char* token, animStringItem_t* strings, qboolean allowFail );
+
+/*!
+	\brief Plays an animation by name on the specified player state for the given body part with optional timer and continuation settings
+
+	This function looks up an animation by its name and plays it on the specified player state. It uses the animation index derived from the name to invoke the actual animation playing function. The
+   function supports setting timers, continuing animations, and forcing playback. It is typically used in game AI scripting to control character animations. The return value represents the duration of
+   the played animation.
+
+	\param ps pointer to the player state structure that will control the animation
+	\param animName name of the animation to play
+	\param bodyPart which body part the animation should affect
+	\param setTimer whether to set a timer for the animation
+	\param isContinue whether this is a continuation of a previous animation
+	\param force whether to force the animation to play even if already playing
+	\return duration of the animation that was played
+*/
 int						BG_PlayAnimName( playerState_t* ps, char* animName, animBodyPart_t bodyPart, qboolean setTimer, qboolean isContinue, qboolean force );
+
+/*!
+	\brief Checks if a client has a valid animation script associated with their model.
+
+	This function verifies that the specified client has a valid animation script by ensuring their model is registered and has script items defined. It performs two validation checks: first, that the
+   client model exists in the global script data, and second, that the model has script items defined. If either check fails, the function returns false, indicating no valid animation script is
+   available for the client.
+
+	\param clientNum The index of the client to validate
+	\return true if the client has a valid animation script, false otherwise
+*/
 qboolean				BG_ValidAnimScript( int clientNum );
+
+/*!
+	\brief Returns the animation string for a specified client and animation index.
+
+	This function retrieves the animation string associated with a given client and animation index from the model information. It first obtains the model information for the client and then checks if
+   the animation index is within the valid range. If the index is out of range, it triggers an animation parse error. Otherwise, it returns the name of the animation at the specified index.
+
+	\param client Index of the client whose model information is to be used
+	\param anim Index of the animation to retrieve the string for
+	\return Pointer to the animation string for the specified client and animation index
+	\throws Throws an animation parse error if the animation index is out of range
+*/
 char*					BG_GetAnimString( int client, int anim );
+
+/*!
+	\brief Updates a condition value for a client, with optional bitflag conversion support
+
+	This function updates a specific condition value for a given client in the global script data. When the checkConversion flag is set to true, it checks if the condition type requires bitflag
+   conversion and handles that accordingly. For bitflag conditions, it clears the existing bitflags and sets the new value using a bitset operation. For non-bitflag conditions, it directly assigns the
+   value to the client condition array.
+
+	\param client The client identifier
+	\param condition The condition identifier to update
+	\param value The value to set for the condition
+	\param checkConversion Flag indicating whether to check for bitflag conversion
+*/
 void					BG_UpdateConditionValue( int client, int condition, int value, qboolean checkConversion );
+
+/*!
+	\brief Retrieves the value of a specified condition for a given client, with optional bitflag conversion support
+
+	This function fetches the value of a condition for a specific client from the global script data. If the checkConversion flag is set to true and the condition type is bitflags, the function
+   performs a conversion to return the appropriate index value. The conversion searches through bitflag values to find the first set bit and returns its position. If no bit is set, it returns 0. This
+   function is used to determine character states and behaviors in the animation system, particularly in relation to movement types and firing states.
+
+	\param client The client number identifying the character for which to retrieve the condition value
+	\param condition The condition identifier to retrieve the value for
+	\param checkConversion Flag indicating whether to perform bitflag conversion when the condition type is ANIM_CONDTYPE_BITFLAGS
+	\return The condition value for the specified client and condition, or the converted bitflag index if conversion is performed and the condition is of type ANIM_CONDTYPE_BITFLAGS
+*/
 int						BG_GetConditionValue( int client, int condition, qboolean checkConversion );
+
+/*!
+	\brief Retrieves the animation index for a specific client, AI state, and movement type from the animation script.
+
+	This function looks up the appropriate animation script item based on the client's model information, AI state, and movement type. It searches through different states starting from the given
+   state down to the lowest state until a valid animation is found. If no suitable animation is found, it returns -1. The function ensures that each character has a consistent animation by selecting
+   the appropriate animation index based on the client number.
+
+	\param client The client number identifying the character for which to retrieve the animation
+	\param state The AI state that determines the animation context
+	\param movetype The movement type that specifies the kind of motion for the animation
+	\return The animation index if a valid animation is found, otherwise -1
+*/
 int						BG_GetAnimScriptAnimation( int client, aistateEnum_t state, scriptAnimMoveTypes_t movetype );
+
+/*!
+	\brief Updates player state conditions for animation system based on current player state
+
+	This function synchronizes various player state variables with the animation system by updating condition values. It handles weapon state, mounted status (specifically MG42), underhand view angle,
+   leaning direction, crouching state, and firing status. The function examines the player state structure to determine current conditions and updates the corresponding animation conditions
+   accordingly.
+
+	\param pmove Pointer to the player movement structure containing player state and command data
+*/
 void					BG_AnimUpdatePlayerStateConditions( pmove_t* pmove );
+
+/*!
+	\brief Returns the index of an animation given its string name and client identifier.
+
+	This function searches through the animations of a specified client model to find the index of an animation that matches the provided string name. It uses a hash table lookup for efficiency and
+   performs a string comparison to ensure an exact match. If no matching animation is found, it triggers an animation parsing error and returns -1.
+
+	\param string The name of the animation to search for
+	\param client Identifier for the client whose model animations are being searched
+	\return The index of the matching animation, or -1 if no match is found
+	\throws BG_AnimParseError is thrown when an unknown animation index is requested
+*/
 int						BG_AnimationIndexForString( char* string, int client );
+
+/*!
+	\brief Returns a pointer to an animation structure that matches the given string name and model information
+
+	This function searches through the animations of a given model information structure to find an animation that matches the provided string name. It uses a hash-based lookup for performance and
+   performs a string comparison to ensure an exact match. If no matching animation is found, the function will trigger a fatal error using Com_Error
+
+	\param string The name of the animation to search for
+	\param modelInfo Pointer to the model information structure containing the animations
+	\return Pointer to the animation structure that matches the provided string name, or NULL if no match is found (though a fatal error will be triggered before returning NULL)
+	\throws ERR_DROP error when no matching animation is found for the given model
+*/
 animation_t*			BG_AnimationForString( char* string, animModelInfo_t* modelInfo );
+
+/*!
+	\brief Retrieves a specific animation structure from a client's model information based on the provided index
+
+	This function fetches an animation structure from the model information associated with a given client. It performs bounds checking to ensure the index is within the valid range of animations for
+   that client. If the index is out of bounds, the function will trigger a fatal error. The function is primarily used to access animation data for character movements and actions within the game.
+
+	\param client The client identifier for which to retrieve the animation
+	\param index The index of the animation within the client's animation array
+	\return A pointer to the animation_t structure corresponding to the specified client and index
+	\throws ERR_DROP error when the index is out of bounds for the client's animation array
+*/
 animation_t*			BG_GetAnimationForIndex( int client, int index );
+
+/*!
+	\brief Retrieves the index of a random animation script command for a specified event from the client's model info
+
+	This function looks up animation script events for a player state and returns the index of a randomly selected animation command that matches the given event type. It first checks if the player is
+   dead and the event is not a death event, returning -1 in that case. It then retrieves the model info for the client, accesses the script events for the specified event type, and finds the first
+   valid script item. If a valid item is found, it selects a random command from the available commands and returns the animation index of that command. If no valid script item is found, it returns
+   -1.
+
+	\param ps Pointer to the player state structure containing client information
+	\param event Type of animation script event to look up
+	\return Index of a randomly selected animation command, or -1 if no valid animation is found
+*/
 int						BG_GetAnimScriptEvent( playerState_t* ps, scriptAnimEventTypes_t event );
+
+/*!
+	\brief Updates the condition value for a client based on the provided condition and value strings.
+
+	This function maps the given condition and value strings to their respective indices and stores the value index in the global script data for the specified client. It uses the animation conditions
+   table to find the appropriate indices for the condition and value strings.
+
+	\param client The client index for which the condition value is being updated
+	\param conditionStr The string representation of the condition to update
+	\param valueStr The string representation of the value to set for the condition
+*/
 void					BG_UpdateConditionValueStrings( int client, char* conditionStr, char* valueStr );
+
+/*!
+	\brief Calculates the gap between footstep sounds based on the player's animation and movement speed
+
+	This function determines the appropriate interval between footstep sounds by analyzing the player's current leg animation and movement speed. It uses the animation's step gap and adjusts it based
+   on whether the player is moving faster than the animation's designated move speed. If the animation doesn't have a move speed defined, it returns -1 to indicate the old method should be used
+   instead.
+
+	\param ps Pointer to the player state structure containing animation information
+	\param xyspeed Current horizontal speed of the player
+	\return The calculated gap between footstep sounds, or -1 if the animation doesn't define a move speed
+	\throws ERR_DROP if the animation index is out of bounds
+*/
 float					BG_AnimGetFootstepGap( playerState_t* ps, float xyspeed );
 
 extern animStringItem_t animStateStr[];

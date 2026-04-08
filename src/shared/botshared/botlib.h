@@ -456,7 +456,17 @@ typedef struct botlib_export_s {
 	int ( *Test )( int parm0, char* parm1, vec3_t parm2, vec3_t parm3 );
 } botlib_export_t;
 
-// linking of bot library
+/*!
+	\brief Initializes and returns a pointer to the bot library API interface for the specified API version.
+
+	This function sets up the bot library interface by initializing internal data structures and registering function pointers for various bot library operations. It validates the provided API version
+   and returns NULL if there is a version mismatch. The function initializes three main subsystems: AAS (Area Awareness System), EA (Entity Awareness), and AI (Artificial Intelligence), and registers
+   their respective functions within the export structure. The bot library interface allows the game engine to interact with bot functionality such as navigation, entity interaction, and AI behavior.
+
+	\param apiVersion The API version requested by the calling code to ensure compatibility
+	\param import Pointer to a structure containing engine callbacks and interfaces used by the bot library
+	\return A pointer to the initialized bot library export structure, or NULL if the API version is incompatible
+*/
 botlib_export_t* GetBotLibAPI( int apiVersion, botlib_import_t* import );
 
 /* Library variables:

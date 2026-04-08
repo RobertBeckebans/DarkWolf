@@ -209,12 +209,6 @@ bot_goalstate_t* BotGoalStateFromHandle( int handle )
 	return botgoalstates[handle];
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotInterbreedGoalFuzzyLogic( int parent1, int parent2, int child )
 {
 	bot_goalstate_t *p1, *p2, *c;
@@ -226,12 +220,6 @@ void BotInterbreedGoalFuzzyLogic( int parent1, int parent2, int child )
 	InterbreedWeightConfigs( p1->itemweightconfig, p2->itemweightconfig, c->itemweightconfig );
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotSaveGoalFuzzyLogic( int goalstate, char* filename )
 {
 	bot_goalstate_t* gs;
@@ -241,12 +229,6 @@ void BotSaveGoalFuzzyLogic( int goalstate, char* filename )
 	// WriteWeightConfig(filename, gs->itemweightconfig);
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotMutateGoalFuzzyLogic( int goalstate, float range )
 {
 	bot_goalstate_t* gs;
@@ -1136,12 +1118,6 @@ int BotGetTopGoal( int goalstate, bot_goal_t* goal )
 	return qtrue;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotGetSecondGoal( int goalstate, bot_goal_t* goal )
 {
 	bot_goalstate_t* gs;
@@ -1160,13 +1136,6 @@ int BotGetSecondGoal( int goalstate, bot_goal_t* goal )
 	return qtrue;
 }
 
-//===========================================================================
-// pops a new long term goal on the goal stack in the goalstate
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotChooseLTGItem( int goalstate, vec3_t origin, int* inventory, int travelflags )
 {
 	int				 areanum, t, weightnum;

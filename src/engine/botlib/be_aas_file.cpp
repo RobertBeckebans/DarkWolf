@@ -49,16 +49,16 @@ If you have questions concerning this license or the applicable additional terms
 #include "be_interface.h"
 #include "be_aas_def.h"
 
-// #define AASFILEDEBUG
-
 /*!
-	\brief Swaps all data structures in the AAS world to little-endian format when necessary.
+	\brief Swaps byte order of AAS data if the system architecture is big-endian.
 
-	If the host machine is little-endian, the function exits immediately because no byte-swapping is required. Otherwise it iterates through the various AAS structures, converting integer and
-   floating-point fields from big-endian to little-endian. The conversion is performed for bounding boxes, vertices, planes, edges, faces, convex areas, area settings, reachability records, nodes,
-   portals, and cluster information. Each field uses appropriate LittleFloat, LittleLong, or LittleShort conversion functions. The function does not allocate memory or modify global state beyond the
-   AAS world data it traverses.
+	This function performs byte swapping on all AAS (Area Awareness System) data structures to ensure compatibility when the data is loaded on a system with different endianness. It checks whether the
+   system is already in little-endian format using LittleLong, and if so, returns immediately. Otherwise, it iterates through all AAS data structures including bounding boxes, vertexes, planes, edges,
+   faces, areas, area settings, reachability information, nodes, cluster portals, and clusters, applying appropriate byte swapping functions to each member field. The function handles different data
+   types such as integers, floats, and shorts using LittleLong, LittleFloat, and LittleShort macros.
 
+	\return None
+	\throws None
 */
 void AAS_SwapAASData()
 {
@@ -432,17 +432,16 @@ void AAS_DData( unsigned char* data, int size )
 }
 
 /*!
-	\brief Loads an AAS file into the server’s global state.
+	\brief Loads an AAS file from the specified filename and initializes the AAS world data structures.
 
-	The routine opens the specified file, validates its header (ident and version match and checksum is correct), and then reads each lump segment—bounding boxes, vertexes, planes, edges, area data,
-   reachability lists, and so on—into the global aasworld structure. If any step fails, an appropriate BLERR_* code is returned and error handling is performed with AAS_Error. The function also dumps
-   the previous AAS data and logs progress to the console.
+	This function loads an AAS (Automated Adjacency Search) file for use in navigation and pathfinding. It opens the file, validates the header information including the file ID and version, and then
+   loads all the individual data lumps contained in the AAS file. The function performs checksum validation against the current BSP file to ensure compatibility. It also handles error conditions by
+   returning appropriate error codes when file operations fail or when the AAS file is incompatible.
 
-	The function returns
-	BLERR_NOERROR on success, or one of the BLERR_* error codes for issues such as missing file, bad header, wrong checksum, or failed lump read.
-
-	\param filename Name of the .aas file to load, relative to the maps directory.
-	\return An integer error code – BLERR_NOERROR on success, otherwise a code indicating the failure type.
+	\param filename Name of the .aas file to load, relative to the maps directory
+	\return An integer error code indicating success or the type of failure encountered. Returns BLERR_NOERROR on success, or one of several BLERR_ constants indicating specific types of errors such
+   as file opening failures, incorrect file IDs, version mismatches, or loading errors. \throws TODO: clarify whether this function throws exceptions or uses assertions, as the provided implementation
+   does not show explicit throws or assertions.
 */
 int AAS_LoadAASFile( char* filename )
 {

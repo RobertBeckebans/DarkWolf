@@ -1653,25 +1653,24 @@ void VectorMiddle( vec3_t v1, vec3_t v2, vec3_t middle )
 }
 
 /*!
-	\brief Computes the shortest distance between two 3‑D edges defined by four vertices and updates the closest points on each edge.
+	\brief Computes the minimum distance between two edges in 3D space, updating the closest points and distance when a shorter distance is found.
 
-	The function computes the minimum separation between the segment from v1 to v2 and the segment from v3 to v4, assuming the segments lie on two distinct horizontal planes (plane1 and plane2). For
-   each segment, a point on the other segment’s plane is found by projecting onto the horizontal direction of each edge. If that projected point lies between the endpoints of the segment, the distance
-   from the corresponding original endpoint to the projected point is considered. The function keeps track of the best distance found so far (and only updates it if the new distance lies within ±0.5
-   units of the current best). When a new best distance is found, the closest points on both edges are written to beststart1/bestend1 and beststart2/bestend2. If no perpendicular projection lies
-   between the endpoints, all four vertex-to-vertex distances are examined as fall‑back. The function returns the updated best distance.
+	This function calculates the closest points between two 3D edges defined by their endpoints and associated ground planes. It determines the minimum distance between the edges and updates the
+   provided output vectors with the closest points on each edge. The function uses line equations to find the closest points on each edge and checks if these points lie within the bounds of the other
+   edge. When a shorter distance is found, the function updates the best distance and records the corresponding closest points on both edges. The function returns the updated minimum distance, which
+   may be unchanged if no shorter distance was found.
 
+	\param bestdist current best known distance; updated if a shorter distance is found
+	\param bestend1 output vector for the other closest point on the first edge
+	\param bestend2 output vector for the other closest point on the second edge
+	\param beststart1 output vector for the closest point on the first edge
+	\param beststart2 output vector for the closest point on the second edge
+	\param plane1 ground plane containing the first edge
+	\param plane2 ground plane containing the second edge
 	\param v1 first endpoint of the first edge
 	\param v2 second endpoint of the first edge
 	\param v3 first endpoint of the second edge
 	\param v4 second endpoint of the second edge
-	\param plane1 ground plane containing the first edge
-	\param plane2 ground plane containing the second edge
-	\param beststart1 output vector for the closest point on the first edge
-	\param bestend1 output vector for the other closest point on the first edge
-	\param beststart2 output vector for the closest point on the second edge
-	\param bestend2 output vector for the other closest point on the second edge
-	\param bestdist current best known distance; updated if a shorter distance is found
 	\return the updated best distance between the two edges
 */
 float AAS_ClosestEdgePoints(
@@ -1968,13 +1967,11 @@ float AAS_ClosestEdgePoints(
 }
 
 /*!
-	\brief Determines whether a jump between two areas can be made and establishes a reachability if possible
+	\brief Determines if a jump reachability can be established between two areas in the navigation graph.
 
-	The function first checks that both areas are grounded and not crouch areas. It then makes sure the areas are close enough in the horizontal plane and that the height difference does not exceed
-   the maximum jump height. For each ground face of the two areas it finds the closest pair of edge points lying on the ground planes. The middle of the shortest segment between these points is used
-   as the candidate start and end positions. If the distance between these points lies within a valid range the horizontal speed for the jump is calculated; for very small gaps a walk‑off‑ledge
-   scenario is used. After verifying that the path is not obstructed by solids or dangerous liquids, a movement prediction is performed to ensure the jump would hit the ground safely. If all tests
-   pass the function records a jump reachability and returns true; otherwise it returns false.
+	This function evaluates whether a player can jump from one area to another in the AAS (Area Awareness System). It checks various conditions including if both areas are grounded, if either area is
+   crouched, and if the distance and height difference between the areas are within the jump capabilities. It calculates the minimum distance between edges of ground faces of the two areas, and then
+   computes if a jump with proper velocity is possible. The function also checks if the landing position is safe and does not cause damage to the player.
 
 	\param area1num the number of the originating area in the navigation graph
 	\param area2num the number of the target area in the navigation graph
@@ -2263,12 +2260,11 @@ int AAS_Reachability_Jump( int area1num, int area2num )
 }
 
 /*!
-	\brief Creates ladder reachability links between two areas if they share suitable ladder faces.
+	\brief Creates ladder reachability links between two areas if they share a ladder face.
 
-	The routine first verifies that both areas are ladder areas. It then searches the faces in each area for ladder faces that share a common edge, selecting the pair with the largest face areas. It
-   ensures the shared faces are vertically oriented, that the normals of the faces are not too divergent, and that the shared edge itself is not excessively vertical. When these conditions are met, a
-   reachability entry of type TRAVEL_LADDER is allocated for each direction between the areas, with appropriate start and end points offset slightly into each area. The function updates the global
-   reachability linked lists for both areas and increments a global ladder counter. If any step fails (e.g., allocation, conditions not satisfied), the function returns false.
+	This function determines if two given areas can have ladder reachability between them by checking if they share a ladder face. It verifies that the shared face is vertical and that the ladder
+   faces do not form a sharp corner. If the conditions are met, it allocates and sets up two reachability entries: one for moving from the first area to the second and another for the reverse
+   direction. The function returns true if the reachability links are successfully created, otherwise false.
 
 	\param area1num identifier of the first area
 	\param area2num identifier of the second area
@@ -2792,15 +2788,15 @@ void AAS_Reachability_Teleport()
 #define REACHDEBUG
 
 /*!
-	\brief Creates elevator reachabilities by scanning func_plat entities and linking adjacent grounded or swim areas.
+	\brief Calculates elevator reachability between different areas in the AAS navigation system
 
-	The routine iterates over every BSP entity and inspects those with classname "func_plat". For each platform it reads the model number and retrieves its bounding box, lip, movement height, and
-   speed, applying defaults when a property is missing. It then computes a bottom and a top position for the moving platform and generates a set of points around the edges of each position. At each
-   point it looks upward, adjusting the vertical coordinate until it finds a grounded or swim area, or until it has moved too far above solid geometry. Once candidate pairs of adjacent areas (bottom
-   and top) are identified, the function performs a client‑bbox trace from a point above the bottom area to just above the top area using crouch presence.  If the trace shows an unobstructed path, a
-   reachability entry is created for the transition between the two areas. All the work is done using the AAS helpers for area lookups, bbox traces, and area properties, and debug logging can be
-   enabled via REACHDEBUG.
+	This function processes elevator and platform entities in the BSP map to determine reachability between different navigation areas. It analyzes func_plat entities and calculates transitions
+   between bottom and top positions of platforms. The function handles multiple check points around the platform edges and center to find valid areas that can be reached. It uses AAS trace functions
+   to verify valid paths between platform positions and adjacent areas. The algorithm computes movement distances, speeds, and creates reachability links between areas based on platform movement
+   patterns. It processes both the bottom and top positions of platforms, checking for grounded or swim areas around these positions to establish valid navigation transitions.
 
+	\return None
+	\throws None
 */
 void AAS_Reachability_Elevator()
 {
@@ -3260,13 +3256,12 @@ aas_lreachability_t* AAS_FindFaceReachabilities( vec3_t* facepoints, int numpoin
 }
 
 /*!
-	\brief Computes and logs reachabilities for func_bobbing entities in the map
+	\brief Processes func_bobbing entities to calculate and generate reachability information for navigation.
 
-	The routine scans all BSP entities for those with the classname "func_bobbing".  For each such entity it extracts the model number, height (defaulting to 32 if unspecified) and spawnflags to
-   determine the bobbing axis.  Using the model's bounding box it calculates a start and end point that represent the lowest and highest positions of the bobbing surface.  Two opposing planes are
-   defined and the function then looks up reachability data for the corners of the surface with AAS_FindFaceReachabilities.  For each start and end face reachability pair it traces a line between the
-   two sides and records the areas that the trace passes through, recording each area transition with Log_Write.  The routine is used by the AAS to generate reachability data for bots when
-   encountering a func_bobbing entity.
+	This function iterates through all BSP entities to find func_bobbing objects, which represent moving platforms in the game environment. For each func_bobbing entity, it determines the bounding
+   box, calculates the start and end positions of the platform's movement, and generates reachability links between areas that the platform can connect. It handles different axis of movement based on
+   spawn flags and computes the reachability edges using face-based algorithms. The function logs the movement details and ensures that the generated reachabilities are valid by checking the connected
+   areas.
 
 */
 void AAS_Reachability_FuncBobbing()
@@ -3527,17 +3522,14 @@ void AAS_Reachability_FuncBobbing()
 }
 
 /*!
-	\brief Creates reachability entries for trigger_push entities by computing their push velocity toward a target and connecting the source and destination jump pad areas
+	\brief Calculates and adds reachability information for jump pad trigger entities in the AAS navigation system
 
-	The function iterates over all BspEntities that are named "trigger_push".
-	For each, it reads the speed (default 1000 if unspecified) and the entity’s model to determine its bounding box.  It then finds the entity’s target by matching a targetname field.
-	Using the vertical height difference between the push and the target and the gravity setting, it derives a launch time and uses this to compute a horizontal velocity scaled by a factor of 1.1
-   before setting the Z component to the expected apex velocity. It traces a client bbox from slightly above the push to locate the starting area and finds all areas that cover the push’s bounding
-   box. When a linked area is identified as a jump pad, it predicts the client movement forward for up to 20 iterations to find a valid destination area. If a destination jump pad area is found and no
-   existing reachability exists, the function allocates a new reachability. The new entry stores the start and end positions, the area numbers, a travel type of TRAVEL_JUMPPAD, and a hardcoded travel
-   time of 200.  The facenum field contains the vertical velocity, and the edgenum field contains the horizontal speed. Debug output is printed through botimport.Print for missing targets, solid
-   starts, and computed velocities. The process continues for all trigger_push entities. The function performs no obvious error throws; it simply logs issues and skips problematic entities.
+	This function processes trigger_push entities from the BSP file to determine jump pad reachability information. It analyzes the physics of the jump pad effects including gravity, velocity, and
+   timing to calculate where players can reach from the jump pad area. The function creates jump pad reachability entries between areas that account for both horizontal and vertical movement during
+   the jump pad effect.
 
+	\return None
+	\throws None
 */
 void AAS_Reachability_JumpPad()
 {

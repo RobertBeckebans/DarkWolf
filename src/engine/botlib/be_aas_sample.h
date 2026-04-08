@@ -101,19 +101,17 @@ int			AAS_AreaPresenceType( int areanum );
 int			AAS_PointPresenceType( vec3_t point );
 
 /*!
-	\brief traces a client bounding box through the AAS world and returns collision information
+	\brief Performs a trace of a client bounding box through the AAS navigation mesh from start to end positions, considering specified presence type and pass entity.
 
-	The function performs a line trace from a start point to an end point, taking into account an entity bounding box that represents a client.
-	It uses a manual stack to walk the AAS node tree, beginning at the root node and evaluating each plane encountered. For area nodes it checks whether the presence type of the area (e.g., normal,
-   crouch) matches the requested presence type and either continues the traversal or records a hit. For solid leaf nodes it treats the traversal as a collision. When an entity is supplied in the passe
-   argument, the trace checks for a collision with that entity using AAS_AreaEntityCollision. During the walk, the function calculates the fraction along the line where the first impact occurs,
-   updates the end position of the trace to that hit point, and fills fields such as startsolid, ent (entity hit), area, and planenum. If no collision is detected, the fraction remains 1.0 and the end
-   position equals the original end point. The trace result is stored in an aas_trace_t structure, which is returned to the caller.
+	This function traces a client bounding box through the AAS (Area Awareness System) navigation mesh from a starting point to an ending point. It uses a stack-based approach to traverse the AAS
+   spatial partitioning tree, checking for collisions with nodes and areas. The trace considers the presence type to determine which areas can be entered and checks for entity collisions, ignoring a
+   specified entity if provided. The function handles various scenarios including solid leaf encounters, area traversals, and collision detection with planes. It returns detailed trace information
+   including whether the start point was solid, the fraction of the line traversed, the end position, the area number hit, the entity hit, and the plane number.
 
-	\param start initial point of the trace
 	\param end endpoint of the trace
-	\param presencetype bitmask of allowed presence types for the trace
 	\param passent entity number to ignore during collision checks, or -1 for no entity
+	\param presencetype bitmask of allowed presence types for the trace
+	\param start initial point of the trace
 	\return an aas_trace_t structure holding the trace outcome, including boolean fields for startsolid and end solid state, the fraction of the line traversed before collision, the end position, the
    entity hit (if any), the area number hit, and the plane number
 */

@@ -426,12 +426,6 @@ int BotLoadWeaponWeights( int weaponstate, char* filename )
 	return BLERR_NOERROR;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotGetWeaponInfo( int weaponstate, int weapon, weaponinfo_t* weaponinfo )
 {
 	bot_weaponstate_t* ws;

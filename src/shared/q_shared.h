@@ -355,10 +355,44 @@ typedef enum { h_high, h_low, h_dontcare } ha_pref;
 	#define Hunk_Alloc( size, preference ) Hunk_AllocDebug( size, preference, #size, __FILE__, __LINE__ )
 void* Hunk_AllocDebug( int size, ha_pref preference, char* label, char* file, int line );
 #else
+
+/*!
+	\brief Allocates a block of memory from the hunk memory pool with the specified size and allocation preference.
+
+	This function allocates memory from a pre-allocated hunk memory pool, which is organized into low and high segments. The allocation preference determines whether the memory is allocated in the low
+   or high segment of the hunk. If the requested memory cannot fit within the available hunk space, an error is generated. The allocated memory is initialized to zero.
+
+	\param size The size in bytes of the memory block to allocate
+	\param preference Allocation preference indicating whether to use the low or high segment of the hunk
+	\return A pointer to the allocated memory block, or NULL if allocation fails
+	\throws Com_Error is called with ERR_FATAL if the hunk memory system is not initialized, or with ERR_DROP if the allocation fails due to insufficient memory
+*/
 void* Hunk_Alloc( int size, ha_pref preference );
 #endif
 
+/*!
+	\brief Sets a block of memory to a specific value.
+
+	This function initializes a block of memory by setting each byte in the specified memory region to the given value. It is a wrapper around the standard C library memset function. The memory block
+   is identified by the destination pointer, the value to set, and the number of bytes to initialize.
+
+	\param dest pointer to the memory block to be initialized
+	\param val the value to set each byte to
+	\param count the number of bytes to initialize
+*/
 void Com_Memset( void* dest, const int val, const size_t count );
+
+/*!
+	\brief Copies a specified number of bytes from the source memory block to the destination memory block.
+
+	This function provides a wrapper around the standard C library memcpy function. It copies count bytes from the source memory location to the destination memory location. The function does not
+   perform any bounds checking, so it is the responsibility of the caller to ensure that the destination buffer is large enough to hold the copied data. The source and destination memory blocks must
+   not overlap, otherwise the behavior is undefined.
+
+	\param dest Pointer to the destination memory block where data will be copied to
+	\param src Pointer to the source memory block from which data will be copied
+	\param count Number of bytes to copy from source to destination
+*/
 void Com_Memcpy( void* dest, const void* src, const size_t count );
 
 #define CIN_system	  0x01
@@ -478,15 +512,64 @@ extern vec3_t axisDefault[3];
 #endif
 
 float Q_fabs( float f );
-float Q_rsqrt( float f ); // reciprocal square root
+
+/*!
+	\brief Computes an approximation of the reciprocal square root of a floating-point number.
+
+	This function implements the famous fast inverse square root algorithm, originally used in the Quake III Arena game engine. It provides a highly optimized approximation of 1/sqrt(f) using bit
+   manipulation and Newton-Raphson iteration. The algorithm uses a magic constant 0x5f3759df combined with bit-level hacking to produce an initial guess, followed by one iteration of Newton-Raphson
+   refinement for improved accuracy. This technique was widely adopted in graphics programming for performance-critical operations involving vector normalizations and lighting calculations.
+
+	\param f The input floating-point number to compute the reciprocal square root for
+	\return Approximation of 1/sqrt(f) as a floating-point value
+*/
+float Q_rsqrt( float f );
 
 #define SQRTFAST( x ) ( 1.0f / Q_rsqrt( x ) )
 
+/*!
+	\brief Clamps an integer value to the range of a signed char.
+
+	This function takes an integer input and ensures it falls within the valid range for a signed char, which is from -128 to 127. If the input integer is less than -128, the function returns -128. If
+   the input integer is greater than 127, the function returns 127. Otherwise, it returns the input integer cast to a signed char. This function is commonly used to safely convert floating-point
+   values or other integer types to the range expected by the game's input system.
+
+	\param i The integer value to be clamped to the signed char range
+	\return A signed char value that is clamped to the range [-128, 127]
+*/
 signed char	 ClampChar( int i );
+
+/*!
+	\brief Clamps an integer value to the range of a signed short.
+
+	This function takes an integer input and ensures it fits within the valid range for a signed short int, which is from -32768 to 32767. If the input is less than -32768, it returns -32768. If the
+   input is greater than 32767, it returns 32767. Otherwise, it returns the input value unchanged.
+
+	\param i The integer value to be clamped to signed short range
+	\return The input integer clamped to the range of a signed short integer
+*/
 signed short ClampShort( int i );
 
-// this isn't a real cheap function to call!
+/*!
+	\brief Converts a 3D direction vector into a byte representation by finding the closest matching normal vector
+
+	This function takes a 3D direction vector and maps it to one of the predefined byte directions by computing the dot product with each of the NUMVERTEXNORMALS predefined direction vectors. It
+   returns the index of the direction vector that has the highest dot product with the input direction, effectively finding the closest matching normal. The function handles null input by returning 0.
+
+	\param dir The 3D direction vector to be converted to a byte representation
+	\return The index of the closest matching normal vector from the predefined set of direction vectors
+*/
 int			 DirToByte( vec3_t dir );
+
+/*!
+	\brief Converts a byte value to a direction vector using a lookup table.
+
+	This function maps a byte value to a corresponding direction vector by indexing into a precomputed lookup table called bytedirs. If the input byte is out of valid range, it sets the output
+   direction vector to the origin.
+
+	\param b The byte value to convert, expected to be between 0 and NUMVERTEXNORMALS-1
+	\param dir Output parameter that will contain the resulting direction vector
+*/
 void		 ByteToDir( int b, vec3_t dir );
 
 #if 1
@@ -541,83 +624,517 @@ typedef struct {
 		v[2] = ( ( int )( v[2] ) ); \
 	}
 
-// just in case you do't want to use the macros
+/*!
+	\brief Computes the dot product of two 3D vectors
+
+	This function calculates the dot product of two 3D vectors by multiplying corresponding components and summing the results. The dot product is a scalar value that represents the product of the
+   magnitudes of the two vectors and the cosine of the angle between them. This implementation provides a straightforward computation without any additional optimizations or checks.
+
+	\param v1 First 3D vector represented as an array of three components
+	\param v2 Second 3D vector represented as an array of three components
+	\return The scalar dot product of the two input vectors
+*/
 vec_t	 _DotProduct( const vec3_t v1, const vec3_t v2 );
 void	 _VectorSubtract( const vec3_t veca, const vec3_t vecb, vec3_t out );
+
+/*!
+	\brief Performs vector addition by adding corresponding components of two input vectors and storing the result in an output vector.
+
+	This function takes two input vectors, veca and vecb, and computes their sum component-wise. Each component of the resulting vector is calculated by adding the corresponding components of the
+   input vectors. The result is stored in the output vector out. The function assumes that all input and output vectors are valid and properly allocated. This is a basic vector arithmetic operation
+   commonly used in 3D graphics and game development for combining vector quantities such as positions, velocities, or forces.
+
+	\param veca First input vector containing x, y, z components
+	\param vecb Second input vector containing x, y, z components
+	\param out Output vector that will contain the sum of veca and vecb
+*/
 void	 _VectorAdd( const vec3_t veca, const vec3_t vecb, vec3_t out );
+
+/*!
+	\brief Copies the components of a 3D input vector to an output vector.
+
+	This function performs a component-wise copy of a 3D vector. It takes an input vector and assigns each of its three components (x, y, z) to the corresponding positions in the output vector. The
+   input vector remains unchanged during this operation.
+
+	\param in The input 3D vector whose components are to be copied
+	\param out The output 3D vector that receives the copied components
+*/
 void	 _VectorCopy( const vec3_t in, vec3_t out );
+
+/*!
+	\brief Scales each component of the input vector by the provided scale factor and stores the result in the output vector.
+
+	This function performs component-wise multiplication of a 3D vector by a scalar value. It takes an input vector, multiplies each of its three components (x, y, z) by the scale factor, and stores
+   the resulting vector in the output parameter. The input vector is not modified during this operation.
+
+	\param in The input 3D vector to be scaled
+	\param scale The scalar factor by which each component of the input vector is multiplied
+	\param out The output 3D vector that receives the scaled result
+*/
 void	 _VectorScale( const vec3_t in, float scale, vec3_t out );
+
+/*!
+	\brief Performs vector addition scaled by a factor and stores the result in a third vector.
+
+	This function computes the mathematical operation veca + scale * vecb and stores the result in vecc. It is commonly used in 3D graphics and game engine calculations for vector arithmetic. The
+   function modifies the destination vector vecc in place by adding the scaled components of vecb to the corresponding components of veca.
+
+	\param veca The first vector to be added to
+	\param scale The scalar value to scale vecb by
+	\param vecb The second vector to be scaled and added
+	\param vecc The destination vector to store the result
+*/
 void	 _VectorMA( const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc );
 
+/*!
+	\brief Converts RGB color values to a packed unsigned integer representation.
+
+	This function takes three floating-point values representing red, green, and blue color components, each in the range [0.0, 1.0], and converts them to a packed unsigned integer where each color
+   component is stored as a byte. The red component is stored in the least significant byte, followed by green and then blue.
+
+	\param r The red color component as a float in the range [0.0, 1.0]
+	\param g The green color component as a float in the range [0.0, 1.0]
+	\param b The blue color component as a float in the range [0.0, 1.0]
+	\return A packed unsigned integer containing the RGB color values, with each component stored as a byte in the order RGBA
+*/
 unsigned ColorBytes3( float r, float g, float b );
+
+/*!
+	\brief Combines four floating-point color components into a single unsigned integer value.
+
+	This function takes four color components represented as floating-point values between 0 and 1 and packs them into a single unsigned integer. Each component is scaled by 255 to convert from the
+   normalized range to the standard 0-255 byte range. The components are stored in the resulting integer in the order: red, green, blue, and alpha. This is commonly used for color representation in
+   graphics programming where a single 32-bit integer can store all four color channels.
+
+	\param r red color component as a floating-point value between 0 and 1
+	\param g green color component as a floating-point value between 0 and 1
+	\param b blue color component as a floating-point value between 0 and 1
+	\param a alpha color component as a floating-point value between 0 and 1
+	\return A single unsigned integer value containing the packed color information in RGBA format.
+*/
 unsigned ColorBytes4( float r, float g, float b, float a );
 
 float	 NormalizeColor( const vec3_t in, vec3_t out );
 
+/*!
+	\brief Computes the radius of the bounding sphere from the minimum and maximum bounds of an object.
+
+	This function calculates the radius of the bounding sphere that encloses a given axis-aligned bounding box defined by its minimum and maximum coordinates. It does so by finding the maximum
+   absolute coordinate value along each axis and then computing the Euclidean length of the resulting vector.
+
+	\param mins The minimum coordinates of the bounding box
+	\param maxs The maximum coordinates of the bounding box
+	\return The radius of the bounding sphere that encloses the given bounds
+*/
 float	 RadiusFromBounds( const vec3_t mins, const vec3_t maxs );
 void	 ClearBounds( vec3_t mins, vec3_t maxs );
 void	 AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs );
+
+/*!
+	\brief Compares two 3D vectors and returns true if they are equal
+
+	This function performs an element-wise comparison of two 3D vectors represented as arrays of three floating-point values. It checks if all corresponding components of the vectors are equal. The
+   function is commonly used in the game engine to determine if vector values have changed, particularly when updating entity states in the AAS (Area Awareness System) system.
+
+	\param v1 First 3D vector to compare
+	\param v2 Second 3D vector to compare
+	\return Integer value of 1 if the vectors are equal, or 0 if any component differs
+*/
 int		 VectorCompare( const vec3_t v1, const vec3_t v2 );
+
+/*!
+	\brief Computes the Euclidean length of a 3D vector.
+
+	This function calculates the magnitude of a 3D vector using the standard Euclidean distance formula. It takes the square root of the sum of the squares of the vector's components. The input vector
+   is expected to be a constant reference to avoid modification and ensure that the function operates on a copy of the input data.
+
+	\param v A constant reference to a 3D vector represented as an array of three components.
+	\return The Euclidean length of the input vector as a vec_t type.
+*/
 vec_t	 VectorLength( const vec3_t v );
+
+/*!
+	\brief Computes the squared length of a 3D vector
+
+	This function calculates the sum of squares of the vector's components without computing the square root. It is useful for performance-critical operations where the actual length is not needed,
+   such as comparisons or distance calculations. The squared length is mathematically equivalent to the dot product of the vector with itself.
+
+	\param v The input 3D vector represented as an array of three components
+	\return The squared length of the input vector
+*/
 vec_t	 VectorLengthSquared( const vec3_t v );
+
+/*!
+	\brief Calculates the Euclidean distance between two 3D points.
+
+	This function computes the distance between two points in three-dimensional space. It first calculates the vector difference between the two points and then returns the length of that vector. The
+   implementation uses VectorSubtract to compute the difference and VectorLength to calculate the magnitude of the resulting vector.
+
+	\param p1 The first 3D point coordinates
+	\param p2 The second 3D point coordinates
+	\return The Euclidean distance between the two input points
+*/
 vec_t	 Distance( const vec3_t p1, const vec3_t p2 );
+
+/*!
+	\brief Computes the squared distance between two 3D points.
+
+	This function calculates the squared Euclidean distance between two points in 3D space. It is useful for performance-critical applications where the actual distance square root is not needed, as
+   it avoids the computationally expensive sqrt operation. The calculation is performed by subtracting the coordinates of the first point from the second point, then summing the squares of the
+   resulting vector components.
+
+	\param p1 The first 3D point represented as a vector of three components.
+	\param p2 The second 3D point represented as a vector of three components.
+	\return The squared distance between the two input points.
+*/
 vec_t	 DistanceSquared( const vec3_t p1, const vec3_t p2 );
 void	 CrossProduct( const vec3_t v1, const vec3_t v2, vec3_t cross );
-vec_t	 VectorNormalize( vec3_t v );	  // returns vector length
+
+/*!
+	\brief Normalizes a 3D vector and returns its length
+
+	This function takes a 3D vector as input, calculates its length, and then normalizes the vector by dividing each component by the length. If the length is zero, the vector remains unchanged. The
+   function returns the original length of the vector before normalization.
+
+	\param v The 3D vector to be normalized, modified in place
+	\return The length of the input vector before normalization
+*/
+vec_t	 VectorNormalize( vec3_t v );
 void	 VectorNormalizeFast( vec3_t v ); // does NOT return vector length, uses rsqrt approximation
 vec_t	 VectorNormalize2( const vec3_t v, vec3_t out );
 void	 VectorInverse( vec3_t v );
+
+/*!
+	\brief Scales each component of a 4D vector by the given factor.
+
+	This function takes an input 4D vector and multiplies each of its components by the specified scale factor, storing the result in an output vector. It performs component-wise multiplication, which
+   is commonly used in graphics and mathematical computations involving vectors.
+
+	\param in The input 4D vector to be scaled
+	\param scale The factor by which each component of the input vector will be multiplied
+	\param out The output vector that will contain the scaled components
+*/
 void	 Vector4Scale( const vec4_t in, vec_t scale, vec4_t out );
+
+/*!
+	\brief Performs vector rotation using a 3x3 rotation matrix
+
+	This function applies a linear transformation to the input vector by multiplying it with a 3x3 rotation matrix. The transformation is computed as a series of dot products between the input vector
+   and the rows of the rotation matrix. The result is stored in the output vector. This is commonly used in 3D graphics and game engine applications for rotating vectors according to a given
+   transformation matrix.
+
+	\param in The input vector to be rotated
+	\param matrix A 3x3 rotation matrix represented as an array of three 3D vectors
+	\param out The output vector containing the rotated result
+*/
 void	 VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out );
+
+/*!
+	\brief Computes the base-2 logarithm of the given integer value.
+
+	This function calculates the base-2 logarithm of the input integer by repeatedly right-shifting the value until it becomes zero. Each shift operation represents a power of 2, and the count of
+   shifts gives the base-2 logarithm. The function effectively determines the position of the most significant bit in the binary representation of the input value.
+
+	\param val The input integer value for which to compute the base-2 logarithm
+	\return The base-2 logarithm of the input value, which is the position of the most significant bit
+*/
 int		 Q_log2( int val );
 
+/*!
+	\brief Computes the arc cosine of the input value with clamping to the range [0, M_PI]
+
+	This function calculates the arc cosine of the input parameter c using the standard math library function acos. The result is then clamped to the range [0, M_PI] to ensure valid output values.
+   This is necessary because the acos function can return values outside this range in certain edge cases, and the clamping ensures consistent behavior for all inputs.
+
+	\param c The input value for which to compute the arc cosine
+	\return The arc cosine of c clamped to the range [0, M_PI]
+*/
 float	 Q_acos( float c );
 
 int		 Q_rand( int* seed );
+
+/*!
+	\brief Generates a pseudo-random floating-point number between 0 and 1 using a linear congruential generator.
+
+	This function implements a simple linear congruential random number generator to produce a uniformly distributed floating-point value in the range [0, 1). It uses the provided seed to maintain
+   state between calls, making it suitable for generating reproducible sequences of random numbers. The function internally calls Q_rand to obtain a 32-bit integer, masks it to 16 bits, and scales it
+   to the desired floating-point range. This approach is commonly used in games and simulations where a simple, fast, and deterministic random number generator is needed.
+
+	\param seed Pointer to an integer seed value that gets updated with each call to produce the next random number in the sequence
+	\return A floating-point number in the range [0, 1) representing the next pseudo-random value in the sequence
+*/
 float	 Q_random( int* seed );
+
+/*!
+	\brief Generates a random floating-point value in the range [-1.0, 1.0] using a given seed for pseudo-random number generation.
+
+	This function takes an integer pointer as a seed and uses it to generate a pseudo-random float value. It relies on another function Q_random which is expected to return a value in the range
+   [0.0, 1.0]. The returned value will be scaled and shifted to the range [-1.0, 1.0] to provide a centered distribution suitable for generating random offsets or spread patterns in game calculations.
+
+	\param seed Pointer to an integer seed used for pseudo-random number generation
+	\return A floating-point value in the range [-1.0, 1.0] generated from the provided seed
+*/
 float	 Q_crandom( int* seed );
 
 #define random()  ( ( rand() & 0x7fff ) / ( ( float )0x7fff ) )
 #define crandom() ( 2.0 * ( random() - 0.5 ) )
 
-void	 vectoangles( const vec3_t value1, vec3_t angles );
-float	 vectoyaw( const vec3_t vec );
-void	 AnglesToAxis( const vec3_t angles, vec3_t axis[3] );
-// TTimo: const vec_t ** would require explicit casts for ANSI C conformance
-// see unix/const-arg.c
-void	 AxisToAngles( /*const*/ vec3_t axis[3], vec3_t angles );
+/*!
+	\brief Converts a 3D vector into yaw and pitch angles.
+
+	This function takes a 3D vector and computes the corresponding yaw and pitch angles. The yaw represents the horizontal rotation, while the pitch represents the vertical rotation. The roll is
+   always set to zero. Special cases are handled when the vector lies along the Z-axis to prevent division by zero.
+
+	\param value1 The input 3D vector for which angles are to be calculated
+	\param angles The output array where the calculated yaw, pitch, and roll angles will be stored
+*/
+void  vectoangles( const vec3_t value1, vec3_t angles );
+
+/*!
+	\brief Computes the yaw angle from a 3D vector
+
+	This function calculates the yaw angle in degrees from a given 3D vector. The yaw represents the horizontal rotation around the Y-axis. The function handles special cases where the vector
+   components are zero or when the pitch is non-zero. It ensures the returned angle is within the range of 0 to 360 degrees.
+
+	\param vec The input 3D vector from which to calculate the yaw angle
+	\return The yaw angle in degrees calculated from the input vector
+*/
+float vectoyaw( const vec3_t vec );
+
+/*!
+	\brief Converts Euler angles into a rotation matrix represented by three axis vectors
+
+	This function takes a set of Euler angles and computes the corresponding rotation matrix. The matrix is stored as three axis vectors in the axis array. The first axis represents the forward
+   direction, the second axis represents the right direction (with inverted sign), and the third axis represents the up direction. The implementation uses the AngleVectors function to compute the
+   forward and right vectors, then computes the up vector directly from the angles.
+
+	\param angles The Euler angles in degrees for x (pitch), y (yaw), and z (roll) rotations
+	\param axis Output array of three vectors representing the rotation matrix axes
+*/
+void  AnglesToAxis( const vec3_t angles, vec3_t axis[3] );
+
+/*!
+	\brief Converts a 3x3 rotation matrix represented by axis vectors into Euler angles.
+
+	This function takes a 3x3 rotation matrix stored as an array of three 3D vectors representing the forward, right, and up axes, and converts it into a set of Euler angles (pitch, yaw, roll). The
+   computation first extracts the yaw and pitch from the forward vector using vectoangles, then computes the roll angle from the right vector by performing rotations and angle calculations. Special
+   handling is included to adjust the pitch when the yaw difference exceeds 90 degrees to maintain consistent angle representation.
+
+	\param axis Array of three 3D vectors representing the forward, right, and up axes of a rotation matrix
+	\param angles Output array to store the resulting Euler angles (pitch, yaw, roll)
+*/
+void	 AxisToAngles(
+
+	/*!
+		\brief Calculates the Euclidean distance between two 3D vectors.
+
+		This function computes the distance between two points in 3D space represented as vec3_t structures. It first calculates the direction vector between the two points by subtracting the first vector from the second, then returns the length of this direction vector. The implementation leverages the existing VectorSubtract and VectorLength helper functions to perform the calculation.
+
+		\param v1 First 3D vector point
+		\param v2 Second 3D vector point
+		\return The Euclidean distance between the two input vectors as a floating-point value
+	*/
 float	 VectorDistance( vec3_t v1, vec3_t v2 );
 
+	/*!
+		\brief Initializes a 3x3 axis matrix to the identity matrix.
+
+		This function sets the provided 3x3 axis matrix to the identity matrix configuration. Each row of the matrix is initialized such that the diagonal elements are set to 1 and all off-diagonal elements are set to 0. This operation is commonly used to reset or initialize rotation matrices in 3D graphics and game development.
+
+		\param axis A pointer to a 3x3 matrix represented as an array of three 3D vectors.
+	*/
 void	 AxisClear( vec3_t axis[3] );
+
+	/*!
+		\brief Copies three 3D vectors from the input array to the output array.
+
+		This function performs element-wise copying of three 3D vectors from the input array to the output array. Each vector in the input array is copied to the corresponding position in the output array using the VectorCopy function.
+
+		\param in Source array of three 3D vectors
+		\param out Destination array of three 3D vectors
+	*/
 void	 AxisCopy( vec3_t in[3], vec3_t out[3] );
 
+/*!
+	\brief Sets the sign bits for a plane normal vector in the given cplane_s structure.
+
+	The function calculates the sign bits for each component of the plane normal vector and stores the result in the signbits field of the cplane_s structure. Each bit in the signbits field
+   corresponds to a component of the normal vector, with bit j set if the jth component of the normal vector is negative. This is used for fast box on planeside tests.
+
+	\param out pointer to the cplane_s structure whose signbits field will be set
+*/
 void	 SetPlaneSignbits( struct cplane_s* out );
+
+/*!
+	\brief Determines which side of a plane a bounding box resides on.
+
+	This function tests whether a bounding box defined by its minimum and maximum coordinates is on one side of a plane or intersects it. It returns a bitmask indicating the relation: 1 for the front
+   side, 2 for the back side, and 3 for intersection. For axial planes (aligned with X, Y, or Z axes), it uses a fast path. For general planes, it computes distances using the plane's normal and
+   signbits to determine the corner points that are closest and farthest from the plane.
+
+	\param emins The minimum coordinates of the bounding box
+	\param emaxs The maximum coordinates of the bounding box
+	\param plane Pointer to the plane structure containing the normal, distance, and signbits
+	\return An integer bitmask indicating the side of the plane the box is on: 1 for front, 2 for back, 3 for both sides
+*/
 int		 BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, struct cplane_s* plane );
 
+	/*!
+		\brief Normalizes an angle to the range [0, 360) degrees
+
+		This function takes an angle in degrees and normalizes it to the range [0, 360) degrees. It uses a bit-wise AND operation with 65535 to perform the normalization, which is a common technique for handling angle wrapping in fixed-point arithmetic. The function is frequently used in game code for managing angular movement and interpolation, particularly when dealing with swing calculations and angle clamping as shown in the call examples.
+
+		\param a input angle in degrees to be normalized
+		\return the normalized angle in the range [0, 360) degrees
+	*/
 float	 AngleMod( float a );
+
+	/*!
+		\brief Interpolates between two angles, handling angle wrapping across the 180-degree boundary.
+
+		This function performs linear interpolation between two angles, taking into account the circular nature of angles. It adjusts the target angle to ensure the shortest path is taken when interpolating, avoiding unnecessary large angle jumps. This is particularly useful for interpolating angular data such as player orientations or entity rotations in game animations.
+
+		\param from The starting angle in degrees
+		\param to The target angle in degrees
+		\param frac The interpolation factor between 0 and 1
+		\return The interpolated angle in degrees, normalized to the range that maintains the shortest angular path between from and to.
+	*/
 float	 LerpAngle( float from, float to, float frac );
+
+	/*!
+		\brief Computes the difference between two angles, normalized to the range [-180, 180).
+
+		This function calculates the angular difference between two angles a1 and a2. It ensures the result is normalized to the range [-180, 180) by adjusting for angle wraparound. This is useful in game development for calculating angular differences without ambiguity caused by angle periodicity.
+
+		\param a1 The first angle in degrees
+		\param a2 The second angle in degrees
+		\return The normalized angular difference between a1 and a2, in the range [-180, 180)
+	*/
 float	 AngleSubtract( float a1, float a2 );
+
+	/*!
+		\brief Subtracts corresponding angle components of two 3D vectors and stores the result in a third vector.
+
+		This function performs element-wise subtraction of angle components between two 3D vectors v1 and v2, storing the resulting angles in v3. Each component of the result vector is computed using the AngleSubtract function, which properly handles angle wrapping to maintain valid angle ranges. The function operates on three-dimensional vectors representing Euler angles, commonly used in 3D graphics and game development for orientation representation.
+
+		\param v1 First 3D vector containing angle components to be subtracted from
+		\param v2 Second 3D vector containing angle components to subtract
+		\param v3 Output 3D vector to store the result of the component-wise subtraction
+	*/
 void	 AnglesSubtract( vec3_t v1, vec3_t v2, vec3_t v3 );
 
+	/*!
+		\brief Normalizes an angle to the range [0, 360) degrees.
+
+		This function takes an angle in degrees and normalizes it to the range [0, 360). It uses a bit manipulation technique to wrap the angle value, ensuring that it falls within the expected range. The function is commonly used in game development for managing angular rotations and avoiding angle overflow issues.
+
+		\param angle The input angle in degrees to be normalized.
+		\return The normalized angle in the range [0, 360) degrees.
+	*/
 float	 AngleNormalize360( float angle );
+
+	/*!
+		\brief Normalizes an angle to the range [-180, 180).
+
+		This function takes an angle in degrees and normalizes it to the range [-180, 180). It first normalizes the angle to the range [0, 360) using AngleNormalize360, then adjusts it to the [-180, 180) range. This is commonly used in animation blending and rotation calculations where angles need to be kept within a standard range to ensure correct interpolation and avoid gimbal lock issues.
+
+		\param angle The input angle in degrees to be normalized
+		\return The normalized angle in the range [-180, 180)
+	*/
 float	 AngleNormalize180( float angle );
+
+	/*!
+		\brief Calculates the normalized angular difference between two angles.
+
+		This function computes the difference between two angles and normalizes the result to the range [-180, 180). This is useful for determining the smallest angular distance between two orientations, which is commonly needed in game AI for turning calculations and angle comparisons.
+
+		\param angle1 The first angle in degrees
+		\param angle2 The second angle in degrees
+		\return The normalized angular difference between angle1 and angle2, constrained to the range [-180, 180).
+	*/
 float	 AngleDelta( float angle1, float angle2 );
 
 qboolean PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c );
+
+	/*!
+		\brief Projects a point onto a plane defined by a normal vector
+
+		This function calculates the orthogonal projection of a given point onto a plane. The plane is defined by its normal vector. The calculation involves computing the distance from the point to the plane along the normal direction, then subtracting the appropriate multiple of the normal vector from the original point to obtain the projected point. The function handles the normalization of the normal vector internally to ensure accurate projection.
+
+		\param dst output parameter that will contain the projected point on the plane
+		\param p the input point to be projected
+		\param normal the normal vector of the plane onto which the point is projected
+	*/
 void	 ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal );
 void	 RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
-void	 RotateAroundDirection( vec3_t axis[3], float yaw );
-void	 MakeNormalVectors( const vec3_t forward, vec3_t right, vec3_t up );
-// perpendicular vector could be replaced by this
 
+	/*!
+		\brief Rotates a direction vector around an axis to compute orthogonal vectors
+
+		This function takes a forward vector and computes two additional orthogonal vectors to form a right-handed coordinate system. It first creates a perpendicular vector to the input forward direction, then rotates this vector around the forward axis by the specified yaw angle. Finally, it computes the third orthogonal vector using the cross product of the forward and rotated vectors.
+
+		\param axis Array of three 3D vectors representing the forward, right, and up directions
+		\param yaw The angle in degrees to rotate the right vector around the forward axis
+	*/
+void	 RotateAroundDirection( vec3_t axis[3], float yaw );
+
+	/*!
+		\brief Computes a set of orthogonal vectors (right, up) from a forward vector.
+
+		This function takes a forward vector and generates two additional vectors that are orthogonal to each other and to the forward vector. It first creates a right vector that is not colinear with the forward vector, then normalizes it and uses it to compute an up vector through a cross product with the forward vector. The resulting vectors form a right-handed coordinate system.
+
+		\param forward A 3D vector representing the forward direction
+		\param right Output vector representing the right direction, computed orthogonally to forward
+		\param up Output vector representing the up direction, computed orthogonally to forward and right
+	*/
+void	 MakeNormalVectors( const vec3_t forward, vec3_t right, vec3_t up );
+
+/*!
+	\brief Determines the plane type based on the orientation of a normal vector.
+
+	This function analyzes the components of a 3D normal vector to classify the plane it represents. It returns specific plane type constants based on whether the vector is aligned with the primary
+   axes or falls into a general category. The function is used in collision detection and rendering systems to optimize plane-related calculations.
+
+	\param normal A 3D vector representing the normal to a plane
+	\return An integer representing the plane type, which can be PLANE_X, PLANE_Y, PLANE_Z, PLANE_ANYX, PLANE_ANYY, or PLANE_ANYZ depending on the orientation of the input normal vector.
+*/
 int		 PlaneTypeForNormal( vec3_t normal );
 
 void	 MatrixMultiply( float in1[3][3], float in2[3][3], float out[3][3] );
 void	 AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up );
+
+	/*!
+		\brief Computes a vector perpendicular to the input vector by projecting an axially aligned vector onto the plane defined by the input vector and normalizing the result.
+
+		The function first identifies the component of the input vector with the smallest magnitude. It then creates a unit vector along that axis and projects it onto the plane defined by the input vector. The resulting vector is normalized to produce a unit vector perpendicular to the input.
+
+		\param dst Output vector that will contain the perpendicular vector
+		\param src Input vector to compute the perpendicular for
+	*/
 void	 PerpendicularVector( vec3_t dst, const vec3_t src );
 
-// Ridah
+	/*!
+		\brief Computes a normalized vector perpendicular to the plane defined by three points.
+
+		The function calculates two vectors from the given point to the other two points, normalizes them, and then computes their cross product to obtain a perpendicular vector. The resulting vector is normalized and returned in the up parameter.
+
+		\param point A point used to calculate vectors to p1 and p2
+		\param p1 First point defining the plane
+		\param p2 Second point defining the plane
+		\param up Output parameter for the resulting perpendicular vector
+	*/
 void	 GetPerpendicularViewVector( const vec3_t point, const vec3_t p1, const vec3_t p2, vec3_t up );
+
+	/*!
+		\brief Projects a point onto a vector defined by two endpoints
+
+		This function calculates the orthogonal projection of a given point onto a vector segment defined by two endpoints. It first computes the vectors from the start point to the target point and from the start point to the end point. The direction vector is normalized, then the dot product of the vector from start to target point and the normalized direction vector is computed. This scalar projection is used to find the projected point along the vector segment by adding the scaled direction vector to the start point.
+
+		\param point The point to be projected
+		\param vStart The starting point of the vector segment
+		\param vEnd The ending point of the vector segment
+		\param vProj The resulting projected point
+	*/
 void	 ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vEnd, vec3_t vProj );
 // done.
 
@@ -625,24 +1142,167 @@ void	 ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vEnd, vec3_t v
 
 float	 Com_Clamp( float min, float max, float value );
 
+	/*!
+		\brief Returns a pointer to the last part of a path, after the final slash.
+
+		The function traverses the input path string and updates a pointer to point to the last segment of the path, which starts after the final forward slash character. If there is no forward slash in the path, the pointer will remain at the beginning of the string. This is commonly used to extract the filename component from a full path.
+
+		\param pathname Input string representing a file path.
+		\return Pointer to the start of the last component of the path, which is the filename or the last directory name.
+	*/
 char*	 COM_SkipPath( char* pathname );
+
+	/*!
+		\brief Strips the file extension from a given path string.
+
+		This function copies characters from the input string to the output string until it encounters a period character, which indicates the start of a file extension. The period and any following characters are not copied. The output string is null-terminated. This is commonly used to extract the base name of a file without its extension.
+
+		\param in Input string containing the path or filename with extension
+		\param out Output buffer to store the filename without extension
+	*/
 void	 COM_StripExtension( const char* in, char* out );
+
+	/*!
+		\brief Removes the filename portion from a file path string.
+
+		This function takes an input file path and copies it to an output buffer, then strips the filename portion from the path by null-terminating the string at the position where the filename starts. It utilizes COM_SkipPath to locate the start of the filename within the path.
+
+		\param in Input string containing the full file path
+		\param out Output buffer where the stripped path will be stored
+	*/
 void	 COM_StripFilename( char* in, char* out );
+
+	/*!
+		\brief Appends a default file extension to a path if it does not already have one.
+
+		This function checks if the provided path already contains a file extension by looking for a period in the path. If no extension is found, it appends the specified extension to the path. The function ensures that the resulting path does not exceed the maximum allowed size. The extension parameter should include the leading period, such as ".txt" or ".map".
+
+		\param path The file path to which the extension may be appended
+		\param maxSize The maximum size of the path buffer
+		\param extension The default extension to append, including the leading period
+	*/
 void	 COM_DefaultExtension( char* path, int maxSize, const char* extension );
 
+	/*!
+		\brief Initializes a new parsing session with the specified file name.
+
+		This function sets up the parsing environment by resetting the line counter and storing the provided file name for use during parsing operations. It prepares the global parsing state for processing a new source file.
+
+		\param name The name of the file to be parsed
+	*/
 void	 COM_BeginParseSession( const char* name );
+
+	/*!
+		\brief Restores a parsing session by resetting the line counter and updating the data pointer to the backup text.
+
+		This function is used to restore a previously saved parsing state. It resets the global com_lines variable to the backup_lines value and updates the data pointer provided by the data_p parameter to point to the backup_text. This is typically used when parsing needs to be rolled back to a previous state, such as when encountering an unexpected token or reaching the end of a parsing section.
+
+		\param data_p Pointer to a character pointer that will be updated to point to the backup text
+	*/
 void	 COM_RestoreParseSession( char** data_p );
+
+	/*!
+		\brief Sets the current parsing line number for the COM library.
+
+		This function updates the internal line counter used by the COM library for parsing operations. It is typically used to track the progress of file parsing or to set a specific line number for error reporting purposes.
+
+		\param line The line number to set as the current parsing line
+	*/
 void	 COM_SetCurrentParseLine( int line );
+
+	//! Returns the current line number of the parser.
 int		 COM_GetCurrentParseLine();
+
+	/*!
+		\brief Parses the next token from a string, handling comments and quoted strings.
+
+		This function processes an input string to extract the next token, advancing the data pointer to point to the next unparsed character. It handles both quoted and unquoted tokens, skipping over comments and managing line breaks. The parsed token is stored in a global com_token buffer and returned. The function supports parsing of quoted strings, single-line and multi-line comments, and can optionally allow line breaks within tokens.
+
+		\param data_p Pointer to a pointer to the input string to parse. Updated to point to the next unparsed character after the token.
+		\return Pointer to the parsed token stored in the global com_token buffer.
+	*/
 char*	 COM_Parse( char** data_p );
+
+/*!
+	\brief Parses the next token from a string, handling comments and quoted strings.
+
+/*!
+	\brief Parses the next token from a string, handling quoted strings and comments, with optional line break support.
+
+	This function processes an input string to extract the next token, advancing the data pointer to point to the next unparsed character. It handles both quoted and unquoted tokens, skipping over
+comments and managing line breaks based on the allowLineBreaks flag. The parsed token is stored in a global com_token buffer and returned. The function supports parsing of quoted strings, single-line
+and multi-line comments, and can optionally allow line breaks within tokens.
+
+	\param data_p Pointer to a pointer to the input string to parse. Updated to point to the next unparsed character after the token.
+	\param allowLineBreak Flag indicating whether line breaks should be allowed within tokens.
+	\return Pointer to the parsed token stored in the global com_token buffer.
+*/
 char*	 COM_ParseExt( char** data_p, qboolean allowLineBreak );
+
+	/*!
+		\brief Compresses the given data string by removing comments and excess whitespace.
+
+		This function processes a null-terminated string and removes single-line comments (starting with //), multi-line comments (enclosed in /* */), and compresses whitespace sequences into single spaces. It modifies the input string in-place and returns the new length of the compressed string. The function handles carriage return and line feed characters by preserving them but removing extra spaces around them.
+
+		\param data_p Pointer to the null-terminated input string to be compressed
+		\return The length of the compressed string after processing
+	*/
 int		 COM_Compress( char* data_p );
+
+/*!
+	\brief Handles parse errors by formatting an error message with file name, line number, and error details
+
+	This function is used to report parse errors during file processing. It takes a format string and variable arguments to construct an error message, then outputs the message including the current
+   parsing file name and line number. The function uses variadic arguments to allow flexible error message formatting and incorporates a static buffer for message construction.
+
+	\param format Format string for the error message
+	\param  Variable arguments for the format string
+*/
 void	 COM_ParseError( char* format, ... );
+
+/*!
+	\brief Reports a warning message during parsing with the file name and line number.
+
+	This function handles parsing warnings by accepting a format string and variable arguments, formatting them into a warning message, and then outputting the message along with the current parsing
+   file name and line number. It uses a static buffer to hold the formatted string and leverages the Com_Printf function for output.
+
+	\param format format string specifying the warning message format
+*/
 void	 COM_ParseWarning( char* format, ... );
 
-// TTimo
+/*!
+	\brief Checks if a specific bit is set in an array of integers.
+
+	This function determines whether a particular bit is set within a bitfield represented as an array of integers. The bitfield is processed in chunks of 32 bits, with each integer in the array
+   representing one such chunk. The function handles bit numbers that exceed the range of a single integer by iterating through the array elements.
+
+	\param array An array of integers representing a bitfield
+	\param bitNum The bit index to check (0-based)
+	\return qboolean indicating whether the specified bit is set
+*/
 qboolean COM_BitCheck( const int array[], int bitNum );
+
+/*!
+	\brief Sets a specific bit at the given bit number within the provided array of integers.
+
+	This function is designed to set a bit at a specified position within an array of integers, where each integer can hold 32 bits. The function calculates which integer in the array contains the
+   specified bit by dividing the bit number by 32. It then sets the appropriate bit using a bitwise OR operation with a shifted power of two.
+
+	\param array Pointer to the array of integers where the bit will be set
+	\param bitNum The bit number to be set within the array
+*/
 void	 COM_BitSet( int array[], int bitNum );
+
+/*!
+	\brief Clears a specific bit in an array of integers.
+
+	This function clears a bit at a specified position within an array of integers. The bit position is determined by bitNum, which can be larger than 32, allowing for bits to be cleared across
+   multiple integers in the array. The function calculates which integer in the array contains the bit and then clears the specific bit using a bitwise AND operation with the complement of the bit
+   mask.
+
+	\param array Pointer to the array of integers where the bit will be cleared
+	\param bitNum The position of the bit to clear, can be any non-negative integer
+*/
 void	 COM_BitClear( int array[], int bitNum );
 
 #define MAX_TOKENLENGTH 1024
@@ -668,13 +1328,78 @@ typedef struct pc_token_s {
 
 void	   COM_MatchToken( char** buf_p, char* match );
 
+/*!
+	\brief Skips over a braced section in a tokenized program, handling nested braces by tracking depth.
+
+	This function processes a tokenized program string and advances through it until all nested braces are properly matched. It uses a depth counter to track opening and closing braces, ensuring that
+   nested structures are correctly handled. The function continues parsing until the depth returns to zero or the program pointer becomes null.
+
+	\param program Pointer to a pointer to the current position in the program token stream
+*/
 void	   SkipBracedSection( char** program );
+
+/*!
+	\brief Skips the rest of the current line in the input data, updating the data pointer to point after the newline character.
+
+	This function processes a character pointer pointing to a string buffer and advances it until it encounters a newline character or reaches the end of the string. It also increments a global line
+   counter when a newline is found. The function modifies the input pointer to point to the position after the newline character, allowing subsequent parsing operations to continue from that point.
+
+	\param data Pointer to a character pointer that points to the current position in the input buffer
+*/
 void	   SkipRestOfLine( char** data );
 
+/*!
+	\brief Parses a 1D matrix of specified size from a tokenized buffer
+
+	This function reads a sequence of floating-point values from a tokenized input buffer and stores them in a float array. It expects the input to be formatted as a parenthesized list of numbers. The
+   function advances the buffer pointer as it parses tokens and validates that the format matches the expected structure.
+
+	\param buf_p Pointer to a pointer to the current position in the input buffer
+	\param x Number of elements to parse and store in the matrix
+	\param m Pointer to the destination array where parsed values will be stored
+*/
 void	   Parse1DMatrix( char** buf_p, int x, float* m );
+
+/*!
+	\brief Parses a 2D matrix from a token stream into a flat float array
+
+	This function reads a 2D matrix from a token stream represented by the buffer pointer. It expects the matrix to be enclosed in parentheses and parses it row by row. The matrix is stored in
+   row-major order in the provided float array. The function advances the buffer pointer as it parses the tokens.
+
+	\param buf_p Pointer to the buffer pointer containing the token stream
+	\param y Number of rows in the matrix
+	\param x Number of columns in the matrix
+	\param m Pointer to the destination float array where the matrix will be stored
+*/
 void	   Parse2DMatrix( char** buf_p, int y, int x, float* m );
+
+/*!
+	\brief Parses a 3D matrix from a tokenized buffer into a flat float array.
+
+	This function reads a 3D matrix from a tokenized input buffer and stores it in a flattened float array. It expects the input to start with an opening parenthesis, followed by z number of 2D
+   matrices of dimensions y by x, and ends with a closing parenthesis. Each 2D matrix is parsed using the Parse2DMatrix function. The parsed values are stored in the float array m, with each 2D matrix
+   stored contiguously in memory.
+
+	\param buf_p Pointer to a pointer to the current position in the tokenized input buffer
+	\param z Number of 2D matrices to parse
+	\param y Number of rows in each 2D matrix
+	\param x Number of columns in each 2D matrix
+	\param m Pointer to the destination float array where the 3D matrix will be stored
+*/
 void	   Parse3DMatrix( char** buf_p, int z, int y, int x, float* m );
 
+/*!
+	\brief Formats a string using a printf-style format and arguments into a destination buffer with overflow checking.
+
+	This function performs formatted string output similar to printf, but with additional safety checks. It takes a format string and a variable number of arguments, then writes the formatted result
+   into the provided destination buffer. The function ensures that the output does not exceed the specified buffer size, and will issue warnings or errors if overflow occurs. The implementation uses a
+   large temporary buffer to handle the formatting, then copies the result to the destination with proper size limiting.
+
+	\param dest Destination buffer to store the formatted string
+	\param size Size of the destination buffer in bytes
+	\param fmt Printf-style format string describing how to format the arguments
+	\throws Com_Error if the formatted string exceeds the internal bigbuffer size, or Com_Printf if the formatted string exceeds the destination buffer size
+*/
 void QDECL Com_sprintf( char* dest, int size, const char* fmt, ... );
 
 // mode parm for FS_FOpenFile
@@ -688,9 +1413,40 @@ int	  Q_isprint( int c );
 int	  Q_islower( int c );
 int	  Q_isupper( int c );
 int	  Q_isalpha( int c );
-int	  Q_isnumeric( int c );		 //----(SA)	added
-int	  Q_isalphanumeric( int c ); //----(SA)	added
-int	  Q_isforfilename( int c );	 //----(SA)	added
+
+/*!
+	\brief Checks if a character is a numeric digit.
+
+	This function determines whether the provided character is a numeric digit between '0' and '9'. It returns a non-zero value if the character is numeric, and zero otherwise. The function is
+   commonly used to validate input or parse numeric strings.
+
+	\param c The character to check for numeric validity
+	\return Non-zero value if the character is a numeric digit, zero otherwise
+*/
+int	  Q_isnumeric( int c );
+
+/*!
+	\brief Checks if a character is alphanumeric, returning 1 if true and 0 if false.
+
+	This function determines whether the provided character is either alphabetic or numeric. It utilizes the existing Q_isalpha and Q_isnumeric helper functions to perform the check. The function
+   returns 1 if the character satisfies either condition, and 0 otherwise. This is commonly used in text processing and validation routines to ensure that a character is a valid part of an identifier
+   or word.
+
+	\param c The character to be checked for alphanumeric property
+	\return 1 if the character is alphabetic or numeric, 0 otherwise
+*/
+int	  Q_isalphanumeric( int c );
+
+/*!
+	\brief Checks if a character is valid for use in a filename.
+
+	This function determines whether a given character is acceptable for use in a filename. It allows alphanumeric characters and underscores, but excludes spaces and other special characters. The
+   function is used to validate user input when saving game files or other operations requiring valid filenames. It returns 1 if the character is valid for a filename, and 0 otherwise.
+
+	\param c The character to check for filename validity
+	\return 1 if the character is valid for use in a filename, 0 otherwise
+*/
+int	  Q_isforfilename( int c );
 
 // portable case insensitive compare
 int	  Q_stricmp( const char* s1, const char* s2 );
@@ -739,7 +1495,27 @@ short		BigShort( short l );
 short		LittleShort( short l );
 int			BigLong( int l );
 int			LittleLong( int l );
+
+/*!
+	\brief Converts a 64-bit integer from little-endian to big-endian byte order.
+
+	This function takes a 64-bit integer value and reverses its byte order, converting it from little-endian representation to big-endian representation. It is typically used when data needs to be
+   serialized or transmitted across systems with different endianness. The implementation delegates to an internal helper function _BigLong64 to perform the actual byte swapping operation.
+
+	\param l The 64-bit integer value to convert from little-endian to big-endian byte order
+	\return The 64-bit integer with its byte order reversed from little-endian to big-endian
+*/
 qint64		BigLong64( qint64 l );
+
+/*!
+	\brief Returns the byte-swapped value of a 64-bit integer.
+
+	This function performs byte-order conversion on a 64-bit integer to convert it from big-endian to little-endian format or vice versa. It is typically used when data needs to be serialized or
+   deserialized for cross-platform compatibility.
+
+	\param l The 64-bit integer value to be byte-swapped
+	\return The byte-swapped 64-bit integer value
+*/
 qint64		LittleLong64( qint64 l );
 float		BigFloat( float l );
 float		LittleFloat( float l );
@@ -759,10 +1535,44 @@ void		Info_RemoveKey_big( char* s, const char* key );
 void		Info_SetValueForKey( char* s, const char* key, const char* value );
 void		Info_SetValueForKey_Big( char* s, const char* key, const char* value );
 qboolean	Info_Validate( const char* s );
+
+/*!
+	\brief Parses the next key-value pair from a string and advances the string pointer.
+
+	This function extracts a key-value pair from a string buffer that is formatted as a series of \key\value\key\value\... sequences. It reads the key first, then the value, and updates the head
+   pointer to point to the next location in the string after the current pair. Both key and value buffers must be pre-allocated and large enough to hold the parsed data. The function handles the case
+   where either key or value might be empty, and returns early if the end of the string is reached.
+
+	\param s Pointer to the current position in the string buffer to parse
+	\param key Buffer to store the parsed key string
+	\param value Buffer to store the parsed value string
+*/
 void		Info_NextPair( const char** s, char* key, char* value );
 
-// this is only here so the functions in q_shared.c and bg_*.c can link
+/*!
+	\brief Handles system errors by logging the error message, performing cleanup operations, and terminating the program.
+
+	This function is responsible for managing error conditions within the system. It accepts an error level and a formatted message, then processes the error according to its type. For different error
+   codes, it performs specific actions such as disconnecting the client, shutting down the server, or displaying error messages. The function also tracks repeated errors to prevent infinite loops and
+   ensures proper cleanup before termination. It uses a variable argument list to handle formatted error messages and supports various error types including fatal errors, server disconnections, and
+   missing CD requirements.
+
+	\param level The severity level of the error, determining how it's handled
+	\param error A format string specifying the error message with optional arguments
+	\return This function does not return as it terminates the program after handling the error
+	\throws This function may throw an error and terminate the program
+*/
 void QDECL	Com_Error( int level, const char* error, ... );
+
+/*!
+	\brief Prints a formatted message to the console and log file.
+
+	This function handles formatted output to the console, log file, and dedicated server console. It supports variable arguments and can route output to multiple destinations including the console, a
+   buffered rcon output, and a log file. The function manages the opening and writing to the rtcwconsole.log file when needed, and ensures proper flushing of buffered data. It handles both regular and
+   dedicated server console output, and writes to a log file when enabled.
+
+	\param msg Format string for the message to be printed
+*/
 void QDECL	Com_Printf( const char* msg, ... );
 
 /*
@@ -1496,6 +2306,16 @@ typedef union {
 	unsigned int ui;
 } floatint_t;
 
+/*!
+	\brief Converts a float value to its integer representation by bit casting.
+
+	This function performs a bit-level conversion of a float value to an integer representation. It uses a union-like structure to reinterpret the bits of the float as an integer without any
+   arithmetic conversion. This technique is often used when low-level bit manipulation is required, such as when implementing certain mathematical operations or when interfacing with hardware that
+   expects specific bit patterns.
+
+	\param f The float value to convert to integer representation
+	\return The integer representation of the bits that constitute the input float value
+*/
 static int FloatAsInt( float f )
 {
 	floatint_t fi;

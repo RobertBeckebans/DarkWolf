@@ -200,11 +200,11 @@ aas_rt_route_t* AAS_RT_GetRoute( int srcnum, vec3_t origin, int destnum );
 void			AAS_RT_ShutdownRouteTable();
 
 /*!
-	\brief Finds a suitable hiding position between a source and a destination.
+	\brief Finds a suitable hiding position for a source entity from a destination position using a breadth-first search.
 
-	The function performs a breadth‑first search to locate the nearest hide area that can be reached from the source area while remaining out of sight from the destination position.  A static set of
-   movement flags excludes certain jump and projectile routes to avoid unsafe traversal.  When a valid hide area is identified, its waypoint position is written to returnPos and the function returns
-   true; otherwise it returns false and returnPos is left unchanged.
+	This function determines the nearest area that can serve as a hiding spot for the source entity, ensuring that the hiding area is not visible from the destination position. It uses a static set of
+   travel flags that exclude dangerous movement types such as jumps and projectiles to ensure safe traversal. The function returns the waypoint position of the chosen hide area in the returnPos
+   parameter if a valid area is found, otherwise it returns false and leaves returnPos unchanged.
 
 	\param destarea the destination area's number in the navigation geometry
 	\param destnum the entity number associated with the destination, used for visibility checks

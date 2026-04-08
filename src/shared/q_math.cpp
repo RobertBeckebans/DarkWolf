@@ -239,8 +239,6 @@ float Q_crandom( int* seed )
 	return 2.0 * ( Q_random( seed ) - 0.5 );
 }
 
-//=======================================================
-
 signed char ClampChar( int i )
 {
 	if( i < -128 ) {
@@ -267,7 +265,6 @@ signed short ClampShort( int i )
 	return i;
 }
 
-// this isn't a real cheap function to call!
 int DirToByte( vec3_t dir )
 {
 	int	  i, best;
@@ -438,11 +435,6 @@ void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, 
 	}
 }
 
-/*
-===============
-RotateAroundDirection
-===============
-*/
 void RotateAroundDirection( vec3_t axis[3], float yaw )
 {
 	// create an arbitrary axis[1]
@@ -503,11 +495,6 @@ void vectoangles( const vec3_t value1, vec3_t angles )
 	angles[ROLL]  = 0;
 }
 
-/*
-=================
-AnglesToAxis
-=================
-*/
 void AnglesToAxis( const vec3_t angles, vec3_t axis[3] )
 {
 	vec3_t right;
@@ -556,14 +543,6 @@ void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal )
 	dst[2] = p[2] - d * n[2];
 }
 
-/*
-================
-MakeNormalVectors
-
-Given a normalized forward vector, create two
-other perpendicular vectors
-================
-*/
 void MakeNormalVectors( const vec3_t forward, vec3_t right, vec3_t up )
 {
 	float d;
@@ -587,10 +566,14 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out )
 	out[2] = DotProduct( in, matrix[2] );
 }
 
-//============================================================================
+/*!
+	\brief Computes an approximation of the reciprocal square root of a floating-point number using bit-level manipulation and Newton-Raphson iteration.
 
-/*
-** float q_rsqrt( float number )
+	This function implements the famous 'fast inverse square root' algorithm, originally used in the Quake III Arena engine. It uses a clever bit-level hack to compute an initial approximation,
+   followed by one iteration of Newton-Raphson method for improved accuracy. The function is commonly used in graphics programming for normalizing vectors quickly.
+
+	\param f The input floating-point value to compute the reciprocal square root of
+	\return Approximation of 1/sqrt(number) as a floating-point value
 */
 float Q_rsqrt( float number )
 {
@@ -609,6 +592,16 @@ float Q_rsqrt( float number )
 	return y;
 }
 
+/*!
+	\brief Computes the absolute value of a floating-point number without using the standard library abs function.
+
+	This function calculates the absolute value of a floating-point number by directly manipulating the binary representation of the float. It works by masking out the sign bit of the IEEE 754
+   floating-point representation, effectively setting it to zero. This approach avoids potential issues with standard library implementations and can be more efficient in certain contexts. The
+   function is commonly used in graphics and game engine code where performance and deterministic behavior are important.
+
+	\param f The floating-point number to compute the absolute value of
+	\return The absolute value of the input floating-point number
+*/
 float Q_fabs( float f )
 {
 	int tmp = *( int* )&f;
@@ -616,14 +609,6 @@ float Q_fabs( float f )
 	return *( float* )&tmp;
 }
 
-//============================================================
-
-/*
-===============
-LerpAngle
-
-===============
-*/
 float LerpAngle( float from, float to, float frac )
 {
 	float a;
@@ -641,13 +626,6 @@ float LerpAngle( float from, float to, float frac )
 	return a;
 }
 
-/*
-=================
-AngleSubtract
-
-Always returns a value from -180 to 180
-=================
-*/
 float AngleSubtract( float a1, float a2 )
 {
 	float a;
@@ -678,25 +656,11 @@ float AngleMod( float a )
 	return a;
 }
 
-/*
-=================
-AngleNormalize360
-
-returns angle normalized to the range [0 <= angle < 360]
-=================
-*/
 float AngleNormalize360( float angle )
 {
 	return ( 360.0 / 65536 ) * ( ( int )( angle * ( 65536 / 360.0 ) ) & 65535 );
 }
 
-/*
-=================
-AngleNormalize180
-
-returns angle normalized to the range [-180 < angle <= 180]
-=================
-*/
 float AngleNormalize180( float angle )
 {
 	angle = AngleNormalize360( angle );
@@ -708,24 +672,18 @@ float AngleNormalize180( float angle )
 	return angle;
 }
 
-/*
-=================
-AngleDelta
-
-returns the normalized delta from angle1 to angle2
-=================
-*/
 float AngleDelta( float angle1, float angle2 )
 {
 	return AngleNormalize180( angle1 - angle2 );
 }
 
-//============================================================
+/*!
+	\brief Sets the sign bits for a plane based on the signs of its normal vector components.
 
-/*
-=================
-SetPlaneSignbits
-=================
+	This function computes the sign bits for a plane by examining the signs of the three components of the plane's normal vector. Each bit in the resulting signbits field corresponds to one component
+   of the normal vector, where a bit is set to 1 if the corresponding normal component is negative, and 0 otherwise. This is used for fast box on planeside testing.
+
+	\param out Pointer to the plane structure whose signbits field will be set
 */
 void SetPlaneSignbits( cplane_t* out )
 {
@@ -749,7 +707,6 @@ BoxOnPlaneSide
 
 Returns 1, 2, or 1 + 2
 
-// this is the slow, general version
 int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 {
 	int		i;
@@ -786,6 +743,19 @@ int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 #if !( defined __linux__ && defined __i386__ && !defined C_ONLY )
 	#if defined __LCC__ || defined C_ONLY || !id386
 
+/*!
+	\brief Determines which side of a plane a box is on, returning a bitmask indicating the result.
+
+	This function checks whether a box defined by its minimum and maximum coordinates is on one side, both sides, or straddling a given plane. For axial planes (those aligned with the x, y, or z
+   axis), it performs a fast test by comparing the plane's distance to the box coordinates. For non-axial planes, it computes the distances from the box to the plane using the box's extreme
+   coordinates based on the plane's signbits to determine which corners to use. The return value is a bitmask where 1 indicates the box is on the positive side of the plane, and 2 indicates the box is
+   on the negative side.
+
+	\param emins The minimum coordinates of the box
+	\param emaxs The maximum coordinates of the box
+	\param plane Pointer to the plane to test against
+	\return An integer bitmask where 1 indicates the box is on the positive side of the plane, 2 indicates the box is on the negative side, and 3 indicates the box straddles the plane
+*/
 int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, struct cplane_s* p )
 {
 	float dist1, dist2;
@@ -1102,11 +1072,6 @@ __declspec( naked ) int BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, struct cplan
 	#endif
 #endif
 
-/*
-=================
-RadiusFromBounds
-=================
-*/
 float RadiusFromBounds( const vec3_t mins, const vec3_t maxs )
 {
 	int	   i;
@@ -1122,12 +1087,32 @@ float RadiusFromBounds( const vec3_t mins, const vec3_t maxs )
 	return VectorLength( corner );
 }
 
+/*!
+	\brief Initializes the minimum and maximum bounds vectors to extreme values.
+
+	This function sets all components of the minimum bounds vector to 99999 and all components of the maximum bounds vector to -99999. This initialization is typically used to prepare bounding boxes
+   for subsequent calculations where the actual bounds will be determined by iterating through a set of points or objects.
+
+	\param mins The minimum bounds vector to be initialized
+	\param maxs The maximum bounds vector to be initialized
+*/
 void ClearBounds( vec3_t mins, vec3_t maxs )
 {
 	mins[0] = mins[1] = mins[2] = 99999;
 	maxs[0] = maxs[1] = maxs[2] = -99999;
 }
 
+/*!
+	\brief Updates the bounding box defined by mins and maxs to include the point v.
+
+	This function takes a point v and expands the bounding box defined by mins and maxs to ensure that the point is within or on the boundary of the box. For each coordinate (x, y, z), if the point's
+   coordinate is smaller than the corresponding minimum value, it updates the minimum. Similarly, if the point's coordinate is larger than the corresponding maximum value, it updates the maximum. This
+   operation is commonly used in spatial algorithms and collision detection to maintain bounding volumes.
+
+	\param v The point to be included in the bounding box
+	\param mins The minimum coordinates of the bounding box, updated to include v
+	\param maxs The maximum coordinates of the bounding box, updated to include v
+*/
 void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs )
 {
 	if( v[0] < mins[0] ) {
@@ -1196,6 +1181,16 @@ void VectorNormalizeFast( vec3_t v )
 	v[2] *= ilength;
 }
 
+/*!
+	\brief Normalizes a 3D vector and returns its original length.
+
+	This function takes a 3D vector, normalizes it to unit length, and stores the result in the output vector. It also returns the original length of the input vector. If the input vector is zero
+   length, the output vector is set to zero and the function returns zero. The function is commonly used in graphics and physics calculations where normalized vectors are required.
+
+	\param v The input 3D vector to be normalized
+	\param out The output 3D vector that will contain the normalized result
+	\return The original length of the input vector before normalization
+*/
 vec_t VectorNormalize2( const vec3_t v, vec3_t out )
 {
 	float length, ilength;
@@ -1249,6 +1244,16 @@ void _VectorCopy( const vec3_t in, vec3_t out )
 	out[2] = in[2];
 }
 
+/*!
+	\brief Scales each component of the input vector by the given scale factor and stores the result in the output vector.
+
+	This function performs component-wise multiplication of a 3D vector by a scalar value. It takes an input vector, multiplies each of its three components (x, y, z) by the provided scale factor, and
+   stores the resulting scaled vector in the output vector. The operation is performed in-place on the output vector without modifying the input vector.
+
+	\param in The input 3D vector to be scaled
+	\param scale The scalar value by which to scale each component of the input vector
+	\param out The output 3D vector that will contain the scaled result
+*/
 void _VectorScale( const vec3_t in, vec_t scale, vec3_t out )
 {
 	out[0] = in[0] * scale;
@@ -1256,6 +1261,16 @@ void _VectorScale( const vec3_t in, vec_t scale, vec3_t out )
 	out[2] = in[2] * scale;
 }
 
+/*!
+	\brief Computes the cross product of two 3D vectors and stores the result in a third vector.
+
+	This function calculates the cross product of two 3D vectors v1 and v2, storing the resulting vector in the cross parameter. The cross product is calculated using the standard formula where each
+   component of the result vector is computed as the determinant of a 2x2 matrix formed by the other two components of the input vectors.
+
+	\param v1 The first 3D vector input
+	\param v2 The second 3D vector input
+	\param cross The output 3D vector that will contain the cross product of v1 and v2
+*/
 void CrossProduct( const vec3_t v1, const vec3_t v2, vec3_t cross )
 {
 	cross[0] = v1[1] * v2[2] - v1[2] * v2[1];
@@ -1289,6 +1304,13 @@ vec_t DistanceSquared( const vec3_t p1, const vec3_t p2 )
 	return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
 }
 
+/*!
+	\brief Negates each component of the given 3D vector.
+
+	This function takes a 3D vector and negates each of its three components, effectively reflecting the vector through the origin. The operation is performed in-place on the input vector.
+
+	\param v The 3D vector whose components are to be negated
+*/
 void VectorInverse( vec3_t v )
 {
 	v[0] = -v[0];
@@ -1353,6 +1375,17 @@ void MatrixMultiply( float in1[3][3], float in2[3][3], float out[3][3] )
 	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] + in1[2][2] * in2[2][2];
 }
 
+/*!
+	\brief Converts angular coordinates into three orthogonal unit vectors representing forward, right, and up directions.
+
+	This function takes a set of Euler angles (pitch, yaw, roll) and computes the corresponding forward, right, and up vectors. The angles are expected to be in degrees and are converted internally to
+   radians. Each of the output vectors is normalized and mutually perpendicular. If any of the output vectors is null, that component will not be computed to avoid unnecessary calculations.
+
+	\param angles An array of three angular values representing pitch, yaw, and roll in degrees
+	\param forward Output vector representing the forward direction based on the given angles
+	\param right Output vector representing the right direction based on the given angles
+	\param up Output vector representing the up direction based on the given angles
+*/
 void AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up )
 {
 	float		 angle;
@@ -1388,9 +1421,6 @@ void AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up 
 	}
 }
 
-/*
-** assumes "src" is normalized
-*/
 void PerpendicularVector( vec3_t dst, const vec3_t src )
 {
 	int	   pos;
@@ -1422,14 +1452,6 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 	VectorNormalize( dst );
 }
 
-// Ridah
-/*
-=================
-GetPerpendicularViewVector
-
-  Used to find an "up" vector for drawing a sprite so that it always faces the view as best as possible
-=================
-*/
 void GetPerpendicularViewVector( const vec3_t point, const vec3_t p1, const vec3_t p2, vec3_t up )
 {
 	vec3_t v1, v2;
@@ -1444,11 +1466,6 @@ void GetPerpendicularViewVector( const vec3_t point, const vec3_t p1, const vec3
 	VectorNormalize( up );
 }
 
-/*
-================
-ProjectPointOntoVector
-================
-*/
 void ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vEnd, vec3_t vProj )
 {
 	vec3_t pVec, vec;
@@ -1486,16 +1503,6 @@ float vectoyaw( const vec3_t vec )
 	return yaw;
 }
 
-/*
-=================
-AxisToAngles
-
-  Used to convert the MD3 tag axis to MDC tag angles, which are much smaller
-
-  This doesn't have to be fast, since it's only used for conversion in utils, try to avoid
-  using this during gameplay
-=================
-*/
 void AxisToAngles( vec3_t axis[3], vec3_t angles )
 {
 	vec3_t right, roll_angles, tvec;

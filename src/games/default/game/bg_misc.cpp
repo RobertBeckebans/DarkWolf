@@ -3140,11 +3140,6 @@ gitem_t	 bg_itemlist[] = { { NULL,
 
 int		 bg_numItems = sizeof( bg_itemlist ) / sizeof( bg_itemlist[0] ) - 1;
 
-/*
-==============
-BG_FindItemForPowerup
-==============
-*/
 gitem_t* BG_FindItemForPowerup( powerup_t pw )
 {
 	int i;
@@ -3158,11 +3153,6 @@ gitem_t* BG_FindItemForPowerup( powerup_t pw )
 	return NULL;
 }
 
-/*
-==============
-BG_FindItemForHoldable
-==============
-*/
 gitem_t* BG_FindItemForHoldable( holdable_t pw )
 {
 	int i;
@@ -3178,12 +3168,6 @@ gitem_t* BG_FindItemForHoldable( holdable_t pw )
 	return NULL;
 }
 
-/*
-===============
-BG_FindItemForWeapon
-
-===============
-*/
 gitem_t* BG_FindItemForWeapon( weapon_t weapon )
 {
 	gitem_t*		it;
@@ -3223,11 +3207,6 @@ gitem_t* BG_FindItemForWeapon( weapon_t weapon )
 
 #define DEATHMATCH_SHARED_AMMO 0
 
-/*
-==============
-BG_FindClipForWeapon
-==============
-*/
 weapon_t BG_FindClipForWeapon( weapon_t weapon )
 {
 	gitem_t*		it;
@@ -3259,11 +3238,6 @@ weapon_t BG_FindClipForWeapon( weapon_t weapon )
 	return lookupTable[weapon];
 }
 
-/*
-==============
-BG_FindAmmoForWeapon
-==============
-*/
 weapon_t BG_FindAmmoForWeapon( weapon_t weapon )
 {
 	gitem_t*		it;
@@ -3295,13 +3269,6 @@ weapon_t BG_FindAmmoForWeapon( weapon_t weapon )
 	return lookupTable[weapon];
 }
 
-/*
-==============
-BG_AkimboFireSequence
-	returns 'true' if it's the left hand's turn to fire, 'false' if it's the right hand's turn
-==============
-*/
-// qboolean BG_AkimboFireSequence( playerState_t *ps ) {
 qboolean BG_AkimboFireSequence( int weapon, int akimboClip, int coltClip )
 {
 	// NOTE: this doesn't work when clips are turned off (dmflags 64)
@@ -3329,14 +3296,6 @@ qboolean BG_AkimboFireSequence( int weapon, int akimboClip, int coltClip )
 	return qtrue;
 }
 
-//----(SA) end
-
-//----(SA) Added keys
-/*
-==============
-BG_FindItemForKey
-==============
-*/
 gitem_t* BG_FindItemForKey( wkey_t k, int* indexreturn )
 {
 	int i;
@@ -3357,14 +3316,6 @@ gitem_t* BG_FindItemForKey( wkey_t k, int* indexreturn )
 	return NULL;
 }
 
-//----(SA) end
-
-//----(SA) added
-/*
-==============
-BG_FindItemForAmmo
-==============
-*/
 gitem_t* BG_FindItemForAmmo( int ammo )
 {
 	int i = 0;
@@ -3379,14 +3330,6 @@ gitem_t* BG_FindItemForAmmo( int ammo )
 	return NULL;
 }
 
-//----(SA) end
-
-/*
-===============
-BG_FindItem
-
-===============
-*/
 gitem_t* BG_FindItem( const char* pickupName )
 {
 	gitem_t* it;
@@ -3400,12 +3343,6 @@ gitem_t* BG_FindItem( const char* pickupName )
 	return NULL;
 }
 
-/*
-==============
-BG_FindItem2
-	also check classname
-==============
-*/
 gitem_t* BG_FindItem2( const char* name )
 {
 	gitem_t* it;
@@ -3427,65 +3364,6 @@ gitem_t* BG_FindItem2( const char* name )
 
 	return NULL;
 }
-
-//----(SA)	added
-/*
-==============
-BG_PlayerSeesItem
-	Try to quickly determine if an item should be highlighted as per the current cg_drawCrosshairPickups.integer value.
-	pvs check should have already been done by the time we get in here, so we shouldn't have to check
-==============
-*/
-
-//----(SA)	not used
-/*
-qboolean BG_PlayerSeesItem(playerState_t *ps, entityState_t *item, int atTime)
-{
-   vec3_t	vorigin, eorigin, viewa, dir;
-   float	dot, dist, foo;
-
-   BG_EvaluateTrajectory( &item->pos, atTime, eorigin );
-
-   VectorCopy(ps->origin, vorigin);
-   vorigin[2] += ps->viewheight;			// get the view loc up to the viewheight
-   eorigin[2] += 16;						// and subtract the item's offset (that is used to place it on the ground)
-   VectorSubtract(vorigin, eorigin, dir);
-
-   dist = VectorNormalize(dir);			// dir is now the direction from the item to the player
-
-   if(dist > 255)
-	   return qfalse;						// only run the remaining stuff on items that are close enough
-
-   // (SA) FIXME: do this without AngleVectors.
-   //		It'd be nice if the angle vectors for the player
-   //		have already been figured at this point and I can
-   //		just pick them up.  (if anybody is storing this somewhere,
-   //		for the current frame please let me know so I don't
-   //		have to do redundant calcs)
-   AngleVectors(ps->viewangles, viewa, 0, 0);
-   dot = DotProduct(viewa, dir );
-
-   // give more range based on distance (the hit area is wider when closer)
-
-   foo = -0.94f - (dist/255.0f) * 0.057f;	// (ranging from -0.94 to -0.997) (it happened to be a pretty good range)
-
-//	Com_Printf("test: if(%f > %f) return qfalse (dot > foo)\n", dot, foo);
-   if(dot > foo)
-	   return qfalse;
-
-   return qtrue;
-}
-*/
-//----(SA)	end
-
-/*
-============
-BG_PlayerTouchesItem
-
-Items can be picked up without actually touching their physical bounds to make
-grabbing them easier
-============
-*/
 
 qboolean BG_PlayerTouchesItem( playerState_t* ps, entityState_t* item, int atTime )
 {
@@ -3665,14 +3543,6 @@ qboolean BG_CanItemBeGrabbed( const entityState_t* ent, const playerState_t* ps 
 	return qfalse;
 }
 
-//======================================================================
-
-/*
-================
-BG_EvaluateTrajectory
-
-================
-*/
 void BG_EvaluateTrajectory( const trajectory_t* tr, int atTime, vec3_t result )
 {
 	float  deltaTime;
@@ -3771,13 +3641,6 @@ void BG_EvaluateTrajectory( const trajectory_t* tr, int atTime, vec3_t result )
 	}
 }
 
-/*
-================
-BG_EvaluateTrajectoryDelta
-
-For determining velocity at a given time
-================
-*/
 void BG_EvaluateTrajectoryDelta( const trajectory_t* tr, int atTime, vec3_t result )
 {
 	float deltaTime;
@@ -3860,16 +3723,6 @@ void BG_EvaluateTrajectoryDelta( const trajectory_t* tr, int atTime, vec3_t resu
 	}
 }
 
-/*
-============
-BG_GetMarkDir
-
-  used to find a good directional vector for a mark projection, which will be more likely
-  to wrap around adjacent surfaces
-
-  dir is the direction of the projectile or trace that has resulted in a surface being hit
-============
-*/
 void BG_GetMarkDir( const vec3_t dir, const vec3_t normal, vec3_t out )
 {
 	vec3_t ndir, lnormal;
@@ -4041,14 +3894,6 @@ char* eventnames[] = { "EV_NONE",
 
 	"EV_MAX_EVENTS" };
 
-/*
-===============
-BG_AddPredictableEventToPlayerstate
-
-Handles the sequence numbers
-===============
-*/
-
 void  BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t* ps )
 {
 #ifdef _DEBUG
@@ -4070,14 +3915,6 @@ void  BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSt
 	ps->eventSequence++;
 }
 
-/*
-========================
-BG_PlayerStateToEntityState
-
-This is done after each set of usercmd_t on the server,
-and after local prediction on the client
-========================
-*/
 void BG_PlayerStateToEntityState( playerState_t* ps, entityState_t* s, qboolean snap )
 {
 	int i;
@@ -4190,14 +4027,6 @@ void BG_PlayerStateToEntityState( playerState_t* ps, entityState_t* s, qboolean 
 	s->aiState = ps->aiState;
 }
 
-/*
-========================
-BG_PlayerStateToEntityStateExtraPolate
-
-This is done after each set of usercmd_t on the server,
-and after local prediction on the client
-========================
-*/
 void BG_PlayerStateToEntityStateExtraPolate( playerState_t* ps, entityState_t* s, int time, qboolean snap )
 {
 	int i;

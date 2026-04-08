@@ -1867,27 +1867,18 @@ aas_routingcache_t* AAS_GetPortalRoutingCache( int clusternum, int areanum, int 
 }
 
 /*!
-	\brief Calculates the optimal travel time and reachability number from a source area to a goal area, using cluster and portal routing caches.
+	\brief Calculates travel time and reachability from a source area to a goal area using AAS routing data.
 
-	The function first handles trivial cases such as when the source and goal areas are identical and validates that both area indices are within bounds. It also limits the size of the routing cache
-   pool and adjusts travel flags when either area is marked as non-enter or large non-enter.
-
-	It then retrieves the cluster information for the source and goal areas. If the areas share a cluster, the routine queries the cluster‑route cache to obtain the travel time and reachability index
-   directly. If the source area is a portal, it obtains the portal‑route cache to compute the time and reachability.
-
-	For inter‑cluster routing, the function iterates over the portals of the source cluster, checking each portal’s cached travel time to the goal cluster. For each viable portal, it obtains a routing
-   cache for the portal area, and if a route exists from the source area to that portal, it combines the portal’s travel time to the goal with the route from the source area to the portal. The
-   shortest composite travel time is chosen as the result.
-
-	The computed travel time (including any intra‑area movement from the origin point to the start of the first reachability) is written to *traveltime, and the index of the final reachability leading
-   into the goal area is written to *reachnum. The function returns a boolean‑style integer: true (non‑zero) if a route was found, false (zero) otherwise.
+	This function determines whether a route exists from a given source area to a target area, considering specified travel flags. It stores the computed travel time and the reachability number in the
+   provided output parameters. The function handles various edge cases including invalid area numbers, disabled areas, and different cluster configurations. If the source and goal areas are the same,
+   it returns immediately with a travel time of 1. Travel time is calculated considering the area's location and the reachability to the goal.
 
 	\param areanum Source area number
-	\param origin Origin point within the source area (may be a vector or null for direct calculation)
 	\param goalareanum Target goal area number
-	\param travelflags Bitmask controlling travel restrictions (e.g., non‑enter, large non‑enter)
-	\param traveltime Pointer to an integer where the total travel time will be stored if a route is found
+	\param origin Origin point within the source area (may be a vector or null for direct calculation)
 	\param reachnum Pointer to an integer where the reachability index that leads into the goal area will be stored
+	\param travelflags Bitmask controlling travel restrictions (e.g., non-enter, large non-enter)
+	\param traveltime Pointer to an integer where the total travel time will be stored if a route is found
 	\return 1 if a route exists, 0 otherwise
 */
 int AAS_AreaRouteToGoalArea( int areanum, vec3_t origin, int goalareanum, int travelflags, int* traveltime, int* reachnum )
@@ -2834,26 +2825,20 @@ int			AAS_NearestHideArea( int srcnum, vec3_t origin, int areanum, int enemynum,
 }
 
 /*!
-	\brief Finds an appropriate attack position for an entity within a certain range of another entity.
+	\brief Finds a suitable attack spot for an entity within a specified range from another entity while avoiding certain travel flags and enemy visibility constraints.
 
-	Starting from the source entity’s current area, the function performs a depth‑first search over adjacent reachability edges to locate a suitable attack spot that can be reached from the source and
-   can see the enemy entity. It filters edges based on travel flags, ladder usage, disabled areas, and the enemy’s area. Only positions within a specified distance from a secondary entity (the range
-   reference) are considered. For each candidate area the function computes travel times from source and ensures the total time is less than any previously found. It also checks the visibility of the
-   candidate area to the enemy and verifies that attacking from that spot is permissible using an external attack‑ability test. If a spot satisfying all criteria is found, its waypoint coordinate is
-   written into *outpos and its area number is returned; otherwise zero is returned.
+	This function performs a pathfinding search to identify a suitable area from which an entity can attack a target enemy. It considers the starting position of the entity, a reference point for
+   range constraints, the target enemy, and a set of travel flags to determine valid travel routes. The function evaluates potential attack spots based on distance from the reference point, travel
+   time from the starting entity to the spot, and visibility from the spot to the enemy. It uses AAS (Area Awareness System) data to compute travel times and visibility, and avoids areas that are too
+   far from the range constraint or that don't meet visibility requirements for attacking the target. The search is limited to prevent excessive computation and returns the area number of the best
+   found spot or 0 if none is found within the constraints.
 
-	The search is bounded by a maximum loop count to guard against pathological worlds, and a per‑frame cache prevents re‑exploration of already processed areas. The function should not be called more
-   than once per frame for a single world.
-
-	Typical usage occurs when AI needs to pick a combat position near a leader while staying within a maximum distance.
-
-
-	\param srcnum Identifier of the entity performing the search (agent)
-	\param rangenum Identifier of an entity used to constrain the search radius from this entity
 	\param enemynum Identifier of the target entity (enemy) that the spot must be able to attack
+	\param outpos Output parameter; on success receives 3-component world coordinates of the chosen attack spot
 	\param rangedist Maximum distance from rangenum that a candidate spot may be located
+	\param rangenum Identifier of an entity used to constrain the search radius from this entity
+	\param srcnum Identifier of the entity performing the search (agent)
 	\param travelflags Bitmask of allowed travel types; bits not set are prohibited
-	\param outpos Output parameter; on success receives 3‑component world coordinates of the chosen attack spot
 	\return Area number of the chosen attack spot (0 if no suitable spot was found)
 */
 int AAS_FindAttackSpotWithinRange( int srcnum, int rangenum, int enemynum, float rangedist, int travelflags, float* outpos )

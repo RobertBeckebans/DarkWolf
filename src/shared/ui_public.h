@@ -46,6 +46,13 @@ typedef struct {
 class idUISystemCalls
 {
 public:
+	/*!
+		\brief Virtual destructor for the idUISystemCalls class.
+
+		This function provides a virtual destructor for the idUISystemCalls base class. The destructor is virtual to ensure proper cleanup of derived class objects when deleted through a base class
+	   pointer. The implementation is empty as no specific cleanup is required in this base class.
+
+	*/
 	virtual ~idUISystemCalls() { }
 
 	virtual void		Print( const char* string ) = 0;

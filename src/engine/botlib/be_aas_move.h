@@ -40,7 +40,27 @@ extern aas_settings_t aassettings;
 #endif // AASINTERN
 
 /*!
-	\brief Predicts the client’s movement over a limited number of frames and outputs the resulting state.
+	\brief Predicts a client's movement over a series of frames based on physics and input parameters.
+
+	This function simulates the movement of a client entity in the game world over a specified number of frames. It takes into account various physics parameters such as gravity, friction,
+   acceleration, and velocity. The simulation considers factors like whether the entity is on the ground, swimming, or crouching, and applies appropriate physics modifications. The function can also
+   predict movement until certain events occur, such as entering a specific area, hitting the ground, or entering water. The result is stored in the provided move structure, which includes the final
+   position, velocity, and other relevant state information.
+
+	\param cmdframes Number of frames to apply command movement
+	\param cmdmove Command movement vector
+	\param entnum Entity number of the client
+	\param frametime Time increment for each frame
+	\param maxframes Maximum number of frames to predict ahead
+	\param move Structure to store the movement prediction result
+	\param onground Whether the client is on the ground
+	\param origin Starting position of the client
+	\param presencetype Type of presence (normal, crouch, etc.)
+	\param stopareanum Area number to stop prediction when entered
+	\param stopevent Event that stops the prediction
+	\param velocity Current velocity of the client
+	\param visualize Whether to visualize the prediction process
+	\return Returns 1 if the prediction stops due to a specified event, 0 otherwise
 */
 int	  AAS_PredictClientMovement( struct aas_clientmove_s* move,
 	  int												  entnum,

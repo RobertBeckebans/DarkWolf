@@ -850,13 +850,6 @@ bot_synonymlist_t* BotLoadSynonyms( char* filename )
 	return synlist;
 }
 
-//===========================================================================
-// replace all the synonyms in the string
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotReplaceSynonyms( char* string, unsigned long int context )
 {
 	bot_synonymlist_t* syn;
@@ -1697,12 +1690,6 @@ int StringsMatch( bot_matchpiece_t* pieces, bot_match_t* match )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int BotFindMatch( char* str, bot_match_t* match, unsigned long int context )
 {
 	int					 i;
@@ -1737,12 +1724,6 @@ int BotFindMatch( char* str, bot_match_t* match, unsigned long int context )
 	return qfalse;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 void BotMatchVariable( bot_match_t* match, int variable, char* buf, int size )
 {
 	if( variable < 0 || variable >= MAX_MATCHVARIABLES ) {
@@ -3155,12 +3136,6 @@ int BotChatLength( int chatstate )
 	return strlen( cs->chatmessage );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void BotEnterChat( int chatstate, int client, int sendto )
 {
 	bot_chatstate_t* cs;

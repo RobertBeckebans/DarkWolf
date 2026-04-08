@@ -112,12 +112,6 @@ int				 modeltypes[MAX_MODELS];
 
 bot_movestate_t* botmovestates[MAX_CLIENTS + 1];
 
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
 int				 BotAllocMoveState()
 {
 	int i;
@@ -172,13 +166,6 @@ bot_movestate_t* BotMoveStateFromHandle( int handle )
 	return botmovestates[handle];
 }
 
-// Ridah, provide a means of resetting the avoidreach, so if a bot stops moving, they don't avoid the area they were heading for
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
 void BotInitAvoidReach( int handle )
 {
 	bot_movestate_t* ms;
@@ -194,14 +181,6 @@ void BotInitAvoidReach( int handle )
 	memset( ms->avoidreachtimes, 0, sizeof( ms->avoidreachtimes ) );
 }
 
-// done.
-
-//========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//========================================================================
 void BotInitMoveState( int handle, bot_initmove_t* initmove )
 {
 	bot_movestate_t* ms;

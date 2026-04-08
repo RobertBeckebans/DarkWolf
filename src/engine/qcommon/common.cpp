@@ -127,16 +127,6 @@ void Com_EndRedirect()
 	rd_flush	  = NULL;
 }
 
-/*
-=============
-Com_Printf
-
-Both client and server can use this, and it will output
-to the apropriate place.
-
-A raw string should NEVER be passed as fmt, because of "%f" type crashers.
-=============
-*/
 void QDECL Com_Printf( const char* fmt, ... )
 {
 	va_list			argptr;
@@ -231,14 +221,6 @@ void QDECL Com_DPrintf( const char* fmt, ... )
 	Com_Printf( "%s", msg );
 }
 
-/*
-=============
-Com_Error
-
-Both client and server can use this, and it will
-do the apropriate things.
-=============
-*/
 void QDECL Com_Error( int code, const char* fmt, ... )
 {
 	va_list	   argptr;
@@ -2155,22 +2137,7 @@ void Com_Prefetch( const void* s, const unsigned int bytes, e_prefetch type )
 
 	#endif
 #endif // bk001208 - memset/memcpy assembly, Q_acos needed (RC4)
-//------------------------------------------------------------------------
 
-/*
-=====================
-Q_acos
-
-the msvc acos doesn't always return a value between -PI and PI:
-
-int i;
-i = 1065353246;
-acos(*(float*) &i) == -1.#IND0
-
-	This should go in q_math but it is too late to add new traps
-	to game and ui
-=====================
-*/
 float Q_acos( float c )
 {
 	float angle;

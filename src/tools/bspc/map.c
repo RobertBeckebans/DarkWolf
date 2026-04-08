@@ -112,12 +112,6 @@ int PlaneSignBits( vec3_t normal )
 	return signbits;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
 int PlaneTypeForNormal( vec3_t normal )
 {
 	vec_t ax, ay, az;
