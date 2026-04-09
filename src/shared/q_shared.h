@@ -357,15 +357,15 @@ void* Hunk_AllocDebug( int size, ha_pref preference, char* label, char* file, in
 #else
 
 /*!
-	\brief Allocates a block of memory from the hunk memory pool with the specified size and allocation preference.
+\brief Allocates a block of memory from the hunk memory pool with the specified size and allocation preference.
 
-	This function allocates memory from a pre-allocated hunk memory pool, which is organized into low and high segments. The allocation preference determines whether the memory is allocated in the low
-   or high segment of the hunk. If the requested memory cannot fit within the available hunk space, an error is generated. The allocated memory is initialized to zero.
+This function allocates memory from a pre-allocated hunk memory pool, which is organized into low and high segments. The allocation preference determines whether the memory is allocated in the low
+or high segment of the hunk. If the requested memory cannot fit within the available hunk space, an error is generated. The allocated memory is initialized to zero.
 
-	\param size The size in bytes of the memory block to allocate
-	\param preference Allocation preference indicating whether to use the low or high segment of the hunk
-	\return A pointer to the allocated memory block, or NULL if allocation fails
-	\throws Com_Error is called with ERR_FATAL if the hunk memory system is not initialized, or with ERR_DROP if the allocation fails due to insufficient memory
+\param size The size in bytes of the memory block to allocate
+\param preference Allocation preference indicating whether to use the low or high segment of the hunk
+\return A pointer to the allocated memory block, or NULL if allocation fails
+\throws Com_Error is called with ERR_FATAL if the hunk memory system is not initialized, or with ERR_DROP if the allocation fails due to insufficient memory
 */
 void* Hunk_Alloc( int size, ha_pref preference );
 #endif
@@ -888,7 +888,7 @@ float	 Q_crandom( int* seed );
 	\param value1 The input 3D vector for which angles are to be calculated
 	\param angles The output array where the calculated yaw, pitch, and roll angles will be stored
 */
-void  vectoangles( const vec3_t value1, vec3_t angles );
+void	 vectoangles( const vec3_t value1, vec3_t angles );
 
 /*!
 	\brief Computes the yaw angle from a 3D vector
@@ -899,7 +899,7 @@ void  vectoangles( const vec3_t value1, vec3_t angles );
 	\param vec The input 3D vector from which to calculate the yaw angle
 	\return The yaw angle in degrees calculated from the input vector
 */
-float vectoyaw( const vec3_t vec );
+float	 vectoyaw( const vec3_t vec );
 
 /*!
 	\brief Converts Euler angles into a rotation matrix represented by three axis vectors
@@ -911,7 +911,7 @@ float vectoyaw( const vec3_t vec );
 	\param angles The Euler angles in degrees for x (pitch), y (yaw), and z (roll) rotations
 	\param axis Output array of three vectors representing the rotation matrix axes
 */
-void  AnglesToAxis( const vec3_t angles, vec3_t axis[3] );
+void	 AnglesToAxis( const vec3_t angles, vec3_t axis[3] );
 
 /*!
 	\brief Converts a 3x3 rotation matrix represented by axis vectors into Euler angles.
@@ -923,36 +923,39 @@ void  AnglesToAxis( const vec3_t angles, vec3_t axis[3] );
 	\param axis Array of three 3D vectors representing the forward, right, and up axes of a rotation matrix
 	\param angles Output array to store the resulting Euler angles (pitch, yaw, roll)
 */
-void	 AxisToAngles(
+void	 AxisToAngles( vec3_t axis[3], vec3_t angles );
 
-	/*!
-		\brief Calculates the Euclidean distance between two 3D vectors.
+/*!
+	\brief Calculates the Euclidean distance between two 3D vectors.
 
-		This function computes the distance between two points in 3D space represented as vec3_t structures. It first calculates the direction vector between the two points by subtracting the first vector from the second, then returns the length of this direction vector. The implementation leverages the existing VectorSubtract and VectorLength helper functions to perform the calculation.
+	This function computes the distance between two points in 3D space represented as vec3_t structures. It first calculates the direction vector between the two points by subtracting the first vector
+   from the second, then returns the length of this direction vector. The implementation leverages the existing VectorSubtract and VectorLength helper functions to perform the calculation.
 
-		\param v1 First 3D vector point
-		\param v2 Second 3D vector point
-		\return The Euclidean distance between the two input vectors as a floating-point value
-	*/
+	\param v1 First 3D vector point
+	\param v2 Second 3D vector point
+	\return The Euclidean distance between the two input vectors as a floating-point value
+*/
 float	 VectorDistance( vec3_t v1, vec3_t v2 );
 
-	/*!
-		\brief Initializes a 3x3 axis matrix to the identity matrix.
+/*!
+	\brief Initializes a 3x3 axis matrix to the identity matrix.
 
-		This function sets the provided 3x3 axis matrix to the identity matrix configuration. Each row of the matrix is initialized such that the diagonal elements are set to 1 and all off-diagonal elements are set to 0. This operation is commonly used to reset or initialize rotation matrices in 3D graphics and game development.
+	This function sets the provided 3x3 axis matrix to the identity matrix configuration. Each row of the matrix is initialized such that the diagonal elements are set to 1 and all off-diagonal
+   elements are set to 0. This operation is commonly used to reset or initialize rotation matrices in 3D graphics and game development.
 
-		\param axis A pointer to a 3x3 matrix represented as an array of three 3D vectors.
-	*/
+	\param axis A pointer to a 3x3 matrix represented as an array of three 3D vectors.
+*/
 void	 AxisClear( vec3_t axis[3] );
 
-	/*!
-		\brief Copies three 3D vectors from the input array to the output array.
+/*!
+	\brief Copies three 3D vectors from the input array to the output array.
 
-		This function performs element-wise copying of three 3D vectors from the input array to the output array. Each vector in the input array is copied to the corresponding position in the output array using the VectorCopy function.
+	This function performs element-wise copying of three 3D vectors from the input array to the output array. Each vector in the input array is copied to the corresponding position in the output array
+   using the VectorCopy function.
 
-		\param in Source array of three 3D vectors
-		\param out Destination array of three 3D vectors
-	*/
+	\param in Source array of three 3D vectors
+	\param out Destination array of three 3D vectors
+*/
 void	 AxisCopy( vec3_t in[3], vec3_t out[3] );
 
 /*!
@@ -979,114 +982,127 @@ void	 SetPlaneSignbits( struct cplane_s* out );
 */
 int		 BoxOnPlaneSide( vec3_t emins, vec3_t emaxs, struct cplane_s* plane );
 
-	/*!
-		\brief Normalizes an angle to the range [0, 360) degrees
+/*!
+	\brief Normalizes an angle to the range [0, 360) degrees
 
-		This function takes an angle in degrees and normalizes it to the range [0, 360) degrees. It uses a bit-wise AND operation with 65535 to perform the normalization, which is a common technique for handling angle wrapping in fixed-point arithmetic. The function is frequently used in game code for managing angular movement and interpolation, particularly when dealing with swing calculations and angle clamping as shown in the call examples.
+	This function takes an angle in degrees and normalizes it to the range [0, 360) degrees. It uses a bit-wise AND operation with 65535 to perform the normalization, which is a common technique for
+   handling angle wrapping in fixed-point arithmetic. The function is frequently used in game code for managing angular movement and interpolation, particularly when dealing with swing calculations
+   and angle clamping as shown in the call examples.
 
-		\param a input angle in degrees to be normalized
-		\return the normalized angle in the range [0, 360) degrees
-	*/
+	\param a input angle in degrees to be normalized
+	\return the normalized angle in the range [0, 360) degrees
+*/
 float	 AngleMod( float a );
 
-	/*!
-		\brief Interpolates between two angles, handling angle wrapping across the 180-degree boundary.
+/*!
+	\brief Interpolates between two angles, handling angle wrapping across the 180-degree boundary.
 
-		This function performs linear interpolation between two angles, taking into account the circular nature of angles. It adjusts the target angle to ensure the shortest path is taken when interpolating, avoiding unnecessary large angle jumps. This is particularly useful for interpolating angular data such as player orientations or entity rotations in game animations.
+	This function performs linear interpolation between two angles, taking into account the circular nature of angles. It adjusts the target angle to ensure the shortest path is taken when
+   interpolating, avoiding unnecessary large angle jumps. This is particularly useful for interpolating angular data such as player orientations or entity rotations in game animations.
 
-		\param from The starting angle in degrees
-		\param to The target angle in degrees
-		\param frac The interpolation factor between 0 and 1
-		\return The interpolated angle in degrees, normalized to the range that maintains the shortest angular path between from and to.
-	*/
+	\param from The starting angle in degrees
+	\param to The target angle in degrees
+	\param frac The interpolation factor between 0 and 1
+	\return The interpolated angle in degrees, normalized to the range that maintains the shortest angular path between from and to.
+*/
 float	 LerpAngle( float from, float to, float frac );
 
-	/*!
-		\brief Computes the difference between two angles, normalized to the range [-180, 180).
+/*!
+	\brief Computes the difference between two angles, normalized to the range [-180, 180).
 
-		This function calculates the angular difference between two angles a1 and a2. It ensures the result is normalized to the range [-180, 180) by adjusting for angle wraparound. This is useful in game development for calculating angular differences without ambiguity caused by angle periodicity.
+	This function calculates the angular difference between two angles a1 and a2. It ensures the result is normalized to the range [-180, 180) by adjusting for angle wraparound. This is useful in game
+   development for calculating angular differences without ambiguity caused by angle periodicity.
 
-		\param a1 The first angle in degrees
-		\param a2 The second angle in degrees
-		\return The normalized angular difference between a1 and a2, in the range [-180, 180)
-	*/
+	\param a1 The first angle in degrees
+	\param a2 The second angle in degrees
+	\return The normalized angular difference between a1 and a2, in the range [-180, 180)
+*/
 float	 AngleSubtract( float a1, float a2 );
 
-	/*!
-		\brief Subtracts corresponding angle components of two 3D vectors and stores the result in a third vector.
+/*!
+	\brief Subtracts corresponding angle components of two 3D vectors and stores the result in a third vector.
 
-		This function performs element-wise subtraction of angle components between two 3D vectors v1 and v2, storing the resulting angles in v3. Each component of the result vector is computed using the AngleSubtract function, which properly handles angle wrapping to maintain valid angle ranges. The function operates on three-dimensional vectors representing Euler angles, commonly used in 3D graphics and game development for orientation representation.
+	This function performs element-wise subtraction of angle components between two 3D vectors v1 and v2, storing the resulting angles in v3. Each component of the result vector is computed using the
+   AngleSubtract function, which properly handles angle wrapping to maintain valid angle ranges. The function operates on three-dimensional vectors representing Euler angles, commonly used in 3D
+   graphics and game development for orientation representation.
 
-		\param v1 First 3D vector containing angle components to be subtracted from
-		\param v2 Second 3D vector containing angle components to subtract
-		\param v3 Output 3D vector to store the result of the component-wise subtraction
-	*/
+	\param v1 First 3D vector containing angle components to be subtracted from
+	\param v2 Second 3D vector containing angle components to subtract
+	\param v3 Output 3D vector to store the result of the component-wise subtraction
+*/
 void	 AnglesSubtract( vec3_t v1, vec3_t v2, vec3_t v3 );
 
-	/*!
-		\brief Normalizes an angle to the range [0, 360) degrees.
+/*!
+	\brief Normalizes an angle to the range [0, 360) degrees.
 
-		This function takes an angle in degrees and normalizes it to the range [0, 360). It uses a bit manipulation technique to wrap the angle value, ensuring that it falls within the expected range. The function is commonly used in game development for managing angular rotations and avoiding angle overflow issues.
+	This function takes an angle in degrees and normalizes it to the range [0, 360). It uses a bit manipulation technique to wrap the angle value, ensuring that it falls within the expected range. The
+   function is commonly used in game development for managing angular rotations and avoiding angle overflow issues.
 
-		\param angle The input angle in degrees to be normalized.
-		\return The normalized angle in the range [0, 360) degrees.
-	*/
+	\param angle The input angle in degrees to be normalized.
+	\return The normalized angle in the range [0, 360) degrees.
+*/
 float	 AngleNormalize360( float angle );
 
-	/*!
-		\brief Normalizes an angle to the range [-180, 180).
+/*!
+	\brief Normalizes an angle to the range [-180, 180).
 
-		This function takes an angle in degrees and normalizes it to the range [-180, 180). It first normalizes the angle to the range [0, 360) using AngleNormalize360, then adjusts it to the [-180, 180) range. This is commonly used in animation blending and rotation calculations where angles need to be kept within a standard range to ensure correct interpolation and avoid gimbal lock issues.
+	This function takes an angle in degrees and normalizes it to the range [-180, 180). It first normalizes the angle to the range [0, 360) using AngleNormalize360, then adjusts it to the [-180, 180)
+   range. This is commonly used in animation blending and rotation calculations where angles need to be kept within a standard range to ensure correct interpolation and avoid gimbal lock issues.
 
-		\param angle The input angle in degrees to be normalized
-		\return The normalized angle in the range [-180, 180)
-	*/
+	\param angle The input angle in degrees to be normalized
+	\return The normalized angle in the range [-180, 180)
+*/
 float	 AngleNormalize180( float angle );
 
-	/*!
-		\brief Calculates the normalized angular difference between two angles.
+/*!
+	\brief Calculates the normalized angular difference between two angles.
 
-		This function computes the difference between two angles and normalizes the result to the range [-180, 180). This is useful for determining the smallest angular distance between two orientations, which is commonly needed in game AI for turning calculations and angle comparisons.
+	This function computes the difference between two angles and normalizes the result to the range [-180, 180). This is useful for determining the smallest angular distance between two orientations,
+   which is commonly needed in game AI for turning calculations and angle comparisons.
 
-		\param angle1 The first angle in degrees
-		\param angle2 The second angle in degrees
-		\return The normalized angular difference between angle1 and angle2, constrained to the range [-180, 180).
-	*/
+	\param angle1 The first angle in degrees
+	\param angle2 The second angle in degrees
+	\return The normalized angular difference between angle1 and angle2, constrained to the range [-180, 180).
+*/
 float	 AngleDelta( float angle1, float angle2 );
 
 qboolean PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c );
 
-	/*!
-		\brief Projects a point onto a plane defined by a normal vector
+/*!
+	\brief Projects a point onto a plane defined by a normal vector
 
-		This function calculates the orthogonal projection of a given point onto a plane. The plane is defined by its normal vector. The calculation involves computing the distance from the point to the plane along the normal direction, then subtracting the appropriate multiple of the normal vector from the original point to obtain the projected point. The function handles the normalization of the normal vector internally to ensure accurate projection.
+	This function calculates the orthogonal projection of a given point onto a plane. The plane is defined by its normal vector. The calculation involves computing the distance from the point to the
+   plane along the normal direction, then subtracting the appropriate multiple of the normal vector from the original point to obtain the projected point. The function handles the normalization of the
+   normal vector internally to ensure accurate projection.
 
-		\param dst output parameter that will contain the projected point on the plane
-		\param p the input point to be projected
-		\param normal the normal vector of the plane onto which the point is projected
-	*/
+	\param dst output parameter that will contain the projected point on the plane
+	\param p the input point to be projected
+	\param normal the normal vector of the plane onto which the point is projected
+*/
 void	 ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal );
 void	 RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
 
-	/*!
-		\brief Rotates a direction vector around an axis to compute orthogonal vectors
+/*!
+	\brief Rotates a direction vector around an axis to compute orthogonal vectors
 
-		This function takes a forward vector and computes two additional orthogonal vectors to form a right-handed coordinate system. It first creates a perpendicular vector to the input forward direction, then rotates this vector around the forward axis by the specified yaw angle. Finally, it computes the third orthogonal vector using the cross product of the forward and rotated vectors.
+	This function takes a forward vector and computes two additional orthogonal vectors to form a right-handed coordinate system. It first creates a perpendicular vector to the input forward
+   direction, then rotates this vector around the forward axis by the specified yaw angle. Finally, it computes the third orthogonal vector using the cross product of the forward and rotated vectors.
 
-		\param axis Array of three 3D vectors representing the forward, right, and up directions
-		\param yaw The angle in degrees to rotate the right vector around the forward axis
-	*/
+	\param axis Array of three 3D vectors representing the forward, right, and up directions
+	\param yaw The angle in degrees to rotate the right vector around the forward axis
+*/
 void	 RotateAroundDirection( vec3_t axis[3], float yaw );
 
-	/*!
-		\brief Computes a set of orthogonal vectors (right, up) from a forward vector.
+/*!
+	\brief Computes a set of orthogonal vectors (right, up) from a forward vector.
 
-		This function takes a forward vector and generates two additional vectors that are orthogonal to each other and to the forward vector. It first creates a right vector that is not colinear with the forward vector, then normalizes it and uses it to compute an up vector through a cross product with the forward vector. The resulting vectors form a right-handed coordinate system.
+	This function takes a forward vector and generates two additional vectors that are orthogonal to each other and to the forward vector. It first creates a right vector that is not colinear with the
+   forward vector, then normalizes it and uses it to compute an up vector through a cross product with the forward vector. The resulting vectors form a right-handed coordinate system.
 
-		\param forward A 3D vector representing the forward direction
-		\param right Output vector representing the right direction, computed orthogonally to forward
-		\param up Output vector representing the up direction, computed orthogonally to forward and right
-	*/
+	\param forward A 3D vector representing the forward direction
+	\param right Output vector representing the right direction, computed orthogonally to forward
+	\param up Output vector representing the up direction, computed orthogonally to forward and right
+*/
 void	 MakeNormalVectors( const vec3_t forward, vec3_t right, vec3_t up );
 
 /*!
@@ -1103,38 +1119,42 @@ int		 PlaneTypeForNormal( vec3_t normal );
 void	 MatrixMultiply( float in1[3][3], float in2[3][3], float out[3][3] );
 void	 AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up );
 
-	/*!
-		\brief Computes a vector perpendicular to the input vector by projecting an axially aligned vector onto the plane defined by the input vector and normalizing the result.
+/*!
+	\brief Computes a vector perpendicular to the input vector by projecting an axially aligned vector onto the plane defined by the input vector and normalizing the result.
 
-		The function first identifies the component of the input vector with the smallest magnitude. It then creates a unit vector along that axis and projects it onto the plane defined by the input vector. The resulting vector is normalized to produce a unit vector perpendicular to the input.
+	The function first identifies the component of the input vector with the smallest magnitude. It then creates a unit vector along that axis and projects it onto the plane defined by the input
+   vector. The resulting vector is normalized to produce a unit vector perpendicular to the input.
 
-		\param dst Output vector that will contain the perpendicular vector
-		\param src Input vector to compute the perpendicular for
-	*/
+	\param dst Output vector that will contain the perpendicular vector
+	\param src Input vector to compute the perpendicular for
+*/
 void	 PerpendicularVector( vec3_t dst, const vec3_t src );
 
-	/*!
-		\brief Computes a normalized vector perpendicular to the plane defined by three points.
+/*!
+	\brief Computes a normalized vector perpendicular to the plane defined by three points.
 
-		The function calculates two vectors from the given point to the other two points, normalizes them, and then computes their cross product to obtain a perpendicular vector. The resulting vector is normalized and returned in the up parameter.
+	The function calculates two vectors from the given point to the other two points, normalizes them, and then computes their cross product to obtain a perpendicular vector. The resulting vector is
+   normalized and returned in the up parameter.
 
-		\param point A point used to calculate vectors to p1 and p2
-		\param p1 First point defining the plane
-		\param p2 Second point defining the plane
-		\param up Output parameter for the resulting perpendicular vector
-	*/
+	\param point A point used to calculate vectors to p1 and p2
+	\param p1 First point defining the plane
+	\param p2 Second point defining the plane
+	\param up Output parameter for the resulting perpendicular vector
+*/
 void	 GetPerpendicularViewVector( const vec3_t point, const vec3_t p1, const vec3_t p2, vec3_t up );
 
-	/*!
-		\brief Projects a point onto a vector defined by two endpoints
+/*!
+	\brief Projects a point onto a vector defined by two endpoints
 
-		This function calculates the orthogonal projection of a given point onto a vector segment defined by two endpoints. It first computes the vectors from the start point to the target point and from the start point to the end point. The direction vector is normalized, then the dot product of the vector from start to target point and the normalized direction vector is computed. This scalar projection is used to find the projected point along the vector segment by adding the scaled direction vector to the start point.
+	This function calculates the orthogonal projection of a given point onto a vector segment defined by two endpoints. It first computes the vectors from the start point to the target point and from
+   the start point to the end point. The direction vector is normalized, then the dot product of the vector from start to target point and the normalized direction vector is computed. This scalar
+   projection is used to find the projected point along the vector segment by adding the scaled direction vector to the start point.
 
-		\param point The point to be projected
-		\param vStart The starting point of the vector segment
-		\param vEnd The ending point of the vector segment
-		\param vProj The resulting projected point
-	*/
+	\param point The point to be projected
+	\param vStart The starting point of the vector segment
+	\param vEnd The ending point of the vector segment
+	\param vProj The resulting projected point
+*/
 void	 ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vEnd, vec3_t vProj );
 // done.
 
@@ -1142,85 +1162,94 @@ void	 ProjectPointOntoVector( vec3_t point, vec3_t vStart, vec3_t vEnd, vec3_t v
 
 float	 Com_Clamp( float min, float max, float value );
 
-	/*!
-		\brief Returns a pointer to the last part of a path, after the final slash.
+/*!
+	\brief Returns a pointer to the last part of a path, after the final slash.
 
-		The function traverses the input path string and updates a pointer to point to the last segment of the path, which starts after the final forward slash character. If there is no forward slash in the path, the pointer will remain at the beginning of the string. This is commonly used to extract the filename component from a full path.
+	The function traverses the input path string and updates a pointer to point to the last segment of the path, which starts after the final forward slash character. If there is no forward slash in
+   the path, the pointer will remain at the beginning of the string. This is commonly used to extract the filename component from a full path.
 
-		\param pathname Input string representing a file path.
-		\return Pointer to the start of the last component of the path, which is the filename or the last directory name.
-	*/
+	\param pathname Input string representing a file path.
+	\return Pointer to the start of the last component of the path, which is the filename or the last directory name.
+*/
 char*	 COM_SkipPath( char* pathname );
 
-	/*!
-		\brief Strips the file extension from a given path string.
+/*!
+	\brief Strips the file extension from a given path string.
 
-		This function copies characters from the input string to the output string until it encounters a period character, which indicates the start of a file extension. The period and any following characters are not copied. The output string is null-terminated. This is commonly used to extract the base name of a file without its extension.
+	This function copies characters from the input string to the output string until it encounters a period character, which indicates the start of a file extension. The period and any following
+   characters are not copied. The output string is null-terminated. This is commonly used to extract the base name of a file without its extension.
 
-		\param in Input string containing the path or filename with extension
-		\param out Output buffer to store the filename without extension
-	*/
+	\param in Input string containing the path or filename with extension
+	\param out Output buffer to store the filename without extension
+*/
 void	 COM_StripExtension( const char* in, char* out );
 
-	/*!
-		\brief Removes the filename portion from a file path string.
+/*!
+	\brief Removes the filename portion from a file path string.
 
-		This function takes an input file path and copies it to an output buffer, then strips the filename portion from the path by null-terminating the string at the position where the filename starts. It utilizes COM_SkipPath to locate the start of the filename within the path.
+	This function takes an input file path and copies it to an output buffer, then strips the filename portion from the path by null-terminating the string at the position where the filename starts.
+   It utilizes COM_SkipPath to locate the start of the filename within the path.
 
-		\param in Input string containing the full file path
-		\param out Output buffer where the stripped path will be stored
-	*/
+	\param in Input string containing the full file path
+	\param out Output buffer where the stripped path will be stored
+*/
 void	 COM_StripFilename( char* in, char* out );
 
-	/*!
-		\brief Appends a default file extension to a path if it does not already have one.
+/*!
+	\brief Appends a default file extension to a path if it does not already have one.
 
-		This function checks if the provided path already contains a file extension by looking for a period in the path. If no extension is found, it appends the specified extension to the path. The function ensures that the resulting path does not exceed the maximum allowed size. The extension parameter should include the leading period, such as ".txt" or ".map".
+	This function checks if the provided path already contains a file extension by looking for a period in the path. If no extension is found, it appends the specified extension to the path. The
+   function ensures that the resulting path does not exceed the maximum allowed size. The extension parameter should include the leading period, such as ".txt" or ".map".
 
-		\param path The file path to which the extension may be appended
-		\param maxSize The maximum size of the path buffer
-		\param extension The default extension to append, including the leading period
-	*/
+	\param path The file path to which the extension may be appended
+	\param maxSize The maximum size of the path buffer
+	\param extension The default extension to append, including the leading period
+*/
 void	 COM_DefaultExtension( char* path, int maxSize, const char* extension );
 
-	/*!
-		\brief Initializes a new parsing session with the specified file name.
+/*!
+	\brief Initializes a new parsing session with the specified file name.
 
-		This function sets up the parsing environment by resetting the line counter and storing the provided file name for use during parsing operations. It prepares the global parsing state for processing a new source file.
+	This function sets up the parsing environment by resetting the line counter and storing the provided file name for use during parsing operations. It prepares the global parsing state for
+   processing a new source file.
 
-		\param name The name of the file to be parsed
-	*/
+	\param name The name of the file to be parsed
+*/
 void	 COM_BeginParseSession( const char* name );
 
-	/*!
-		\brief Restores a parsing session by resetting the line counter and updating the data pointer to the backup text.
+/*!
+	\brief Restores a parsing session by resetting the line counter and updating the data pointer to the backup text.
 
-		This function is used to restore a previously saved parsing state. It resets the global com_lines variable to the backup_lines value and updates the data pointer provided by the data_p parameter to point to the backup_text. This is typically used when parsing needs to be rolled back to a previous state, such as when encountering an unexpected token or reaching the end of a parsing section.
+	This function is used to restore a previously saved parsing state. It resets the global com_lines variable to the backup_lines value and updates the data pointer provided by the data_p parameter
+   to point to the backup_text. This is typically used when parsing needs to be rolled back to a previous state, such as when encountering an unexpected token or reaching the end of a parsing section.
 
-		\param data_p Pointer to a character pointer that will be updated to point to the backup text
-	*/
+	\param data_p Pointer to a character pointer that will be updated to point to the backup text
+*/
 void	 COM_RestoreParseSession( char** data_p );
 
-	/*!
-		\brief Sets the current parsing line number for the COM library.
+/*!
+	\brief Sets the current parsing line number for the COM library.
 
-		This function updates the internal line counter used by the COM library for parsing operations. It is typically used to track the progress of file parsing or to set a specific line number for error reporting purposes.
+	This function updates the internal line counter used by the COM library for parsing operations. It is typically used to track the progress of file parsing or to set a specific line number for
+   error reporting purposes.
 
-		\param line The line number to set as the current parsing line
-	*/
+	\param line The line number to set as the current parsing line
+*/
 void	 COM_SetCurrentParseLine( int line );
 
-	//! Returns the current line number of the parser.
+//! Returns the current line number of the parser.
 int		 COM_GetCurrentParseLine();
 
-	/*!
-		\brief Parses the next token from a string, handling comments and quoted strings.
+/*!
+	\brief Parses the next token from a string, handling comments and quoted strings.
 
-		This function processes an input string to extract the next token, advancing the data pointer to point to the next unparsed character. It handles both quoted and unquoted tokens, skipping over comments and managing line breaks. The parsed token is stored in a global com_token buffer and returned. The function supports parsing of quoted strings, single-line and multi-line comments, and can optionally allow line breaks within tokens.
+	This function processes an input string to extract the next token, advancing the data pointer to point to the next unparsed character. It handles both quoted and unquoted tokens, skipping over
+   comments and managing line breaks. The parsed token is stored in a global com_token buffer and returned. The function supports parsing of quoted strings, single-line and multi-line comments, and
+   can optionally allow line breaks within tokens.
 
-		\param data_p Pointer to a pointer to the input string to parse. Updated to point to the next unparsed character after the token.
-		\return Pointer to the parsed token stored in the global com_token buffer.
-	*/
+	\param data_p Pointer to a pointer to the input string to parse. Updated to point to the next unparsed character after the token.
+	\return Pointer to the parsed token stored in the global com_token buffer.
+*/
 char*	 COM_Parse( char** data_p );
 
 /*!
@@ -1239,14 +1268,16 @@ and multi-line comments, and can optionally allow line breaks within tokens.
 */
 char*	 COM_ParseExt( char** data_p, qboolean allowLineBreak );
 
-	/*!
-		\brief Compresses the given data string by removing comments and excess whitespace.
+/*!
+	\brief Compresses the given data string by removing comments and excess whitespace.
 
-		This function processes a null-terminated string and removes single-line comments (starting with //), multi-line comments (enclosed in /* */), and compresses whitespace sequences into single spaces. It modifies the input string in-place and returns the new length of the compressed string. The function handles carriage return and line feed characters by preserving them but removing extra spaces around them.
+	This function processes a null-terminated string and removes single-line comments (starting with //), multi-line comments ),
+and compresses whitespace sequences into single spaces. It modifies the input string in - place and returns the new length of the compressed string. The function handles carriage return
+	and line feed characters by preserving them but removing extra spaces around them.
 
-		\param data_p Pointer to the null-terminated input string to be compressed
-		\return The length of the compressed string after processing
-	*/
+	\param data_p Pointer to the null - terminated input string to be compressed
+	\return The length of the compressed string after processing
+*/
 int		 COM_Compress( char* data_p );
 
 /*!
