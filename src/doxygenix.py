@@ -239,7 +239,9 @@ def get_func_identifier(func: FuncInfo) -> str:
 # -----------------------------------------------------------------------------
 # XML Parser
 # -----------------------------------------------------------------------------
-def parse_doxygen_xml(xml_dir: Path, repo_root: Path, prefer_decl: bool = True) -> List[FuncInfo]:
+def parse_doxygen_xml(
+    xml_dir: Path, repo_root: Path, prefer_decl: bool = True
+) -> List[FuncInfo]:
     funcs: List[FuncInfo] = []
 
     for xf in xml_dir.glob("*.xml"):
@@ -371,9 +373,7 @@ def find_callsite_examples(
     patterns = []
     if class_name:
         patterns.append(
-            re.compile(
-                rf"\b{re.escape(class_name)}::\s*{re.escape(func_name)}\s*\("
-            )
+            re.compile(rf"\b{re.escape(class_name)}::\s*{re.escape(func_name)}\s*\(")
         )
         patterns.append(re.compile(rf"->\s*{re.escape(func_name)}\s*\("))
         patterns.append(re.compile(rf"\.\s*{re.escape(func_name)}\s*\("))
@@ -713,14 +713,14 @@ def _looks_like_simple_return_body(func: FuncInfo, impl: str) -> bool:
 def is_trivial_getter_from_signature(func: FuncInfo) -> bool:
     if func.returns is None:
         return False
-    if any(name for name, _ in func.params):
+    if any(name for name, _ in func.params) and not func.name == "ToString":
         return False
     if "::" not in func.definition:
         return False
 
     sig = (func.definition + " " + func.argsstring).strip()
     is_const = " const" in sig or sig.endswith("const")
-    if not is_const:
+    if not is_const and not func.name == "ToFloatPtr":
         return False
 
     name = func.name
@@ -734,6 +734,106 @@ def is_trivial_getter_from_signature(func: FuncInfo) -> bool:
         return True
 
     return False
+
+
+def _looks_like_simple_call_expr(expr: str) -> bool:
+    """
+    Simple call expression heuristic for forwarders.
+    Accepts:
+        - free/static/class calls: Foo(...), ns::Foo(...), Type::Foo(...)
+        - member calls: obj.Foo(...), obj->Foo(...), this->Foo(...)
+    Validates a single outermost call expression while allowing nested args.
+    """
+    if "(" not in expr or ")" not in expr:
+        return False
+    expr = expr.strip()
+    m = re.match(
+        r"^("
+        r"(?:::)?[A-Za-z_]\w*(::[A-Za-z_]\w*)*"  # free/static/class (optional leading ::)
+        r"|"
+        r"(this|[A-Za-z_]\w*)(\s*(->|\.)\s*[A-Za-z_]\w*)+"  # member chain
+        r")\s*\((.*)\)$",
+        expr,
+    )
+    if not m:
+        return False
+
+    open_idx = expr.find("(")
+    if open_idx == -1 or not expr.endswith(")"):
+        return False
+
+    depth = 0
+    for i, ch in enumerate(expr[open_idx:], start=open_idx):
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0 and i != len(expr) - 1:
+                return False
+        if depth < 0:
+            return False
+
+    return depth == 0
+
+
+def is_trivial_forwarder(func: FuncInfo, impl: str) -> bool:
+    """
+    Heuristic for simple forwarding functions:
+    - non-void return value
+    - body contains exactly one return statement
+    - otherwise only signature/macros/braces
+    """
+    if func.returns is None:
+        return False
+
+    if not impl.strip():
+        return False
+
+    code = _strip_comments(impl)
+    raw_lines = code.splitlines()
+
+    # Remove empty lines and bare braces/semicolons
+    lines = []
+    for ln in raw_lines:
+        s = ln.strip()
+        if not s:
+            continue
+        if s in ("{", "}", ";"):
+            continue
+        lines.append(s)
+
+    saw_return = False
+
+    for ln in lines:
+        # 1) Return line?
+        if "return" in ln:
+            # only one return allowed
+            if saw_return:
+                return False
+
+            m = re.match(r"^return\s+(.+);?$", ln)
+            if not m:
+                return False
+            expr = m.group(1).strip().rstrip(";").strip()
+            if not expr:
+                return False
+            if not _looks_like_simple_call_expr(expr):
+                return False
+
+            saw_return = True
+            continue
+
+        # 2) Allowed signature/macro lines
+        if func.name in ln and "(" in ln and ")" in ln:
+            continue
+
+        if re.match(r"^[A-Z_][A-Z0-9_]*$", ln):
+            continue
+
+        # anything else means additional logic -> not a trivial forwarder
+        return False
+
+    return saw_return
 
 
 def is_trivial_getter(func: FuncInfo, impl: str) -> bool:
@@ -809,10 +909,10 @@ def _build_ollama_model_from_llm(llm: str | None) -> OpenAIChatModel:
 
 ollama_model = _build_ollama_model_from_llm("ollama/gpt-oss:20b")
 
-llama_cpp_model = OpenAIChatModel(
-    model_name="gpt-oss:20b", # does not matter
-    provider=OpenAIProvider(base_url='http://localhost:8080/v1'),
-)
+# llama_cpp_model = OpenAIChatModel(
+#     model_name="gpt-oss:20b", # does not matter
+#     provider=OpenAIProvider(base_url='http://localhost:8080/v1'),
+# )
 
 # Build an MCP stdio server wrapper that will communicate with the subprocess
 # mcp_cpp_server = MCPServerStdio(
@@ -831,7 +931,7 @@ class CommentModel(BaseModel):
 
 def render_ai_block(model: CommentModel, trivial: bool) -> str:
     if trivial:
-        return f"\t//! {model.brief}\n"
+        return f"\t//! {model.brief}"
 
     lines = ["\t/*!"]
     lines.append(f"\t\t\\brief {model.brief}")
@@ -864,11 +964,7 @@ def save_history(chat_id: str, messages: list[ModelMessage], title: str):
         data = {"chat_id": chat_id, "title": title, "messages": as_python_objects}
         p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     except IOError as e:
-        print(
-            colored(
-                f"Error saving history for chat_id={chat_id}: {e}", "red"
-            )
-        )
+        print(colored(f"Error saving history for chat_id={chat_id}: {e}", "red"))
 
 
 def mcp_collect_context(
@@ -996,7 +1092,7 @@ def ai_generate_comment(
     }
 
     model = _build_ollama_model_from_llm(llm)
-    #model = llama_cpp_model
+    # model = llama_cpp_model
     agent = Agent(model, output_type=CommentModel, system_prompt=system_prompt)
 
     try:
@@ -1196,6 +1292,7 @@ def cleanup_comments_above(
     Doxygen blocks (/*!, /**, ///, //!) are preserved unless allow_skip_doxygen=True.
     """
 
+    # If already at the top, nothing to do
     if idx <= 0:
         return idx
 
@@ -1220,9 +1317,8 @@ def cleanup_comments_above(
     def _line_is_inside_block_comment(s: str) -> bool:
         """True for lines that look like block-comment interior: leading * or */."""
         t = s.lstrip()
-        return (
-            t.startswith("*/")
-            or (t.startswith("*") and not t.startswith("*=") and not t.startswith("* ="))
+        return t.startswith("*/") or (
+            t.startswith("*") and not t.startswith("*=") and not t.startswith("* =")
         )
 
     # ------------------------------------------------------------------
@@ -1233,7 +1329,7 @@ def cleanup_comments_above(
     # or empty lines.  We stop when we hit code or a Doxygen comment we
     # must not cross.
     # ------------------------------------------------------------------
-    delete_ranges: list[tuple[int, int]] = []   # (start, end) inclusive
+    delete_ranges: list[tuple[int, int]] = []  # (start, end) inclusive
     i = idx - 1
 
     # skip blank lines directly above declaration
@@ -1295,7 +1391,11 @@ def cleanup_comments_above(
         if cur.startswith("//"):
             # collect the whole contiguous run of // lines
             run_end = i
-            while i >= 0 and lines[i].strip().startswith("//") and not is_doxygen_line_comment(lines[i]):
+            while (
+                i >= 0
+                and lines[i].strip().startswith("//")
+                and not is_doxygen_line_comment(lines[i])
+            ):
                 i -= 1
             run_start = i + 1
             delete_ranges.append((run_start, run_end))
@@ -1328,7 +1428,7 @@ def cleanup_comments_above(
         j -= 1
     if blank_count > 1:
         del lines[j + 2 : idx]
-        idx -= (blank_count - 1)
+        idx -= blank_count - 1
 
     return idx
 
@@ -1428,6 +1528,7 @@ def make_func_key(func: FuncInfo, func_id: str) -> str:
 class FunctionCacheEntry(BaseModel):
     body_hash: str
     has_doxygen: bool
+    is_trivial: Optional[bool] = None
     generated_by_ai: bool = False
     comment_hash: Optional[str] = None
 
@@ -1462,6 +1563,7 @@ def generate_doxygen_comments(
     mcp_enabled: bool = False,
     mcp_max_examples: int = 3,
     mcp_timeout: int = 20,
+    force_trivial: bool = False,
     scope_dir: Optional[Path] = None,
     callsite_max: int = 3,
     callsite_context_lines: int = 30,
@@ -1618,23 +1720,33 @@ def generate_doxygen_comments(
         idx = max(0, min(func.line - 1, len(lines) - 1))
         has_doxy = has_existing_doxygen(lines, idx)
 
+        computed_trivial = (
+            is_trivial_getter(func, impl)
+            or is_trivial_setter(func, impl)
+            or is_trivial_forwarder(func, impl)
+        )
+        current_trivial = True if force_trivial else computed_trivial
+        cached_trivial = entry.is_trivial if entry else None
+        trivial_changed = (
+            cached_trivial is not None and cached_trivial != current_trivial
+        )
+
         # --- Skip Criteria ---
         # 1) Body not changed and Doxygen already present -> skip completely
-        if entry and entry.body_hash == body_hash and entry.has_doxygen:
+        if entry and entry.body_hash == body_hash and has_doxy and not trivial_changed:
             # optional: you could distinguish generated vs. manual comments here
+            if entry.is_trivial is None:
+                entry.is_trivial = current_trivial
             continue
 
-        # 2) Body not changed, but Doxygen already present (manually) -> skip
-        if has_doxy and entry and entry.body_hash == body_hash:
-            continue
-
-        # 3) Doxygen exists, but no cache entry -> just update cache, no AI
+        # 2) Doxygen exists, but no cache entry -> just update cache, no AI
         if has_doxy and not entry:
             cache.functions[func_key] = FunctionCacheEntry(
                 body_hash=body_hash,
                 has_doxygen=True,
                 generated_by_ai=False,
                 comment_hash=None,
+                is_trivial=current_trivial,
             )
             continue
 
@@ -1646,17 +1758,24 @@ def generate_doxygen_comments(
             bodypath = (repo_root / bodypath).resolve()
 
         ai_candidates.append(
-            (func, func_id, func_key, impl, fpath, bodypath, body_hash)
+            (func, func_id, func_key, impl, fpath, bodypath, body_hash, current_trivial)
         )
 
     # ----------------------------------
     # 3. Generate AI comments (slow)
     # ----------------------------------
     progressbar = tqdm(ai_candidates, desc="AI generating comments")
-    for func, func_id, func_key, impl, fpath, bodypath, body_hash in progressbar:
+    for (
+        func,
+        func_id,
+        func_key,
+        impl,
+        fpath,
+        bodypath,
+        body_hash,
+        trivial,
+    ) in progressbar:
         progressbar.set_postfix(func=func_id)
-
-        trivial = is_trivial_getter(func, impl) or is_trivial_setter(func, impl)
 
         lines = read_file(fpath)
         idx = max(0, min(func.line - 1, len(lines) - 1))
@@ -1711,6 +1830,7 @@ def generate_doxygen_comments(
             has_doxygen=True,
             generated_by_ai=True,
             comment_hash=comment_hash,
+            is_trivial=trivial,
         )
 
         if not bodypath or not bodypath.exists():
@@ -1821,7 +1941,10 @@ def generate_doxygen_comments(
 # CLI
 # -----------------------------------------------------------------------------
 def run_doxygen(
-    config_file: str, doxygen_exe: str = "doxygen", clean_xml: bool = True, repo_root: Optional[Path] = None
+    config_file: str,
+    doxygen_exe: str = "doxygen",
+    clean_xml: bool = True,
+    repo_root: Optional[Path] = None,
 ) -> None:
     """
     Runs doxygen with a specified configuration file.
@@ -1862,7 +1985,10 @@ def run_doxygen(
     try:
         if repo_root:
             import tempfile
-            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".cfg", dir=".") as tmp:
+
+            with tempfile.NamedTemporaryFile(
+                "w", delete=False, suffix=".cfg", dir="."
+            ) as tmp:
                 tmp.write(f"@INCLUDE = {cfg.resolve().as_posix()}\n")
                 tmp.write(f'INPUT = "{repo_root.resolve().as_posix()}"\n')
                 tmp_cfg = tmp.name
@@ -1909,16 +2035,19 @@ def main():
     ap.add_argument("--cache-file", default="doxy_ai_cache.json")
     ap.add_argument("--callsite-max", type=int, default=3)
     ap.add_argument("--callsite-context", type=int, default=30)
+    ap.add_argument("--force-trivial", action="store_true")
     args = ap.parse_args()
 
     xml_dir = Path(args.xml_dir)
     project_root = Path(args.project_root)
     scope_dir = Path(args.scope_dir) if args.scope_dir else None
-    cache_base = scope_dir if scope_dir else project_root
+    cache_base = project_root
     cache_path = cache_base / args.cache_file
 
     print("Create Doxygen XML …")
-    run_doxygen("Doxyfile-xmlgen.cfg", doxygen_exe="doxygen.exe", repo_root=project_root)
+    run_doxygen(
+        "Doxyfile-xmlgen.cfg", doxygen_exe="doxygen.exe", repo_root=project_root
+    )
 
     funcs = parse_doxygen_xml(xml_dir, project_root, prefer_decl=True)
     total = generate_doxygen_comments(
@@ -1931,6 +2060,7 @@ def main():
         scope_dir=scope_dir,
         callsite_max=args.callsite_max,
         callsite_context_lines=args.callsite_context,
+        force_trivial=args.force_trivial,
     )
 
     print(f"Comments inserted: {total}")
