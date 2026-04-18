@@ -77,6 +77,13 @@ void			 Log_AlwaysOpen( char* filename )
 	botimport.Print( PRT_MESSAGE, "Opened log %s\n", logfile.filename );
 }
 
+/*!
+	\brief Opens a log file for writing if logging is enabled
+
+	This function checks if logging is enabled via a library variable and, if so, opens the specified log file. It is typically used to initialize logging at the start of a process.
+
+	\param filename The name of the log file to open
+*/
 void Log_Open( char* filename )
 {
 	if( !LibVarValue( "log", "0" ) ) {
@@ -86,6 +93,12 @@ void Log_Open( char* filename )
 	Log_AlwaysOpen( filename );
 }
 
+/*!
+	\brief Closes the currently open log file if one exists.
+
+	This function checks if a log file is currently open and attempts to close it. If the file cannot be closed properly, an error message is printed. Upon successful closure, the file pointer is set to NULL and a confirmation message is printed.
+
+*/
 void Log_Close()
 {
 	if( !logfile.fp ) {
@@ -101,6 +114,12 @@ void Log_Close()
 	botimport.Print( PRT_MESSAGE, "Closed log %s\n", logfile.filename );
 }
 
+/*!
+	\brief Closes the log file if it is open
+
+	This function checks if a log file is currently open and closes it if necessary. It is typically called during application shutdown to ensure proper cleanup of the logging system.
+
+*/
 void Log_Shutdown()
 {
 	if( logfile.fp ) {
@@ -151,6 +170,12 @@ FILE* Log_FilePointer()
 	return logfile.fp;
 }
 
+/*!
+	\brief Flushes the log file buffer to ensure all logged messages are written to disk.
+
+	This function checks if the log file handle is valid and then flushes the file buffer to guarantee that all pending log messages are immediately written to the file. This is useful for ensuring log data is not lost in case of a crash or unexpected termination.
+
+*/
 void Log_Flush()
 {
 	if( logfile.fp ) {

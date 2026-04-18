@@ -128,6 +128,16 @@ token_t *freetokens;					//free tokens from the heap
 // list with global defines added to every source loaded
 define_t*  globaldefines;
 
+/*!
+	\brief Reports an error with formatted message at the current source location.
+
+	This function takes a source location and a variable argument list to format an error message. It retrieves the filename and line number from the source context and prints the error message using platform-specific output methods. It supports multiple compilation targets including BOTLIB, MEQCC, and BSPC, each using their respective print functions. The function is typically used in parsing and preprocessor code to report syntax or semantic errors.
+
+	\param source Pointer to the source context containing filename and line information
+	\param str Format string for the error message
+	\param  Variable arguments for formatting the error message
+	\return void
+*/
 void QDECL SourceError( source_t* source, char* str, ... )
 {
 	char	text[1024];
@@ -147,6 +157,14 @@ void QDECL SourceError( source_t* source, char* str, ... )
 #endif // BSPC
 }
 
+/*!
+	\brief Reports a warning message with file and line number information from a source script.
+
+	This function formats a warning message using variadic arguments and prints it to the appropriate output stream based on the compilation flags. It retrieves the filename and line number from the source script stack and includes this information in the warning message. The function is designed to be used for reporting warnings during compilation or processing of source files.
+
+	\param source Pointer to the source structure containing script information
+	\param str Format string for the warning message
+*/
 void QDECL SourceWarning( source_t* source, char* str, ... )
 {
 	char	text[1024];
@@ -768,6 +786,13 @@ void PC_FreeDefine( define_t* define )
 	FreeMemory( define );
 }
 
+/*!
+	\brief Adds built-in preprocessor defines to the specified source
+
+	This function initializes and adds several built-in preprocessor definitions to the given source. It creates definitions for __LINE__, __FILE__, __DATE__, and __TIME__ that are automatically available during preprocessing. Each built-in define is marked as fixed and has a specific builtin identifier. The function handles the memory allocation for each define and properly links them to the source's define list, using either hashed or sequential linking based on the DEFINEHASHING compile flag
+
+	\param source Pointer to the source structure where the built-in defines will be added
+*/
 void PC_AddBuiltinDefines( source_t* source )
 {
 	int		  i;
@@ -1224,6 +1249,15 @@ int PC_Directive_include( source_t* source )
 	return qtrue;
 }
 
+/*!
+	\brief Reads a line of tokens from the source and returns true if successful.
+
+	This function reads tokens from the provided source until it reaches the end of a line or encounters an error. It handles token crossing across lines and ensures that only tokens from the same line are read. The function returns false if an error occurs or if a token crosses multiple lines, otherwise it returns true.
+
+	\param source Pointer to the source structure containing the token stream to read from.
+	\param token Pointer to the token structure where the read token will be stored.
+	\return Returns qtrue if the line was read successfully, or qfalse if an error occurred or if a token crossed multiple lines.
+*/
 int PC_ReadLine( source_t* source, token_t* token )
 {
 	int crossline;
@@ -1246,6 +1280,14 @@ int PC_ReadLine( source_t* source, token_t* token )
 	return qtrue;
 }
 
+/*!
+	\brief Checks if whitespace exists before a token
+
+	This function determines whether there is whitespace preceding a given token by comparing the positions of the token's whitespace and end whitespace pointers. It returns a non-zero value if there is whitespace before the token, and zero if there is not. This is used in preprocessing to handle token separation and define parameter parsing.
+
+	\param token Pointer to the token structure to check for preceding whitespace
+	\return Integer value indicating whether whitespace exists before the token (non-zero if whitespace exists, zero otherwise)
+*/
 int PC_WhiteSpaceBeforeToken( token_t* token )
 {
 	return token->endwhitespace_p - token->whitespace_p > 0;
@@ -1605,12 +1647,15 @@ define_t* PC_DefineFromString( char* string )
 	return NULL;
 }
 
-//============================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//============================================================================
+/*!
+	\brief Adds a preprocessor define from a string to the given source
+
+	This function parses a string to create a preprocessor define and adds it to the specified source. The define is added to either a hash table or a linked list depending on the DEFINEHASHING compile-time flag. If the string cannot be parsed into a valid define, the function returns qfalse. Otherwise, it returns qtrue to indicate successful addition.
+
+	\param source Pointer to the source structure where the define will be added
+	\param string String representation of the define to be added
+	\return qtrue if the define was successfully added, qfalse if the string could not be parsed into a valid define
+*/
 int PC_AddDefine( source_t* source, char* string )
 {
 	define_t* define;
@@ -1630,6 +1675,14 @@ int PC_AddDefine( source_t* source, char* string )
 	return qtrue;
 }
 
+/*!
+	\brief Adds a global define from a string to the parser's global define list
+
+	This function parses a string to create a define object and adds it to the beginning of the global defines list. The string is expected to contain a valid define definition. If the string cannot be parsed into a valid define, the function returns false. Otherwise, it successfully adds the define to the global list and returns true.
+
+	\param string A null-terminated string containing the define definition to be added
+	\return 1 if the define was successfully added, 0 if the string could not be parsed into a valid define
+*/
 int PC_AddGlobalDefine( char* string )
 {
 	define_t* define;
@@ -1645,6 +1698,14 @@ int PC_AddGlobalDefine( char* string )
 	return qtrue;
 }
 
+/*!
+	\brief Removes a global define with the specified name from the global defines list
+
+	This function searches for a global define with the given name and removes it if found. It returns true if the define was successfully removed, or false if no define with the specified name exists
+
+	\param name the name of the global define to remove
+	\return 1 if the global define was successfully removed, 0 if no define with the specified name was found
+*/
 int PC_RemoveGlobalDefine( char* name )
 {
 	define_t* define;
@@ -3356,6 +3417,15 @@ int QuakeCMacro( source_t* source )
 
 #endif // QUAKEC
 
+/*!
+	\brief Reads the next token from the source and handles preprocessor directives, string concatenation, and macro expansion.
+
+	This function reads tokens from a source stream, processing preprocessor directives such as # directives and $ directives. It also handles string concatenation by merging consecutive string tokens and expands macro definitions found in the source. The function returns true when a valid token is read, and false when the end of the source is reached or an error occurs.
+
+	\param source Pointer to the source stream from which to read tokens.
+	\param token Pointer to the token structure where the read token will be stored.
+	\return Returns qtrue if a token was successfully read and processed, or qfalse if the end of the source is reached or an error occurs.
+*/
 int PC_ReadToken( source_t* source, token_t* token )
 {
 	define_t* define;
@@ -3449,6 +3519,15 @@ int PC_ReadToken( source_t* source, token_t* token )
 	}
 }
 
+/*!
+	\brief Checks if the next token in the source matches the expected string, returning true if it matches or false if it doesn't.
+
+	This function reads the next token from the provided source and compares its string value with the expected string. If the token does not match or if there is no token available, an error is reported and the function returns false. It is commonly used in parsing operations where specific token sequences are expected.
+
+	\param source Pointer to the source from which the token is read
+	\param string The expected string to match against the next token
+	\return True if the next token matches the expected string, false otherwise.
+*/
 int PC_ExpectTokenString( source_t* source, char* string )
 {
 	token_t token;
@@ -3466,6 +3545,17 @@ int PC_ExpectTokenString( source_t* source, char* string )
 	return qtrue;
 }
 
+/*!
+	\brief Attempts to read and validate a token of the specified type and subtype from the source, returning true if successful.
+
+	This function reads a token from the provided source and checks if its type matches the expected type. If the type matches, it further validates the subtype for number and punctuation tokens. For number tokens, it ensures the token's subtype matches the specified subtype. For punctuation tokens, it verifies the token's subtype equals the specified subtype. If any validation fails, an error message is generated and the function returns false. This function is typically used in parsing to ensure the correct token types are encountered in the expected sequence.
+
+	\param source Pointer to the source from which to read the token
+	\param type Expected type of the token to read
+	\param subtype Expected subtype of the token to read, used for number and punctuation tokens
+	\param token Pointer to store the read token
+	\return True if the token was successfully read and validated, false otherwise.
+*/
 int PC_ExpectTokenType( source_t* source, int type, int subtype, token_t* token )
 {
 	char str[MAX_TOKEN];
@@ -3550,6 +3640,15 @@ int PC_ExpectTokenType( source_t* source, int type, int subtype, token_t* token 
 	return qtrue;
 }
 
+/*!
+	\brief Reads the next token from the source and returns true if successful, false otherwise
+
+	This function attempts to read the next token from the provided source. It returns true if a token is successfully read, and false if no token is available. If the token reading fails, an error message is generated using SourceError to indicate that a expected token could not be read. The function is commonly used in parsing operations where the presence of a specific token is required for continued processing.
+
+	\param source Pointer to the source from which to read the token
+	\param token Pointer to the token structure to store the read token
+	\return Returns qtrue if a token is successfully read, qfalse otherwise
+*/
 int PC_ExpectAnyToken( source_t* source, token_t* token )
 {
 	if( !PC_ReadToken( source, token ) ) {
@@ -3561,6 +3660,15 @@ int PC_ExpectAnyToken( source_t* source, token_t* token )
 	}
 }
 
+/*!
+	\brief Checks if the next token in the source matches the specified string and advances the token pointer if it matches.
+
+	This function reads the next token from the provided source and compares its string value with the given string. If they match, the function returns true and advances the source's token pointer. If they do not match, the function unread the token and returns false. This function is typically used for parsing structured input where specific token sequences need to be validated.
+
+	\param source The source from which to read the next token
+	\param string The string to compare against the next token in the source
+	\return True if the next token in the source matches the given string, false otherwise
+*/
 int PC_CheckTokenString( source_t* source, char* string )
 {
 	token_t tok;
@@ -3579,6 +3687,17 @@ int PC_CheckTokenString( source_t* source, char* string )
 	return qfalse;
 }
 
+/*!
+	\brief Checks if the next token in the source matches the specified type and subtype, and returns it if it does.
+
+	This function reads the next token from the provided source and verifies if its type and subtype match the given parameters. If they match, the token is copied to the output parameter and the function returns true. Otherwise, the token is pushed back to the source and the function returns false. The subtype check uses a bitwise AND operation to ensure all specified bits are set in the token's subtype.
+
+	\param source Pointer to the source from which to read the token
+	\param type Expected type of the token to match
+	\param subtype Expected subtype of the token to match, using bitwise operations
+	\param token Pointer to the token structure where the matched token will be stored
+	\return True if the next token matches the specified type and subtype, false otherwise.
+*/
 int PC_CheckTokenType( source_t* source, int type, int subtype, token_t* token )
 {
 	token_t tok;
@@ -3598,6 +3717,15 @@ int PC_CheckTokenType( source_t* source, int type, int subtype, token_t* token )
 	return qfalse;
 }
 
+/*!
+	\brief Skips tokens in the source until the specified string is found.
+
+	This function reads tokens from the provided source until it encounters a token that matches the specified string. It returns true if the string is found and false if the end of the source is reached without finding the string.
+
+	\param source Pointer to the source from which tokens are read.
+	\param string The string to search for in the source.
+	\return Non-zero value if the specified string is found, zero if the end of the source is reached.
+*/
 int PC_SkipUntilString( source_t* source, char* string )
 {
 	token_t token;
@@ -3611,16 +3739,39 @@ int PC_SkipUntilString( source_t* source, char* string )
 	return qfalse;
 }
 
+/*!
+	\brief Unreads the last token from the source, making it available for subsequent reads.
+
+	This function undoes the reading of the most recently consumed token from the provided source. It places the token back into the source's buffer, allowing it to be read again in the future. The function operates on the token stored in the source's token member.
+
+	\param source Pointer to the source object from which the last token will be unread.
+*/
 void PC_UnreadLastToken( source_t* source )
 {
 	PC_UnreadSourceToken( source, &source->token );
 }
 
+/*!
+	\brief Unreads a token back into the source stream for the given source.
+
+	This function pushes a token back onto the source stream, effectively undoing a previous token read operation. It is used to implement look-ahead or backtracking in the parsing process.
+
+	\param source Pointer to the source structure from which the token was read
+	\param token Pointer to the token structure to be pushed back into the source
+*/
 void PC_UnreadToken( source_t* source, token_t* token )
 {
 	PC_UnreadSourceToken( source, token );
 }
 
+/*!
+	\brief Sets the include path for the given source and ensures it ends with a path separator.
+
+	This function copies the provided path into the source's include path buffer and appends the appropriate path separator if it is not already present. The function ensures that the path is properly formatted for subsequent file inclusion operations. The maximum path length is limited by the _MAX_PATH constant.
+
+	\param source Pointer to the source structure whose include path is to be set.
+	\param path Character array containing the path to be set as the include path.
+*/
 void PC_SetIncludePath( source_t* source, char* path )
 {
 	strncpy( source->includepath, path, _MAX_PATH );
@@ -3631,6 +3782,14 @@ void PC_SetIncludePath( source_t* source, char* path )
 	}
 }
 
+/*!
+	\brief Sets the punctuation table for the given source.
+
+	This function assigns a punctuation table to the specified source object, which will be used for tokenizing and parsing operations. The punctuation table defines characters that have special meaning during parsing, such as delimiters or operators.
+
+	\param source Pointer to the source object that will use the punctuation table
+	\param p Pointer to the punctuation table to be assigned to the source
+*/
 void PC_SetPunctuations( source_t* source, punctuation_t* p )
 {
 	source->punctuations = p;
@@ -3668,6 +3827,16 @@ source_t* LoadSourceFile( const char* filename )
 	return source;
 }
 
+/*!
+	\brief Initializes and returns a source_t structure from memory-loaded script data
+
+	This function creates a source_t structure by loading script data from memory. It first initializes the token heap, then loads the script using the provided memory buffer and length. If the script loading fails, it returns NULL. Otherwise, it allocates memory for the source structure, initializes it, and sets up the filename, script stack, and various other fields. The function also handles define hashing if enabled and adds global defines to the source
+
+	\param ptr Pointer to the memory buffer containing the script data
+	\param length Length of the script data in bytes
+	\param name Name of the source file
+	\return Pointer to the initialized source_t structure, or NULL if script loading fails
+*/
 source_t* LoadSourceMemory( char* ptr, int length, char* name )
 {
 	source_t* source;
@@ -3700,6 +3869,13 @@ source_t* LoadSourceMemory( char* ptr, int length, char* name )
 	return source;
 }
 
+/*!
+	\brief Frees all memory allocated for a source including its scripts, tokens, defines, and indents.
+
+	This function cleans up all resources associated with a source_t structure. It iterates through and frees the linked lists of scripts, tokens, defines, and indents. It also handles hash table cleanup for defines when DEFINEHASHING is enabled. Finally, it frees the source structure itself.
+
+	\param source Pointer to the source structure to be freed
+*/
 void FreeSource( source_t* source )
 {
 	script_t* script;

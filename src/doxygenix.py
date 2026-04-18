@@ -23,7 +23,7 @@
 
 
 """
-doxy_xml_inserter_ai.py — Doxygen-XML-supported comment inserter
+doxygenix.py — Doxygen-XML-supported comment inserter
 with *mandatory* Pydantic-AI-Agent for intelligent documentation generation.
 
 Process:
@@ -35,6 +35,7 @@ Process:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -180,6 +181,33 @@ def has_existing_doxygen(lines: List[str], decl_idx: int) -> bool:
     return False
 
 
+def find_decl_anchor(lines: List[str], decl_idx: int) -> int:
+    """
+    Moves declaration index upwards to include template<...> lines directly above.
+    """
+    i = decl_idx - 1
+    blank_count = 0
+    while i >= 0 and lines[i].strip() == "":
+        blank_count += 1
+        if blank_count > 1:
+            return decl_idx
+        i -= 1
+    if i < 0:
+        return decl_idx
+
+    if re.match(r"^\s*template\b", lines[i]):
+        return i
+
+    if ">" in lines[i] or "," in lines[i]:
+        j = i
+        while j >= 0 and lines[j].strip() != "":
+            if re.match(r"^\s*template\b", lines[j]):
+                return j
+            j -= 1
+
+    return decl_idx
+
+
 # -----------------------------------------------------------------------------
 # Data Model
 # -----------------------------------------------------------------------------
@@ -194,8 +222,11 @@ class FuncInfo:
     definition: str
     argsstring: str
     params: List[Tuple[str, Optional[str]]]
+    param_docs: Dict[str, str]
     returns: Optional[str]
+    return_desc: Optional[str]
     brief: str
+    details: Optional[str]
     is_pure_virtual: bool = False
 
 
@@ -236,6 +267,45 @@ def get_func_identifier(func: FuncInfo) -> str:
     return ident or func.name
 
 
+def get_func_display_name(func: FuncInfo) -> str:
+    """
+    Concise display name for logs:
+    - keeps "Class::Func"
+    - strips return type, macros, and parameter list
+    - handles templates/whitespace inside qualified names
+    """
+    sig = (func.definition + func.argsstring).strip()
+    if not sig:
+        return func.name
+
+    head = sig.split("(", 1)[0].strip()
+    if not head:
+        return func.name
+
+    if func.name:
+        pattern = (
+            rf"(?P<qual>"
+            rf"(?:::)?[A-Za-z_]\w*(?:\s*<[^>]*>)?"
+            rf"(?:\s*::\s*[A-Za-z_]\w*(?:\s*<[^>]*>)?)*"
+            rf")\s*::\s*{re.escape(func.name)}\s*$"
+        )
+        m = re.search(pattern, head)
+        if m:
+            qual = re.sub(r"\s*::\s*", "::", m.group("qual").strip())
+            return f"{qual}::{func.name}".strip()
+
+    if func.name and func.name in head:
+        last_name_pos = head.rfind(func.name)
+        if last_name_pos != -1:
+            start = head.rfind(" ", 0, last_name_pos)
+            if start == -1:
+                return re.sub(r"\s*::\s*", "::", head.strip())
+            return re.sub(r"\s*::\s*", "::", head[start + 1 :].strip())
+
+    parts = head.split()
+    return parts[-1] if parts else func.name
+
+
 # -----------------------------------------------------------------------------
 # XML Parser
 # -----------------------------------------------------------------------------
@@ -261,6 +331,11 @@ def parse_doxygen_xml(
             bd = md.find("briefdescription")
             brief = extract_text(bd) if bd is not None else ""
 
+            dd = md.find("detaileddescription")
+            details = extract_text(dd) if dd is not None else ""
+            if details == brief:
+                details = ""
+
             # return type
             tnode = md.find("type")
             returns = extract_text(tnode) if tnode is not None else None
@@ -268,12 +343,29 @@ def parse_doxygen_xml(
                 returns = None
 
             # params
+            param_desc_map: Dict[str, str] = {}
+            for pitem in md.findall(".//parameterlist[@kind='param']/parameteritem"):
+                pname = pitem.findtext("parameternamelist/parametername") or ""
+                pdesc_node = pitem.find("parameterdescription")
+                pdesc = extract_text(pdesc_node) if pdesc_node is not None else ""
+                if pname and pdesc:
+                    param_desc_map[pname] = pdesc
+
             params = []
             for p in md.findall("param"):
                 pname = p.findtext("declname") or ""
                 ptype_node = p.find("type")
                 ptype = extract_text(ptype_node) if ptype_node is not None else None
                 params.append((pname, ptype))
+
+            return_desc = None
+            return_node = md.find(".//simplesect[@kind='return']")
+            if return_node is None:
+                return_node = md.find(".//simplesect[@kind='returns']")
+            if return_node is not None:
+                return_text = extract_text(return_node)
+                if return_text:
+                    return_desc = return_text
 
             # location
             loc = md.find("location")
@@ -318,8 +410,11 @@ def parse_doxygen_xml(
                     definition=definition,
                     argsstring=argsstring,
                     params=params,
+                    param_docs=param_desc_map,
                     returns=returns,
+                    return_desc=return_desc,
                     brief=brief,
+                    details=details,
                     is_pure_virtual=is_pure_virtual,
                 )
             )
@@ -929,30 +1024,206 @@ class CommentModel(BaseModel):
     throws: Optional[str] = None
 
 
+class FileSummaryModel(BaseModel):
+    file_purpose: List[str] = Field(
+        description="What this file declares/defines, as bullet points"
+    )
+    core_responsibilities: List[str] = Field(
+        description="Bulleted list of responsibilities"
+    )
+    key_types_and_functions: List[str] = Field(
+        description="Most important classes, structs, enums, or functions with em-dash descriptions"
+    )
+    control_flow: List[str] = Field(
+        description="How data or logic flows through this component"
+    )
+    dependencies: List[str] = Field(
+        description="External files or systems this header depends on"
+    )
+    how_it_fits: List[str] = Field(
+        description="How this component relates to the rest of the engine architecture, as bullet points"
+    )
+
+
+class HeaderSummaryModel(FileSummaryModel):
+    pass
+
+
+def _find_file_doxygen_block(
+    lines: List[str], scan_limit: int = 200
+) -> Optional[Tuple[int, int, Optional[str]]]:
+    limit = min(len(lines), scan_limit)
+    hash_re = re.compile(r"doxygenix:\s*sha256=([0-9a-f]{64})", re.IGNORECASE)
+
+    i = 0
+    while i < limit:
+        raw = lines[i]
+        line = raw.lstrip()
+        if line.startswith("///") or line.startswith("//!"):
+            if "\\file" in line or "@file" in line:
+                m = hash_re.search(line)
+                found_hash = m.group(1) if m else None
+                return (i, i, found_hash)
+        if line.startswith("/*!") or line.startswith("/**"):
+            start = i
+            end = i
+            found_file = False
+            found_hash: Optional[str] = None
+            found_end = False
+            while end < limit:
+                if "\\file" in lines[end] or "@file" in lines[end]:
+                    found_file = True
+                m = hash_re.search(lines[end])
+                if m:
+                    found_hash = m.group(1)
+                if "*/" in lines[end]:
+                    found_end = True
+                    break
+                end += 1
+            if found_file and found_end:
+                return (start, end, found_hash)
+            if not found_end:
+                return None
+            i = end + 1
+            continue
+        i += 1
+    return None
+
+
+def _strip_file_doxygen_block(lines: List[str]) -> List[str]:
+    block = _find_file_doxygen_block(lines)
+    if not block:
+        return list(lines)
+    start, end, _hash = block
+    return lines[:start] + lines[end + 1 :]
+
+
+def _has_file_doxygen(lines: List[str], scan_limit: int = 140) -> bool:
+    return _find_file_doxygen_block(lines, scan_limit) is not None
+
+
+def _find_gpl_header_end(lines: List[str]) -> int:
+    if not lines:
+        return 0
+    if lines[0].lstrip().startswith("/*"):
+        for i in range(len(lines)):
+            if "*/" in lines[i]:
+                j = i + 1
+                while j < len(lines) and lines[j].strip() == "":
+                    j += 1
+                return j
+    return 0
+
+
+def _render_file_doxygen_block(
+    rel_path: Path, summary: FileSummaryModel, file_sha: str
+) -> List[str]:
+    def _section(title: str, items: List[str]) -> List[str]:
+        section_lines = [f"\t\\par {title}"]
+        if items:
+            section_lines.extend(f"\t- {item}" for item in items)
+        else:
+            section_lines.append("\t- TODO: clarify details.")
+        return section_lines
+
+    brief = (
+        summary.file_purpose[0]
+        if summary.file_purpose
+        else "TODO: clarify file purpose."
+    )
+    lines = [
+        "/*!",
+        f"\t\\file {rel_path.as_posix()}",
+        f"\t\\brief {brief}",
+        f"\t\\note doxygenix: sha256={file_sha}",
+        "",
+    ]
+    lines.extend(_section("File Purpose", summary.file_purpose))
+    lines.append("")
+    lines.extend(_section("Core Responsibilities", summary.core_responsibilities))
+    lines.append("")
+    lines.extend(_section("Key Types and Functions", summary.key_types_and_functions))
+    lines.append("")
+    lines.extend(_section("Control Flow", summary.control_flow))
+    lines.append("")
+    lines.extend(_section("Dependencies", summary.dependencies))
+    lines.append("")
+    lines.extend(_section("How It Fits", summary.how_it_fits))
+    lines.append("*/")
+    return lines
+
+
+def _insert_file_doxygen_comment(
+    src_file: Path,
+    rel_path: Path,
+    summary: FileSummaryModel,
+    file_sha: str,
+) -> bool:
+    lines = read_file(src_file)
+    existing = _find_file_doxygen_block(lines)
+    block_lines = _render_file_doxygen_block(rel_path, summary, file_sha)
+
+    if existing:
+        start, end, existing_hash = existing
+        if existing_hash == file_sha:
+            return False
+        lines[start : end + 1] = block_lines
+        next_idx = start + len(block_lines)
+        if next_idx < len(lines) and lines[next_idx].strip() != "":
+            lines.insert(next_idx, "")
+        write_file(src_file, lines)
+        return True
+
+    insert_at = _find_gpl_header_end(lines)
+    new_lines = lines[:insert_at]
+    while new_lines and new_lines[-1].strip() == "":
+        new_lines.pop()
+    if new_lines and new_lines[-1].strip() != "":
+        new_lines.append("")
+    new_lines.extend(block_lines)
+    while insert_at < len(lines) and lines[insert_at].strip() == "":
+        insert_at += 1
+    if insert_at < len(lines):
+        new_lines.append("")
+    new_lines.extend(lines[insert_at:])
+
+    write_file(src_file, new_lines)
+    return True
+
+
 def render_ai_block(model: CommentModel, trivial: bool) -> str:
     if trivial:
-        return f"\t//! {model.brief}"
+        return f"//! {model.brief}\n"
 
-    lines = ["\t/*!"]
-    lines.append(f"\t\t\\brief {model.brief}")
+    if (
+        model.brief
+        and not model.details
+        and not model.params
+        and not model.returns
+        and not model.throws
+    ):
+        return f"//! {model.brief}\n"
+
+    lines = ["/*!"]
+    lines.append(f"\t\\brief {model.brief}")
 
     if model.details:
         lines.append("")
         for ln in model.details.split("\n"):
-            lines.append(f"\t\t{ln}")
+            lines.append(f"\t{ln}")
         lines.append("")
 
     for pname, pdesc in model.params.items():
-        lines.append(f"\t\t\\param {pname} {pdesc}")
+        lines.append(f"\t\\param {pname} {pdesc}")
 
     if model.returns:
-        lines.append(f"\t\t\\return {model.returns}")
+        lines.append(f"\t\\return {model.returns}")
     if model.throws:
-        lines.append(f"\t\t\\throws {model.throws}")
+        lines.append(f"\t\\throws {model.throws}")
 
     # Hard guarantee: close block exactly once
     if not lines[-1].strip().endswith("*/"):
-        lines.append("\t*/")
+        lines.append("*/")
 
     return "\n".join(lines) + "\n"
 
@@ -1022,6 +1293,8 @@ def ai_generate_comment(
     impl: str,
     llm: str,
     trivial: bool,
+    thinking: Optional[object] = None,
+    verbose: bool = False,
     original_comment: str | None = None,
     mcp_context: str | None = None,
     call_examples: List[str] | None = None,
@@ -1093,7 +1366,15 @@ def ai_generate_comment(
 
     model = _build_ollama_model_from_llm(llm)
     # model = llama_cpp_model
-    agent = Agent(model, output_type=CommentModel, system_prompt=system_prompt)
+    if thinking is not None:
+        agent = Agent(
+            model,
+            output_type=CommentModel,
+            system_prompt=system_prompt,
+            model_settings={"thinking": thinking},
+        )
+    else:
+        agent = Agent(model, output_type=CommentModel, system_prompt=system_prompt)
 
     try:
         r = agent.run_sync(user_prompt=str(user_prompt))
@@ -1104,13 +1385,16 @@ def ai_generate_comment(
                 f"# System prompt\n {system_prompt}\n\n # User prompt\n {user_prompt_str} \n\n"
             )
 
-        #with open("chats/prompt.md", "a", encoding="utf-8") as f:
+            # with open("chats/prompt.md", "a", encoding="utf-8") as f:
             block = render_ai_block(r.output, False)
             f.write(f"\n\n# Model output\n{block}\n")
 
-        # func_id = get_func_identifier(func)
-        # chat_name = func_id.replace("::", ".")
-        # save_history(chat_name, r.all_messages(), f"ai_generate_comment for {func_id}")
+        if verbose:
+            func_id = get_func_identifier(func)
+            chat_name = func_id.replace("::", ".")
+            save_history(
+                chat_name, r.all_messages(), f"ai_generate_comment for {func_id}"
+            )
 
         def _normalize_optional_text(
             value: Optional[str], allow_null: bool = False
@@ -1519,6 +1803,103 @@ def compute_normalized_body_hash(impl: str) -> str:
     return h.hexdigest()
 
 
+def compute_normalized_file_hash(content: str) -> str:
+    code = content
+    # Normalize whitespace only; keep comments for semantic context
+    code = re.sub(r"\s+", " ", code).strip()
+    return hashlib.sha256(code.encode("utf-8")).hexdigest()
+
+
+def _build_bodyfile_func_map(
+    funcs: Optional[List[FuncInfo]], repo_root: Path
+) -> Dict[Path, List[FuncInfo]]:
+    func_map: Dict[Path, List[FuncInfo]] = {}
+    if not funcs:
+        return func_map
+    for func in funcs:
+        bodyfile = func.bodyfile
+        if not bodyfile:
+            continue
+        path = bodyfile
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        else:
+            path = path.resolve()
+        func_map.setdefault(path, []).append(func)
+    return func_map
+
+
+def _render_xml_func_comment(func: FuncInfo) -> List[str]:
+    brief = func.brief.strip() if func.brief else "TODO: clarify function purpose."
+    lines = ["/*!"]
+    lines.append(f"\t\\brief {brief}")
+    if func.details:
+        lines.append("")
+        for ln in func.details.split("\n"):
+            if ln.strip():
+                lines.append(f"\t{ln}")
+        lines.append("")
+    for pname, _ptype in func.params:
+        if not pname:
+            continue
+        pdesc = func.param_docs.get(pname)
+        if pdesc:
+            lines.append(f"\t\\param {pname} {pdesc}")
+        else:
+            lines.append(f"\t\\param {pname} TODO: clarify {pname} parameter.")
+    if func.returns:
+        if func.return_desc:
+            lines.append(f"\t\\return {func.return_desc}")
+        else:
+            lines.append("\t\\return TODO: clarify return value.")
+    lines.append("*/")
+    return lines
+
+
+def _augment_source_with_xml_doxygen(
+    raw_lines: List[str],
+    src_path: Path,
+    func_map: Dict[Path, List[FuncInfo]],
+) -> List[str]:
+    lines = list(raw_lines)
+    funcs = func_map.get(src_path.resolve())
+    if not funcs:
+        return lines
+
+    insert_items: List[Tuple[int, List[str]]] = []
+    for func in funcs:
+        if not func.bodystart:
+            continue
+        func_id = get_func_identifier(func)
+        body_idx = func.bodystart - 1
+        decl_idx = find_declaration_line_for_body(lines, body_idx, func_id)
+        if decl_idx == -1:
+            continue
+        decl_idx = find_decl_anchor(lines, decl_idx)
+        if has_existing_doxygen(lines, decl_idx):
+            continue
+
+        existing_comment = extract_comment_block_above(lines, decl_idx)
+        if existing_comment.strip():
+            continue
+        inline_comment = extract_inline_comment(lines[decl_idx])
+        if inline_comment.strip():
+            continue
+        trailing_comment = extract_trailing_comment_lines(lines, decl_idx)
+        if trailing_comment.strip():
+            continue
+
+        block_lines = _render_xml_func_comment(func)
+        if decl_idx > 0 and lines[decl_idx - 1].strip() != "":
+            block_lines = [""] + block_lines
+        insert_items.append((decl_idx, block_lines))
+
+    for decl_idx, block_lines in sorted(insert_items, key=lambda x: x[0], reverse=True):
+        lines[decl_idx:decl_idx] = block_lines
+
+    return lines
+
+
 def make_func_key(func: FuncInfo, func_id: str) -> str:
     # As stable and unique as possible
     # return f"{func.file}:{func_id}:{func.definition}{func.argsstring}"
@@ -1558,6 +1939,8 @@ def generate_doxygen_comments(
     llm: str,
     dry_run: bool,
     maximpl: int,
+    thinking: Optional[object] = None,
+    verbose: bool = False,
     cache_path: Optional[Path] = None,
     mcp_toolset: Optional[object] = None,
     mcp_enabled: bool = False,
@@ -1579,6 +1962,8 @@ def generate_doxygen_comments(
 
     num_comments = 0
     ai_candidates = []
+    thinking_label = "auto" if thinking is None else repr(thinking)
+    print(f"[AI] thinking mode: {thinking_label}")
 
     # ---------------------------------------------------------------------------
     # 1. Build one canonical documentation target per function signature:
@@ -1718,7 +2103,8 @@ def generate_doxygen_comments(
         # --- Read file to check Doxygen status ---
         lines = read_file(fpath)
         idx = max(0, min(func.line - 1, len(lines) - 1))
-        has_doxy = has_existing_doxygen(lines, idx)
+        decl_idx = find_decl_anchor(lines, idx)
+        has_doxy = has_existing_doxygen(lines, decl_idx)
 
         computed_trivial = (
             is_trivial_getter(func, impl)
@@ -1775,11 +2161,12 @@ def generate_doxygen_comments(
         body_hash,
         trivial,
     ) in progressbar:
-        progressbar.set_postfix(func=func_id)
+        progressbar.set_postfix(func=get_func_display_name(func))
 
         lines = read_file(fpath)
         idx = max(0, min(func.line - 1, len(lines) - 1))
-        orig_comment = extract_comments_for_declaration(lines, idx)
+        decl_idx = find_decl_anchor(lines, idx)
+        orig_comment = extract_comments_for_declaration(lines, decl_idx)
         if not orig_comment.strip():
             orig_comment = None
 
@@ -1812,7 +2199,9 @@ def generate_doxygen_comments(
             impl,
             llm,
             trivial,
-            orig_comment,
+            thinking=thinking,
+            verbose=verbose,
+            original_comment=orig_comment,
             mcp_context=mcp_context,
             call_examples=call_examples,
         )
@@ -1856,23 +2245,26 @@ def generate_doxygen_comments(
 
         changed = False
         for line_1b, block, func_id in items:
-            idx = line_1b - 1  # Doxygen line of the function (0-based)
-            if idx < 0 or idx >= len(lines):
+            func_idx = line_1b - 1  # Doxygen line of the function (0-based)
+            if func_idx < 0 or func_idx >= len(lines):
                 continue
 
-            # 0) Remove all existing Doxygen comments directly above the declaration
+            # 0) Remove inline comments on the declaration line
+            lines[func_idx] = strip_inline_non_doxygen_comment(lines[func_idx])
+
+            # 1) Find the actual declaration anchor (e.g., template<...> line)
+            decl_idx = find_decl_anchor(lines, func_idx)
+
+            # 2) Remove all existing Doxygen comments directly above the declaration
             #    (if you had multiple AI runs, they will be cleaned up one after another)
-            while has_existing_doxygen(lines, idx):
-                idx = remove_doxygen_block_above(lines, idx)
+            while has_existing_doxygen(lines, decl_idx):
+                decl_idx = remove_doxygen_block_above(lines, decl_idx)
 
-            # 1) Remove inline comments on the declaration line
-            lines[idx] = strip_inline_non_doxygen_comment(lines[idx])
+            # 3) Clean up non-Doxygen comments directly above
+            decl_idx = cleanup_comments_above(lines, decl_idx, func_id)
 
-            # 2) Clean up non-Doxygen comments directly above
-            idx = cleanup_comments_above(lines, idx, func_id)
-
-            # 3) Insert comment directly above the function line
-            comment_start = idx  # this is where the block will be inserted
+            # 4) Insert comment directly above the declaration anchor
+            comment_start = decl_idx  # this is where the block will be inserted
 
             # 4) If there's no empty line directly above, insert an empty line
             if comment_start > 0 and lines[comment_start - 1].strip() != "":
@@ -1921,7 +2313,10 @@ def generate_doxygen_comments(
             if decl_idx == -1:
                 continue
 
-            # 2) From there, remove banners / old comments above
+            # 2) From there, move to the declaration anchor (e.g., template<...>)
+            decl_idx = find_decl_anchor(lines, decl_idx)
+
+            # 3) Remove banners / old comments above
             new_idx = cleanup_comments_above(
                 lines, decl_idx, func_id, allow_skip_doxygen=True
             )
@@ -1935,6 +2330,155 @@ def generate_doxygen_comments(
         save_cache(cache_path, cache)
 
     return total
+
+
+# -----------------------------------------------------------------------------
+# Header Summary Generation
+# -----------------------------------------------------------------------------
+def generate_header_summaries(
+    scope_dir: Path,
+    project_root: Path,
+    arch_root: Path,
+    llm: str,
+    thinking: Optional[object] = None,
+    verbose: bool = False,
+    funcs: Optional[List[FuncInfo]] = None,
+) -> int:
+    """
+    Generates architecture-level Markdown summaries for all C++ header and
+    source files under *scope_dir*. Each summary is written into a mirror
+    tree under *arch_root* as ``<filename>.md`` and is also inserted as a
+    file-level Doxygen block directly under the GPL header.
+
+    A SHA-256 fingerprint of the source file is embedded in the first line so
+    stale docs can be detected. Files whose hash has not changed are skipped.
+    """
+    if not scope_dir or not scope_dir.exists():
+        print(f"[summary] scope-dir does not exist: {scope_dir}")
+        return 0
+
+    cpp_files = sorted(p for p in scope_dir.rglob("*") if is_header(p) or is_source(p))
+
+    if not cpp_files:
+        print(f"[summary] No C++ files found under {scope_dir}")
+        return 0
+
+    func_map = _build_bodyfile_func_map(funcs, project_root)
+
+    summary_agent = Agent(
+        _build_ollama_model_from_llm(llm),
+        output_type=HeaderSummaryModel,
+        system_prompt=(
+            "You are a senior C++ software architect. "
+            "You are analyzing source code from DarkWolf, a Return to Castle Wolfenstein engine fork.\n"
+            "Summarize the provided C++ file into the requested structured sections.\n"
+            "Be precise, technical, and concise. Focus on architectural significance.\n"
+            "Use em-dash notation for key_types_and_functions entries, e.g.:\n"
+            "  `idFoo` — short description of the class.\n"
+            "  `idFoo::Bar(int x)` — what this method does.\n"
+            "Each bullet should be a complete, informative sentence or phrase.\n"
+            "For control_flow, describe how data or logic flows at runtime.\n"
+            "For dependencies, reference concrete header paths where possible.\n"
+            "For how_it_fits, explain this component’s role in the larger engine.\n"
+            "If details are unclear, write 'TODO: clarify ...' rather than guessing.\n"
+        ),
+    )
+
+    if thinking is not None:
+        summary_agent = Agent(
+            _build_ollama_model_from_llm(llm),
+            output_type=HeaderSummaryModel,
+            system_prompt=summary_agent._system_prompts[0]
+            if summary_agent._system_prompts
+            else "",
+            model_settings={"thinking": thinking},
+        )
+
+    generated = 0
+    print(
+        f"[summary] Generating summaries for {len(cpp_files)} files in {scope_dir} ..."
+    )
+
+    for src_file in tqdm(cpp_files, desc="Summarizing C++ files"):
+        raw_lines = read_file(src_file)
+        if is_source(src_file):
+            augmented_lines = _augment_source_with_xml_doxygen(
+                raw_lines, src_file, func_map
+            )
+        else:
+            augmented_lines = raw_lines
+        content_lines = _strip_file_doxygen_block(augmented_lines)
+        content = "\n".join(content_lines)
+        if not content.strip():
+            continue
+
+        rel_path = src_file.relative_to(project_root)
+        file_sha = compute_normalized_file_hash(content)
+
+        # Determine output path: mirror into arch_root
+        out_path = arch_root / rel_path.with_suffix(rel_path.suffix + ".md")
+
+        existing = _find_file_doxygen_block(raw_lines)
+        md_hash_matches = False
+        if out_path.exists():
+            first_line = out_path.read_text(encoding="utf-8", errors="ignore").split(
+                "\n", 1
+            )[0]
+            if file_sha in first_line:
+                md_hash_matches = True
+
+        if md_hash_matches and existing and existing[2] == file_sha:
+            if verbose:
+                print(f"  [skip] {rel_path} (unchanged)")
+            continue
+
+        prompt = f"Analyze this C++ file: {rel_path.as_posix()}\n\nContent:\n{content}"
+
+        try:
+            result = summary_agent.run_sync(prompt)
+            data = result.output
+
+            _insert_file_doxygen_comment(src_file, rel_path, data, file_sha)
+
+            md_lines = [
+                f"<!-- doxygenix: sha256={file_sha} -->",
+                "",
+                f"# {rel_path.as_posix()}",
+                "",
+                "## File Purpose",
+            ]
+            md_lines.extend(f"- {p}" for p in data.file_purpose)
+
+            md_lines.append("")
+            md_lines.append("## Core Responsibilities")
+            md_lines.extend(f"- {r}" for r in data.core_responsibilities)
+
+            md_lines.append("")
+            md_lines.append("## Key Types and Functions")
+            md_lines.extend(f"- {f}" for f in data.key_types_and_functions)
+
+            md_lines.append("")
+            md_lines.append("## Important Control Flow")
+            md_lines.extend(f"- {c}" for c in data.control_flow)
+
+            md_lines.append("")
+            md_lines.append("## External Dependencies")
+            md_lines.extend(f"- {d}" for d in data.dependencies)
+
+            md_lines.append("")
+            md_lines.append("## How It Fits")
+            md_lines.extend(f"- {h}" for h in data.how_it_fits)
+            md_lines.append("")  # trailing newline
+
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text("\n".join(md_lines), encoding="utf-8")
+            generated += 1
+
+        except Exception as e:
+            print(f"  [error] {rel_path}: {e}")
+
+    print(f"[summary] Generated {generated} summaries.")
+    return generated
 
 
 # -----------------------------------------------------------------------------
@@ -1973,6 +2517,14 @@ def run_doxygen(
     xml_subdir = xml_subdir or "xml"
 
     xml_full_path = (xml_output_dir / xml_subdir).resolve()
+
+    # Ensure OUTPUT_DIRECTORY exists before running Doxygen
+    try:
+        xml_output_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to create Doxygen output directory: {xml_output_dir}"
+        ) from exc
 
     # Delete old XML folder to avoid stale files
     if clean_xml and xml_full_path.exists():
@@ -2024,18 +2576,40 @@ def run_doxygen(
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--xml-dir", default="doxygen-xml/xml")
+    ap.add_argument("--xml-dir", default="docs/doxygen/xml")
     ap.add_argument("--project-root", default=".")
-    ap.add_argument("--scope-dir", default="shared")
+    ap.add_argument("--scope-dir", default="idlib/bv")
     ap.add_argument("--llm", default="ollama/qwen3-coder")
-    #ap.add_argument("--llm", default="ollama/gemma4")
+    # ap.add_argument("--llm", default="ollama/gemma4")
     ap.add_argument("--max-impl", type=int, default=6000)
     ap.add_argument("--apply", action="store_true")
-    ap.add_argument("--dry-run", action="store_true")
+
     ap.add_argument("--cache-file", default="doxy_ai_cache.json")
     ap.add_argument("--callsite-max", type=int, default=3)
     ap.add_argument("--callsite-context", type=int, default=30)
+    ap.add_argument(
+        "--thinking",
+        default="auto",
+        choices=["auto", "true", "false", "low", "medium", "high"],
+    )
+    ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("--force-trivial", action="store_true")
+    ap.add_argument(
+        "--summarize-files",
+        action="store_true",
+        help="Generate architecture .md summaries and file-level \\file blocks for all C++ files in --scope-dir",
+    )
+    ap.add_argument(
+        "--summarize-only",
+        action="store_true",
+        help="Skip function comment generation and only build summaries",
+    )
+
+    ap.add_argument(
+        "--arch-root",
+        default="architecture",
+        help="Root directory for architecture .md output (default: architecture)",
+    )
     args = ap.parse_args()
 
     xml_dir = Path(args.xml_dir)
@@ -2044,26 +2618,58 @@ def main():
     cache_base = project_root
     cache_path = cache_base / args.cache_file
 
+    thinking_setting: Optional[object] = None
+    if args.thinking and args.thinking != "auto":
+        lowered = args.thinking.lower()
+        if lowered in {"true", "false"}:
+            thinking_setting = lowered == "true"
+        else:
+            thinking_setting = lowered
+
     print("Create Doxygen XML …")
     run_doxygen(
         "Doxyfile-xmlgen.cfg", doxygen_exe="doxygen.exe", repo_root=project_root
     )
 
     funcs = parse_doxygen_xml(xml_dir, project_root, prefer_decl=True)
-    total = generate_doxygen_comments(
-        funcs,
-        project_root,
-        llm=args.llm,
-        dry_run=False,  # not args.apply,
-        maximpl=args.max_impl,
-        cache_path=cache_path,
-        scope_dir=scope_dir,
-        callsite_max=args.callsite_max,
-        callsite_context_lines=args.callsite_context,
-        force_trivial=args.force_trivial,
-    )
+    total = 0
+    if not args.summarize_only:
+        total = generate_doxygen_comments(
+            funcs,
+            project_root,
+            llm=args.llm,
+            thinking=thinking_setting,
+            verbose=args.verbose,
+            dry_run=False,  # not args.apply,
+            maximpl=args.max_impl,
+            cache_path=cache_path,
+            scope_dir=scope_dir,
+            callsite_max=args.callsite_max,
+            callsite_context_lines=args.callsite_context,
+            force_trivial=args.force_trivial,
+        )
 
     print(f"Comments inserted: {total}")
+
+    if args.summarize_files and total > 0 and not args.summarize_only:
+        print("Recreate Doxygen XML …")
+        run_doxygen(
+            "Doxyfile-xmlgen.cfg", doxygen_exe="doxygen.exe", repo_root=project_root
+        )
+        funcs = parse_doxygen_xml(xml_dir, project_root, prefer_decl=True)
+
+    # -- Header summary generation -------------------------------------------
+    if args.summarize_files:
+        arch_root = Path(args.arch_root)
+        generate_header_summaries(
+            scope_dir=scope_dir,
+            project_root=project_root,
+            arch_root=arch_root,
+            llm=args.llm,
+            thinking=thinking_setting,
+            verbose=args.verbose,
+            funcs=funcs,
+        )
 
 
 if __name__ == "__main__":

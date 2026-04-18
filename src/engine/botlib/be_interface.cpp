@@ -88,6 +88,13 @@ int				 botlibsetup = qfalse;
 	#define MAX_PATH MAX_QPATH
 #endif
 
+/*!
+	\brief Returns the number of milliseconds elapsed since the system was started
+
+	This function provides a monotonic time source suitable for measuring elapsed time intervals. On Windows platforms, it uses the Windows multimedia timer API for higher precision timing. On other platforms, it uses the standard C library clock function converted to milliseconds. The function maintains internal state to ensure consistent time progression across multiple calls
+
+	\return The number of milliseconds since the system was started
+*/
 int Sys_MilliSeconds()
 {
 	// Ridah, faster Win32 code

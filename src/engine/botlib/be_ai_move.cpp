@@ -2114,12 +2114,15 @@ bot_moveresult_t BotTravel_Jump( bot_movestate_t* ms, aas_reachability_t* reach 
 	return result;
 }
 
-//===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
-//===========================================================================
+/*!
+	\brief Completes the travel action for a bot jump by calculating movement direction and speed
+
+	This function handles the final phase of a bot's jump travel action. It calculates the horizontal direction vector from the bot's current position to the end of the reachability, normalizes it, and determines the appropriate movement speed. The function checks if the bot has already jumped and returns early if not. It also evaluates whether the jump trajectory is in the correct direction and if the distance is sufficient before initiating movement. The bot uses maximum speed when traveling through the air.
+
+	\param ms Pointer to the bot's movement state structure
+	\param reach Pointer to the AAS reachability structure describing the jump
+	\return The bot movement result structure containing the movement direction and other movement parameters
+*/
 bot_moveresult_t BotFinishTravel_Jump( bot_movestate_t* ms, aas_reachability_t* reach )
 {
 	vec3_t			 hordir, hordir2;

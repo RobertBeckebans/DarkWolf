@@ -312,6 +312,13 @@ unsigned short crctable[257] = {
 	0x0000 // because process string allows value 256 through and it was undefined
 };
 
+/*!
+	\brief Initializes the CRC value to its initial state.
+
+	This function sets the provided CRC value to the predefined initial value defined by CRC_INIT_VALUE. It is typically used at the start of a CRC calculation session to ensure consistent results.
+
+	\param crcvalue Pointer to the CRC value to be initialized
+*/
 void CRC_Init( unsigned short* crcvalue )
 {
 	*crcvalue = CRC_INIT_VALUE;
@@ -322,6 +329,14 @@ void CRC_ProcessByte( unsigned short* crcvalue, byte data )
 	*crcvalue = ( *crcvalue << 8 ) ^ crctable[( *crcvalue >> 8 ) ^ data];
 }
 
+/*!
+	\brief Computes a CRC value by XORing the input with a predefined CRC XOR value.
+
+	This function takes an input CRC value and performs a bitwise XOR operation with a constant CRC_XOR_VALUE. This is typically used in CRC (Cyclic Redundancy Check) calculations to finalize the checksum value. The function is a simple utility that applies the final step of the CRC algorithm.
+
+	\param crcvalue The input CRC value to be processed
+	\return The resulting CRC value after XORing the input with the predefined CRC constant
+*/
 unsigned short CRC_Value( unsigned short crcvalue )
 {
 	return crcvalue ^ CRC_XOR_VALUE;

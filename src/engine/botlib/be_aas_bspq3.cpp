@@ -122,6 +122,13 @@ cname_t contentnames[] = { { CONTENTS_SOLID, "CONTENTS_SOLID" },
 	{ CONTENTS_LADDER, "CONTENTS_LADDER" },
 	{ 0, 0 } };
 
+/*!
+	\brief Prints the names of content types that are set in the contents bitmask.
+
+	This function iterates through an array of content names and their corresponding bitmask values. For each content type that is set in the provided contents bitmask, it prints the name of that content type. The function continues until it reaches the end of the contentnames array, which is indicated by a zero value in the value field of the contentnames structure.
+
+	\param contents bitmask representing set content types
+*/
 void	PrintContents( int contents )
 {
 	int i;

@@ -230,6 +230,15 @@ void PS_CreatePunctuationTable( script_t* script, punctuation_t* punctuations )
 	}
 }
 
+/*!
+	\brief Returns the punctuation string corresponding to a given punctuation number from the script's punctuation table
+
+	This function searches through the punctuation table of a script to find the string representation of a given punctuation number. It iterates through the punctuation entries until it finds a match for the specified number, returning the corresponding punctuation string. If no match is found, it returns a default string "unkown punctuation".
+
+	\param script Pointer to the script structure containing the punctuation table
+	\param num The punctuation number to look up
+	\return Pointer to the punctuation string corresponding to the given number, or a default error string if not found
+*/
 char* PunctuationFromNum( script_t* script, int num )
 {
 	int i;
@@ -243,6 +252,14 @@ char* PunctuationFromNum( script_t* script, int num )
 	return "unkown punctuation";
 }
 
+/*!
+	\brief Reports an error with formatted message at the current script location
+
+	This function reports an error message at the current location in a script file. It formats the error message using a printf-style format string and variable arguments, then outputs the error with file name, line number, and the formatted message. The function checks if error reporting is disabled for the script before proceeding. It supports multiple build configurations including bot library, MEQCC, and BSPC for different output methods.
+
+	\param script pointer to the script structure containing the file information and current line number
+	\param str printf-style format string for the error message
+*/
 void QDECL ScriptError( script_t* script, char* str, ... )
 {
 	char	text[1024];
@@ -266,6 +283,14 @@ void QDECL ScriptError( script_t* script, char* str, ... )
 #endif // BSPC
 }
 
+/*!
+	\brief Reports a warning message with file and line number information from a script
+
+	This function outputs a formatted warning message to different destinations depending on the compilation flags. The warning includes the script filename, current line number, and the formatted warning text. It checks if warnings are disabled for the script before proceeding. The function uses variadic arguments to allow for flexible warning message formatting.
+
+	\param script Pointer to the script context containing filename and line information
+	\param str Format string for the warning message
+*/
 void QDECL ScriptWarning( script_t* script, char* str, ... )
 {
 	char	text[1024];
@@ -289,6 +314,14 @@ void QDECL ScriptWarning( script_t* script, char* str, ... )
 #endif // BSPC
 }
 
+/*!
+	\brief Sets the punctuation table for a script, using either a provided table or a default table if none is provided.
+
+	This function configures the punctuation table that a script will use for parsing. If a custom punctuation table is provided, it will be used; otherwise, a default punctuation table is applied. The function ensures that the script's punctuation table is properly updated regardless of whether the provided table is NULL.
+
+	\param script Pointer to the script structure that will have its punctuation table set
+	\param p Pointer to the punctuation table to use, or NULL to use the default table
+*/
 void SetScriptPunctuations( script_t* script, punctuation_t* p )
 {
 #ifdef PUNCTABLE
@@ -1050,6 +1083,15 @@ int PS_ReadPrimitive( script_t* script, token_t* token )
 	return 1;
 }
 
+/*!
+	\brief Reads the next token from the script input and stores it in the provided token structure
+
+	This function is responsible for parsing the next token from a script input stream. It first checks if there is a previously unread token available, and if so, returns that token. Otherwise, it reads whitespace, identifies the type of token (string, number, name, or punctuation), and populates the token structure accordingly. The function handles various token types including quoted strings, numeric literals, and identifiers. If a primitive script flag is set, it delegates to a specialized primitive reading function. The function returns 1 on success and 0 on failure, typically indicating end-of-input or a parsing error
+
+	\param script Pointer to the script structure containing the input stream and parsing state
+	\param token Pointer to the token structure where the parsed token will be stored
+	\return Integer value indicating success (1) or failure (0) of the token reading operation
+*/
 int PS_ReadToken( script_t* script, token_t* token )
 {
 	// if there is a token available (from UnreadToken)
@@ -1128,6 +1170,15 @@ int PS_ReadToken( script_t* script, token_t* token )
 	return 1;
 }
 
+/*!
+	\brief Checks if the next token in the script matches the expected string, returning 1 if successful or 0 if not.
+
+	This function reads the next token from the provided script and compares it to the expected string. If the token does not exist or does not match the expected string, it reports an error and returns 0. If the token matches the expected string, it returns 1. The function is typically used for parsing and validation in script processing.
+
+	\param script Pointer to the script structure containing the token stream
+	\param string The expected string to match against the next token
+	\return Returns 1 if the next token in the script matches the expected string, or 0 if it does not match or if there is no token available.
+*/
 int PS_ExpectTokenString( script_t* script, char* string )
 {
 	token_t token;
@@ -1145,6 +1196,18 @@ int PS_ExpectTokenString( script_t* script, char* string )
 	return 1;
 }
 
+/*!
+	\brief Reads and validates the next token from a script, ensuring it matches the expected type and subtype
+
+	This function reads the next token from the provided script and verifies that its type matches the expected type. If the token type does not match, it reports an error and returns zero. For number tokens, it also validates that the subtype matches the expected one. For punctuation tokens, it ensures the subtype matches exactly. If any validation fails, the function reports an error and returns zero. Otherwise, it returns one to indicate success.
+
+	\param script Pointer to the script from which to read the token
+	\param type Expected type of the token to read
+	\param subtype Expected subtype of the token, used for number and punctuation types
+	\param token Pointer to the token structure to fill with the read token
+	\return Non-zero on success, zero if the token cannot be read or fails validation
+	\throws ScriptError is called when token validation fails
+*/
 int PS_ExpectTokenType( script_t* script, int type, int subtype, token_t* token )
 {
 	char str[MAX_TOKEN];
@@ -1232,6 +1295,15 @@ int PS_ExpectTokenType( script_t* script, int type, int subtype, token_t* token 
 	return 1;
 }
 
+/*!
+	\brief Reads the next token from the script and returns whether the operation was successful.
+
+	This function attempts to read the next token from the provided script and stores it in the given token structure. If the token reading fails, it triggers a script error and returns zero. Otherwise, it returns a non-zero value indicating success. The function is typically used when the exact type of the expected token is not known or not important.
+
+	\param script Pointer to the script structure to read from.
+	\param token Pointer to the token structure where the read token will be stored.
+	\return Non-zero value if the token was successfully read, zero if the operation failed.
+*/
 int PS_ExpectAnyToken( script_t* script, token_t* token )
 {
 	if( !PS_ReadToken( script, token ) ) {
@@ -1243,6 +1315,17 @@ int PS_ExpectAnyToken( script_t* script, token_t* token )
 	}
 }
 
+/*!
+	\brief Checks if the next token in the script matches the specified string and advances the script position if it does.
+
+	This function attempts to read the next token from the provided script and compares it with the given string.
+	If the token matches the string, the function returns 1 and advances the script's position.
+	If the token does not match or if there are no more tokens, the function returns 0 and resets the script position to the previous location.
+
+	\param script Pointer to the script structure containing the script data and current position.
+	\param string The string to compare against the next token in the script.
+	\return 1 if the next token in the script matches the specified string, 0 otherwise.
+*/
 int PS_CheckTokenString( script_t* script, char* string )
 {
 	token_t tok;
@@ -1261,6 +1344,17 @@ int PS_CheckTokenString( script_t* script, char* string )
 	return 0;
 }
 
+/*!
+	\brief Checks if the next token in the script matches the specified type and subtype, and returns it if it does.
+
+	This function attempts to read the next token from the provided script and compares its type and subtype against the given parameters. If the token matches the specified criteria, the token data is copied to the output parameter and the function returns true. If the token does not match, the script's position is restored and the function returns false. This function is typically used for parsing structured input where specific token sequences need to be validated and extracted.
+
+	\param script Pointer to the script structure to read from
+	\param type Expected token type to match against
+	\param subtype Expected token subtype to match against
+	\param token Pointer to store the matching token if found
+	\return Non-zero value if a matching token was found and copied, zero otherwise
+*/
 int PS_CheckTokenType( script_t* script, int type, int subtype, token_t* token )
 {
 	token_t tok;
@@ -1280,6 +1374,15 @@ int PS_CheckTokenType( script_t* script, int type, int subtype, token_t* token )
 	return 0;
 }
 
+/*!
+	\brief Skips tokens in the script until the specified string is found.
+
+	This function reads tokens from the provided script until it encounters a token that matches the specified string. It returns 1 if the string is found and 0 if the end of the script is reached without finding the string.
+
+	\param script Pointer to the script structure to read from
+	\param string The string to search for in the script
+	\return 1 if the specified string is found in the script, 0 if the end of the script is reached without finding the string
+*/
 int PS_SkipUntilString( script_t* script, char* string )
 {
 	token_t token;
@@ -1293,17 +1396,40 @@ int PS_SkipUntilString( script_t* script, char* string )
 	return 0;
 }
 
+/*!
+	\brief Marks the last parsed token in the script as unread so it can be read again.
+
+	This function sets a flag in the script structure indicating that the last token parsed is available for reading again. It is typically used to implement backtracking functionality in the parsing process.
+
+	\param script Pointer to the script structure containing the token state
+*/
 void PS_UnreadLastToken( script_t* script )
 {
 	script->tokenavailable = 1;
 }
 
+/*!
+	\brief Unreads a token back into the script's token buffer
+
+	This function pushes a token back onto the script's token stream, making it available for subsequent reads. It copies the provided token into the script's internal token storage and marks the token as available for reading.
+
+	\param script Pointer to the script structure containing the token stream
+	\param token Pointer to the token to be pushed back onto the stream
+*/
 void PS_UnreadToken( script_t* script, token_t* token )
 {
 	memcpy( &script->token, token, sizeof( token_t ) );
 	script->tokenavailable = 1;
 }
 
+/*!
+	\brief Returns the next whitespace character from the script's whitespace buffer or zero if none remain.
+
+	This function retrieves the next character from the whitespace buffer of a script. It advances the internal pointer to the next position in the buffer. If the end of the whitespace buffer is reached, it returns zero to indicate no more whitespace characters are available. This function is typically used to handle whitespace separation during token parsing or to preserve formatting when writing source code.
+
+	\param script Pointer to the script structure containing the whitespace buffer to read from.
+	\return The next whitespace character from the script's buffer, or zero if the end has been reached.
+*/
 char PS_NextWhiteSpaceChar( script_t* script )
 {
 	if( script->whitespace_p != script->endwhitespace_p ) {
@@ -1314,6 +1440,13 @@ char PS_NextWhiteSpaceChar( script_t* script )
 	}
 }
 
+/*!
+	\brief Removes surrounding double quotes from a string in place.
+
+	This function modifies the input string by removing double quotes if they exist at the beginning and/or end of the string. It first checks if the first character is a double quote and removes it if present. Then it checks if the last character is a double quote and removes it if present. The function operates in place, modifying the original string buffer.
+
+	\param string Input string to process, modified in place
+*/
 void StripDoubleQuotes( char* string )
 {
 	if( *string == '\"' ) {
@@ -1325,6 +1458,13 @@ void StripDoubleQuotes( char* string )
 	}
 }
 
+/*!
+	\brief Removes single quotes from the beginning and end of a character string if they exist.
+
+	This function checks if the first character of the input string is a single quote and removes it by copying the rest of the string over the beginning. It then checks if the last character of the string is a single quote and removes it by null terminating the string one position earlier. The function modifies the input string in place.
+
+	\param string Character string to process, may be modified in place
+*/
 void StripSingleQuotes( char* string )
 {
 	if( *string == '\'' ) {
@@ -1336,6 +1476,15 @@ void StripSingleQuotes( char* string )
 	}
 }
 
+/*!
+	\brief Reads a signed floating-point number from a script token stream.
+
+	This function reads a token from the provided script and interprets it as a floating-point number. If the token is a minus sign, it sets the sign to negative and then reads the next token as the number. If the first token is not a number, it throws a script error. The function supports parsing both positive and negative floating-point values.
+
+	\param script Pointer to the script object to read from.
+	\return The parsed floating-point number with the correct sign applied.
+	\throws ScriptError is thrown if the expected number token is not found.
+*/
 long double ReadSignedFloat( script_t* script )
 {
 	token_t		token;
@@ -1354,6 +1503,15 @@ long double ReadSignedFloat( script_t* script )
 	return sign * token.floatvalue;
 }
 
+/*!
+	\brief Reads a signed integer from a script, handling optional negative sign.
+
+	This function reads a token from the provided script and interprets it as a signed integer. It supports optional negative sign handling, where a minus symbol is consumed and the subsequent number is treated as negative. If the token is not a valid integer, the function will trigger a script error.
+
+	\param script Pointer to the script object to read from.
+	\return The signed integer value read from the script, with the appropriate sign applied.
+	\throws ScriptError is thrown if the expected integer value is not found or is invalid.
+*/
 signed long int ReadSignedInt( script_t* script )
 {
 	token_t			token;
@@ -1372,16 +1530,39 @@ signed long int ReadSignedInt( script_t* script )
 	return sign * token.intvalue;
 }
 
+/*!
+	\brief Sets the flags for the specified script.
+
+	This function assigns the provided flags value to the flags member of the script structure. It is used to configure the behavior or state of a script based on the flag values passed to it.
+
+	\param script Pointer to the script structure whose flags are to be set.
+	\param flags The flag values to be assigned to the script.
+*/
 void SetScriptFlags( script_t* script, int flags )
 {
 	script->flags = flags;
 }
 
+/*!
+	\brief Returns the flags associated with the given script.
+
+	This function retrieves the flag value stored in the script structure. The flags typically represent various attributes or states of the script, such as whether it is active, has been processed, or requires special handling. The returned integer value contains bit-flags that can be checked using bitwise operations.
+
+	\param script Pointer to the script structure from which to retrieve the flags
+	\return The integer value containing the flags set for the specified script
+*/
 int GetScriptFlags( script_t* script )
 {
 	return script->flags;
 }
 
+/*!
+	\brief Resets the script parser state to its initial condition.
+
+	This function resets the internal state of a script parser identified by the provided script pointer. It resets the parsing pointers to the beginning of the script buffer, clears the whitespace tracking pointers, resets the line number counters, and clears the currently stored token. This allows the script to be parsed from the beginning without any residual state from previous parses.
+
+	\param script Pointer to the script structure to be reset
+*/
 void ResetScript( script_t* script )
 {
 	// pointer in script buffer
@@ -1401,6 +1582,14 @@ void ResetScript( script_t* script )
 	memset( &script->token, 0, sizeof( token_t ) );
 }
 
+/*!
+	\brief Checks if the end of the script has been reached
+
+	Returns true if the current position in the script has reached or exceeded the end position, indicating that there are no more tokens to read from the script. This function is commonly used in parsing operations to determine when a script stream has been fully consumed.
+
+	\param script Pointer to the script structure to check
+	\return Integer value indicating whether the end of the script has been reached, where a non-zero value indicates the end has been reached
+*/
 int EndOfScript( script_t* script )
 {
 	return script->script_p >= script->end_p;
@@ -1558,6 +1747,16 @@ script_t* LoadScriptFile( const char* filename )
 	return script;
 }
 
+/*!
+	\brief Loads a script from memory into a script_t structure for parsing
+
+	This function allocates memory for a script_t structure and copies the provided script data into it. The function sets up all necessary pointers and metadata for the script parser to work with the memory buffer. The script data is copied from the input pointer into the allocated buffer, and the script structure is initialized with appropriate values for line numbers, token tracking, and buffer management. The function is commonly used when parsing entity data or other text-based formats where the input is already in memory.
+
+	\param ptr pointer to the script data to load
+	\param length number of bytes of script data to load
+	\param name name of the script, used for error reporting and debugging
+	\return pointer to the newly created script_t structure containing the loaded script data
+*/
 script_t* LoadScriptMemory( char* ptr, int length, char* name )
 {
 	void*	  buffer;
@@ -1589,6 +1788,13 @@ script_t* LoadScriptMemory( char* ptr, int length, char* name )
 	return script;
 }
 
+/*!
+	\brief Frees the memory allocated for a script object and its punctuation table if applicable
+
+	This function releases the memory occupied by a script_t structure. If the PUNCTABLE compiler flag is enabled, it first frees the punctuation table associated with the script before freeing the script structure itself. The function assumes the script pointer is valid and has been previously allocated with memory allocation functions
+
+	\param script Pointer to the script structure to be freed
+*/
 void FreeScript( script_t* script )
 {
 #ifdef PUNCTABLE

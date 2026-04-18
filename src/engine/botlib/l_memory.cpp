@@ -248,12 +248,6 @@ memoryblock_t* BlockFromPointer( void* ptr, char* str )
 	return block;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void FreeMemory( void* ptr )
 {
 	memoryblock_t* block;
@@ -294,12 +288,6 @@ int MemoryByteSize( void* ptr )
 	return block->size;
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void PrintUsedMemorySize()
 {
 	botimport.Print( PRT_MESSAGE, "total allocated memory: %d KB\n", allocatedmemory >> 10 );
@@ -307,12 +295,6 @@ void PrintUsedMemorySize()
 	botimport.Print( PRT_MESSAGE, "total memory blocks: %d\n", numblocks );
 }
 
-//===========================================================================
-//
-// Parameter:			-
-// Returns:				-
-// Changes Globals:		-
-//===========================================================================
 void PrintMemoryLabels()
 {
 	memoryblock_t* block;
@@ -366,6 +348,16 @@ void DumpMemory()
 	#ifdef MEMDEBUG
 void* GetMemoryDebug( unsigned long size, char* label, char* file, int line )
 	#else
+
+/*!
+	\brief Allocates a block of memory of the specified size, adding overhead for memory tracking
+
+	The function allocates a block of memory of the specified size, including space for a memory identifier. It returns a pointer to the allocated memory block, excluding the space reserved for the memory identifier. The allocated memory is tracked using a MEM_ID marker for debugging purposes
+
+	\param size The size of the memory block to allocate in bytes
+	\return A pointer to the allocated memory block, or NULL if allocation fails
+	\throws NULL is returned if the memory allocation fails
+*/
 void* GetMemory( unsigned long size )
 	#endif // MEMDEBUG
 {
@@ -392,6 +384,15 @@ void* GetMemory( unsigned long size )
 	#ifdef MEMDEBUG
 void* GetClearedMemoryDebug( unsigned long size, char* label, char* file, int line )
 	#else
+
+/*!
+	\brief Allocates memory of the specified size and initializes it to zero
+
+	This function allocates a block of memory of the given size and initializes all bytes in the block to zero. It is used in the AAS (Area Awareness System) for allocating memory for portal, portal index, and cluster data structures. The function handles both debug and non-debug memory allocation paths. The allocated memory is guaranteed to be zero-initialized which is useful for preventing undefined behavior when working with data structures that rely on zeroed memory.
+
+	\param size The size in bytes of the memory block to allocate
+	\return A pointer to the newly allocated and zero-initialized memory block
+*/
 void* GetClearedMemory( unsigned long size )
 	#endif // MEMDEBUG
 {
@@ -414,6 +415,15 @@ void* GetClearedMemory( unsigned long size )
 	#ifdef MEMDEBUG
 void* GetHunkMemoryDebug( unsigned long size, char* label, char* file, int line )
 	#else
+
+/*!
+	\brief Allocates a block of memory from the hunk allocator with the specified size.
+
+	This function allocates memory using the hunk allocator, adding extra space to store a memory ID for tracking. The allocated memory block includes a header that stores the HUNK_ID, which is used for memory validation and tracking. If the allocation fails, the function returns NULL. The returned pointer points to the memory block after the header.
+
+	\param size The size in bytes of the memory block to allocate.
+	\return A pointer to the allocated memory block, or NULL if allocation failed.
+*/
 void* GetHunkMemory( unsigned long size )
 	#endif // MEMDEBUG
 {
@@ -440,6 +450,15 @@ void* GetHunkMemory( unsigned long size )
 	#ifdef MEMDEBUG
 void* GetClearedHunkMemoryDebug( unsigned long size, char* label, char* file, int line )
 	#else
+
+/*!
+	\brief Allocates memory from the hunk and initializes it to zero
+
+	This function allocates a block of memory of the specified size from the hunk allocator. The allocated memory is initialized to zero before being returned. It supports debug tracking when MEMDEBUG is defined, which records allocation details such as label, file, and line number. The function is typically used to allocate cleared memory blocks for data structures that need to be initialized to zero before use.
+
+	\param size The size in bytes of the memory block to allocate
+	\return A pointer to the allocated and cleared memory block
+*/
 void* GetClearedHunkMemory( unsigned long size )
 	#endif // MEMDEBUG
 {
@@ -453,6 +472,13 @@ void* GetClearedHunkMemory( unsigned long size )
 	return ptr;
 }
 
+/*!
+	\brief Frees memory that was allocated with a corresponding AllocMemory call, checking for valid memory identifier before freeing.
+
+	This function is used to free memory that was previously allocated using a matching AllocMemory function. It performs a validity check by examining a memory identifier stored just before the actual memory block. If the identifier matches the expected MEM_ID, it proceeds to free the memory using the botimport.FreeMemory function. This approach helps prevent double-free errors and ensures memory integrity.
+
+	\param ptr Pointer to the memory block to be freed
+*/
 void FreeMemory( void* ptr )
 {
 	unsigned long int* memid;
@@ -464,10 +490,22 @@ void FreeMemory( void* ptr )
 	}
 }
 
+/*!
+	\brief Prints the current amount of memory used by the application
+
+	This function outputs to the console the total amount of memory currently allocated by the application. It is typically used for debugging or performance monitoring purposes to track memory consumption over time. The function does not take any parameters and does not return any value.
+
+*/
 void PrintUsedMemorySize()
 {
 }
 
+/*!
+	\brief Prints memory allocation labels to the console
+
+	This function outputs memory allocation labels that have been registered with the memory manager. It is typically used for debugging purposes to track memory usage and identify potential memory leaks. The function does not take any parameters and does not return any value. It is designed to be called when detailed memory information is needed during development or debugging sessions.
+
+*/
 void PrintMemoryLabels()
 {
 }
