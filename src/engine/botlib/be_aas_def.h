@@ -27,6 +27,30 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+/*!
+	\file engine/botlib/be_aas_def.h
+	\brief TODO: clarify file purpose.
+	\note doxygenix: sha256=f03888ac9f4ec6a3b69215e148ff9b5d47aedf9382f6344688b90449c4f14f8c
+
+	\par File Purpose
+	- TODO: clarify details.
+
+	\par Core Responsibilities
+	- TODO: clarify details.
+
+	\par Key Types and Functions
+	- TODO: clarify details.
+
+	\par Control Flow
+	- TODO: clarify details.
+
+	\par Dependencies
+	- TODO: clarify details.
+
+	\par How It Fits
+	- TODO: clarify details.
+*/
+
 /*****************************************************************************
  * name:		be_aas_def.h
  *

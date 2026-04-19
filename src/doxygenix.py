@@ -1053,7 +1053,9 @@ def _find_file_doxygen_block(
     lines: List[str], scan_limit: int = 200
 ) -> Optional[Tuple[int, int, Optional[str]]]:
     limit = min(len(lines), scan_limit)
-    hash_re = re.compile(r"doxygenix:\s*sha256=([0-9a-f]{64})", re.IGNORECASE)
+    hash_re = re.compile(
+        r"(?:doxygenix|archgen):\s*sha256=([0-9a-f]{64})", re.IGNORECASE
+    )
 
     i = 0
     while i < limit:
@@ -2607,7 +2609,7 @@ def main():
 
     ap.add_argument(
         "--arch-root",
-        default="architecture",
+        default="docs/architecture",
         help="Root directory for architecture .md output (default: architecture)",
     )
     args = ap.parse_args()

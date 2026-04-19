@@ -27,6 +27,30 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+/*!
+	\file engine/botlib/l_script.cpp
+	\brief TODO: clarify file purpose.
+	\note doxygenix: sha256=680291be7749aaebbf5416abd65106546a55291769917c82dcacb4c1f656c5db
+
+	\par File Purpose
+	- TODO: clarify details.
+
+	\par Core Responsibilities
+	- TODO: clarify details.
+
+	\par Key Types and Functions
+	- TODO: clarify details.
+
+	\par Control Flow
+	- TODO: clarify details.
+
+	\par Dependencies
+	- TODO: clarify details.
+
+	\par How It Fits
+	- TODO: clarify details.
+*/
+
 /*****************************************************************************
  * name:		l_script.c
  *
